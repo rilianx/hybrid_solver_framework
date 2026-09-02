@@ -1,0 +1,121 @@
+"""Construcción de prompts por slot (§6): el `Protocol` exacto, el bloque
+`COMPONENT` obligatorio, un ejemplo válido para *otro* problema (few-shot),
+la descripción del problema, y pedido explícito de diversidad. El prompt
+de corrección reenvía el módulo original junto con el `feedback()` del
+validador (la propiedad violada, con el movimiento/instancia concretos).
+"""
+
+from __future__ import annotations
+
+import inspect
+from dataclasses import dataclass, field
+
+from core import contracts
+from core.validation.syntactic import PROTOCOL_FOR_SLOT
+
+from .fewshot import FEWSHOT
+
+
+@dataclass
+class ProblemSpec:
+    """Lo que el LLM necesita saber del problema para escribir componentes."""
+
+    name: str
+    description: str  # lenguaje natural: decisiones, restricciones, objetivo
+    solution_representation: str  # cómo es `sol` en la vista estructural
+    problem_model_import: str  # p.ej. "examples.lotsizing.problem_model"
+    problem_model_source: str  # código fuente del ProblemModel (la vista que ve el componente)
+    variable_naming: str  # cómo se llaman las variables de la vista MIP
+    notes: list[str] = field(default_factory=list)  # avisos (minimización, penalización, costo de objective...)
+
+
+SYSTEM_PROMPT = """Eres un experto en metaheurísticas y matheurísticas que escribe componentes algorítmicos en Python.
+Escribes módulos pequeños, correctos y autocontenidos que cumplen exactamente un contrato (Protocol) dado.
+No escribes el bucle de control del algoritmo: solo la pieza que se te pide.
+
+Reglas de todo módulo que generes:
+1. Define un dict `COMPONENT` con: name (snake_case, único), slot, compatible_skeletons, requires, params.
+   Cada param declara type ("int" | "float" | "cat" | "bool"), y range [min, max] para int/float o values [...] para cat.
+2. Define una clase que implemente TODOS los métodos del Protocol del slot, con las firmas exactas.
+3. Define `def build_component(problem, **params)` que devuelva una instancia lista para usar.
+   `problem` es el ProblemModel ya ligado a una instancia (expone objective(sol), is_feasible(sol), to_assignment(sol),
+   from_assignment(x), variable_groups(inst), y los atributos que muestre su código fuente, p.ej. `problem.inst`).
+   Los valores por defecto de `build_component` deben caer dentro de los rangos declarados en COMPONENT["params"].
+4. Solo imports de la librería estándar y del módulo del problema que se indica. Sin I/O, sin prints, sin estado global.
+5. Toda aleatoriedad debe venir del `rng: random.Random` que recibe el método (nunca del módulo `random` global).
+6. Las soluciones son inmutables: nunca modifiques `sol` in place; devuelve una solución nueva.
+7. El objetivo se MINIMIZA en todo el framework.
+
+Formato de salida: cada componente en su propio bloque ```python ... ``` con el módulo completo. Sin texto fuera de los bloques
+salvo una línea breve antes de cada bloque. Nada más."""
+
+
+def protocol_source(slot: str) -> str:
+    return inspect.getsource(PROTOCOL_FOR_SLOT[slot])
+
+
+SLOT_HINTS = {
+    "neighborhood": (
+        "Un movimiento `m` debe ser un objeto pequeño y hashable (tupla). Propiedades que se verificarán automáticamente: "
+        "`undo(apply(sol, m), m) == sol`; `delta(sol, m) == objective(apply(sol, m)) - objective(sol)` (puedes implementarlo "
+        "literalmente así si no hay forma incremental barata); `moves(sol)` no vacío para soluciones típicas."
+    ),
+    "constructor": "Se verificará: `build(inst, rng)` devuelve una solución factible y es determinista dada la semilla del rng.",
+    "perturbation": "Se verificará: `perturb(sol, strength, rng)` devuelve una solución distinta de `sol` (para strength >= 1).",
+    "destruction": (
+        "`destroy(sol, ratio, rng)` devuelve `(partial, free_vars)`: `free_vars` es un set de NOMBRES de variables de la vista MIP "
+        "(exactamente los que produce `problem.to_assignment(sol)`), y `partial` es el dict de las variables NO liberadas con su valor "
+        "actual. Se verificará: free_vars ⊆ variables, partial ∪ free_vars = todas las variables, partial no toca variables liberadas, "
+        "y |free_vars| >= 1."
+    ),
+    "acceptance": "Se verificará: una mejora estricta (f_cand < f_cur) siempre se acepta; devuelve bool.",
+    "stop": "Se verificará: `stop(state)` es False en el estado inicial y True cuando iteration/elapsed_time son enormes.",
+}
+
+
+def generation_prompt(spec: ProblemSpec, slot: str, n_variants: int, avoid_names: list[str] | None = None) -> str:
+    fewshot = FEWSHOT.get(slot)
+    parts = [
+        f"# Tarea\nGenera {n_variants} componentes ESTRUCTURALMENTE DISTINTOS para el slot `{slot}` del problema descrito abajo.",
+        "Distintos significa ideas algorítmicas diferentes (no el mismo operador con otro parámetro). Nombra cada uno de forma descriptiva.",
+        f"\n# Contrato del slot `{slot}` (Protocol exacto)\n```python\n{protocol_source(slot)}```",
+    ]
+    if slot in SLOT_HINTS:
+        parts.append(f"\n# Propiedades que verificará el validador\n{SLOT_HINTS[slot]}")
+    if fewshot:
+        parts.append(
+            "\n# Ejemplo de componente válido para OTRO problema (mochila 0/1), en el formato exacto requerido\n"
+            f"```python{fewshot}```"
+        )
+    parts.append(f"\n# Problema objetivo: {spec.name}\n{spec.description}")
+    parts.append(f"\n## Representación de la solución (vista estructural)\n{spec.solution_representation}")
+    parts.append(f"\n## Variables de la vista MIP\n{spec.variable_naming}")
+    parts.append(
+        f"\n## Código del ProblemModel (lo que `problem` expone; importa tipos con `from {spec.problem_model_import} import ...`)\n"
+        f"```python\n{spec.problem_model_source}\n```"
+    )
+    if spec.notes:
+        parts.append("\n## Avisos\n" + "\n".join(f"- {n}" for n in spec.notes))
+    if avoid_names:
+        parts.append(f"\nYa existen componentes llamados {avoid_names}; usa ideas y nombres distintos.")
+    parts.append(f"\nDevuelve exactamente {n_variants} bloques ```python```, cada uno un módulo completo.")
+    return "\n".join(parts)
+
+
+def correction_prompt(spec: ProblemSpec, slot: str, module_source: str, feedback: str) -> str:
+    return "\n".join(
+        [
+            f"El siguiente componente para el slot `{slot}` del problema '{spec.name}' fue RECHAZADO por el validador automático.",
+            "Corrígelo manteniendo la misma idea algorítmica y el mismo `COMPONENT['name']`. Devuelve el módulo completo corregido "
+            "en un único bloque ```python```.",
+            f"\n# Reporte del validador\n{feedback}",
+            f"\n# Contrato del slot (Protocol exacto)\n```python\n{protocol_source(slot)}```",
+            f"\n# Módulo rechazado\n```python\n{module_source}\n```",
+            f"\n# Recordatorio del problema\n{spec.solution_representation}\n{spec.variable_naming}",
+        ]
+    )
+
+
+__all__ = ["ProblemSpec", "SYSTEM_PROMPT", "generation_prompt", "correction_prompt", "protocol_source"]
+
+_ = contracts  # el import explícito documenta de dónde salen los Protocols
