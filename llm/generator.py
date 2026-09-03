@@ -80,20 +80,33 @@ def validate_generated_module(path: Path, contexts: list[ValidationContext]) -> 
     if not report.passed:
         return report, module, component
 
-    last: ValidationReport | None = None
+    # Todas las propiedades deben cumplirse en TODOS los micro-contextos, salvo
+    # `neighborhood.improves_from_start`, que basta con que se cumpla en UNO: la
+    # solución trivial de algún contexto puede ser un óptimo local para movimientos
+    # elementales (nada mejora desde ahí), y exigirlo en todos volvía el gate
+    # insatisfacible para operadores legítimos (corrida 4: `single_setup_removal_r1`).
+    AGGREGATE_ANY = {"neighborhood.improves_from_start"}
+    reports: list[ValidationReport] = []
     for k, ctx in enumerate(contexts):
         try:
             impl = factory(ctx.problem)
         except Exception as exc:  # noqa: BLE001
             report.add(fail("syntactic", "factory_runs", f"build_component(problem) lanzó {type(exc).__name__}: {exc} (micro-instancia {k})"))
             return report, module, component
-        last = validate_component(component, impl, ctx)
-        if not last.passed:
-            report.extend(last.results)
+        reports.append(validate_component(component, impl, ctx))
+        hard_fail = [r for r in reports[-1].failures() if r.name not in AGGREGATE_ANY]
+        if hard_fail:
+            report.extend(reports[-1].results)
             return report, module, component
     report.add(ok("syntactic", "factory_runs"))
-    if last is not None:
-        report.extend(last.results)
+    any_fails = [r for rep in reports for r in rep.failures() if r.name in AGGREGATE_ANY]
+    if any_fails and len(any_fails) == len(reports):
+        # falló en todos los contextos: se reporta el primero (trae el hint con movimientos que sí mejoran)
+        report.extend(reports[0].results)
+        return report, module, component
+    if reports:
+        # aprobado: se reporta el último contexto, sin los fallos agregables que quedaron compensados
+        report.extend([r for r in reports[-1].results if r.name not in AGGREGATE_ANY or r.passed])
     return report, module, component
 
 

@@ -63,6 +63,25 @@ def _hamming(problem, a, b) -> int:
     return sum(1 for k in xa if abs(xa[k] - xb.get(k, xa[k])) > 1e-9)
 
 
+def _reference_improvements(ctx: ValidationContext, k: int = 0, top: int = 3) -> str:
+    """Si el contexto trae un vecindario de referencia, lista movimientos que SÍ mejoran desde la
+    partida: la verdad-terreno que el LLM necesita para no adivinar (§6, feedback concreto)."""
+    ref = ctx.reference_neighborhood
+    if ref is None:
+        return ""
+    try:
+        sol = ctx.trivial_solutions[k]
+        deltas = sorted((ref.delta(sol, m), m) for m in ref.moves(sol))
+        good = [(d, m) for d, m in deltas if d < -ctx.tolerance][:top]
+        if not good:
+            return ""
+        desc = getattr(ref, "describe_move", None)
+        items = [f"{(desc(sol, m) if desc else repr(m))} (Δ={d:.0f})" for d, m in good]
+        return " Para que veas qué SÍ mejora desde esa partida en la micro-instancia 0: " + "; ".join(items) + "."
+    except Exception:  # noqa: BLE001
+        return ""
+
+
 def check_component_quality(slot: str, impl, ctx: ValidationContext) -> list[CheckResult]:
     P = ctx.problem
     results: list[CheckResult] = []
@@ -107,12 +126,13 @@ def check_component_quality(slot: str, impl, ctx: ValidationContext) -> list[Che
         elif imp_start + imp_rand == 0:
             results.append(fail(LAYER, "neighborhood.has_improving_move", f"ninguno de los {tot_start + tot_rand} movimientos muestreados mejora la solución en ninguna micro-instancia: vecindario inerte"))
         elif imp_start == 0 and ctx.require_improving_from_start:
+            hint = _reference_improvements(ctx)
             results.append(fail(LAYER, "neighborhood.improves_from_start",
                 f"desde la solución de PARTIDA (la que produce el constructor, p.ej. lot-for-lot) moves() devuelve "
                 f"{tot_start} movimientos y NINGUNO mejora; solo hay mejoras ({imp_rand}) desde soluciones aleatorias. "
-                f"El esqueleto arranca en la solución de partida, así que este vecindario lo deja inmóvil. "
-                f"Diseña movimientos que mejoren desde ahí (p.ej. que quiten un setup y dejen que el inventario cubra la demanda, "
-                f"o que muevan producción a un período anterior con capacidad libre)."))
+                f"El esqueleto arranca en la solución de partida, así que este vecindario lo deja inmóvil.{hint} "
+                f"NO compliques el operador con movimientos compuestos para lograrlo: mantén `undo` exacto y `moves()` simple; "
+                f"un movimiento elemental correcto que mejore vale más que uno sofisticado que rompa las propiedades ya aprobadas."))
         else:
             results.append(ok(LAYER, "neighborhood.has_improving_move",
                 f"{imp_start} mejoras desde soluciones de partida, {imp_rand} desde aleatorias"))

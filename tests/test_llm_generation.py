@@ -199,3 +199,83 @@ def test_infeasible_constructor_feedback_says_where_demand_is_missing():
     msg = report.feedback()
     assert "constructor.feasible" in msg and "faltante total" in msg and "ítem 0 período" in msg
     assert "sin backlog" in msg and "no tiene ningún setup" in msg
+
+
+REMOVAL_ONLY = textwrap.dedent('''
+    COMPONENT = {"name": "removal_only", "slot": "neighborhood", "compatible_skeletons": ["SA"], "params": {}}
+
+    class RemovalOnly:
+        """Solo APAGA setups. Mejora desde lot-for-lot en instancias con holgura; en una
+        instancia cuya solución trivial es óptimo local de flips, nada mejora."""
+        def __init__(self, problem): self.problem = problem
+        def moves(self, sol):
+            return [(i, t) for i in range(len(sol)) for t in range(len(sol[i])) if sol[i][t]]
+        def apply(self, sol, m):
+            i, t = m; row = sol[i][:t] + (False,) + sol[i][t + 1:]
+            return sol[:i] + (row,) + sol[i + 1:]
+        def undo(self, sol, m):
+            i, t = m; row = sol[i][:t] + (True,) + sol[i][t + 1:]
+            return sol[:i] + (row,) + sol[i + 1:]
+        def delta(self, sol, m):
+            return self.problem.objective(self.apply(sol, m)) - self.problem.objective(sol)
+
+    def build_component(problem):
+        return RemovalOnly(problem)
+''')
+
+NEVER_IMPROVES = textwrap.dedent('''
+    COMPONENT = {"name": "never_improves", "slot": "neighborhood", "compatible_skeletons": ["SA"], "params": {}}
+
+    class NeverImproves:
+        """Movimientos válidos que no cambian nada: delta 0 siempre, undo trivialmente exacto."""
+        def __init__(self, problem): self.problem = problem
+        def moves(self, sol):
+            return [(i, t) for i in range(len(sol)) for t in range(len(sol[i]))]
+        def apply(self, sol, m): return sol
+        def undo(self, sol, m): return sol
+        def delta(self, sol, m): return 0.0
+
+    def build_component(problem):
+        return NeverImproves(problem)
+''')
+
+
+def test_improves_from_start_needs_only_one_context(tmp_path):
+    """Corrida 4: `single_setup_removal_r1` era correcto y mejoraba desde la partida en la
+    instancia Trigeiro, pero se rechazó porque en la otra micro-instancia la solución trivial
+    era óptimo local de flips (nada mejora ahí). El gate estricto debe exigir mejora en AL
+    MENOS un contexto, no en todos; las demás propiedades sí en todos."""
+    from llm.generator import validate_generated_module
+
+    contexts = make_contexts(n_contexts=2, strict=True)
+    # sanity del escenario: la partida del 2º contexto no admite mejora por flips
+    ref = contexts[1].reference_neighborhood
+    sol = contexts[1].trivial_solutions[0]
+    assert all(ref.delta(sol, m) >= -1e-9 for m in ref.moves(sol))
+
+    p = tmp_path / "removal_only.py"; p.write_text(REMOVAL_ONLY)
+    report, _, _ = validate_generated_module(p, contexts)
+    assert report.passed, report.feedback()
+
+    q = tmp_path / "never_improves.py"; q.write_text(NEVER_IMPROVES)
+    report, _, _ = validate_generated_module(q, contexts)
+    assert not report.passed and report.failed_layer == "quality"
+
+
+ADD_ONLY = REMOVAL_ONLY.replace('"removal_only"', '"add_only"').replace("if sol[i][t]]", "if not sol[i][t]]") \
+    .replace("(False,)", "(TMP,)").replace("(True,)", "(False,)").replace("(TMP,)", "(True,)")
+
+
+def test_strict_feedback_lists_concrete_improving_moves():
+    """Un operador que solo ENCIENDE setups mejora desde soluciones aleatorias (repara faltantes)
+    pero no desde lot-for-lot factible: cae en `improves_from_start`, y el mensaje incluye los
+    movimientos que SÍ mejoran según el vecindario de referencia (verdad-terreno), más la
+    advertencia de no complicar el operador."""
+    from core.validation import validate_component
+
+    ctx = make_contexts(n_contexts=1, strict=True)[0]  # ctx0: Trigeiro, lot-for-lot factible
+    ns = {}; exec(ADD_ONLY, ns)
+    report = validate_component(ns["COMPONENT"], ns["build_component"](ctx.problem), ctx)
+    assert not report.passed and any(f.name == "neighborhood.improves_from_start" for f in report.failures()), report.feedback()
+    msg = report.feedback()
+    assert "qué SÍ mejora" in msg and "APAGAR el setup del ítem" in msg and "NO compliques" in msg

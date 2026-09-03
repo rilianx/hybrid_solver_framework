@@ -63,7 +63,14 @@ SLOT_HINTS = {
         "incremental barata); `moves(sol)` no vacío; y al menos un movimiento debe MEJORAR la solución de partida del esqueleto "
         "(no basta con que mejore soluciones aleatorias). Un vecindario con 6 movimientos que nunca mejoran es inútil aunque sea correcto."
     ),
-    "constructor": "Se verificará: `build(inst, rng)` devuelve una solución factible y es determinista dada la semilla del rng.",
+    "constructor": (
+        "Se verificará: `build(inst, rng)` devuelve una solución FACTIBLE y es determinista dada la semilla del rng. "
+        "Factible significa cubrir TODA la demanda respetando la capacidad de cada período. Con utilización alta esto NO es "
+        "trivial: lot-for-lot (setup justo donde hay demanda) puede exceder la capacidad de un período pico y dejar faltante, "
+        "y entonces hay que producir ANTES y almacenar. Regla práctica: recorre los períodos en orden; si la demanda acumulada "
+        "hasta t (más tiempos de setup) supera la capacidad acumulada disponible, adelanta producción a períodos anteriores con "
+        "holgura. Comprueba la factibilidad con `problem.is_feasible(sol)` dentro de `build` y repara antes de devolver."
+    ),
     "perturbation": "Se verificará: `perturb(sol, strength, rng)` devuelve una solución distinta de `sol` (para strength >= 1).",
     "destruction": (
         "`destroy(sol, ratio, rng)` devuelve `(partial, free_vars)`: `free_vars` es un set de NOMBRES de variables de la vista MIP "
@@ -136,6 +143,9 @@ def correction_prompt(spec: ProblemSpec, slot: str, module_source: str, feedback
             f"El siguiente componente para el slot `{slot}` del problema '{spec.name}' fue RECHAZADO por el validador automático.",
             "Corrígelo manteniendo la misma idea algorítmica y el mismo `COMPONENT['name']`. Devuelve el módulo completo corregido "
             "en un único bloque ```python```.",
+            "Importante: arregla SOLO lo que el reporte señala y no rompas lo que ya pasaba. Si el problema es que el operador no "
+            "mejora, NO agregues movimientos compuestos (dos setups a la vez, mover+quitar): mantén movimientos elementales con "
+            "`undo` exacto y usa las pistas del reporte sobre qué movimientos concretos sí mejoran.",
             f"\n# Reporte del validador\n{feedback}",
             f"\n# Contrato del slot (Protocol exacto)\n```python\n{protocol_source(slot)}```",
             f"\n# Módulo rechazado\n```python\n{module_source}\n```",

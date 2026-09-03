@@ -9,7 +9,7 @@ from core.validation import ValidationContext
 from llm.prompts import ProblemSpec
 
 from . import problem_model as pm
-from .components import LotForLotConstructor, PeriodWindowDestruction
+from .components import LotForLotConstructor, PeriodWindowDestruction, SetupFlipNeighborhood
 
 
 def make_spec() -> ProblemSpec:
@@ -105,6 +105,7 @@ def make_contexts(
                 trivial_solutions=[trivial],
                 baseline_constructor=LotForLotConstructor(),
                 reference_destruction=PeriodWindowDestruction(inst),
+                reference_neighborhood=SetupFlipNeighborhood(problem),  # verdad-terreno para el feedback
                 mip_time_limit=5.0,
                 max_moves_checked=30,
                 require_improving_from_start=strict,

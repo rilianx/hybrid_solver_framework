@@ -50,6 +50,10 @@ class SetupFlipNeighborhood:
     def delta(self, sol: Solution, m) -> float:
         return self.problem.objective(self.apply(sol, m)) - self.problem.objective(sol)
 
+    def describe_move(self, sol: Solution, m) -> str:
+        i, t = m
+        return f"{'APAGAR' if sol[i][t] else 'ENCENDER'} el setup del ítem {i} en el período {t}"
+
 
 COMPONENT_SETUP_FLIP = {
     "name": "setup_flip",
