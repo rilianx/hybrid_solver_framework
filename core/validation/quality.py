@@ -11,7 +11,7 @@ from random import Random
 from statistics import mean
 
 from .base import CheckResult, ValidationContext, fail, ok
-from .diversity import most_similar
+from .diversity import most_similar, novelty_of_improvements
 from .operational import VariantRunner
 
 LAYER = "quality"
@@ -86,11 +86,13 @@ def _reference_improvements(ctx: ValidationContext, k: int = 0, top: int = 3) ->
 _WHAT = {
     "neighborhood": "los vecinos alcanzables desde la misma solución",
     "destruction": "la forma de los conjuntos que libera (tamaño, concentración por ítem y por período, contigüidad)",
-    "perturbation": "las soluciones que produce desde la misma solución",
+    "perturbation": "la forma del conjunto de variables que cambia (cuántas, concentración por ítem y por período, si apaga o enciende)",
 }
 
 
-def diversity_check(slot: str, impl, peers: list, sol, problem=None, max_similarity: float = 0.8) -> list[CheckResult]:
+def diversity_check(
+    slot: str, impl, peers: list, sol, problem=None, max_similarity: float = 0.8, min_novelty: float = 0.25
+) -> list[CheckResult]:
     """Rechaza un componente estructuralmente equivalente a otro ya aceptado del mismo slot."""
     if not peers:
         return []
@@ -98,6 +100,31 @@ def diversity_check(slot: str, impl, peers: list, sol, problem=None, max_similar
     if sim is None:
         return []
     name, j = sim
+    results = _similarity_result(slot, name, j, max_similarity)
+    if slot == "neighborhood" and problem is not None and all(r.passed for r in results):
+        results += _novelty_result(impl, peers, sol, problem, min_novelty)
+    return results
+
+
+def _novelty_result(impl, peers, sol, problem, min_novelty: float) -> list[CheckResult]:
+    novel, total, per_peer = novelty_of_improvements(impl, peers, sol, problem)
+    if total == 0:
+        return []  # sin mejoras desde la partida: eso lo juzga `improves_from_start`, no este gate
+    share = novel / total
+    if share >= min_novelty:
+        return [ok(LAYER, "neighborhood.novel_improvements", f"{novel}/{total} mejoras desde la partida no las alcanza ningún par")]
+    worst = max(per_peer, key=per_peer.get)
+    return [fail(LAYER, "neighborhood.novel_improvements",
+        f"de tus {total} movimientos que MEJORAN desde la solución de partida, {total - novel} llegan a vecinos que "
+        f"`{worst}` (ya aceptado) también alcanza; solo {novel} son nuevos ({share:.0%}, se exige al menos {min_novelty:.0%}). "
+        f"Es decir: lo que aporta este operador es lo mismo que aporta `{worst}`, y lo que agregaste distinto de él NO mejora "
+        f"desde la partida. Agregar flips de un setup a otro operador para pasar `improves_from_start` no cuenta como idea nueva. "
+        f"Busca movimientos que mejoren y que `{worst}` no pueda hacer en un paso: p.ej. apagar un setup y ADELANTAR su "
+        f"producción a un período anterior con holgura, fusionar dos lotes consecutivos del mismo ítem, o vaciar un período "
+        f"saturado moviendo varios ítems a la vez.")]
+
+
+def _similarity_result(slot: str, name: str, j: float, max_similarity: float) -> list[CheckResult]:
     if j > max_similarity:
         return [fail(LAYER, f"{slot}.distinct_from_accepted",
             f"produce esencialmente los mismos resultados que `{name}`, ya aceptado "
@@ -108,6 +135,39 @@ def diversity_check(slot: str, impl, peers: list, sol, problem=None, max_similar
             f"períodos en vez de encender/apagar, si opera sobre un ítem o sobre un período completo, "
             f"si usa la estructura del problema (capacidad saturada, demanda cero, inventario acumulado).")]
     return [ok(LAYER, f"{slot}.distinct_from_accepted", f"más parecido: `{name}` con similitud {j:.2f}")]
+
+
+def probe_checks(slot: str, impl, probe) -> list[CheckResult]:
+    """Propiedades que las micro-instancias no pueden juzgar y la sonda grande sí.
+
+    Constructor: `constructor.feasible` se comprueba en 3×5, donde compiten 3 ítems por la
+    capacidad. Un greedy puede cubrir eso y dejar faltante con 10 ítems (más contención por
+    período): la factibilidad de un constructor es una propiedad de tamaño realista, y la
+    penalización por faltante (≈ costo total × 30) lo vuelve inútil como punto de partida.
+    """
+    P = probe.problem
+    inst = getattr(P, "inst", None)
+    if slot != "constructor" or inst is None:
+        return []
+    explain = getattr(P, "explain_infeasibility", None)
+    for seed in (0, 1, 2):
+        try:
+            sol = impl.build(inst, Random(seed))
+        except Exception as exc:  # noqa: BLE001
+            return [fail(LAYER, "constructor.feasible_on_probe", f"build() lanzó {type(exc).__name__} en la instancia grande: {exc}")]
+        if not P.is_feasible(sol):
+            why = ""
+            if explain is not None:
+                try:
+                    why = " Detalle: " + explain(sol)
+                except Exception:  # noqa: BLE001
+                    why = ""
+            n_i, n_t = len(sol), len(sol[0]) if sol else 0
+            return [fail(LAYER, "constructor.feasible_on_probe",
+                f"factible en las micro-instancias pero NO en la instancia de tamaño realista ({n_i}×{n_t}, seed={seed}). "
+                f"Con más ítems compitiendo por la capacidad, el greedy deja demanda sin cubrir: hay que verificar la capacidad "
+                f"ACUMULADA hasta cada período y adelantar producción a períodos anteriores con holgura cuando no alcance.{why}")]
+    return [ok(LAYER, "constructor.feasible_on_probe", "factible en la instancia grande con 3 semillas")]
 
 
 def check_component_quality(slot: str, impl, ctx: ValidationContext) -> list[CheckResult]:

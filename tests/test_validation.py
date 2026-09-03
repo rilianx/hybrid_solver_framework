@@ -486,3 +486,37 @@ def test_make_contexts_carries_a_diversity_probe_when_strict():
     probe = strict[0].diversity_probe
     assert probe is not None and len(probe.solution) >= 10  # instancia grande, no la micro
     assert lax[0].diversity_probe is None
+
+
+def test_perturbation_signature_is_a_shape_profile_too():
+    """Corrida 7: comparar soluciones perturbadas exactas daba 0,00 en todos los pares, incluida
+    la de referencia contra sí misma con otro rng. Con el perfil de forma (y el descriptor de
+    emparejamiento por eje) la misma idea da 1,00 y "flips sueltos" vs "mover dentro del ítem"
+    se distinguen."""
+    from random import Random
+
+    from core.validation.diversity import perturbation_signature, similarity
+    from examples.lotsizing.components import LotForLotConstructor, SetupFlipPerturbation
+    from examples.lotsizing.problem_model import CLSPInstance, LotSizingModel
+
+    inst = CLSPInstance.trigeiro(8, 12, Random(100), utilization=0.95, tbo=3.0)
+    problem = LotSizingModel(inst)
+    sol = LotForLotConstructor().build(inst, Random(0))
+
+    class ShiftWithinItem:
+        def perturb(self, sol, strength, rng):
+            s = [list(r) for r in sol]
+            for _ in range(max(1, int(round(strength)))):
+                i = rng.randrange(len(s))
+                on = [t for t in range(len(s[i])) if s[i][t]]
+                off = [t for t in range(len(s[i])) if not s[i][t]]
+                if on and off:
+                    s[i][rng.choice(on)] = False
+                    s[i][rng.choice(off)] = True
+            return tuple(tuple(r) for r in s)
+
+    a, b = SetupFlipPerturbation(), SetupFlipPerturbation()
+    b.perturb(sol, 2.0, Random(999))
+    sig = lambda c: perturbation_signature(c, sol, problem)  # noqa: E731
+    assert similarity(sig(a), sig(b)) > 0.95
+    assert similarity(sig(a), sig(ShiftWithinItem())) < 0.6

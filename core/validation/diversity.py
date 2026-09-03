@@ -10,20 +10,23 @@ compararlos estructuralmente contra los ya aceptados.
 Firma de un componente = lo que produce desde una solución fija, no su código.
 Hay dos tipos de firma, y cada uno tiene su noción de similitud:
 
-- **Conjuntos** (vecindario, perturbación): el conjunto de soluciones
-  alcanzables. Similitud = Jaccard. Dos operadores con representaciones
-  distintas del mismo movimiento dan el mismo conjunto, que es exactamente
-  lo que queremos detectar.
+- **Conjuntos** (vecindario): el conjunto de soluciones alcanzables. Similitud =
+  Jaccard. Dos operadores con representaciones distintas del mismo movimiento
+  dan el mismo conjunto, que es exactamente lo que queremos detectar.
 
-- **Perfiles** (destrucción): comparar conjuntos exactos de `free_vars` NO
-  sirve (corrida 6). Dos destrucciones aleatorias con la MISMA idea dan
-  Jaccard 1,00 si comparten el estado del rng y 0,11 si no: el resultado mide
-  la sincronía del rng, no la idea. Por eso una destrucción se resume en un
-  perfil de descriptores *de forma* del conjunto liberado, promediados sobre
-  muchas semillas — cuántos ejes toca, cuán concentrado está en un ítem o en
-  un período, si los períodos son contiguos, si libera setups encendidos o
-  apagados. `random_setups` y `period_window` liberan la misma cantidad de
-  variables pero con formas muy distintas, y eso es lo que las distingue.
+- **Perfiles** (destrucción, perturbación): comparar conjuntos exactos NO sirve
+  (corridas 6 y 7). Dos destrucciones aleatorias con la MISMA idea dan Jaccard
+  1,00 si comparten el estado del rng y 0,11 si no: el resultado mide la
+  sincronía del rng, no la idea. Por eso se resumen en un perfil de descriptores
+  *de forma* del conjunto que tocan, promediados sobre muchas semillas — cuántos
+  ejes toca, cuán concentrado está en un ítem o en un período, si los períodos
+  son contiguos, si toca setups encendidos o apagados.
+
+Y para vecindarios hay una tercera medida, porque el Jaccard castiga la
+asimetría de tamaño (corrida 7): un operador que es `setup_flip` más relleno,
+o un subconjunto de `setup_flip`, pasa con 0,28 o 0,62 aunque todo lo que
+mejora desde la partida sea lo mismo que mejora `setup_flip`. **Novedad de las
+mejoras**: de los vecinos que mejoran, cuántos no los alcanza ningún par.
 """
 
 from __future__ import annotations
@@ -79,8 +82,63 @@ def neighborhood_signature(impl, sol, problem=None, limit: int = 1000) -> set:
     return out
 
 
-def perturbation_signature(impl, sol, problem=None, strength: float = 2.0, seeds=(0, 1, 2, 3, 4)) -> set:
-    return {impl.perturb(sol, strength, Random(s)) for s in seeds}
+def perturbation_signature(
+    impl, sol, problem=None, strength: float = 2.0, seeds=tuple(range(20))
+) -> dict[str, float] | set:
+    """Perfil de forma del conjunto de variables que la perturbación CAMBIA (misma
+    lógica que la destrucción: comparar soluciones exactas medía el rng, no la idea —
+    corrida 7: 0,00 en todos los pares, incluida la de referencia contra sí misma con
+    otro rng). Sin `problem` no hay vista de asignación y se cae al conjunto exacto."""
+    if problem is None:
+        return {impl.perturb(sol, strength, Random(s)) for s in seeds}
+    base = problem.to_assignment(sol)
+    rows = []
+    for s in seeds:
+        new = problem.to_assignment(impl.perturb(sol, strength, Random(s)))
+        changed = [v for v in base if abs(base[v] - new.get(v, base[v])) > 1e-9]
+        rows.append(_shape_features(changed, len(base), base))  # on_fraction = apagados / cambiados
+    keys = set().union(*rows) if rows else set()
+    return {k: mean(r.get(k, 0.0) for r in rows) for k in keys}
+
+
+def improving_neighbors(impl, sol, problem, tolerance: float = 1e-6, limit: int = 600) -> set:
+    """Vecinos de `sol` que MEJORAN el objetivo (evaluado con el problema, no con el
+    `delta` del componente). Si hay más de `limit` movimientos se muestrea."""
+    moves = list(impl.moves(sol))
+    if len(moves) > limit:
+        moves = Random(0).sample(moves, limit)
+    f0 = problem.objective(sol)
+    out = set()
+    for m in moves:
+        try:
+            nb = impl.apply(sol, m)
+        except Exception:  # noqa: BLE001
+            continue
+        if problem.objective(nb) < f0 - tolerance:
+            out.add(nb)
+    return out
+
+
+def novelty_of_improvements(impl, peers: list[tuple[str, Any]], sol, problem) -> tuple[int, int, dict[str, int]]:
+    """(mejoras novedosas, mejoras totales, {par: cuántas de mis mejoras también alcanza}).
+
+    Motivo (corrida 7): el Jaccard castiga la asimetría de tamaño, así que un operador que
+    es `setup_flip` MÁS relleno (swaps que no mejoran) o `setup_flip` MENOS movimientos
+    (un subconjunto) pasa el umbral con 0,28 o 0,62 — y sin embargo todo lo que mejora
+    desde la partida lo mejora igual que `setup_flip`. Esta medida mira solo los vecinos
+    que mejoran y pregunta cuántos NO los alcanza ningún par ya aceptado.
+    """
+    mine = improving_neighbors(impl, sol, problem)
+    if not mine:
+        return 0, 0, {}
+    reached: set = set()
+    per_peer: dict[str, int] = {}
+    for name, peer in peers:
+        theirs = neighborhood_signature(peer, sol, problem, limit=10_000)
+        shared = mine & theirs
+        per_peer[name] = len(shared)
+        reached |= shared
+    return len(mine - reached), len(mine), per_peer
 
 
 # --------------------------------------------------------------------------- destrucción
@@ -106,6 +164,11 @@ def _shape_features(free: list[str], total: int, assignment: dict | None) -> dic
         feats[f"axis{axis}_spread"] = len(counts) / n  # 1.0 = un valor distinto por variable
         span = vals[-1] - vals[0] + 1
         feats[f"axis{axis}_contiguity"] = len(counts) / span if span else 1.0
+        # fracción de variables que comparten ese eje con otra del conjunto: distingue
+        # "mover dentro del ítem" (emparejadas en el eje 0) de "intercambiar en el período"
+        # (emparejadas en el eje 1) y de "flips sueltos" (sin pareja); importa en conjuntos
+        # chicos, como los que cambia una perturbación, donde los demás descriptores empatan.
+        feats[f"axis{axis}_paired"] = sum(1 for c in coords if counts[c[axis]] >= 2) / n
     if assignment is not None:
         on = sum(1 for v in free if assignment.get(v, 0.0) > 0.5)
         feats["on_fraction"] = on / n

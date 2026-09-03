@@ -75,10 +75,21 @@ def main() -> None:
         for spec in registry.compatible(slot, skeleton):
             config = assembler.default_config(skeleton, choices={slot: spec.name})
             cost = assembler.evaluate(config, train, args.budget, seed=0)
-            rows.append((cost, spec.name))
-        for cost, name in sorted(rows):
+            raw = None
+            if slot == "constructor":
+                # Con búsqueda encima, 10 s de LNS-MIP borran la diferencia entre puntos de partida
+                # (corrida 7: los 4 constructores dieron exactamente 72197,0). Lo que distingue a
+                # un constructor es la solución que entrega SIN búsqueda, y si es factible.
+                # ligado al ProblemModel de CADA instancia, como hace el Assembler
+                built = [(LotSizingModel(i), spec.make(LotSizingModel(i), **spec.default_params()).build(i, Random(0))) for i in train]
+                raw = (mean(P.objective(sol) for P, sol in built), sum(P.is_feasible(sol) for P, sol in built))
+            rows.append((cost, spec.name, raw))
+        for cost, name, raw in sorted(rows, key=lambda r: (r[0], r[2][0] if r[2] else 0)):
             tag = " [LLM]" if name in gen_names else ""
-            print(f"{name + tag:<45} {cost:>12.1f}   ({(baseline - cost) / baseline:+.1%} vs lot-for-lot)")
+            extra = ""
+            if raw is not None:
+                extra = f"   | sin búsqueda: {raw[0]:>10.1f} ({(baseline - raw[0]) / baseline:+.1%}), factible en {raw[1]}/{len(train)}"
+            print(f"{name + tag:<45} {cost:>12.1f}   ({(baseline - cost) / baseline:+.1%} vs lot-for-lot){extra}")
 
         div = diversity_table(registry, slot, train[0])
         if div:

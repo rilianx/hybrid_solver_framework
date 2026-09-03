@@ -82,6 +82,8 @@ class DiversityProbe:
     solution: Any
     peers: list = field(default_factory=list)  # (nombre, impl) ligados a `problem`
     max_similarity: float = 0.8
+    # Vecindarios: fracción mínima de mejoras desde la partida que ningún par alcanza.
+    min_novelty: float = 0.25
 
 
 @dataclass

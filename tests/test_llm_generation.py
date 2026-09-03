@@ -173,8 +173,11 @@ def test_strict_contexts_reject_neighborhood_inert_from_start(tmp_path):
     """Modo generación (strict=True): un vecindario correcto pero que no mejora desde la
     solución de partida se rechaza con un mensaje que explica por qué, y el prompt de
     corrección lleva la solución de partida para que el modelo la vea."""
+    from dataclasses import replace
+
     spec = make_spec()
-    strict = make_contexts(n_contexts=1, n_items=2, n_periods=4, strict=True)
+    # sin sonda: el veredicto lo dan solo las micro-instancias
+    strict = [replace(c, diversity_probe=None) for c in make_contexts(n_contexts=1, n_items=2, n_periods=4, strict=True)]
     client = ScriptedClient(responses=[fence(GOOD_SHIFT), fence(GOOD_SHIFT), fence(GOOD_SHIFT)])
     accepted, stats = generate_slot(client, spec, "neighborhood", 1, strict, tmp_path, max_rounds=3, verbose=False)
     assert accepted == [] and stats.abandoned == ["shift_setup_earlier"]
@@ -182,6 +185,18 @@ def test_strict_contexts_reject_neighborhood_inert_from_start(tmp_path):
     correction = client.calls[1][1]
     assert "improves_from_start" in correction and "solución de PARTIDA" in correction
     assert "Desde dónde arranca el esqueleto" in client.calls[0][1]  # el prompt inicial ya la mostraba
+
+
+def test_probe_rescues_neighborhood_that_only_improves_on_realistic_instances(tmp_path):
+    """Corrida 7: `same_period_setup_swap` no mejoraba desde la partida en 3×5 (18 movimientos,
+    ninguno mejora) pero sí en 10×15 (73 mejoras, todas novedosas). Rechazado, el modelo lo
+    "arregló" rellenándolo con flips. La sonda da la última palabra sobre `improves_from_start`."""
+    spec = make_spec()
+    strict = make_contexts(n_contexts=1, n_items=2, n_periods=4, strict=True)
+    assert strict[0].diversity_probe is not None
+    client = ScriptedClient(responses=[fence(GOOD_SHIFT)])
+    accepted, stats = generate_slot(client, spec, "neighborhood", 1, strict, tmp_path, max_rounds=1, verbose=False)
+    assert [c.name for c in accepted] == ["shift_setup_earlier"] and stats.rejections_by_layer == {}
 
 
 def test_infeasible_constructor_feedback_says_where_demand_is_missing():
@@ -365,3 +380,120 @@ def test_diversity_gate_uses_the_probe_not_the_micro_instance(tmp_path):
                                     max_rounds=2, catalog_peers=peers, verbose=False)
     assert accepted == [] and stats.rejections_by_layer == {"quality": 2}
     assert "setup_flip" in client.calls[1][1]
+
+
+def test_token_counter_accumulates_and_reaches_stats(tmp_path):
+    """El contador de tokens: el cliente informa el uso de cada llamada y
+    `GenerationStats.tokens` lo acumula, incluidas las rondas de corrección."""
+    from llm import TokenUsage
+
+    spec = make_spec()
+    contexts = make_contexts(n_contexts=1, n_items=2, n_periods=4, strict=False)
+    client = ScriptedClient(responses=[fence(GOOD_SHIFT)], usage_per_call=TokenUsage(4000, 900, reasoning_tokens=300))
+    _, stats = generate_slot(client, spec, "neighborhood", 1, contexts, tmp_path, verbose=False)
+
+    assert stats.tokens.calls == stats.llm_calls == 1
+    assert stats.tokens.input_tokens == 4000 and stats.tokens.output_tokens == 900
+    assert stats.tokens.total_tokens == 4900 and stats.tokens.reasoning_tokens == 300
+    assert "4,900 tokens" in stats.summary()
+
+
+def test_token_counter_is_optional(tmp_path):
+    """Un cliente que no informa uso no rompe nada: el contador queda en cero."""
+    spec = make_spec()
+    contexts = make_contexts(n_contexts=1, n_items=2, n_periods=4, strict=False)
+    client = ScriptedClient(responses=[fence(GOOD_SHIFT)])
+    _, stats = generate_slot(client, spec, "neighborhood", 1, contexts, tmp_path, verbose=False)
+    assert stats.llm_calls == 1 and stats.tokens.total_tokens == 0
+    assert "tokens" not in stats.summary()
+
+
+def test_cost_estimate_comes_from_the_environment(monkeypatch):
+    """Los precios no están cableados (cambian y dependen del proveedor): se leen del entorno."""
+    from llm import TokenUsage, price_per_mtok
+
+    used = TokenUsage(1_000_000, 100_000, calls=3)
+    monkeypatch.delenv("LLM_PRICE_IN", raising=False)
+    monkeypatch.delenv("LLM_PRICE_OUT", raising=False)
+    assert price_per_mtok("gpt-5.4-mini") is None and used.cost_usd() is None
+    assert "cost_usd" not in used.as_dict()
+
+    monkeypatch.setenv("LLM_PRICE_IN", "0.25")
+    monkeypatch.setenv("LLM_PRICE_OUT", "2.00")
+    assert used.cost_usd() == pytest.approx(0.25 + 0.2)
+    assert used.as_dict()["cost_usd"] == pytest.approx(0.45)
+
+
+def test_novelty_gate_rejects_padding_with_flips(tmp_path):
+    """Corrida 7: un operador que es `setup_flip` MENOS movimientos (subconjunto) o MÁS relleno
+    que no mejora pasa el Jaccard (0,62 / 0,28), pero todo lo que mejora desde la partida lo
+    mejora igual que `setup_flip`. `novel_improvements` lo rechaza y lo dice."""
+    from dataclasses import replace
+    from random import Random
+
+    from core.validation.base import DiversityProbe
+    from examples.lotsizing.components import LotForLotConstructor, SetupFlipNeighborhood
+    from examples.lotsizing.problem_model import CLSPInstance, LotSizingModel
+
+    inst = CLSPInstance.trigeiro(10, 15, Random(100), utilization=0.95, tbo=3.0)
+    big = LotSizingModel(inst)
+    probe = DiversityProbe(problem=big, solution=LotForLotConstructor().build(inst, Random(0)))
+    contexts = [replace(c, diversity_probe=probe) for c in make_contexts(n_contexts=1, n_items=2, n_periods=4, strict=False)]
+    peers = [("setup_flip", SetupFlipNeighborhood(big))]
+
+    # solo APAGAR setups: un subconjunto estricto de setup_flip (como `redundant_setup_pruner`)
+    subset = textwrap.dedent('''
+        COMPONENT = {"name": "only_off", "slot": "neighborhood", "compatible_skeletons": ["SA"], "params": {}}
+
+        class OnlyOff:
+            def __init__(self, problem): self.problem = problem
+            def moves(self, sol):
+                return [(i, t) for i in range(len(sol)) for t in range(len(sol[i])) if sol[i][t]]
+            def apply(self, sol, m):
+                i, t = m; row = sol[i][:t] + (not sol[i][t],) + sol[i][t + 1:]
+                return sol[:i] + (row,) + sol[i + 1:]
+            def undo(self, sol, m): return self.apply(sol, m)
+            def delta(self, sol, m):
+                return self.problem.objective(self.apply(sol, m)) - self.problem.objective(sol)
+
+        def build_component(problem):
+            return OnlyOff(problem)
+    ''')
+    client = ScriptedClient(responses=[fence(subset)] * 2)
+    accepted, stats = generate_slot(client, spec := make_spec(), "neighborhood", 1, contexts, tmp_path,
+                                    max_rounds=1, catalog_peers=peers, verbose=False)
+    assert accepted == [] and stats.rejections_by_layer == {"quality": 1}
+    # y el reporte nombra la propiedad y al par (queda en el módulo rechazado -> feedback de la ronda 2)
+    from llm.generator import validate_generated_module
+    report, _, _ = validate_generated_module(next(tmp_path.glob("neighborhood/*.py")), contexts, peers=peers)
+    msg = report.feedback()
+    assert "novel_improvements" in msg and "setup_flip" in msg and "no cuenta como idea nueva" in msg
+
+
+def test_probe_checks_constructor_feasibility_on_realistic_instance(tmp_path):
+    """`constructor.feasible` se juzga en 3×5; la sonda repite la comprobación en 10×15, donde
+    10 ítems compiten por la capacidad y un greedy que allí deja faltante es inútil como partida."""
+    from core.validation.quality import probe_checks
+    from examples.lotsizing.llm_spec import make_diversity_probe
+
+    probe = make_diversity_probe()
+
+    class OneSetupPerItem:
+        """Enciende solo el primer período con demanda de cada ítem: factible en micro-instancias
+        holgadas, infactible cuando la capacidad del primer período no alcanza para todos."""
+
+        def build(self, inst, rng):
+            return tuple(
+                tuple(t == next((tt for tt in range(inst.n_periods) if inst.demand[i][tt] > 0), 0) for t in range(inst.n_periods))
+                for i in range(inst.n_items)
+            )
+
+    res = probe_checks("constructor", OneSetupPerItem(), probe)
+    assert [r.name for r in res] == ["constructor.feasible_on_probe"] and not res[0].passed
+    assert "tamaño realista" in res[0].message and "ACUMULADA" in res[0].message
+
+    from examples.lotsizing.components import LotForLotConstructor
+
+    res = probe_checks("constructor", LotForLotConstructor(), probe)
+    assert res and res[0].passed
+    assert probe_checks("neighborhood", object(), probe) == []

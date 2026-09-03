@@ -22,10 +22,11 @@ from typing import Any
 
 from core.validation import ValidationContext, ValidationReport, validate_component
 from core.validation.base import fail, ok
-from core.validation.quality import diversity_check
+from core.validation.diversity import improving_neighbors
+from core.validation.quality import diversity_check, probe_checks
 from core.validation.syntactic import load_module
 
-from .client import LLMClient
+from .client import LLMClient, TokenUsage
 from .parser import ParsedModule, materialize, parse_response
 from .prompts import SYSTEM_PROMPT, ProblemSpec, correction_prompt, generation_prompt
 
@@ -49,6 +50,7 @@ class GenerationStats:
     accepted: int = 0
     llm_calls: int = 0
     llm_seconds: float = 0.0
+    tokens: TokenUsage = field(default_factory=TokenUsage)  # 0 si el cliente no informa uso
     rejections_by_layer: Counter = field(default_factory=Counter)  # capa -> nº de rechazos (todas las rondas)
     rounds_per_accepted: dict[str, int] = field(default_factory=dict)
     abandoned: list[str] = field(default_factory=list)  # nombres que agotaron max_rounds
@@ -59,7 +61,9 @@ class GenerationStats:
         rounds = ", ".join(f"{k}:{v}" for k, v in self.rounds_per_accepted.items()) or "-"
         return (
             f"slot={self.slot} aceptados={rate} (pedidos {self.requested}) llamadas={self.llm_calls} "
-            f"({self.llm_seconds:.0f}s) rechazos por capa: {layers}; rondas por aceptado: {rounds}"
+            f"({self.llm_seconds:.0f}s"
+            + (f", {self.tokens}" if self.tokens.total_tokens else "")
+            + f") rechazos por capa: {layers}; rondas por aceptado: {rounds}"
             + (f"; abandonados: {self.abandoned}" if self.abandoned else "")
         )
 
@@ -108,31 +112,57 @@ def validate_generated_module(
             return report, module, component
     report.add(ok("syntactic", "factory_runs"))
 
-    # Diversidad: sobre la sonda (instancia grande) y con el componente reconstruido allí.
-    # Se hace una sola vez, después de las propiedades: rechazar por duplicado a algo que
-    # además está mal implementado sería el feedback equivocado.
     probe = contexts[0].diversity_probe if contexts else None
-    if probe is not None and peers:
-        try:
-            probe_impl = factory(probe.problem)
-            report.extend(diversity_check(
-                component.get("slot", ""), probe_impl, peers, probe.solution,
-                probe.problem, probe.max_similarity,
-            ))
-        except Exception as exc:  # noqa: BLE001 — la sonda no debe tumbar la validación
-            report.add(ok("quality", "diversity_skipped", f"{type(exc).__name__}: {exc}"))
-        if not report.passed:
-            return report, module, component
+    slot_name = component.get("slot", "")
 
     any_fails = [r for rep in reports for r in rep.failures() if r.name in AGGREGATE_ANY]
     if any_fails and len(any_fails) == len(reports):
-        # falló en todos los contextos: se reporta el primero (trae el hint con movimientos que sí mejoran)
-        report.extend(reports[0].results)
-        return report, module, component
+        # Falló en todos los micro-contextos. Última oportunidad: la sonda grande. Corrida 7:
+        # `same_period_setup_swap` no mejoraba desde la partida en 3×5 (18 movimientos, ninguno
+        # mejora) pero sí en 10×15 (73 mejoras, todas novedosas); rechazado, el modelo lo
+        # "arregló" rellenándolo con flips. La micro-instancia era chica para ese operador.
+        rescued = _improves_on_probe(factory, probe, slot_name)
+        if rescued is None:
+            report.extend(reports[0].results)  # trae el hint con movimientos que sí mejoran
+            return report, module, component
+        report.add(rescued)
+
+    # Diversidad: sobre la sonda (instancia grande) y con el componente reconstruido allí.
+    # Se hace una sola vez, después de las propiedades: rechazar por duplicado a algo que
+    # además está mal implementado sería el feedback equivocado.
+    if probe is not None:
+        try:
+            probe_impl = factory(probe.problem)
+            report.extend(probe_checks(slot_name, probe_impl, probe))
+            if report.passed and peers:
+                report.extend(diversity_check(
+                    slot_name, probe_impl, peers, probe.solution,
+                    probe.problem, probe.max_similarity, probe.min_novelty,
+                ))
+        except Exception as exc:  # noqa: BLE001 — la sonda no debe tumbar la validación
+            report.add(ok("quality", "probe_skipped", f"{type(exc).__name__}: {exc}"))
+        if not report.passed:
+            return report, module, component
+
     if reports:
         # aprobado: se reporta el último contexto, sin los fallos agregables que quedaron compensados
         report.extend([r for r in reports[-1].results if r.name not in AGGREGATE_ANY or r.passed])
     return report, module, component
+
+
+def _improves_on_probe(factory, probe, slot_name: str):
+    """OK si el vecindario tiene mejoras desde la partida de la sonda; None si no (o no aplica)."""
+    if probe is None or slot_name != "neighborhood":
+        return None
+    try:
+        imp = improving_neighbors(factory(probe.problem), probe.solution, probe.problem)
+    except Exception:  # noqa: BLE001
+        return None
+    if not imp:
+        return None
+    return ok("quality", "neighborhood.improves_from_start",
+              f"sin mejoras desde la partida en las micro-instancias, pero {len(imp)} en la sonda "
+              f"({len(probe.solution)}×{len(probe.solution[0])}): las micro-instancias eran chicas para este operador")
 
 
 def generate_slot(
@@ -160,6 +190,9 @@ def generate_slot(
         text = client.complete(SYSTEM_PROMPT, prompt)
         stats.llm_calls += 1
         stats.llm_seconds += time.perf_counter() - t0
+        used = getattr(client, "last_usage", None)  # los clientes que no cuentan tokens no molestan
+        if isinstance(used, TokenUsage):
+            stats.tokens.add(used)
         return text
 
     modules = materialize(parse_response(_ask(generation_prompt(spec, slot, n_variants, avoid_names))), workspace, slot, 1)

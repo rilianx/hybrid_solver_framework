@@ -61,7 +61,10 @@ SLOT_HINTS = {
         "`undo(apply(sol, m), m) == sol` (cuidado con movimientos compuestos: la inversa debe restaurar TODAS las celdas tocadas); "
         "`delta(sol, m) == objective(apply(sol, m)) - objective(sol)` (puedes implementarlo literalmente así si no hay forma "
         "incremental barata); `moves(sol)` no vacío; y al menos un movimiento debe MEJORAR la solución de partida del esqueleto "
-        "(no basta con que mejore soluciones aleatorias). Un vecindario con 6 movimientos que nunca mejoran es inútil aunque sea correcto."
+        "(no basta con que mejore soluciones aleatorias). Un vecindario con 6 movimientos que nunca mejoran es inútil aunque sea correcto. "
+        "Además se mide si es una IDEA distinta de los vecindarios ya aceptados: se compara qué vecinos alcanza y, sobre todo, si sus "
+        "movimientos que mejoran llegan a soluciones que los otros no alcanzan. Mezclar flips de un setup dentro de otro operador para "
+        "que \"mejore\" no cuenta: esas mejoras ya las hace `setup_flip`."
     ),
     "constructor": (
         "Se verificará: `build(inst, rng)` devuelve una solución FACTIBLE y es determinista dada la semilla del rng. "

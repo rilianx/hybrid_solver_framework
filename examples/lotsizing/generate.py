@@ -14,7 +14,7 @@ import argparse
 import json
 from pathlib import Path
 
-from llm import OpenAIClient, TranscriptClient, generate_slot
+from llm import OpenAIClient, TokenUsage, TranscriptClient, generate_slot
 
 from .catalog import build_registry
 from .llm_spec import make_contexts, make_spec
@@ -63,10 +63,25 @@ def main() -> None:
             "rejections_by_layer": dict(stats.rejections_by_layer),
             "rounds_per_accepted": stats.rounds_per_accepted, "abandoned": stats.abandoned,
             "accepted_files": [str(c.path) for c in accepted],
+            "tokens": stats.tokens.as_dict(inner.model),
         }
+    total = TokenUsage()
+    for s in all_stats.values():
+        t = s["tokens"]
+        total.add(TokenUsage(t["input_tokens"], t["output_tokens"], t.get("cached_input_tokens", 0),
+                             t.get("reasoning_tokens", 0), t["calls"]))
+    all_stats["_run"] = {
+        "model": inner.model, "provider": args.provider,
+        "tokens": total.as_dict(inner.model),
+        "note": ("costo estimado con LLM_PRICE_IN/LLM_PRICE_OUT (USD por millón de tokens)"
+                 if total.cost_usd(inner.model) is not None
+                 else "define LLM_PRICE_IN y LLM_PRICE_OUT (USD por millón de tokens) para estimar el costo"),
+    }
+    if total.total_tokens:
+        print(f"\nTokens de la corrida: {total}")
     out = Path(args.workspace) / "stats.json"
     out.write_text(json.dumps(all_stats, indent=2, ensure_ascii=False))
-    print(f"\nResumen guardado en {out}")
+    print(f"Resumen guardado en {out}")
 
 
 if __name__ == "__main__":

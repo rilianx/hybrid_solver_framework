@@ -182,11 +182,25 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 88 passed (~28 s)
+python -m pytest -q                 # 99 passed (~35 s)
 
 export OPENAI_API_KEY=...
 python -m examples.lotsizing.generate --slots neighborhood destruction --n 3   # generación real
+
+# opcional: precios en USD por millón de tokens, para estimar el costo de la corrida
+export LLM_PRICE_IN=0.25 LLM_PRICE_OUT=2.00
 ```
+
+**Contador de tokens.** Cada cliente que la API informa (`OpenAIClient`,
+`AnthropicClient`) acumula `TokenUsage` —entrada, salida, entrada servida desde
+caché y tokens de razonamiento— y `GenerationStats.tokens` los suma por slot,
+incluidas las rondas de corrección. Van a `stats.json` (por slot y en `_run`,
+con el total de la corrida), a la tabla de `scripts/stats_summary.py` y a cada
+`transcript/call_NNN.json`. Los precios **no** están cableados, porque cambian y
+dependen del proveedor: si defines `LLM_PRICE_IN` / `LLM_PRICE_OUT` (USD por
+millón de tokens) se agrega el costo estimado; si no, se informan solo los
+tokens. Un cliente que no cuenta tokens (`ScriptedClient` en los tests) deja el
+contador en cero sin romper nada.
 
 Sobre orquestación: el ciclo es un bucle determinista corto, así que se
 implementó en Python plano. Si más adelante el flujo se vuelve un grafo
@@ -202,7 +216,7 @@ Tres workflows en `.github/workflows/`:
 | workflow | disparo | qué hace |
 |---|---|---|
 | `tests` | push, PR | `pytest` en Python 3.11 y 3.12; verifica primero que haya un solver MIP disponible. Sin secretos, así que corre en PRs de forks. |
-| `generar componentes con LLM` | **manual** | Corre `examples.lotsizing.generate` con los slots, `n`, rondas, proveedor y modelo que elijas. Escribe la tabla de aceptación por capa y los reportes del validador en el *summary* de la corrida, sube `generated/` como artefacto y abre un PR con los módulos generados. |
+| `generar componentes con LLM` | **manual** | Corre `examples.lotsizing.generate` con los slots, `n`, rondas, proveedor y modelo que elijas; los inputs `price_in`/`price_out` (o las *variables* de repo `LLM_PRICE_IN`/`LLM_PRICE_OUT`) agregan el costo estimado al resumen. Escribe la tabla de aceptación por capa y los reportes del validador en el *summary* de la corrida, sube `generated/` como artefacto y abre un PR con los módulos generados. |
 | `benchmark` | **manual** | Utilidad y diversidad por componente, y/o la comparación de los ocho esqueletos. |
 
 Los dos últimos son `workflow_dispatch` a propósito: cada corrida de generación

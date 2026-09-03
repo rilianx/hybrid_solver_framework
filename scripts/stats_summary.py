@@ -14,22 +14,43 @@ import sys
 from pathlib import Path
 
 
+def _tokens(s: dict) -> dict:
+    return s.get("tokens") or {}
+
+
 def render(stats: dict) -> str:
-    out = ["| slot | aceptados | rondas | rechazos por capa | abandonados | llamadas | s |", "|---|---|---|---|---|---|---|"]
+    run = stats.pop("_run", {})
+    out = ["| slot | aceptados | rondas | rechazos por capa | abandonados | llamadas | s | tokens (in+out) |",
+           "|---|---|---|---|---|---|---|---|"]
     tot_acc = tot_par = tot_calls = tot_rej = 0
     tot_s = 0.0
     for slot, s in stats.items():
         rounds = ", ".join(f"`{k}`:{v}" for k, v in s.get("rounds_per_accepted", {}).items()) or "—"
         layers = ", ".join(f"{k} × {v}" for k, v in s.get("rejections_by_layer", {}).items()) or "ninguno"
         aband = ", ".join(f"`{n}`" for n in s.get("abandoned", [])) or "—"
+        t = _tokens(s)
+        toks = f"{t['total_tokens']:,} ({t['input_tokens']:,}+{t['output_tokens']:,})" if t.get("total_tokens") else "—"
         out.append(
             f"| `{slot}` | {s['accepted']}/{s['parsed']} | {rounds} | {layers} | {aband} "
-            f"| {s['llm_calls']} | {s['llm_seconds']:.0f} |"
+            f"| {s['llm_calls']} | {s['llm_seconds']:.0f} | {toks} |"
         )
         tot_acc += s["accepted"]; tot_par += s["parsed"]
         tot_calls += s["llm_calls"]; tot_s += s["llm_seconds"]
         tot_rej += sum(s.get("rejections_by_layer", {}).values())
-    out.append(f"| **total** | **{tot_acc}/{tot_par}** | | | | {tot_calls} | {tot_s:.0f} |")
+    rt = _tokens(run)
+    tot_toks = f"**{rt['total_tokens']:,}** ({rt['input_tokens']:,}+{rt['output_tokens']:,})" if rt.get("total_tokens") else "—"
+    out.append(f"| **total** | **{tot_acc}/{tot_par}** | | | | {tot_calls} | {tot_s:.0f} | {tot_toks} |")
+    if rt.get("total_tokens"):
+        line = f"Modelo `{run.get('model', '?')}` · {rt['total_tokens']:,} tokens en {rt['calls']} llamadas"
+        if rt.get("cached_input_tokens"):
+            line += f" · {rt['cached_input_tokens']:,} de entrada servidos desde caché"
+        if rt.get("reasoning_tokens"):
+            line += f" · {rt['reasoning_tokens']:,} de razonamiento"
+        if rt.get("cost_usd") is not None:
+            line += f" · **≈ USD {rt['cost_usd']:.4f}**"
+        else:
+            line += " · costo: define `LLM_PRICE_IN` y `LLM_PRICE_OUT` (USD por millón de tokens) para estimarlo"
+        out += ["", line]
 
     if tot_par and tot_acc == tot_par and tot_rej == 0:
         out += ["", "> Todos los componentes fueron aceptados a la primera, sin un solo rechazo en ninguna capa.",
