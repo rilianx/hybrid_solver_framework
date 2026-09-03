@@ -1,0 +1,121 @@
+name: benchmark
+
+# Manual: los presupuestos son de tiempo de pared y los runners de Actions son
+# compartidos, así que los costos absolutos NO son comparables entre corridas.
+# Sirve para comparar componentes y esqueletos DENTRO de una misma corrida.
+on:
+  workflow_dispatch:
+    inputs:
+      what:
+        description: "Qué medir"
+        default: componentes
+        type: choice
+        options: [componentes, esqueletos, ambos]
+      budget:
+        description: "Segundos por corrida"
+        default: "10"
+        type: string
+      train:
+        description: "Instancias de entrenamiento"
+        default: "2"
+        type: string
+      items:
+        description: "Ítems (CLSP)"
+        default: "10"
+        type: string
+      periods:
+        description: "Períodos (CLSP)"
+        default: "15"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install pulp
+
+      - name: Utilidad y diversidad por componente
+        if: ${{ inputs.what == 'componentes' || inputs.what == 'ambos' }}
+        env:
+          BUDGET: ${{ inputs.budget }}
+          TRAIN: ${{ inputs.train }}
+          ITEMS: ${{ inputs.items }}
+          PERIODS: ${{ inputs.periods }}
+        run: |
+          set -o pipefail
+          python -W ignore -m examples.lotsizing.benchmark_components \
+            --slots neighborhood destruction \
+            --budget "$BUDGET" --train "$TRAIN" --items "$ITEMS" --periods "$PERIODS" 2>&1 | tee bench-componentes.log
+
+      - name: Comparación de los ocho esqueletos
+        if: ${{ inputs.what == 'esqueletos' || inputs.what == 'ambos' }}
+        env:
+          BUDGET: ${{ inputs.budget }}
+          ITEMS: ${{ inputs.items }}
+          PERIODS: ${{ inputs.periods }}
+        run: |
+          set -o pipefail
+          python -W ignore - <<'PY' 2>&1 | tee bench-esqueletos.log
+          import os
+          from random import Random
+          from core.assembler import Assembler, describe
+          from examples.lotsizing.catalog import build_registry, load_generated
+          from examples.lotsizing.problem_model import CLSPInstance, LotSizingModel
+
+          BUDGET = float(os.environ["BUDGET"])
+          ITEMS, PERIODS = int(os.environ["ITEMS"]), int(os.environ["PERIODS"])
+          generated = load_generated("generated/clsp", verbose=True)
+          if generated:
+              print("Componentes LLM en el catálogo:", [c.name for c in generated], "\n")
+          a = Assembler(problem_factory=LotSizingModel, registry=build_registry(generated))
+          inst = CLSPInstance.trigeiro(ITEMS, PERIODS, Random(1), utilization=0.95, tbo=3.0)
+          print(f"CLSP {inst.n_items}x{inst.n_periods} Trigeiro · {BUDGET} s por esqueleto · config por defecto\n")
+          rows = []
+          for sk in a.available_skeletons():
+              cfg = a.default_config(sk)
+              rows.append((a.evaluate(cfg, [inst], budget=BUDGET, seed=0), describe(cfg)))
+          for cost, label in sorted(rows):
+              print(f"{label:<70} {cost:>14.1f}")
+          PY
+
+      - name: Resumen
+        if: always()
+        env:
+          BUDGET: ${{ inputs.budget }}
+          ITEMS: ${{ inputs.items }}
+          PERIODS: ${{ inputs.periods }}
+        run: |
+          {
+            echo "## Benchmark — CLSP ${ITEMS}x${PERIODS}, ${BUDGET} s por corrida"
+            echo ""
+            echo "> Los runners de Actions son compartidos: estos costos sirven para comparar"
+            echo "> **dentro** de esta corrida, no entre corridas ni contra tu máquina."
+            echo ""
+            for f in bench-componentes.log bench-esqueletos.log; do
+              if [ -f "$f" ]; then
+                echo "### $f"; echo ""; echo '```'; cat "$f"; echo '```'; echo ""
+              fi
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Subir logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-${{ github.run_number }}
+          path: bench-*.log
+          if-no-files-found: warn

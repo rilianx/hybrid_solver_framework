@@ -1,0 +1,186 @@
+name: generar componentes con LLM
+
+# Solo manual: cada corrida gasta llamadas de API, así que nunca se dispara
+# por push ni por schedule.
+on:
+  workflow_dispatch:
+    inputs:
+      slots:
+        description: "Slots a generar (separados por espacio)"
+        default: "neighborhood destruction constructor perturbation"
+        type: string
+      n:
+        description: "Variantes por slot"
+        default: "3"
+        type: string
+      rounds:
+        description: "Rondas máximas (1 generación + correcciones)"
+        default: "3"
+        type: string
+      provider:
+        description: "Proveedor del LLM"
+        default: openai
+        type: choice
+        options: [openai, anthropic]
+      model:
+        description: "Modelo (vacío = default del proveedor)"
+        default: ""
+        type: string
+      fresh:
+        description: "Borrar generated/ antes de correr"
+        default: true
+        type: boolean
+      open_pr:
+        description: "Abrir un PR con los módulos generados"
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Comprobar que la clave está configurada
+        env:
+          PROVIDER: ${{ inputs.provider }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ "$PROVIDER" = "openai" ] && [ -z "$OPENAI_API_KEY" ]; then
+            echo "::error::Falta el secreto OPENAI_API_KEY (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+          if [ "$PROVIDER" = "anthropic" ] && [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::Falta el secreto ANTHROPIC_API_KEY."
+            exit 1
+          fi
+
+      - name: Limpiar corrida anterior
+        if: ${{ inputs.fresh }}
+        run: rm -rf generated/clsp
+
+      - name: Generar y validar
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SLOTS: ${{ inputs.slots }}
+          N: ${{ inputs.n }}
+          ROUNDS: ${{ inputs.rounds }}
+          PROVIDER: ${{ inputs.provider }}
+          MODEL: ${{ inputs.model }}
+        run: |
+          set -o pipefail
+          ARGS="--slots $SLOTS --n $N --rounds $ROUNDS --provider $PROVIDER"
+          if [ -n "$MODEL" ]; then ARGS="$ARGS --model $MODEL"; fi
+          echo "python -m examples.lotsizing.generate $ARGS"
+          python -W ignore -m examples.lotsizing.generate $ARGS 2>&1 | tee generate.log
+
+      - name: Resumen de la corrida
+        if: always()
+        env:
+          PROVIDER: ${{ inputs.provider }}
+          MODEL_IN: ${{ inputs.model }}
+          N: ${{ inputs.n }}
+          ROUNDS: ${{ inputs.rounds }}
+        run: |
+          MODEL="$MODEL_IN"; [ -z "$MODEL" ] && MODEL="(default de $PROVIDER)"
+          {
+            echo "## Generación de componentes"
+            echo ""
+            echo "Proveedor \`$PROVIDER\` · modelo \`$MODEL\` · \`$N\` variantes por slot · hasta \`$ROUNDS\` rondas"
+            echo ""
+            python -m scripts.stats_summary generated/clsp/stats.json
+            echo ""
+            echo "<details><summary>Log completo</summary>"
+            echo ""
+            echo '```'
+            cat generate.log 2>/dev/null || echo "(sin log)"
+            echo '```'
+            echo ""
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Reportes del validador en las correcciones
+        if: always()
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, pathlib
+          calls = sorted(pathlib.Path("generated/clsp/transcript").glob("*.json")) \
+                  if pathlib.Path("generated/clsp/transcript").exists() else []
+          rej = []
+          for p in calls:
+              c = json.loads(p.read_text())
+              if "RECHAZADO" in c.get("user", ""):
+                  u = c["user"]; i = u.index("# Reporte del validador")
+                  rej.append((p.name, u[i:i + 900]))
+          if rej:
+              print("\n### Rechazos y feedback devuelto al modelo\n")
+              for name, body in rej:
+                  print(f"<details><summary>{name}</summary>\n\n```\n{body}\n```\n\n</details>\n")
+          else:
+              print("\n_Ningún componente fue rechazado: no hubo prompts de corrección._\n")
+          PY
+
+      - name: Subir módulos y transcripciones
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-${{ inputs.provider }}-${{ github.run_number }}
+          path: |
+            generated/
+            generate.log
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Abrir PR con los componentes generados
+        if: ${{ inputs.open_pr && success() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PROVIDER: ${{ inputs.provider }}
+          MODEL: ${{ inputs.model }}
+          SLOTS: ${{ inputs.slots }}
+          N: ${{ inputs.n }}
+          ROUNDS: ${{ inputs.rounds }}
+          RUN: ${{ github.run_number }}
+          BASE: ${{ github.ref_name }}
+        run: |
+          if [ -z "$(ls -A generated/clsp 2>/dev/null)" ]; then
+            echo "Nada que commitear."; exit 0
+          fi
+          BRANCH="llm-generated/$PROVIDER-run$RUN"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          # las transcripciones incluyen los prompts completos: útiles, pero pesadas
+          git add -f generated/clsp
+          git commit -m "Componentes generados por $PROVIDER (corrida $RUN)" || { echo "Sin cambios."; exit 0; }
+          git push -u origin "$BRANCH"
+          {
+            echo "Corrida manual del workflow \`generar componentes con LLM\`."
+            echo ""
+            echo "- Proveedor: \`$PROVIDER\`, modelo: \`$MODEL\`"
+            echo "- Slots: \`$SLOTS\`, \`$N\` variantes, hasta \`$ROUNDS\` rondas"
+            echo ""
+            python -m scripts.stats_summary generated/clsp/stats.json
+            echo ""
+            echo "Antes de mezclar: corre \`benchmark_components\` para ver si estos componentes"
+            echo "además de válidos son útiles y distintos entre sí."
+          } > pr-body.md
+          gh pr create --title "Componentes generados por LLM (corrida $RUN)" \
+                       --body-file pr-body.md --base "$BASE" --head "$BRANCH"
