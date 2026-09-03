@@ -76,7 +76,20 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   `strength`/`ratio` monótonos en perturbación/destrucción): la primera
   corrida real con `gpt-5.4-mini` aceptó 12/12 componentes a la primera,
   lo que mostró que la capa contractual sola detecta errores de
-  implementación pero no de diseño.
+  implementación pero no de diseño. Tras la segunda corrida (11/12, 7
+  rechazos; ver `claude/resultados_generacion_llm.md` en el proyecto) se
+  agregaron: **feedback con detalle de infactibilidad** (el `ProblemModel`
+  puede exponer `explain_infeasibility(sol)`; para el CLSP dice ítem, período
+  y cantidad faltante y recuerda la regla sin-backlog — lo que le faltó al
+  constructor abandonado tras 3 rondas); **modo estricto para vecindarios**
+  (`require_improving_from_start`: en generación exige mejoras desde la
+  solución de partida, no solo desde aleatorias; los tres vecindarios
+  generados que resultaron inertes en SA ahora se rechazan y vuelven al
+  modelo con la explicación, pero el catálogo los admite en modo leniente
+  porque su utilidad en combinación la decide el tuning); y **solución trivial
+  garantizada factible** en los micro-contextos (lot-for-lot o, si no alcanza
+  la capacidad, Relax-and-Fix). El prompt de vecindarios y perturbaciones
+  ahora incluye una micro-instancia con su solución de partida dibujada.
 - **`llm/`** — Ciclo generar → validar → corregir de §6, como funciones
   planas (sin framework de orquestación por ahora; ver nota abajo).
   `client.py`: `LLMClient` intercambiable con `OpenAIClient`
@@ -127,7 +140,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   Fix-and-Optimize y el MIP completo.
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 81 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 83 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -148,7 +161,7 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 81 passed (~25 s)
+python -m pytest -q                 # 83 passed (~25 s)
 
 export OPENAI_API_KEY=...
 python -m examples.lotsizing.generate --slots neighborhood destruction --n 3   # generación real

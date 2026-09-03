@@ -194,6 +194,10 @@ def bound_problem_model(inst: KnapsackInstance, penalty: float = 1000.0):
         def is_feasible(self, sol):
             return obj.is_feasible(sol)
 
+        def explain_infeasibility(self, sol):
+            w = base.total_weight(inst, sol)
+            return f"peso {w:.1f} excede la capacidad {inst.capacity:.1f} en {w - inst.capacity:.1f}" if w > inst.capacity else "sin exceso"
+
         def objective(self, sol):
             return obj.objective(sol)
 

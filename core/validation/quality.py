@@ -80,31 +80,42 @@ def check_component_quality(slot: str, impl, ctx: ValidationContext) -> list[Che
             results.append(ok(LAYER, "constructor.not_much_worse_than_trivial", f"peor caso {worst_ratio:+.0%} vs trivial"))
 
     elif slot == "neighborhood":
-        # Debe existir al menos un movimiento de mejora desde alguna solución típica;
-        # un vecindario sin mejoras posibles es inerte para cualquier esqueleto.
-        improving, total = 0, 0
+        # Debe existir al menos un movimiento de mejora. Se distingue entre soluciones de
+        # PARTIDA (trivial + constructor base: donde el esqueleto arranca de verdad) y
+        # soluciones aleatorias (estados intermedios de una búsqueda).
+        imp_start, tot_start, imp_rand, tot_rand = 0, 0, 0, 0
         for k in range(len(ctx.instances)):
-            sols = [ctx.trivial_solutions[k]]
+            start = [ctx.trivial_solutions[k]]
             if ctx.baseline_constructor is not None:
-                sols += [ctx.baseline_constructor.build(ctx.instances[k], Random(s)) for s in ctx.seeds[:2]]
-            # soluciones aleatorias (vista MIP → estructural): un vecindario puede ser
-            # inútil desde la solución trivial y aun así tener mejoras desde estados típicos
-            # de una búsqueda; ver p.ej. "mover setup al período anterior".
+                start += [ctx.baseline_constructor.build(ctx.instances[k], Random(s)) for s in ctx.seeds[:2]]
             names = sorted(ctx.variables(ctx.instances[k]))
+            rand = []
             for s in ctx.seeds[:3]:
-                rng = Random(1000 + s)
-                sols.append(P.from_assignment({v: float(rng.random() < 0.5) for v in names}))
-            for sol in sols:
-                moves = list(impl.moves(sol))
-                total += len(moves)
-                sample = moves if len(moves) <= ctx.max_moves_checked else Random(0).sample(moves, ctx.max_moves_checked)
-                improving += sum(1 for m in sample if impl.delta(sol, m) < -ctx.tolerance)
-        if total == 0:
+                rng = Random(1000 + s)  # un rng por solución, no por variable
+                rand.append(P.from_assignment({v: float(rng.random() < 0.5) for v in names}))
+            for group, sols in (("start", start), ("rand", rand)):
+                for sol in sols:
+                    moves = list(impl.moves(sol))
+                    sample = moves if len(moves) <= ctx.max_moves_checked else Random(0).sample(moves, ctx.max_moves_checked)
+                    imp = sum(1 for m in sample if impl.delta(sol, m) < -ctx.tolerance)
+                    if group == "start":
+                        tot_start += len(moves); imp_start += imp
+                    else:
+                        tot_rand += len(moves); imp_rand += imp
+        if tot_start + tot_rand == 0:
             results.append(fail(LAYER, "neighborhood.has_improving_move", "moves() vacío en todas las soluciones de prueba"))
-        elif improving == 0:
-            results.append(fail(LAYER, "neighborhood.has_improving_move", f"ninguno de los {total} movimientos muestreados mejora la solución en ninguna micro-instancia: vecindario inerte"))
+        elif imp_start + imp_rand == 0:
+            results.append(fail(LAYER, "neighborhood.has_improving_move", f"ninguno de los {tot_start + tot_rand} movimientos muestreados mejora la solución en ninguna micro-instancia: vecindario inerte"))
+        elif imp_start == 0 and ctx.require_improving_from_start:
+            results.append(fail(LAYER, "neighborhood.improves_from_start",
+                f"desde la solución de PARTIDA (la que produce el constructor, p.ej. lot-for-lot) moves() devuelve "
+                f"{tot_start} movimientos y NINGUNO mejora; solo hay mejoras ({imp_rand}) desde soluciones aleatorias. "
+                f"El esqueleto arranca en la solución de partida, así que este vecindario lo deja inmóvil. "
+                f"Diseña movimientos que mejoren desde ahí (p.ej. que quiten un setup y dejen que el inventario cubra la demanda, "
+                f"o que muevan producción a un período anterior con capacidad libre)."))
         else:
-            results.append(ok(LAYER, "neighborhood.has_improving_move", f"{improving} movimientos de mejora encontrados"))
+            results.append(ok(LAYER, "neighborhood.has_improving_move",
+                f"{imp_start} mejoras desde soluciones de partida, {imp_rand} desde aleatorias"))
 
     elif slot == "perturbation":
         # `strength` debe significar algo: más fuerza, más distancia (Hamming en la vista MIP).

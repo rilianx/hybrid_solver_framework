@@ -49,28 +49,85 @@ def make_spec() -> ProblemSpec:
             "Ideas de destrucción distintas: por ventana de períodos, por ítem completo, por períodos con capacidad más saturada, "
             "por setups con menor 'utilidad' (lote pequeño).",
         ],
+        starting_solution=starting_solution_example(),
     )
 
 
-def make_contexts(n_contexts: int = 2, n_items: int = 3, n_periods: int = 5, seed: int = 7) -> list[ValidationContext]:
+def _feasible_trivial(problem, inst):
+    """Solución trivial GARANTIZADA factible: lot-for-lot si lo es; si no, Relax-and-Fix.
+
+    Lot-for-lot produce justo en el período de la demanda, y con la capacidad
+    ajustada el tiempo de setup de todos los ítems puede exceder el pico: en
+    ese caso deja faltante y NO sirve como referencia de factibilidad.
+    """
+    from core.fixing_policies import SlidingWindowPolicy
+    from skeletons.relax_and_fix import RelaxAndFixConstructor
+
+    lfl = LotForLotConstructor()
+    sol = lfl.build(inst, Random(0))
+    if problem.is_feasible(sol):
+        return sol
+    rf = RelaxAndFixConstructor(problem, SlidingWindowPolicy(2, 1), time_limit_per_window=5, fallback=lfl)
+    sol = rf.build(inst, Random(0))
+    return sol if problem.is_feasible(sol) else None
+
+
+def make_contexts(
+    n_contexts: int = 2, n_items: int = 3, n_periods: int = 5, seed: int = 7, strict: bool = True
+) -> list[ValidationContext]:
+    """Micro-contextos de validación.
+
+    `strict=True` (generación con LLM): exige que un vecindario mejore desde la
+    solución de PARTIDA, no solo desde soluciones aleatorias — empuja al modelo a
+    operadores útiles donde el esqueleto arranca. `strict=False` (admisión al
+    catálogo): tolera operadores estrechos, que pueden valer en combinación.
+    """
     contexts = []
-    for k in range(n_contexts):
-        # Alternar instancias holgadas y ajustadas (utilización 0.95, tipo Trigeiro):
-        # en las ajustadas la factibilidad y la capacidad compartida sí muerden.
+    k, retry = 0, 0
+    while len(contexts) < n_contexts and retry < 10:
+        # Semilla estable por posición k (retry solo cambia si la instancia se descarta),
+        # así los tests y las corridas son reproducibles. Alternar ajustadas / holgadas.
+        rng = Random(seed + k + 1000 * retry)
         if k % 2 == 0:
-            inst = pm.CLSPInstance.trigeiro(n_items, n_periods, Random(seed + k), utilization=0.95, tbo=2.0)
+            inst = pm.CLSPInstance.trigeiro(n_items, n_periods, rng, utilization=0.95, tbo=2.0)
         else:
-            inst = pm.CLSPInstance.random(n_items, n_periods, Random(seed + k))
+            inst = pm.CLSPInstance.random(n_items, n_periods, rng)
         problem = pm.LotSizingModel(inst)
+        trivial = _feasible_trivial(problem, inst)
+        if trivial is None:
+            retry += 1
+            continue  # instancia sin solución trivial factible: se reintenta con otra semilla
+        k, retry = k + 1, 0
         contexts.append(
             ValidationContext(
                 problem=problem,
                 instances=[inst],
-                trivial_solutions=[LotForLotConstructor().build(inst, Random(0))],
+                trivial_solutions=[trivial],
                 baseline_constructor=LotForLotConstructor(),
                 reference_destruction=PeriodWindowDestruction(inst),
                 mip_time_limit=5.0,
                 max_moves_checked=30,
+                require_improving_from_start=strict,
             )
         )
     return contexts
+
+
+def starting_solution_example(n_items: int = 3, n_periods: int = 6, seed: int = 11) -> str:
+    """Texto para el prompt: una micro-instancia y su solución lot-for-lot, para que el
+    LLM vea DESDE DÓNDE arranca el esqueleto y diseñe movimientos que mejoren desde ahí."""
+    inst = pm.CLSPInstance.trigeiro(n_items, n_periods, Random(seed), utilization=0.95, tbo=2.0)
+    sol = LotForLotConstructor().build(inst, Random(0))
+    lines = ["demanda d[i][t] (filas = ítems, columnas = períodos t0..t%d):" % (n_periods - 1)]
+    for i in range(n_items):
+        lines.append("  i%d: " % i + " ".join(f"{int(d):>4}" for d in inst.demand[i]))
+    lines.append(f"setup_cost = {[int(c) for c in inst.setup_cost]}, holding_cost = {[int(h) for h in inst.holding_cost]}, "
+                 f"setup_time = {list(inst.setup_time)}, capacity = {int(inst.capacity[0])} por período")
+    lines.append("solución de PARTIDA (lot-for-lot: setup exactamente donde hay demanda), sol[i][t]:")
+    for i in range(n_items):
+        lines.append("  i%d: " % i + " ".join("  ■ " if v else "  · " for v in sol[i]))
+    lines.append("Desde aquí, un movimiento MEJORA si ahorra un setup a cambio de inventario: p.ej. apagar el setup de un ítem "
+                 "en t y dejar que la producción de t-1 (donde ya hay setup) cubra ambos períodos, si la capacidad de t-1 alcanza. "
+                 "Un movimiento que solo desplaza un setup a un período sin demanda AGREGA inventario y no mejora; "
+                 "uno que apaga un setup sin setup anterior deja demanda sin cubrir (penalización enorme).")
+    return "\n".join(lines)

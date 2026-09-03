@@ -88,6 +88,12 @@ class ValidationContext:
     reference_neighborhood: Any = None
     # Constructor aleatorio de referencia para la capa de calidad mínima.
     baseline_constructor: Any = None
+    # Si True, un vecindario debe tener movimientos de mejora desde las soluciones de
+    # PARTIDA (trivial / constructor), no solo desde soluciones aleatorias. Se activa al
+    # generar con LLM (empuja al modelo a operadores útiles desde donde arranca el
+    # esqueleto); se deja en False al admitir al catálogo, porque un operador estrecho
+    # puede valer en combinación (VNS, ILS) y eso lo decide el tuning.
+    require_improving_from_start: bool = False
     # Opcional: enumerador de todas las soluciones de una micro-instancia
     # (para comparar el óptimo del MIP contra fuerza bruta).
     enumerate_solutions: Callable[[Any], Sequence[Any]] | None = None

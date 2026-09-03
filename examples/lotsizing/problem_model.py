@@ -243,6 +243,13 @@ class CLSPMip:
         shortage = sum(v.value() or 0.0 for v in u.values())
         return float(pulp.value(prob.objective)), shortage
 
+    def shortage_detail(self, sol: Solution) -> dict[tuple[int, int], float]:
+        """Faltante por (ítem, período) con los setups de `sol` fijos: el "dónde" de la infactibilidad."""
+        fixed = {var_name(i, t): float(sol[i][t]) for i in range(self.inst.n_items) for t in range(self.inst.n_periods)}
+        prob, _y, u = self._build(fixed, set(), set())
+        prob.solve(pulp.PULP_CBC_CMD(msg=False))
+        return {(i, t): v.value() for (i, t), v in u.items() if (v.value() or 0.0) > 1e-6}
+
 
 class LotSizingModel:
     """Implementa `core.contracts.ProblemModel` para una instancia fija."""
@@ -267,6 +274,29 @@ class LotSizingModel:
 
     def is_feasible(self, sol: Solution) -> bool:
         return self._eval(sol)[1] < 1e-6
+
+    def explain_infeasibility(self, sol: Solution) -> str:
+        """Texto para el validador / el LLM: qué demanda queda sin cubrir y por qué (§6, feedback).
+
+        Con solo "infactible" el modelo no ve el error conceptual (p.ej. producir en t=7 para
+        demanda de t=2). Aquí se le dice ítem, período y cantidad, y se recuerda la regla.
+        """
+        detail = self.mip.shortage_detail(sol)
+        if not detail:
+            return "sin faltante"
+        rows = sorted(detail.items(), key=lambda kv: -kv[1])[:6]
+        parts = [f"ítem {i} período {t}: {q:.0f} unidades" for (i, t), q in rows]
+        extra = f" (+{len(detail) - 6} celdas más)" if len(detail) > 6 else ""
+        total = sum(detail.values())
+        hints = []
+        for (i, t), _q in rows[:3]:
+            setups_before = [tt for tt in range(t + 1) if sol[i][tt]]
+            if not setups_before:
+                hints.append(f"el ítem {i} no tiene ningún setup en t ≤ {t}, así que su demanda en t={t} no puede cubrirse")
+        rule = ("Regla: sin backlog, la demanda del período t solo puede producirse en t o ANTES (y almacenarse); "
+                "además la suma de producción + tiempos de setup de cada período debe respetar la capacidad.")
+        return (f"faltante total {total:.0f} unidades — " + "; ".join(parts) + extra + ". "
+                + ("; ".join(hints) + ". " if hints else "") + rule)
 
     def build_mip(self, inst: CLSPInstance) -> CLSPMip:
         return self.mip

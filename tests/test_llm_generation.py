@@ -112,7 +112,9 @@ def fence(*sources: str) -> str:
 
 @pytest.fixture(scope="module")
 def spec_and_ctx():
-    return make_spec(), make_contexts(n_contexts=1, n_items=2, n_periods=4)
+    # strict=False: `shift_setup_earlier` es correcto pero inerte desde lot-for-lot; el ciclo
+    # de este test verifica corrección contractual, no utilidad desde la partida.
+    return make_spec(), make_contexts(n_contexts=1, n_items=2, n_periods=4, strict=False)
 
 
 def test_parser_extracts_blocks_and_names():
@@ -165,3 +167,35 @@ def test_abandons_after_max_rounds(spec_and_ctx, tmp_path):
     assert accepted == []
     assert stats.abandoned == ["no_factory"]
     assert stats.rejections_by_layer == {"syntactic": 2}
+
+
+def test_strict_contexts_reject_neighborhood_inert_from_start(tmp_path):
+    """Modo generación (strict=True): un vecindario correcto pero que no mejora desde la
+    solución de partida se rechaza con un mensaje que explica por qué, y el prompt de
+    corrección lleva la solución de partida para que el modelo la vea."""
+    spec = make_spec()
+    strict = make_contexts(n_contexts=1, n_items=2, n_periods=4, strict=True)
+    client = ScriptedClient(responses=[fence(GOOD_SHIFT), fence(GOOD_SHIFT), fence(GOOD_SHIFT)])
+    accepted, stats = generate_slot(client, spec, "neighborhood", 1, strict, tmp_path, max_rounds=3, verbose=False)
+    assert accepted == [] and stats.abandoned == ["shift_setup_earlier"]
+    assert stats.rejections_by_layer == {"quality": 3}
+    correction = client.calls[1][1]
+    assert "improves_from_start" in correction and "solución de PARTIDA" in correction
+    assert "Desde dónde arranca el esqueleto" in client.calls[0][1]  # el prompt inicial ya la mostraba
+
+
+def test_infeasible_constructor_feedback_says_where_demand_is_missing():
+    """El feedback de `constructor.feasible` incluye ítem/período/cantidad y la regla del
+    problema — lo que le faltó al `rolling_horizon_cover_constructor` abandonado."""
+    from core.validation import validate_component
+
+    ctx = make_contexts(n_contexts=1, n_items=2, n_periods=4, strict=False)[0]
+
+    class NoSetups:
+        def build(self, inst, rng):
+            return tuple(tuple(False for _ in range(inst.n_periods)) for _ in range(inst.n_items))
+
+    report = validate_component({"name": "no_setups", "slot": "constructor"}, NoSetups(), ctx)
+    msg = report.feedback()
+    assert "constructor.feasible" in msg and "faltante total" in msg and "ítem 0 período" in msg
+    assert "sin backlog" in msg and "no tiene ningún setup" in msg

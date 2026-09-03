@@ -75,7 +75,7 @@ def load_generated(workspace: str | Path = "generated/clsp", revalidate: bool = 
     workspace = Path(workspace)
     if not workspace.exists():
         return []
-    contexts = make_contexts() if revalidate else []
+    contexts = make_contexts(strict=False) if revalidate else []  # admisión leniente: la utilidad la decide el tuning
     latest: dict[tuple[str, str], Path] = {}
     for path in sorted(workspace.glob("*/*.py")):
         slot = path.parent.name

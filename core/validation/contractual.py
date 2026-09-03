@@ -25,6 +25,17 @@ def _close(a: float, b: float, tol: float) -> bool:
     return math.isclose(a, b, rel_tol=tol, abs_tol=tol * 100)
 
 
+def _why_infeasible(ctx: ValidationContext, sol) -> str:
+    """Detalle de infactibilidad si el ProblemModel sabe darlo (opcional en el Protocol)."""
+    explain = getattr(ctx.problem, "explain_infeasibility", None)
+    if explain is None:
+        return ""
+    try:
+        return " Detalle: " + explain(sol)
+    except Exception:  # noqa: BLE001
+        return ""
+
+
 def _sample_solutions(ctx: ValidationContext, inst_idx: int, constructor=None) -> list[Any]:
     sols = [ctx.trivial_solutions[inst_idx]]
     if constructor is not None:
@@ -46,7 +57,7 @@ def check_constructor(impl, ctx: ValidationContext) -> list[CheckResult]:
             def _feasible(k=k, inst=inst, seed=seed):
                 sol = impl.build(inst, Random(seed))
                 if not ctx.problem.is_feasible(sol):
-                    return fail(LAYER, "constructor.feasible", f"build(inst_{k}, seed={seed}) produjo una solución infactible")
+                    return fail(LAYER, "constructor.feasible", f"build(inst_{k}, seed={seed}) produjo una solución infactible.{_why_infeasible(ctx, sol)}")
                 return ok(LAYER, "constructor.feasible")
 
             def _deterministic(k=k, inst=inst, seed=seed):
@@ -204,7 +215,7 @@ def check_repair_mip(impl, ctx: ValidationContext) -> list[CheckResult]:
             if cand is None:
                 return fail(LAYER, "repair_mip.returns_solution", f"repair_mip devolvió None con `sol` factible fijada en inst_{k} (el sub-MIP debería ser factible)")
             if not ctx.problem.is_feasible(cand):
-                return fail(LAYER, "repair_mip.feasible", f"repair_mip devolvió una solución infactible en inst_{k}")
+                return fail(LAYER, "repair_mip.feasible", f"repair_mip devolvió una solución infactible en inst_{k}.{_why_infeasible(ctx, cand)}")
             cand_assign = ctx.problem.to_assignment(cand)
             moved = [v for v in fixed if not _close(cand_assign[v], fixed[v], ctx.tolerance)]
             if moved:

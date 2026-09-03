@@ -27,6 +27,7 @@ class ProblemSpec:
     problem_model_source: str  # código fuente del ProblemModel (la vista que ve el componente)
     variable_naming: str  # cómo se llaman las variables de la vista MIP
     notes: list[str] = field(default_factory=list)  # avisos (minimización, penalización, costo de objective...)
+    starting_solution: str | None = None  # micro-instancia + solución de partida, para slots que operan sobre ella
 
 
 SYSTEM_PROMPT = """Eres un experto en metaheurísticas y matheurísticas que escribe componentes algorítmicos en Python.
@@ -57,8 +58,10 @@ def protocol_source(slot: str) -> str:
 SLOT_HINTS = {
     "neighborhood": (
         "Un movimiento `m` debe ser un objeto pequeño y hashable (tupla). Propiedades que se verificarán automáticamente: "
-        "`undo(apply(sol, m), m) == sol`; `delta(sol, m) == objective(apply(sol, m)) - objective(sol)` (puedes implementarlo "
-        "literalmente así si no hay forma incremental barata); `moves(sol)` no vacío para soluciones típicas."
+        "`undo(apply(sol, m), m) == sol` (cuidado con movimientos compuestos: la inversa debe restaurar TODAS las celdas tocadas); "
+        "`delta(sol, m) == objective(apply(sol, m)) - objective(sol)` (puedes implementarlo literalmente así si no hay forma "
+        "incremental barata); `moves(sol)` no vacío; y al menos un movimiento debe MEJORAR la solución de partida del esqueleto "
+        "(no basta con que mejore soluciones aleatorias). Un vecindario con 6 movimientos que nunca mejoran es inútil aunque sea correcto."
     ),
     "constructor": "Se verificará: `build(inst, rng)` devuelve una solución factible y es determinista dada la semilla del rng.",
     "perturbation": "Se verificará: `perturb(sol, strength, rng)` devuelve una solución distinta de `sol` (para strength >= 1).",
@@ -116,6 +119,11 @@ def generation_prompt(spec: ProblemSpec, slot: str, n_variants: int, avoid_names
     )
     if spec.notes:
         parts.append("\n## Avisos\n" + "\n".join(f"- {n}" for n in spec.notes))
+    if spec.starting_solution and slot in ("neighborhood", "perturbation"):
+        parts.append(
+            "\n## Desde dónde arranca el esqueleto (el validador exige que haya movimientos de mejora desde aquí)\n"
+            f"```\n{spec.starting_solution}\n```"
+        )
     if avoid_names:
         parts.append(f"\nYa existen componentes llamados {avoid_names}; usa ideas y nombres distintos.")
     parts.append(f"\nDevuelve exactamente {n_variants} bloques ```python```, cada uno un módulo completo.")

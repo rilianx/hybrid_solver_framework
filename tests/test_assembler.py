@@ -71,7 +71,8 @@ def test_incompatible_component_rejected(assembler):
 
 
 def test_generated_component_enters_catalog_and_space(inst, tmp_path):
-    spec, contexts = make_spec(), make_contexts(n_contexts=1, n_items=2, n_periods=4)
+    # strict=False: este test cubre la admisión al catálogo, no el empuje del modo generación
+    spec, contexts = make_spec(), make_contexts(n_contexts=1, n_items=2, n_periods=4, strict=False)
     accepted, _ = generate_slot(ScriptedClient([fence(GOOD_SHIFT)]), spec, "neighborhood", 1, contexts, tmp_path, verbose=False)
     registry = build_registry(accepted)
     assert registry.get("neighborhood", "shift_setup_earlier").is_compatible_with("SA")
