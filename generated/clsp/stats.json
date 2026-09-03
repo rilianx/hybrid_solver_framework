@@ -2,76 +2,82 @@
   "neighborhood": {
     "requested": 3,
     "parsed": 3,
-    "accepted": 0,
-    "llm_calls": 7,
-    "llm_seconds": 109.2,
+    "accepted": 3,
+    "llm_calls": 6,
+    "llm_seconds": 87.3,
     "rejections_by_layer": {
-      "quality": 5,
-      "contractual": 4
+      "contractual": 4,
+      "quality": 1
     },
-    "rounds_per_accepted": {},
-    "abandoned": [
-      "single_setup_removal",
-      "window_setup_compaction",
-      "pairwise_setup_shift"
-    ],
-    "accepted_files": []
+    "rounds_per_accepted": {
+      "adjacent_setup_drop": 2,
+      "run_compression": 3,
+      "congestion_rollback": 3
+    },
+    "abandoned": [],
+    "accepted_files": [
+      "generated/clsp/neighborhood/adjacent_setup_drop_r2.py",
+      "generated/clsp/neighborhood/run_compression_r3.py",
+      "generated/clsp/neighborhood/congestion_rollback_r3.py"
+    ]
   },
   "destruction": {
     "requested": 3,
     "parsed": 3,
     "accepted": 3,
-    "llm_calls": 1,
-    "llm_seconds": 10.5,
-    "rejections_by_layer": {},
+    "llm_calls": 2,
+    "llm_seconds": 19.0,
+    "rejections_by_layer": {
+      "quality": 1
+    },
     "rounds_per_accepted": {
-      "capacity_congestion_destruction": 1,
-      "item_chain_destruction": 1,
-      "low_utility_setup_destruction": 1
+      "capacity_bottleneck_destruction": 1,
+      "whole_item_release_destruction": 1,
+      "isolated_setup_destruction": 2
     },
     "abandoned": [],
     "accepted_files": [
-      "generated/clsp/destruction/capacity_congestion_destruction_r1.py",
-      "generated/clsp/destruction/item_chain_destruction_r1.py",
-      "generated/clsp/destruction/low_utility_setup_destruction_r1.py"
+      "generated/clsp/destruction/capacity_bottleneck_destruction_r1.py",
+      "generated/clsp/destruction/whole_item_release_destruction_r1.py",
+      "generated/clsp/destruction/isolated_setup_destruction_r2.py"
     ]
   },
   "constructor": {
     "requested": 3,
     "parsed": 3,
-    "accepted": 0,
-    "llm_calls": 7,
-    "llm_seconds": 196.1,
-    "rejections_by_layer": {
-      "contractual": 9
+    "accepted": 3,
+    "llm_calls": 1,
+    "llm_seconds": 44.4,
+    "rejections_by_layer": {},
+    "rounds_per_accepted": {
+      "backward_capacity_lot_builder": 1,
+      "period_balanced_anticipative_constructor": 1,
+      "randomized_window_rcl_constructor": 1
     },
-    "rounds_per_accepted": {},
-    "abandoned": [
-      "earliest_cover_backlog_free",
-      "capacity_sorted_period_fill",
-      "demand_peak_window_initializer"
-    ],
-    "accepted_files": []
+    "abandoned": [],
+    "accepted_files": [
+      "generated/clsp/constructor/backward_capacity_lot_builder_r1.py",
+      "generated/clsp/constructor/period_balanced_anticipative_constructor_r1.py",
+      "generated/clsp/constructor/randomized_window_rcl_constructor_r1.py"
+    ]
   },
   "perturbation": {
     "requested": 3,
     "parsed": 3,
     "accepted": 3,
-    "llm_calls": 2,
-    "llm_seconds": 26.0,
-    "rejections_by_layer": {
-      "contractual": 1
-    },
+    "llm_calls": 1,
+    "llm_seconds": 15.7,
+    "rejections_by_layer": {},
     "rounds_per_accepted": {
-      "single_setup_shift": 1,
-      "congestion_aware_period_swap": 1,
-      "interval_rebuild_perturbation": 2
+      "block_shift_item_perturbation": 1,
+      "period_swap_rewire_perturbation": 1,
+      "segment_compression_perturbation": 1
     },
     "abandoned": [],
     "accepted_files": [
-      "generated/clsp/perturbation/single_setup_shift_r1.py",
-      "generated/clsp/perturbation/congestion_aware_period_swap_r1.py",
-      "generated/clsp/perturbation/interval_rebuild_perturbation_r2.py"
+      "generated/clsp/perturbation/block_shift_item_perturbation_r1.py",
+      "generated/clsp/perturbation/period_swap_rewire_perturbation_r1.py",
+      "generated/clsp/perturbation/segment_compression_perturbation_r1.py"
     ]
   }
 }
