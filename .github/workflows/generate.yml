@@ -121,13 +121,18 @@ jobs:
             echo ""
             python -m scripts.stats_summary generated/clsp/stats.json
             echo ""
-            echo "<details><summary>Log completo</summary>"
-            echo ""
-            echo '```'
-            cat generate.log 2>/dev/null || echo "(sin log)"
-            echo '```'
-            echo ""
-            echo "</details>"
+            if [ -f generate.log ]; then
+              echo "<details><summary>Log completo de la generación</summary>"
+              echo ""
+              echo '```'
+              cat generate.log
+              echo '```'
+              echo ""
+              echo "</details>"
+            else
+              echo "**No hay log**: el paso \`Generar y validar\` no llegó a ejecutarse"
+              echo "(algún paso anterior falló y cortó la corrida)."
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Reportes del validador en las correcciones
