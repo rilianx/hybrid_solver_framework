@@ -1,67 +1,56 @@
 from random import Random
+from typing import Any
 
 COMPONENT = {
     "name": "capacity_bottleneck_destruction",
     "slot": "destruction",
     "compatible_skeletons": ["LNS_MIP"],
     "requires": ["ProblemModel.to_assignment", "ProblemModel.variable_groups"],
-    "params": {
-        "ratio": {"type": "float", "range": [0.05, 0.6]},
-        "window": {"type": "int", "range": [1, 4]},
-    },
+    "params": {"ratio": {"type": "float", "range": [0.05, 0.6]}},
 }
 
 
 class CapacityBottleneckDestruction:
-    """Libera setups en los períodos más cargados, ampliando la vecindad alrededor del cuello de botella."""
+    """Libera setups en los períodos más cargados por capacidad."""
 
-    def __init__(self, problem, inst, window: int = 2):
+    def __init__(self, problem):
         self.problem = problem
-        self.inst = inst
-        self.window = window
+        self.inst = problem.inst
+        self._groups = problem.variable_groups(self.inst)
 
-    def destroy(self, sol, ratio: float, rng: Random):
+    def destroy(self, sol, ratio: float, rng: Random) -> tuple[Any, set[str]]:
         assignment = self.problem.to_assignment(sol)
-        n_items, n_periods = self.inst.n_items, self.inst.n_periods
-        target = max(1, int(round(ratio * n_items * n_periods)))
+        n_items = self.inst.n_items
+        n_periods = self.inst.n_periods
+        k = max(1, int(round(ratio * n_items * n_periods)))
 
         loads = []
         for t in range(n_periods):
             used = sum(self.inst.setup_time[i] for i in range(n_items) if sol[i][t])
-            loads.append((used / self.inst.capacity[t] if self.inst.capacity[t] > 0 else float("inf"), t))
+            load = used / max(self.inst.capacity[t], 1e-9)
+            loads.append((load, t))
         loads.sort(reverse=True)
 
-        free_vars = set()
-        for _, t0 in loads:
-            if len(free_vars) >= target:
-                break
-            for dt in range(-self.window, self.window + 1):
-                t = t0 + dt
-                if 0 <= t < n_periods:
-                    for i in range(n_items):
-                        if sol[i][t]:
-                            free_vars.add(f"y_{i}_{t}")
-                            if len(free_vars) >= target:
-                                break
-                    if len(free_vars) >= target:
+        free_vars: set[str] = set()
+        period_order = [t for _, t in loads]
+        for t in period_order:
+            period_vars = list(self._groups[f"t{t}"])
+            rng.shuffle(period_vars)
+            for v in period_vars:
+                if v not in free_vars:
+                    free_vars.add(v)
+                    if len(free_vars) >= k:
                         break
-            if len(free_vars) >= target:
+            if len(free_vars) >= k:
                 break
-
-        if len(free_vars) < target:
-            candidates = [f"y_{i}_{t}" for t in range(n_periods) for i in range(n_items) if f"y_{i}_{t}" not in free_vars]
-            rng.shuffle(candidates)
-            for v in candidates:
-                free_vars.add(v)
-                if len(free_vars) >= target:
-                    break
 
         if not free_vars:
-            free_vars.add(next(iter(assignment.keys())))
+            t = rng.randrange(n_periods)
+            free_vars.add(rng.choice(self._groups[f"t{t}"]))
 
         partial = {v: val for v, val in assignment.items() if v not in free_vars}
         return partial, free_vars
 
 
-def build_component(problem, ratio: float = 0.25, window: int = 2):
-    return CapacityBottleneckDestruction(problem, problem.inst, window=window)
+def build_component(problem, ratio: float = 0.25):
+    return CapacityBottleneckDestruction(problem)
