@@ -2,36 +2,40 @@
   "neighborhood": {
     "requested": 3,
     "parsed": 3,
-    "accepted": 0,
-    "llm_calls": 7,
-    "llm_seconds": 109.2,
+    "accepted": 3,
+    "llm_calls": 5,
+    "llm_seconds": 41.3,
     "rejections_by_layer": {
-      "quality": 5,
-      "contractual": 4
+      "contractual": 3,
+      "quality": 1
     },
-    "rounds_per_accepted": {},
-    "abandoned": [
-      "single_setup_removal",
-      "window_setup_compaction",
-      "pairwise_setup_shift"
-    ],
-    "accepted_files": []
+    "rounds_per_accepted": {
+      "adjacent_setup_swap": 2,
+      "bridge_merge_setup": 2,
+      "redundant_setup_pruner": 3
+    },
+    "abandoned": [],
+    "accepted_files": [
+      "generated/clsp/neighborhood/adjacent_setup_swap_r2.py",
+      "generated/clsp/neighborhood/bridge_merge_setup_r2.py",
+      "generated/clsp/neighborhood/redundant_setup_pruner_r3.py"
+    ]
   },
   "destruction": {
     "requested": 3,
     "parsed": 3,
     "accepted": 3,
     "llm_calls": 1,
-    "llm_seconds": 10.5,
+    "llm_seconds": 9.2,
     "rejections_by_layer": {},
     "rounds_per_accepted": {
-      "capacity_congestion_destruction": 1,
+      "period_saturation_destruction": 1,
       "item_chain_destruction": 1,
       "low_utility_setup_destruction": 1
     },
     "abandoned": [],
     "accepted_files": [
-      "generated/clsp/destruction/capacity_congestion_destruction_r1.py",
+      "generated/clsp/destruction/period_saturation_destruction_r1.py",
       "generated/clsp/destruction/item_chain_destruction_r1.py",
       "generated/clsp/destruction/low_utility_setup_destruction_r1.py"
     ]
@@ -40,16 +44,17 @@
     "requested": 3,
     "parsed": 3,
     "accepted": 0,
-    "llm_calls": 7,
-    "llm_seconds": 196.1,
+    "llm_calls": 13,
+    "llm_seconds": 220.3,
     "rejections_by_layer": {
-      "contractual": 9
+      "quality": 4,
+      "contractual": 11
     },
     "rounds_per_accepted": {},
     "abandoned": [
-      "earliest_cover_backlog_free",
-      "capacity_sorted_period_fill",
-      "demand_peak_window_initializer"
+      "dense_full_setup_constructor",
+      "lumpy_earliest_release_constructor",
+      "capacity_balanced_block_constructor"
     ],
     "accepted_files": []
   },
@@ -58,20 +63,20 @@
     "parsed": 3,
     "accepted": 3,
     "llm_calls": 2,
-    "llm_seconds": 26.0,
+    "llm_seconds": 14.5,
     "rejections_by_layer": {
-      "contractual": 1
+      "quality": 1
     },
     "rounds_per_accepted": {
-      "single_setup_shift": 1,
-      "congestion_aware_period_swap": 1,
-      "interval_rebuild_perturbation": 2
+      "capacity_window_rewire": 1,
+      "setup_merge_split_kick": 1,
+      "critical_item_shift": 2
     },
     "abandoned": [],
     "accepted_files": [
-      "generated/clsp/perturbation/single_setup_shift_r1.py",
-      "generated/clsp/perturbation/congestion_aware_period_swap_r1.py",
-      "generated/clsp/perturbation/interval_rebuild_perturbation_r2.py"
+      "generated/clsp/perturbation/capacity_window_rewire_r1.py",
+      "generated/clsp/perturbation/setup_merge_split_kick_r1.py",
+      "generated/clsp/perturbation/critical_item_shift_r2.py"
     ]
   }
 }
