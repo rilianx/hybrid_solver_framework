@@ -22,6 +22,7 @@ from typing import Any
 
 from core.validation import ValidationContext, ValidationReport, validate_component
 from core.validation.base import fail, ok
+from core.validation.quality import diversity_check
 from core.validation.syntactic import load_module
 
 from .client import LLMClient
@@ -106,6 +107,23 @@ def validate_generated_module(
             report.extend(reports[-1].results)
             return report, module, component
     report.add(ok("syntactic", "factory_runs"))
+
+    # Diversidad: sobre la sonda (instancia grande) y con el componente reconstruido allí.
+    # Se hace una sola vez, después de las propiedades: rechazar por duplicado a algo que
+    # además está mal implementado sería el feedback equivocado.
+    probe = contexts[0].diversity_probe if contexts else None
+    if probe is not None and peers:
+        try:
+            probe_impl = factory(probe.problem)
+            report.extend(diversity_check(
+                component.get("slot", ""), probe_impl, peers, probe.solution,
+                probe.problem, probe.max_similarity,
+            ))
+        except Exception as exc:  # noqa: BLE001 — la sonda no debe tumbar la validación
+            report.add(ok("quality", "diversity_skipped", f"{type(exc).__name__}: {exc}"))
+        if not report.passed:
+            return report, module, component
+
     any_fails = [r for rep in reports for r in rep.failures() if r.name in AGGREGATE_ANY]
     if any_fails and len(any_fails) == len(reports):
         # falló en todos los contextos: se reporta el primero (trae el hint con movimientos que sí mejoran)
@@ -152,8 +170,12 @@ def generate_slot(
     pending: list[tuple[ParsedModule, int]] = [(m, 1) for m in modules]
     while pending:
         m, round_no = pending.pop(0)
+        # Los pares de comparación se construyen sobre el problema donde se mide la
+        # diversidad (la sonda si existe, la micro-instancia si no).
+        probe = contexts[0].diversity_probe
+        peer_problem = probe.problem if probe is not None else contexts[0].problem
         peers = list(catalog_peers or []) + [
-            (c.name, c.build_component(contexts[0].problem)) for c in accepted if c.slot == slot
+            (c.name, c.build_component(peer_problem)) for c in accepted if c.slot == slot
         ]
         report, module, component = validate_generated_module(m.path, contexts, peers=peers)
         name = (component or {}).get("name", m.name or m.path.stem)

@@ -69,6 +69,22 @@ class ValidationReport:
 
 
 @dataclass
+class DiversityProbe:
+    """Dónde y contra quién se mide la diversidad estructural de un componente.
+
+    `problem` es un ProblemModel de tamaño realista (no una micro-instancia) y
+    `solution` una solución de partida sobre él; `peers` son los componentes del
+    mismo slot ya aceptados, ya construidos SOBRE ESE `problem`. El componente
+    candidato se reconstruye con `build_component(problem)` antes de comparar.
+    """
+
+    problem: Any
+    solution: Any
+    peers: list = field(default_factory=list)  # (nombre, impl) ligados a `problem`
+    max_similarity: float = 0.8
+
+
+@dataclass
 class ValidationContext:
     """Todo lo que las capas necesitan para ejercitar un componente."""
 
@@ -105,6 +121,12 @@ class ValidationContext:
     # (corrida 5: Jaccard 0,75–1,00 entre los tres "vecindarios distintos").
     accepted_peers: list = field(default_factory=list)
     max_similarity_to_peers: float = 0.8
+    # Instancia aparte, más grande, donde se mide la diversidad. Las micro-instancias
+    # de validación (3×5) son demasiado chicas para discriminar: en la corrida 6
+    # `congestion_rollback` daba Jaccard 0,60 contra `setup_flip` en 3×5 (pasaba el
+    # gate de 0,80) y 0,93 en 10×15, donde ya es un duplicado. La firma se mide
+    # reconstruyendo el componente sobre `diversity_probe.problem`.
+    diversity_probe: Any = None  # DiversityProbe
     # Opcional: enumerador de todas las soluciones de una micro-instancia
     # (para comparar el óptimo del MIP contra fuerza bruta).
     enumerate_solutions: Callable[[Any], Sequence[Any]] | None = None

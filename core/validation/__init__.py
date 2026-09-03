@@ -1,6 +1,6 @@
 """Validación autónoma por capas (§7 de la propuesta)."""
 
-from .base import CheckResult, ValidationContext, ValidationReport
+from .base import CheckResult, DiversityProbe, ValidationContext, ValidationReport
 from .operational import VariantRunner
 from .pipeline import (
     validate_component,
@@ -11,6 +11,7 @@ from .pipeline import (
 
 __all__ = [
     "CheckResult",
+    "DiversityProbe",
     "ValidationContext",
     "ValidationReport",
     "VariantRunner",

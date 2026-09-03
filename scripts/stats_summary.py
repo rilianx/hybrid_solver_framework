@@ -16,7 +16,7 @@ from pathlib import Path
 
 def render(stats: dict) -> str:
     out = ["| slot | aceptados | rondas | rechazos por capa | abandonados | llamadas | s |", "|---|---|---|---|---|---|---|"]
-    tot_acc = tot_par = tot_calls = 0
+    tot_acc = tot_par = tot_calls = tot_rej = 0
     tot_s = 0.0
     for slot, s in stats.items():
         rounds = ", ".join(f"`{k}`:{v}" for k, v in s.get("rounds_per_accepted", {}).items()) or "—"
@@ -28,12 +28,18 @@ def render(stats: dict) -> str:
         )
         tot_acc += s["accepted"]; tot_par += s["parsed"]
         tot_calls += s["llm_calls"]; tot_s += s["llm_seconds"]
+        tot_rej += sum(s.get("rejections_by_layer", {}).values())
     out.append(f"| **total** | **{tot_acc}/{tot_par}** | | | | {tot_calls} | {tot_s:.0f} |")
 
-    if tot_par and tot_acc == tot_par:
-        out += ["", "> Todos los componentes fueron aceptados a la primera. Ojo: eso puede significar que el",
+    if tot_par and tot_acc == tot_par and tot_rej == 0:
+        out += ["", "> Todos los componentes fueron aceptados a la primera, sin un solo rechazo en ninguna capa.",
+                "> Ojo: eso puede significar que el",
                 "> validador no tiene dientes para estos slots, no solo que el modelo acertó. Compara con",
                 "> `benchmark_components` (utilidad y diversidad) antes de concluir."]
+    elif tot_par and tot_acc == tot_par:
+        out += ["", f"> Todos los componentes terminaron aceptados, pero tras {tot_rej} rechazo(s) y su(s) "
+                "corrección(es): el ciclo generar→validar→corregir hizo trabajo. Aun así, la validez no es "
+                "utilidad: contrasta con `benchmark_components`."]
     return "\n".join(out)
 
 

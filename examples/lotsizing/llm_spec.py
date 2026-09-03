@@ -6,6 +6,7 @@ import inspect
 from random import Random
 
 from core.validation import ValidationContext
+from core.validation.base import DiversityProbe
 from llm.prompts import ProblemSpec
 
 from . import problem_model as pm
@@ -72,6 +73,23 @@ def _feasible_trivial(problem, inst):
     return sol if problem.is_feasible(sol) else None
 
 
+def make_diversity_probe(n_items: int = 10, n_periods: int = 15, seed: int = 100) -> DiversityProbe | None:
+    """Sonda de diversidad: instancia de tamaño realista (la misma familia que usa el
+    benchmark) donde se mide si dos componentes son el mismo operador con otro nombre.
+
+    Por qué no la micro-instancia (corrida 6): en 3×5 hay 15 variables y casi cualquier
+    par de vecindarios se solapa poco por falta de espacio — `congestion_rollback` daba
+    Jaccard 0,60 contra `setup_flip` (pasaba el gate de 0,80) y 0,93 en 10×15, donde el
+    benchmark lo mostró como duplicado (+1,2% vs +29,8%).
+    """
+    inst = pm.CLSPInstance.trigeiro(n_items, n_periods, Random(seed), utilization=0.95, tbo=3.0)
+    problem = pm.LotSizingModel(inst)
+    sol = _feasible_trivial(problem, inst)
+    if sol is None:
+        return None
+    return DiversityProbe(problem=problem, solution=sol, max_similarity=0.8)
+
+
 def make_contexts(
     n_contexts: int = 2, n_items: int = 3, n_periods: int = 5, seed: int = 7, strict: bool = True
 ) -> list[ValidationContext]:
@@ -82,6 +100,8 @@ def make_contexts(
     operadores útiles donde el esqueleto arranca. `strict=False` (admisión al
     catálogo): tolera operadores estrechos, que pueden valer en combinación.
     """
+    # Una sola sonda compartida por todos los contextos (construirla cuesta un MIP chico).
+    probe = make_diversity_probe() if strict else None
     contexts = []
     k, retry = 0, 0
     while len(contexts) < n_contexts and retry < 10:
@@ -109,6 +129,7 @@ def make_contexts(
                 mip_time_limit=5.0,
                 max_moves_checked=30,
                 require_improving_from_start=strict,
+                diversity_probe=probe,
             )
         )
     return contexts

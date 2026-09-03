@@ -30,7 +30,7 @@ from .problem_model import CLSPInstance, LotSizingModel
 SLOT_TO_SKELETON = {"neighborhood": "SA", "destruction": "LNS_MIP", "perturbation": "ILS", "constructor": "LNS_MIP", "fixing_policy": "FIX_OPT"}
 
 
-from core.validation.diversity import jaccard, signature
+from core.validation.diversity import signature, similarity
 
 
 def diversity_table(registry, slot: str, inst) -> list[tuple[str, str, float]]:
@@ -40,12 +40,12 @@ def diversity_table(registry, slot: str, inst) -> list[tuple[str, str, float]]:
     sigs = {}
     for spec in specs:
         comp = spec.make(problem, **spec.default_params())
-        sig = signature(slot, comp, sol)
+        sig = signature(slot, comp, sol, problem)
         if sig:
             sigs[spec.name] = sig
     rows = []
     for a, b in combinations(sigs, 2):
-        rows.append((a, b, jaccard(sigs[a], sigs[b])))
+        rows.append((a, b, similarity(sigs[a], sigs[b])))
     return rows
 
 
@@ -82,7 +82,7 @@ def main() -> None:
 
         div = diversity_table(registry, slot, train[0])
         if div:
-            print(f"\n  diversidad (Jaccard; 1.0 = idénticos):")
+            print(f"\n  diversidad (similitud estructural; 1.0 = idénticos):")
             for a, b, j in sorted(div, key=lambda r: -r[2]):
                 flag = "  <-- casi duplicados" if j > 0.8 else ""
                 print(f"  {a:<32} vs {b:<32} {j:.2f}{flag}")

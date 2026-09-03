@@ -44,8 +44,10 @@ def main() -> None:
     registry = build_registry()
     all_stats = {}
     for slot in args.slots:
+        probe = contexts[0].diversity_probe
+        peer_problem = probe.problem if probe is not None else contexts[0].problem
         peers = [
-            (spec_c.name, spec_c.make(contexts[0].problem, **spec_c.default_params()))
+            (spec_c.name, spec_c.make(peer_problem, **spec_c.default_params()))
             for spec_c in registry.for_slot(slot)
         ]
         if peers:

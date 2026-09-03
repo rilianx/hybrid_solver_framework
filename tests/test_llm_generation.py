@@ -321,4 +321,47 @@ def test_diversity_gate_rejects_duplicate_of_catalog_peer(tmp_path):
                                     max_rounds=2, catalog_peers=peers, verbose=False)
     assert accepted == [] and stats.rejections_by_layer == {"quality": 2}
     msg = client.calls[1][1]
-    assert "setup_flip" in msg and "Jaccard 1.00" in msg and "IDEA" in msg
+    assert "setup_flip" in msg and "similitud 1.00" in msg and "IDEA" in msg
+
+
+def test_diversity_gate_uses_the_probe_not_the_micro_instance(tmp_path):
+    """El gate mide la diversidad sobre la sonda (instancia grande) reconstruyendo el
+    componente allí: un flip disfrazado se rechaza aunque la validación de propiedades
+    corra en micro-instancias de 2×4 (corrida 6: en 3×5 el Jaccard no discriminaba)."""
+    from dataclasses import replace
+    from random import Random
+
+    from core.validation.base import DiversityProbe
+    from examples.lotsizing.components import LotForLotConstructor, SetupFlipNeighborhood
+    from examples.lotsizing.problem_model import CLSPInstance, LotSizingModel
+
+    inst = CLSPInstance.trigeiro(10, 15, Random(100), utilization=0.95, tbo=3.0)
+    big = LotSizingModel(inst)
+    probe = DiversityProbe(problem=big, solution=LotForLotConstructor().build(inst, Random(0)))
+
+    spec = make_spec()
+    contexts = [replace(c, diversity_probe=probe) for c in make_contexts(n_contexts=1, n_items=2, n_periods=4, strict=False)]
+    peers = [("setup_flip", SetupFlipNeighborhood(big))]  # ligado al problema de la sonda
+
+    disguised = textwrap.dedent('''
+        COMPONENT = {"name": "toggle_disguised", "slot": "neighborhood", "compatible_skeletons": ["SA"], "params": {}}
+
+        class ToggleDisguised:
+            def __init__(self, problem): self.problem = problem
+            def moves(self, sol):
+                return [(t, i, "flip") for i in range(len(sol)) for t in range(len(sol[i]))]
+            def apply(self, sol, m):
+                t, i, _ = m; row = sol[i][:t] + (not sol[i][t],) + sol[i][t + 1:]
+                return sol[:i] + (row,) + sol[i + 1:]
+            def undo(self, sol, m): return self.apply(sol, m)
+            def delta(self, sol, m):
+                return self.problem.objective(self.apply(sol, m)) - self.problem.objective(sol)
+
+        def build_component(problem):
+            return ToggleDisguised(problem)
+    ''')
+    client = ScriptedClient(responses=[fence(disguised)] * 4)
+    accepted, stats = generate_slot(client, spec, "neighborhood", 1, contexts, tmp_path,
+                                    max_rounds=2, catalog_peers=peers, verbose=False)
+    assert accepted == [] and stats.rejections_by_layer == {"quality": 2}
+    assert "setup_flip" in client.calls[1][1]

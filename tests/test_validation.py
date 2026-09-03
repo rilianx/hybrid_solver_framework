@@ -414,3 +414,75 @@ def test_constructor_quality_gate_threshold_is_configurable():
     assert lax.passed or all(f.name != "constructor.not_much_worse_than_trivial" for f in lax.failures())
     fail_msg = next(f.message for f in tight.failures() if f.name == "constructor.not_much_worse_than_trivial")
     assert "referencia" in fail_msg and "umbral tolerado" in fail_msg
+
+
+# --------------------------------------------------------------------------- diversidad (corrida 6)
+
+
+def test_destruction_signature_ignores_rng_and_captures_shape():
+    """Corrida 6: comparar los `free_vars` exactos medía la sincronía del rng, no la idea —
+    dos destrucciones aleatorias iguales daban Jaccard 1,00 sincronizadas y 0,11 desalineadas.
+    La firma es ahora un perfil de forma: misma idea ≈ 1,00, ideas distintas ≤ 0,7."""
+    from random import Random
+
+    from core.validation.diversity import destruction_signature, similarity
+    from examples.lotsizing.components import (
+        LotForLotConstructor,
+        PeriodWindowDestruction,
+        RandomSetupDestruction,
+    )
+    from examples.lotsizing.problem_model import CLSPInstance, LotSizingModel
+
+    inst = CLSPInstance.trigeiro(8, 12, Random(100), utilization=0.95, tbo=3.0)
+    problem = LotSizingModel(inst)
+    sol = LotForLotConstructor().build(inst, Random(0))
+
+    a, b = RandomSetupDestruction(inst), RandomSetupDestruction(inst)
+    b.destroy(sol, 0.3, Random(999))  # desalinea cualquier estado interno
+    window = PeriodWindowDestruction(inst)
+    sig = lambda c: destruction_signature(c, sol, problem)  # noqa: E731
+
+    assert similarity(sig(a), sig(b)) > 0.95, "la misma idea debe verse como la misma idea"
+    assert similarity(sig(a), sig(window)) < 0.8, "liberar al azar y liberar una ventana no son la misma idea"
+
+
+def test_diversity_probe_discriminates_better_than_micro_instance():
+    """Corrida 6: en 3×5 casi cualquier par de vecindarios se solapa poco por falta de espacio.
+    Un vecindario que en la instancia grande es un duplicado de `setup_flip` debe verse como tal."""
+    from random import Random
+
+    from core.validation.diversity import neighborhood_signature, similarity
+    from examples.lotsizing.components import LotForLotConstructor, SetupFlipNeighborhood
+    from examples.lotsizing.problem_model import CLSPInstance, LotSizingModel
+
+    class FlipOrNoop:
+        """Los mismos vecinos que setup_flip, más un movimiento nulo: idea duplicada."""
+
+        def __init__(self, problem):
+            self.inner = SetupFlipNeighborhood(problem)
+
+        def moves(self, sol):
+            return list(self.inner.moves(sol)) + [None]
+
+        def apply(self, sol, m):
+            return sol if m is None else self.inner.apply(sol, m)
+
+    def sim(n_items, n_periods, seed):
+        inst = CLSPInstance.trigeiro(n_items, n_periods, Random(seed), utilization=0.95, tbo=3.0)
+        problem = LotSizingModel(inst)
+        sol = LotForLotConstructor().build(inst, Random(0))
+        a = neighborhood_signature(SetupFlipNeighborhood(problem), sol, problem)
+        b = neighborhood_signature(FlipOrNoop(problem), sol, problem)
+        return similarity(a, b)
+
+    assert sim(10, 15, 100) > 0.9
+
+
+def test_make_contexts_carries_a_diversity_probe_when_strict():
+    from examples.lotsizing.llm_spec import make_contexts
+
+    strict = make_contexts(n_contexts=1, n_items=2, n_periods=4, strict=True)
+    lax = make_contexts(n_contexts=1, n_items=2, n_periods=4, strict=False)
+    probe = strict[0].diversity_probe
+    assert probe is not None and len(probe.solution) >= 10  # instancia grande, no la micro
+    assert lax[0].diversity_probe is None

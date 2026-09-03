@@ -83,30 +83,40 @@ def _reference_improvements(ctx: ValidationContext, k: int = 0, top: int = 3) ->
         return ""
 
 
-def _check_diversity(slot: str, impl, ctx: ValidationContext) -> list[CheckResult]:
+_WHAT = {
+    "neighborhood": "los vecinos alcanzables desde la misma solución",
+    "destruction": "la forma de los conjuntos que libera (tamaño, concentración por ítem y por período, contigüidad)",
+    "perturbation": "las soluciones que produce desde la misma solución",
+}
+
+
+def diversity_check(slot: str, impl, peers: list, sol, problem=None, max_similarity: float = 0.8) -> list[CheckResult]:
     """Rechaza un componente estructuralmente equivalente a otro ya aceptado del mismo slot."""
-    if not ctx.accepted_peers:
+    if not peers:
         return []
-    sim = most_similar(slot, impl, ctx.accepted_peers, ctx.trivial_solutions[0])
+    sim = most_similar(slot, impl, peers, sol, problem)
     if sim is None:
         return []
     name, j = sim
-    if j > ctx.max_similarity_to_peers:
+    if j > max_similarity:
         return [fail(LAYER, f"{slot}.distinct_from_accepted",
             f"produce esencialmente los mismos resultados que `{name}`, ya aceptado "
-            f"(similitud de Jaccard {j:.2f} sobre {'los vecinos alcanzables' if slot == 'neighborhood' else 'los conjuntos producidos'} "
-            f"desde la misma solución; se tolera hasta {ctx.max_similarity_to_peers:.2f}). "
+            f"(similitud {j:.2f} sobre {_WHAT.get(slot, 'lo que produce')}; se tolera hasta {max_similarity:.2f}). "
             f"No basta con otro nombre ni otra representación del movimiento: hace falta una IDEA "
             f"algorítmica distinta, que alcance soluciones que `{name}` no alcanza. "
             f"Ejemplos de ejes por los que variar: cuántas celdas toca a la vez, si mueve producción entre "
             f"períodos en vez de encender/apagar, si opera sobre un ítem o sobre un período completo, "
             f"si usa la estructura del problema (capacidad saturada, demanda cero, inventario acumulado).")]
-    return [ok(LAYER, f"{slot}.distinct_from_accepted", f"más parecido: `{name}` con Jaccard {j:.2f}")]
+    return [ok(LAYER, f"{slot}.distinct_from_accepted", f"más parecido: `{name}` con similitud {j:.2f}")]
 
 
 def check_component_quality(slot: str, impl, ctx: ValidationContext) -> list[CheckResult]:
     P = ctx.problem
-    results: list[CheckResult] = list(_check_diversity(slot, impl, ctx))
+    # Si el contexto trae una sonda de diversidad, la comparación se hace allí (instancia
+    # grande, componente reconstruido) desde `llm.generator`, no aquí con la micro-instancia.
+    results: list[CheckResult] = [] if ctx.diversity_probe is not None else list(
+        diversity_check(slot, impl, ctx.accepted_peers, ctx.trivial_solutions[0], ctx.problem, ctx.max_similarity_to_peers)
+    )
 
     if slot == "constructor":
         # No absurdamente peor que la solución trivial factible de referencia. Umbral laxo
