@@ -51,7 +51,17 @@ jobs:
           python-version: "3.12"
           cache: pip
 
+      - name: Localizar la raíz del framework
+        run: |
+          # el framework puede estar en la raíz del repo o en una subcarpeta
+          HIT="$(find . -path ./.git -prune -o -path '*/core/skeleton.py' -print | head -1)"
+          if [ -z "$HIT" ]; then echo "::error::No encontré core/skeleton.py en el repo."; exit 1; fi
+          ROOT="$(dirname "$(dirname "$HIT")")"
+          echo "ROOT=$ROOT" >> "$GITHUB_ENV"
+          echo "Raíz del framework: $ROOT"
+
       - name: Instalar dependencias
+        working-directory: ${{ env.ROOT }}
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
@@ -61,6 +71,7 @@ jobs:
           PROVIDER: ${{ inputs.provider }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        working-directory: ${{ env.ROOT }}
         run: |
           if [ "$PROVIDER" = "openai" ] && [ -z "$OPENAI_API_KEY" ]; then
             echo "::error::Falta el secreto OPENAI_API_KEY (Settings → Secrets and variables → Actions)."
@@ -73,6 +84,7 @@ jobs:
 
       - name: Limpiar corrida anterior
         if: ${{ inputs.fresh }}
+        working-directory: ${{ env.ROOT }}
         run: rm -rf generated/clsp
 
       - name: Generar y validar
@@ -84,6 +96,7 @@ jobs:
           ROUNDS: ${{ inputs.rounds }}
           PROVIDER: ${{ inputs.provider }}
           MODEL: ${{ inputs.model }}
+        working-directory: ${{ env.ROOT }}
         run: |
           set -o pipefail
           ARGS="--slots $SLOTS --n $N --rounds $ROUNDS --provider $PROVIDER"
@@ -98,6 +111,7 @@ jobs:
           MODEL_IN: ${{ inputs.model }}
           N: ${{ inputs.n }}
           ROUNDS: ${{ inputs.rounds }}
+        working-directory: ${{ env.ROOT }}
         run: |
           MODEL="$MODEL_IN"; [ -z "$MODEL" ] && MODEL="(default de $PROVIDER)"
           {
@@ -118,6 +132,7 @@ jobs:
 
       - name: Reportes del validador en las correcciones
         if: always()
+        working-directory: ${{ env.ROOT }}
         run: |
           python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
           import json, pathlib
@@ -143,8 +158,8 @@ jobs:
         with:
           name: generated-${{ inputs.provider }}-${{ github.run_number }}
           path: |
-            generated/
-            generate.log
+            ${{ env.ROOT }}/generated/
+            ${{ env.ROOT }}/generate.log
           if-no-files-found: warn
           retention-days: 30
 
@@ -159,6 +174,7 @@ jobs:
           ROUNDS: ${{ inputs.rounds }}
           RUN: ${{ github.run_number }}
           BASE: ${{ github.ref_name }}
+        working-directory: ${{ env.ROOT }}
         run: |
           if [ -z "$(ls -A generated/clsp 2>/dev/null)" ]; then
             echo "Nada que commitear."; exit 0
