@@ -26,6 +26,14 @@ on:
         description: "Modelo (vacío = default del proveedor)"
         default: ""
         type: string
+      price_in:
+        description: "USD por millón de tokens de ENTRADA (vacío = no estimar costo)"
+        default: ""
+        type: string
+      price_out:
+        description: "USD por millón de tokens de SALIDA"
+        default: ""
+        type: string
       fresh:
         description: "Borrar generated/ antes de correr"
         default: true
@@ -96,6 +104,8 @@ jobs:
           ROUNDS: ${{ inputs.rounds }}
           PROVIDER: ${{ inputs.provider }}
           MODEL: ${{ inputs.model }}
+          LLM_PRICE_IN: ${{ inputs.price_in || vars.LLM_PRICE_IN }}
+          LLM_PRICE_OUT: ${{ inputs.price_out || vars.LLM_PRICE_OUT }}
         working-directory: ${{ env.ROOT }}
         run: |
           set -o pipefail
