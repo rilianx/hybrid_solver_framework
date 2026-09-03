@@ -161,6 +161,30 @@ checkpoints de sesiones caras, paso humano), cada función de `llm/generator.py`
 es directamente un nodo y `GenerationStats` el estado: migrar a LangGraph
 sería mecánico.
 
+## Correr en GitHub Actions
+
+Tres workflows en `.github/workflows/`:
+
+| workflow | disparo | qué hace |
+|---|---|---|
+| `tests` | push, PR | `pytest` en Python 3.11 y 3.12; verifica primero que haya un solver MIP disponible. Sin secretos, así que corre en PRs de forks. |
+| `generar componentes con LLM` | **manual** | Corre `examples.lotsizing.generate` con los slots, `n`, rondas, proveedor y modelo que elijas. Escribe la tabla de aceptación por capa y los reportes del validador en el *summary* de la corrida, sube `generated/` como artefacto y abre un PR con los módulos generados. |
+| `benchmark` | **manual** | Utilidad y diversidad por componente, y/o la comparación de los ocho esqueletos. |
+
+Los dos últimos son `workflow_dispatch` a propósito: cada corrida de generación
+gasta llamadas de API, así que nunca se disparan por push ni por schedule.
+
+**Configuración**: en *Settings → Secrets and variables → Actions* agrega
+`OPENAI_API_KEY` (o `ANTHROPIC_API_KEY`). Si el PR automático debe poder
+crearse, habilita *Settings → Actions → General → Allow GitHub Actions to
+create and approve pull requests*.
+
+Dos advertencias sobre el benchmark en Actions: los runners son compartidos, así
+que los presupuestos de tiempo de pared **no** son comparables entre corridas ni
+contra tu máquina —sirven para comparar componentes y esqueletos dentro de una
+misma corrida—; y CBC en un runner de 2 vCPU es más lento que en un portátil, de
+modo que las matheurísticas resuelven menos sub-MIPs con el mismo presupuesto.
+
 ## Resultado de referencia (CLSP Trigeiro 15×20, util. 0.95, TBO 3, 20 s/variante)
 
 | Variante | Costo |
