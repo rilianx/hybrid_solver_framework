@@ -30,16 +30,7 @@ from .problem_model import CLSPInstance, LotSizingModel
 SLOT_TO_SKELETON = {"neighborhood": "SA", "destruction": "LNS_MIP", "perturbation": "ILS", "constructor": "LNS_MIP", "fixing_policy": "FIX_OPT"}
 
 
-def jaccard(a: set, b: set) -> float:
-    return len(a & b) / len(a | b) if (a | b) else 1.0
-
-
-def neighborhood_signature(problem, comp, sol) -> set:
-    return {comp.apply(sol, m) for m in comp.moves(sol)}
-
-
-def destruction_signature(comp, sol, ratio=0.3, seeds=(0, 1, 2, 3, 4)) -> list[frozenset]:
-    return [frozenset(comp.destroy(sol, ratio, Random(s))[1]) for s in seeds]
+from core.validation.diversity import jaccard, signature
 
 
 def diversity_table(registry, slot: str, inst) -> list[tuple[str, str, float]]:
@@ -49,16 +40,12 @@ def diversity_table(registry, slot: str, inst) -> list[tuple[str, str, float]]:
     sigs = {}
     for spec in specs:
         comp = spec.make(problem, **spec.default_params())
-        if slot == "neighborhood":
-            sigs[spec.name] = neighborhood_signature(problem, comp, sol)
-        elif slot == "destruction":
-            sigs[spec.name] = destruction_signature(comp, sol)
+        sig = signature(slot, comp, sol)
+        if sig:
+            sigs[spec.name] = sig
     rows = []
     for a, b in combinations(sigs, 2):
-        if slot == "neighborhood":
-            rows.append((a, b, jaccard(sigs[a], sigs[b])))
-        elif slot == "destruction":
-            rows.append((a, b, mean(jaccard(set(x), set(y)) for x, y in zip(sigs[a], sigs[b]))))
+        rows.append((a, b, jaccard(sigs[a], sigs[b])))
     return rows
 
 

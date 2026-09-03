@@ -90,6 +90,27 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   garantizada factible** en los micro-contextos (lot-for-lot o, si no alcanza
   la capacidad, Relax-and-Fix). El prompt de vecindarios y perturbaciones
   ahora incluye una micro-instancia con su solución de partida dibujada.
+  Tras la corrida 5 (9/12; vecindarios 0/3 → 3/3 con el gate agregado "basta un
+  contexto") se corrigieron dos cosas más: `explain_infeasibility` **distingue
+  capacidad saturada de setup faltante** ("el período 1 está SATURADO, usa 43,0 de
+  41,3: no falta un setup, falta ADELANTAR producción a t=0, que tiene 41 libres"),
+  porque tres constructores murieron por 1,67 unidades sin que el mensaje dijera
+  dónde estaba la holgura; y el umbral del gate de constructor pasó a ser
+  configurable con default laxo (`constructor_max_relative_gap = 1.0`), porque la
+  referencia puede ser Relax-and-Fix (basada en MIP) y el 25% anterior le exigía a
+  un greedy calidad de matheurística — además hacía que el generador cortara en ese
+  reproche de calidad y nunca reportara la infactibilidad real de otra instancia.
+  Y el hallazgo con más filo de la corrida 5: con el gate estricto los vecindarios
+  pasaron de inertes (+0,0%) a **útiles** (+30,3% a +30,9%, dos de ellos por encima
+  del `setup_flip` escrito a mano), pero la **diversidad se derrumbó** (Jaccard
+  0,75–1,00 entre sí y con el de referencia). Exigir mejora desde la partida embudona
+  al modelo hacia el único movimiento elemental que funciona. De ahí
+  **`core/validation/diversity.py`** y el gate `<slot>.distinct_from_accepted`: firma
+  estructural del componente (vecinos alcanzables desde una solución fija; conjuntos
+  de `free_vars`; soluciones perturbadas) comparada por Jaccard contra los ya
+  aceptados **y contra el catálogo existente**, con un mensaje que pide una idea
+  algorítmica distinta y enumera ejes por los que variar. `benchmark_components`
+  reutiliza las mismas firmas.
 - **`llm/`** — Ciclo generar → validar → corregir de §6, como funciones
   planas (sin framework de orquestación por ahora; ver nota abajo).
   `client.py`: `LLMClient` intercambiable con `OpenAIClient`
@@ -140,7 +161,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   Fix-and-Optimize y el MIP completo.
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 85 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 88 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -161,7 +182,7 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 85 passed (~27 s)
+python -m pytest -q                 # 88 passed (~28 s)
 
 export OPENAI_API_KEY=...
 python -m examples.lotsizing.generate --slots neighborhood destruction --n 3   # generación real

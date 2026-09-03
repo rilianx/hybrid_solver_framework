@@ -16,6 +16,7 @@ from pathlib import Path
 
 from llm import OpenAIClient, TranscriptClient, generate_slot
 
+from .catalog import build_registry
 from .llm_spec import make_contexts, make_spec
 
 
@@ -38,9 +39,22 @@ def main() -> None:
     client = TranscriptClient(inner, Path(args.workspace) / "transcript")
 
     spec, contexts = make_spec(), make_contexts()
+    # Componentes que ya existen en el catálogo: el gate de diversidad los usa para que el
+    # modelo no reinvente `setup_flip` con otro nombre (corrida 5: Jaccard 1,00).
+    registry = build_registry()
     all_stats = {}
     for slot in args.slots:
-        accepted, stats = generate_slot(client, spec, slot, args.n, contexts, args.workspace, max_rounds=args.rounds)
+        peers = [
+            (spec_c.name, spec_c.make(contexts[0].problem, **spec_c.default_params()))
+            for spec_c in registry.for_slot(slot)
+        ]
+        if peers:
+            print(f"[{slot}] comparando diversidad contra {[n for n, _ in peers]}")
+        accepted, stats = generate_slot(
+            client, spec, slot, args.n, contexts, args.workspace,
+            max_rounds=args.rounds, catalog_peers=peers,
+            avoid_names=[n for n, _ in peers],
+        )
         all_stats[slot] = {
             "requested": stats.requested, "parsed": stats.parsed, "accepted": stats.accepted,
             "llm_calls": stats.llm_calls, "llm_seconds": round(stats.llm_seconds, 1),

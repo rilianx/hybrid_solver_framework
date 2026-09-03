@@ -13,6 +13,7 @@ orquesta con LangGraph.
 
 from __future__ import annotations
 
+import dataclasses
 import time
 from collections import Counter
 from dataclasses import dataclass, field
@@ -62,10 +63,15 @@ class GenerationStats:
         )
 
 
-def validate_generated_module(path: Path, contexts: list[ValidationContext]) -> tuple[ValidationReport, Any, dict | None]:
+def validate_generated_module(
+    path: str | Path,
+    contexts: list[ValidationContext],
+    peers: list[tuple[str, Any]] | None = None,
+) -> tuple[ValidationReport, Any, dict | None]:
     """Carga el módulo generado, construye el componente con `build_component(problem)`
     para cada micro-contexto y corre todas las capas. Devuelve el primer reporte
     fallido (o el último exitoso), el módulo y su COMPONENT."""
+    path = Path(path)
     report = ValidationReport(subject=f"módulo '{path.name}'")
     module, r = load_module(path)
     report.add(r)
@@ -87,7 +93,8 @@ def validate_generated_module(path: Path, contexts: list[ValidationContext]) -> 
     # insatisfacible para operadores legítimos (corrida 4: `single_setup_removal_r1`).
     AGGREGATE_ANY = {"neighborhood.improves_from_start"}
     reports: list[ValidationReport] = []
-    for k, ctx in enumerate(contexts):
+    for k, ctx0 in enumerate(contexts):
+        ctx = dataclasses.replace(ctx0, accepted_peers=list(peers or [])) if peers else ctx0
         try:
             impl = factory(ctx.problem)
         except Exception as exc:  # noqa: BLE001
@@ -119,8 +126,13 @@ def generate_slot(
     workspace: str | Path,
     max_rounds: int = 3,
     avoid_names: list[str] | None = None,
+    catalog_peers: list[tuple[str, Any]] | None = None,
     verbose: bool = True,
 ) -> tuple[list[GeneratedComponent], GenerationStats]:
+    """`catalog_peers`: componentes del mismo slot que YA existen (escritos a mano o de
+    corridas previas), como (nombre, impl) ligados al ProblemModel del primer contexto.
+    El gate de diversidad los usa junto a los aceptados en esta corrida, para que el
+    modelo no reinvente un operador que ya está en el catálogo."""
     workspace = Path(workspace)
     stats = GenerationStats(slot=slot, requested=n_variants)
     accepted: list[GeneratedComponent] = []
@@ -140,7 +152,10 @@ def generate_slot(
     pending: list[tuple[ParsedModule, int]] = [(m, 1) for m in modules]
     while pending:
         m, round_no = pending.pop(0)
-        report, module, component = validate_generated_module(m.path, contexts)
+        peers = list(catalog_peers or []) + [
+            (c.name, c.build_component(contexts[0].problem)) for c in accepted if c.slot == slot
+        ]
+        report, module, component = validate_generated_module(m.path, contexts, peers=peers)
         name = (component or {}).get("name", m.name or m.path.stem)
         if report.passed:
             accepted.append(

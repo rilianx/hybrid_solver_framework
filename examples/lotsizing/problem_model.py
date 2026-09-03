@@ -276,25 +276,51 @@ class LotSizingModel:
         return self._eval(sol)[1] < 1e-6
 
     def explain_infeasibility(self, sol: Solution) -> str:
-        """Texto para el validador / el LLM: qué demanda queda sin cubrir y por qué (§6, feedback).
+        """Texto para el validador / el LLM: qué demanda queda sin cubrir Y POR QUÉ (§6).
 
-        Con solo "infactible" el modelo no ve el error conceptual (p.ej. producir en t=7 para
-        demanda de t=2). Aquí se le dice ítem, período y cantidad, y se recuerda la regla.
+        Distingue las dos causas, porque el arreglo es distinto en cada una:
+        - *sin setup previo*: el ítem no produce en t ni antes → hay que encender un setup.
+        - *capacidad saturada*: sí hay setup, pero el período no da abasto → hay que
+          adelantar producción a un período anterior con holgura y almacenar.
+        Sin esta distinción el modelo ve solo "faltante 2 unidades" y no sabe qué mover
+        (corrida 5: tres constructores murieron por 1,67 unidades en un período saturado
+        teniendo el período anterior completamente libre).
         """
         detail = self.mip.shortage_detail(sol)
         if not detail:
             return "sin faltante"
-        rows = sorted(detail.items(), key=lambda kv: -kv[1])[:6]
+        inst = self.inst
+        used = []
+        for t in range(inst.n_periods):
+            prod = sum(inst.demand[i][t] for i in range(inst.n_items) if sol[i][t])
+            st = sum(inst.setup_time[i] for i in range(inst.n_items) if sol[i][t])
+            used.append((prod + st, inst.capacity[t]))
+
+        rows = sorted(detail.items(), key=lambda kv: -kv[1])[:5]
         parts = [f"ítem {i} período {t}: {q:.0f} unidades" for (i, t), q in rows]
-        extra = f" (+{len(detail) - 6} celdas más)" if len(detail) > 6 else ""
-        total = sum(detail.values())
+        extra = f" (+{len(detail) - 5} celdas más)" if len(detail) > 5 else ""
+
         hints = []
         for (i, t), _q in rows[:3]:
-            setups_before = [tt for tt in range(t + 1) if sol[i][tt]]
-            if not setups_before:
-                hints.append(f"el ítem {i} no tiene ningún setup en t ≤ {t}, así que su demanda en t={t} no puede cubrirse")
+            if not any(sol[i][tt] for tt in range(t + 1)):
+                hints.append(f"el ítem {i} no tiene ningún setup en t ≤ {t}: hay que ENCENDER uno")
+                continue
+            u, cap = used[t]
+            if u > cap + 1e-6:
+                free = [(tt, used[tt][1] - used[tt][0]) for tt in range(t) if used[tt][1] - used[tt][0] > 1e-6]
+                where = (", ".join(f"t={tt} tiene {f:.0f} libres" for tt, f in free[-3:])
+                         if free else "ningún período anterior tiene holgura")
+                hints.append(
+                    f"el período {t} está SATURADO (usa {u:.1f} de {cap:.1f} de capacidad, se pasa por {u - cap:.1f}): "
+                    f"no falta un setup, falta ADELANTAR producción del ítem {i} a un período anterior con holgura "
+                    f"({where}) y dejar que el inventario cubra t={t}"
+                )
+            else:
+                hints.append(f"el ítem {i} en t={t} queda sin cubrir aunque el período no está saturado: revisa la secuencia de setups")
+
+        total = sum(detail.values())
         rule = ("Regla: sin backlog, la demanda del período t solo puede producirse en t o ANTES (y almacenarse); "
-                "además la suma de producción + tiempos de setup de cada período debe respetar la capacidad.")
+                "la suma de producción + tiempos de setup de cada período debe respetar la capacidad.")
         return (f"faltante total {total:.0f} unidades — " + "; ".join(parts) + extra + ". "
                 + ("; ".join(hints) + ". " if hints else "") + rule)
 

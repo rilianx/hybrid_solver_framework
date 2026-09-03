@@ -372,3 +372,45 @@ def test_quality_gate_rejects_destruction_ignoring_ratio(clsp_ctx):
 
     report = validate_component({"name": "fixed_one", "slot": "destruction"}, FixedOne(), clsp_ctx)
     assert any(c.name == "destruction.ratio_monotone" for c in report.failures())
+
+
+def test_infeasibility_feedback_distinguishes_capacity_from_missing_setup():
+    """Corrida 5: tres constructores murieron por 1,67 unidades en un período saturado
+    teniendo el anterior libre, y el mensaje solo decía "faltante 2 unidades". El detalle
+    debe distinguir las dos causas, porque el arreglo es distinto en cada una."""
+    from examples.lotsizing.components import LotForLotConstructor
+    from examples.lotsizing.llm_spec import make_contexts
+
+    ctxs = make_contexts(strict=True)
+
+    # (a) capacidad saturada: lot-for-lot en la micro-instancia donde el pico no cabe
+    ctx = next(c for c in ctxs if not c.problem.is_feasible(LotForLotConstructor().build(c.instances[0], Random(0))))
+    msg = ctx.problem.explain_infeasibility(LotForLotConstructor().build(ctx.instances[0], Random(0)))
+    assert "SATURADO" in msg and "ADELANTAR" in msg and "libres" in msg
+    assert "no falta un setup" in msg
+
+    # (b) falta el setup: sin ningún setup, la causa es otra y el mensaje lo dice
+    ctx0 = ctxs[0]
+    empty = tuple(tuple(False for _ in range(ctx0.instances[0].n_periods)) for _ in range(ctx0.instances[0].n_items))
+    msg0 = ctx0.problem.explain_infeasibility(empty)
+    assert "no tiene ningún setup" in msg0 and "ENCENDER" in msg0 and "SATURADO" not in msg0
+
+
+def test_constructor_quality_gate_threshold_is_configurable():
+    """El gate compara contra una referencia que puede ser Relax-and-Fix (MIP): exigirle
+    cercanía a un greedy es exigirle calidad de matheurística. Umbral laxo y explícito."""
+    from examples.lotsizing.llm_spec import make_contexts
+    from dataclasses import replace
+
+    ctx = make_contexts(n_contexts=1, strict=True)[0]
+
+    class AllSetups:
+        def build(self, inst, rng):
+            return tuple(tuple(True for _ in range(inst.n_periods)) for _ in range(inst.n_items))
+
+    comp = {"name": "all_setups", "slot": "constructor"}
+    lax = validate_component(comp, AllSetups(), ctx)
+    tight = validate_component(comp, AllSetups(), replace(ctx, constructor_max_relative_gap=0.01))
+    assert lax.passed or all(f.name != "constructor.not_much_worse_than_trivial" for f in lax.failures())
+    fail_msg = next(f.message for f in tight.failures() if f.name == "constructor.not_much_worse_than_trivial")
+    assert "referencia" in fail_msg and "umbral tolerado" in fail_msg

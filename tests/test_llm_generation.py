@@ -279,3 +279,46 @@ def test_strict_feedback_lists_concrete_improving_moves():
     assert not report.passed and any(f.name == "neighborhood.improves_from_start" for f in report.failures()), report.feedback()
     msg = report.feedback()
     assert "qué SÍ mejora" in msg and "APAGAR el setup del ítem" in msg and "NO compliques" in msg
+
+
+def test_diversity_gate_rejects_duplicate_of_catalog_peer(tmp_path):
+    """Corrida 5: con el gate estricto los tres vecindarios salieron con Jaccard 0,75–1,00
+    entre sí y con el `setup_flip` escrito a mano — el gate embudona hacia el único operador
+    que mejora. El gate de diversidad compara estructuralmente contra los ya aceptados y
+    contra el catálogo, y pide una idea distinta, no otro nombre."""
+    from examples.lotsizing.components import SetupFlipNeighborhood
+
+    spec = make_spec()
+    contexts = make_contexts(n_contexts=1, n_items=2, n_periods=4, strict=False)
+    peers = [("setup_flip", SetupFlipNeighborhood(contexts[0].problem))]
+
+    # GOOD_SHIFT mueve un setup al período anterior: alcanza vecinos que un flip no alcanza
+    client = ScriptedClient(responses=[fence(GOOD_SHIFT)])
+    accepted, _ = generate_slot(client, spec, "neighborhood", 1, contexts, tmp_path,
+                                catalog_peers=peers, verbose=False)
+    assert [c.name for c in accepted] == ["shift_setup_earlier"]
+
+    # un flip disfrazado con otro nombre y otra representación del movimiento: mismo vecindario
+    disguised = textwrap.dedent('''
+        COMPONENT = {"name": "toggle_disguised", "slot": "neighborhood", "compatible_skeletons": ["SA"], "params": {}}
+
+        class ToggleDisguised:
+            def __init__(self, problem): self.problem = problem
+            def moves(self, sol):
+                return [(t, i, "flip") for i in range(len(sol)) for t in range(len(sol[i]))]
+            def apply(self, sol, m):
+                t, i, _ = m; row = sol[i][:t] + (not sol[i][t],) + sol[i][t + 1:]
+                return sol[:i] + (row,) + sol[i + 1:]
+            def undo(self, sol, m): return self.apply(sol, m)
+            def delta(self, sol, m):
+                return self.problem.objective(self.apply(sol, m)) - self.problem.objective(sol)
+
+        def build_component(problem):
+            return ToggleDisguised(problem)
+    ''')
+    client = ScriptedClient(responses=[fence(disguised)] * 4)
+    accepted, stats = generate_slot(client, spec, "neighborhood", 1, contexts, tmp_path,
+                                    max_rounds=2, catalog_peers=peers, verbose=False)
+    assert accepted == [] and stats.rejections_by_layer == {"quality": 2}
+    msg = client.calls[1][1]
+    assert "setup_flip" in msg and "Jaccard 1.00" in msg and "IDEA" in msg

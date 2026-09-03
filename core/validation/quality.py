@@ -11,6 +11,7 @@ from random import Random
 from statistics import mean
 
 from .base import CheckResult, ValidationContext, fail, ok
+from .diversity import most_similar
 from .operational import VariantRunner
 
 LAYER = "quality"
@@ -82,21 +83,51 @@ def _reference_improvements(ctx: ValidationContext, k: int = 0, top: int = 3) ->
         return ""
 
 
+def _check_diversity(slot: str, impl, ctx: ValidationContext) -> list[CheckResult]:
+    """Rechaza un componente estructuralmente equivalente a otro ya aceptado del mismo slot."""
+    if not ctx.accepted_peers:
+        return []
+    sim = most_similar(slot, impl, ctx.accepted_peers, ctx.trivial_solutions[0])
+    if sim is None:
+        return []
+    name, j = sim
+    if j > ctx.max_similarity_to_peers:
+        return [fail(LAYER, f"{slot}.distinct_from_accepted",
+            f"produce esencialmente los mismos resultados que `{name}`, ya aceptado "
+            f"(similitud de Jaccard {j:.2f} sobre {'los vecinos alcanzables' if slot == 'neighborhood' else 'los conjuntos producidos'} "
+            f"desde la misma solución; se tolera hasta {ctx.max_similarity_to_peers:.2f}). "
+            f"No basta con otro nombre ni otra representación del movimiento: hace falta una IDEA "
+            f"algorítmica distinta, que alcance soluciones que `{name}` no alcanza. "
+            f"Ejemplos de ejes por los que variar: cuántas celdas toca a la vez, si mueve producción entre "
+            f"períodos en vez de encender/apagar, si opera sobre un ítem o sobre un período completo, "
+            f"si usa la estructura del problema (capacidad saturada, demanda cero, inventario acumulado).")]
+    return [ok(LAYER, f"{slot}.distinct_from_accepted", f"más parecido: `{name}` con Jaccard {j:.2f}")]
+
+
 def check_component_quality(slot: str, impl, ctx: ValidationContext) -> list[CheckResult]:
     P = ctx.problem
-    results: list[CheckResult] = []
+    results: list[CheckResult] = list(_check_diversity(slot, impl, ctx))
 
     if slot == "constructor":
-        # No mucho peor que la solución trivial factible que ya conocemos.
-        worst_ratio = 0.0
+        # No absurdamente peor que la solución trivial factible de referencia. Umbral laxo
+        # a propósito: la referencia puede ser Relax-and-Fix (MIP) y un constructor solo
+        # tiene que ser un punto de partida usable, no competir con una matheurística.
+        limit = ctx.constructor_max_relative_gap
+        worst_ratio, worst_k = 0.0, 0
         for k, inst in enumerate(ctx.instances):
             f_triv = P.objective(ctx.trivial_solutions[k])
             f_built = mean(P.objective(impl.build(inst, Random(s))) for s in ctx.seeds)
-            worst_ratio = max(worst_ratio, (f_built - f_triv) / max(1.0, abs(f_triv)))
-        if worst_ratio > 0.25:
-            results.append(fail(LAYER, "constructor.not_much_worse_than_trivial", f"el constructor es {worst_ratio:+.0%} peor que la solución trivial factible en alguna micro-instancia (umbral +25%)"))
+            ratio = (f_built - f_triv) / max(1.0, abs(f_triv))
+            if ratio > worst_ratio:
+                worst_ratio, worst_k = ratio, k
+        if worst_ratio > limit:
+            f_triv = P.objective(ctx.trivial_solutions[worst_k])
+            results.append(fail(LAYER, "constructor.not_much_worse_than_trivial",
+                f"el constructor cuesta {worst_ratio:+.0%} más que la solución de referencia en la micro-instancia {worst_k} "
+                f"(referencia = {f_triv:.0f}; umbral tolerado {limit:+.0%}). No hace falta que sea óptimo, pero sí un punto de "
+                f"partida razonable: evita encender setups que no cubren demanda."))
         else:
-            results.append(ok(LAYER, "constructor.not_much_worse_than_trivial", f"peor caso {worst_ratio:+.0%} vs trivial"))
+            results.append(ok(LAYER, "constructor.not_much_worse_than_trivial", f"peor caso {worst_ratio:+.0%} vs referencia (límite {limit:+.0%})"))
 
     elif slot == "neighborhood":
         # Debe existir al menos un movimiento de mejora. Se distingue entre soluciones de

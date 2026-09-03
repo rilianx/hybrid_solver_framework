@@ -94,6 +94,17 @@ class ValidationContext:
     # esqueleto); se deja en False al admitir al catálogo, porque un operador estrecho
     # puede valer en combinación (VNS, ILS) y eso lo decide el tuning.
     require_improving_from_start: bool = False
+    # Cuánto peor que la solución trivial de referencia se tolera a un constructor. La
+    # referencia puede ser Relax-and-Fix (basada en MIP) en instancias donde lot-for-lot
+    # es infactible, así que exigir cerca de ella es exigirle calidad de matheurística a
+    # un greedy: el constructor solo tiene que ser un punto de partida usable.
+    constructor_max_relative_gap: float = 1.0
+    # Componentes del mismo slot YA aceptados, como (nombre, impl). El gate de diversidad
+    # rechaza un componente estructuralmente equivalente a uno de estos: exigir mejora
+    # desde la partida embudona al modelo hacia el único operador que funciona
+    # (corrida 5: Jaccard 0,75–1,00 entre los tres "vecindarios distintos").
+    accepted_peers: list = field(default_factory=list)
+    max_similarity_to_peers: float = 0.8
     # Opcional: enumerador de todas las soluciones de una micro-instancia
     # (para comparar el óptimo del MIP contra fuerza bruta).
     enumerate_solutions: Callable[[Any], Sequence[Any]] | None = None
