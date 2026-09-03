@@ -40,7 +40,13 @@ def render(stats: dict) -> str:
 def main() -> None:
     path = Path(sys.argv[1] if len(sys.argv) > 1 else "generated/clsp/stats.json")
     if not path.exists():
-        print(f"_No se encontró `{path}`._")
+        print(f"> **La generación no dejó `{path}`**, así que no llegó a completarse.")
+        print(">")
+        print("> Revisa cuál paso quedó en rojo más arriba:")
+        print("> - *Comprobar que la clave está configurada* → falta el secreto `OPENAI_API_KEY`")
+        print(">   (Settings → Secrets and variables → Actions; el nombre debe coincidir exacto).")
+        print("> - *Instalar dependencias* → problema de `pip install -r requirements.txt`.")
+        print("> - *Generar y validar* → error real de la API o del código; el log de abajo lo dice.")
         return
     print(render(json.loads(path.read_text())))
 
