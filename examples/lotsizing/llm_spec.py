@@ -24,7 +24,7 @@ def make_spec() -> ProblemSpec:
             "de un período, y tiempo de setup st[i]. Cada período t tiene capacidad cap[t] compartida por todos los ítems: "
             "suma de producción x[i][t] más tiempos de setup de los ítems producidos <= cap[t]. No hay backlog: la demanda debe "
             "cubrirse con producción del período o inventario previo. Objetivo: minimizar setups + inventario. Un plan de setups "
-            "que no alcanza a cubrir la demanda se penaliza con 1000 por unidad faltante (no se rechaza), así que la función "
+            "que no alcanza a cubrir la demanda se penaliza fuertemente por unidad faltante (mucho más que cualquier setup; no se rechaza), así que la función "
             "objetivo siempre es finita."
         ),
         solution_representation=(
@@ -55,7 +55,12 @@ def make_spec() -> ProblemSpec:
 def make_contexts(n_contexts: int = 2, n_items: int = 3, n_periods: int = 5, seed: int = 7) -> list[ValidationContext]:
     contexts = []
     for k in range(n_contexts):
-        inst = pm.CLSPInstance.random(n_items, n_periods, Random(seed + k))
+        # Alternar instancias holgadas y ajustadas (utilización 0.95, tipo Trigeiro):
+        # en las ajustadas la factibilidad y la capacidad compartida sí muerden.
+        if k % 2 == 0:
+            inst = pm.CLSPInstance.trigeiro(n_items, n_periods, Random(seed + k), utilization=0.95, tbo=2.0)
+        else:
+            inst = pm.CLSPInstance.random(n_items, n_periods, Random(seed + k))
         problem = pm.LotSizingModel(inst)
         contexts.append(
             ValidationContext(

@@ -24,9 +24,13 @@ from core.common_components import BetterAcceptance, MIPModelRepair, MaxTimeStop
 from core.component import ComponentRegistry, ComponentSpec
 from core.skeleton import RunResult
 from skeletons.fix_and_optimize import build_fix_and_optimize, run_fix_and_optimize
+from skeletons.grasp import build_grasp, run_grasp
 from skeletons.ils import build_ils, hill_climb
 from skeletons.lns_mip import build_lns_mip, run_lns_mip
+from skeletons.local_branching import build_local_branching, run_local_branching
 from skeletons.sa import MetropolisAcceptance, build_sa, make_run
+from skeletons.ts import build_ts
+from skeletons.vns import build_vns
 
 VariantRunner = Callable[[Any, Random, float], RunResult]
 
@@ -69,6 +73,37 @@ SKELETONS: dict[str, SkeletonDef] = {
             "block_size": {"type": "int", "range": [1, 4]},
             "mip_time_share": {"type": "float", "range": [0.02, 0.3], "log": True},
             "order": {"type": "cat", "values": ["sequential", "random"]},
+        },
+    ),
+    "TS": SkeletonDef(
+        "TS", ("constructor", "neighborhood"),
+        params={
+            "tenure": {"type": "int", "range": [3, 30]},
+            "candidate_size": {"type": "int", "range": [5, 100], "log": True},
+        },
+    ),
+    "VNS": SkeletonDef(
+        # `neighborhood` es el de la búsqueda local; para el shake se usan, en orden,
+        # todos los vecindarios compatibles del catálogo (k_max = cuántos hay).
+        "VNS", ("constructor", "neighborhood"),
+        params={
+            "shake_strength": {"type": "int", "range": [1, 4]},
+            "ls_time_share": {"type": "float", "range": [0.02, 0.3]},
+        },
+    ),
+    "GRASP": SkeletonDef(
+        "GRASP", ("constructor", "neighborhood"),
+        params={
+            "ls_strategy": {"type": "cat", "values": ["first", "best"]},
+            "ls_time_share": {"type": "float", "range": [0.02, 0.3]},
+        },
+    ),
+    "LOCAL_BRANCH": SkeletonDef(
+        "LOCAL_BRANCH", ("constructor",),
+        params={
+            "k": {"type": "int", "range": [2, 20]},
+            "k_step": {"type": "int", "range": [1, 10]},
+            "mip_time_share": {"type": "float", "range": [0.05, 0.5], "log": True},
         },
     ),
 }
@@ -185,6 +220,29 @@ class Assembler:
                                             block_size=sp("block_size"), time_limit=max(1.0, budget * sp("mip_time_share")),
                                             order=sp("order"))
                 return run_fix_and_optimize(sk, inst, rng)
+            if skeleton == "TS":
+                nbh = self._component(config, "neighborhood", skeleton, P)
+                sk = build_ts(P, constructor, nbh, MaxTimeStop(budget), tenure=sp("tenure"), candidate_size=sp("candidate_size"))
+                return sk.run(inst, rng)
+            if skeleton == "VNS":
+                ls_nbh = self._component(config, "neighborhood", skeleton, P)
+                others = [
+                    spec.make(P, **{p_: config[f"{spec.name}.{p_}"] for p_ in spec.params if f"{spec.name}.{p_}" in config})
+                    for spec in self.registry.compatible("neighborhood", skeleton)
+                    if spec.name != config["neighborhood"]
+                ]
+                sk = build_vns(P, constructor, [ls_nbh] + others, MaxTimeStop(budget),
+                               shake_strength=sp("shake_strength"), ls_max_seconds=budget * sp("ls_time_share"))
+                return sk.run(inst, rng)
+            if skeleton == "GRASP":
+                nbh = self._component(config, "neighborhood", skeleton, P)
+                sk = build_grasp(P, constructor, nbh, MaxTimeStop(budget), ls_strategy=sp("ls_strategy"),
+                                 ls_max_seconds=budget * sp("ls_time_share"))
+                return run_grasp(sk, inst, rng)
+            if skeleton == "LOCAL_BRANCH":
+                sk = build_local_branching(P, constructor, MaxTimeStop(budget), k=sp("k"), k_step=sp("k_step"),
+                                           time_limit=max(1.0, budget * sp("mip_time_share")))
+                return run_local_branching(sk, inst, rng)
             raise AssemblyError(f"esqueleto {skeleton} declarado pero sin constructor de variante")
 
         return run

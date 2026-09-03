@@ -73,6 +73,21 @@ SLOT_HINTS = {
 }
 
 
+# Esqueletos del ensamblador que consumen cada slot: lo que el LLM debe declarar en
+# COMPONENT["compatible_skeletons"] para que el componente entre al espacio de diseño
+# de todos los esqueletos donde tiene sentido (no solo a los del ejemplo few-shot).
+SKELETONS_FOR_SLOT = {
+    "constructor": ["SA", "ILS", "TS", "VNS", "GRASP", "LNS_MIP", "FIX_OPT", "LOCAL_BRANCH"],
+    "neighborhood": ["SA", "ILS", "TS", "VNS", "GRASP"],
+    "perturbation": ["ILS"],
+    "destruction": ["LNS_MIP"],
+    "repair_mip": ["LNS_MIP"],
+    "fixing_policy": ["FIX_OPT"],
+    "acceptance": ["SA", "ILS", "LNS_MIP"],
+    "stop": ["SA", "ILS", "TS", "VNS", "GRASP", "LNS_MIP", "FIX_OPT", "LOCAL_BRANCH"],
+}
+
+
 def generation_prompt(spec: ProblemSpec, slot: str, n_variants: int, avoid_names: list[str] | None = None) -> str:
     fewshot = FEWSHOT.get(slot)
     parts = [
@@ -82,6 +97,11 @@ def generation_prompt(spec: ProblemSpec, slot: str, n_variants: int, avoid_names
     ]
     if slot in SLOT_HINTS:
         parts.append(f"\n# Propiedades que verificará el validador\n{SLOT_HINTS[slot]}")
+    if slot in SKELETONS_FOR_SLOT:
+        parts.append(
+            f"\nDeclara `\"compatible_skeletons\": {SKELETONS_FOR_SLOT[slot]}` salvo que el componente dependa de un "
+            "esqueleto concreto (p.ej. use la temperatura de SA)."
+        )
     if fewshot:
         parts.append(
             "\n# Ejemplo de componente válido para OTRO problema (mochila 0/1), en el formato exacto requerido\n"

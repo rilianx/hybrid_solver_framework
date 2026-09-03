@@ -19,7 +19,7 @@ from typing import Any
 from .base import ValidationContext, ValidationReport
 from .contractual import check_slot
 from .operational import VariantRunner, check_repair_mip_time_limit, check_variant_runs
-from .quality import check_min_quality
+from .quality import check_component_quality, check_min_quality
 from .semantic_mip import check_problem_model_mip
 from .syntactic import check_component_dict, check_module, check_protocol, load_module
 
@@ -40,6 +40,9 @@ def validate_component(component: dict[str, Any], impl: Any, ctx: ValidationCont
 
     if spec.slot == "repair_mip":
         report.extend(check_repair_mip_time_limit(impl, ctx, time_limit=1.0))
+        if stop_at_first_failed_layer and not report.passed:
+            return report
+    report.extend(check_component_quality(spec.slot, impl, ctx))
     return report
 
 
@@ -60,6 +63,9 @@ def validate_component_file(path: str | Path, ctx: ValidationContext) -> Validat
         return report
     if spec.slot == "repair_mip":
         report.extend(check_repair_mip_time_limit(impl, ctx, time_limit=1.0))
+        if not report.passed:
+            return report
+    report.extend(check_component_quality(spec.slot, impl, ctx))
     return report
 
 

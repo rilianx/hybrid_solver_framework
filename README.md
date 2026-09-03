@@ -47,6 +47,16 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
 - **`skeletons/fix_and_optimize.py`** — `build_fix_and_optimize`:
   LNS-MIP con destrucción estructurada por bloques, sobre el mismo
   `TrajectorySkeleton`.
+- **`skeletons/ts.py`, `vns.py`, `grasp.py`, `local_branching.py`** — Los
+  esqueletos restantes de §5: Tabu Search (con `TabuMemory` genérica sobre
+  movimientos hashables, tenencia y aspiración; prohíbe el inverso si el
+  vecindario expone `inverse(m)`), VNS (lista ordenada de vecindarios para
+  el shake, LS con `hill_climb`, k cíclico en `state.extra`), GRASP+LS
+  (reinicios: construir con `rng` + LS, conservar el mejor) y Local
+  Branching (el `MIPModel` acepta `near=(x̄, k)`: Σ|x−x̄| ≤ k; k crece con
+  `k_step` si no hay mejora y vuelve a k0 si la hay). Todos son
+  configuraciones del mismo `TrajectorySkeleton`, registrados en
+  `Assembler.SKELETONS`: 8 esqueletos en el espacio de diseño.
 - **`core/validation/`** — Las cinco capas de validación autónoma de §7:
   *sintáctica* (import, esquema `COMPONENT`, métodos del Protocol del
   slot), *contractual* (propiedades de la tabla §4 por slot, muestreadas
@@ -59,7 +69,14 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   timeout, sin excepciones ni fugas de tiempo; `repair_mip` respeta
   `time_limit`) y *calidad mínima* (mejora al constructor aleatorio y no es
   inerte). `ValidationReport.feedback()` es el texto que se devuelve al LLM
-  para corregir (§6). Se detiene en la primera capa que falla.
+  para corregir (§6). Se detiene en la primera capa que falla. Tras la capa
+  contractual, `check_component_quality` aplica un gate de *sentido* por
+  slot (constructor no mucho peor que la solución trivial; vecindario con
+  al menos un movimiento de mejora desde soluciones típicas y aleatorias;
+  `strength`/`ratio` monótonos en perturbación/destrucción): la primera
+  corrida real con `gpt-5.4-mini` aceptó 12/12 componentes a la primera,
+  lo que mostró que la capa contractual sola detecta errores de
+  implementación pero no de diseño.
 - **`llm/`** — Ciclo generar → validar → corregir de §6, como funciones
   planas (sin framework de orquestación por ahora; ver nota abajo).
   `client.py`: `LLMClient` intercambiable con `OpenAIClient`
@@ -110,7 +127,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   Fix-and-Optimize y el MIP completo.
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 70 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 81 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -131,7 +148,7 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 70 passed (~20 s)
+python -m pytest -q                 # 81 passed (~25 s)
 
 export OPENAI_API_KEY=...
 python -m examples.lotsizing.generate --slots neighborhood destruction --n 3   # generación real
@@ -161,6 +178,30 @@ Con instancias duras las variantes ya discriminan: el componente de
 destrucción que usa la estructura temporal gana, y las matheurísticas
 superan al MIP completo con el mismo tiempo (§10, primera pregunta).
 
+## Los 8 esqueletos con configuración por defecto (CLSP Trigeiro 15×20, 20 s)
+
+| Esqueleto (componentes a mano) | Costo |
+|---|---|
+| FIX_OPT (lot-for-lot + sliding_window) | 154 433 |
+| LOCAL_BRANCH (lot-for-lot) | 157 746 |
+| LNS_MIP (lot-for-lot + period_window) | 162 123 |
+| SA (setup_flip) | 170 406 |
+| ILS / VNS / TS / GRASP (setup_flip) | 219–222 k |
+
+TS, VNS y GRASP con un solo vecindario de flips y un constructor
+determinista son débiles por construcción (GRASP degenera en "construir
+una vez + LS"); son los esqueletos que más ganan con los vecindarios y
+constructores aleatorizados que genera el LLM.
+
+**Hallazgo de modelado**: con la penalización de faltante fija en 1000 por
+unidad, en instancias Trigeiro (setup ≈ 1000) LNS-MIP encontraba planes
+*infactibles* con mejor objetivo penalizado — dejar medio pedido sin cubrir
+era más barato que un setup. `shortage_penalty(inst)` ahora escala con la
+instancia (20 × (setup más caro + inventario de una unidad todo el
+horizonte)). Es exactamente el tipo de error sutil de formulación que §7
+capa 3 quiere atrapar, y aquí lo atrapó el `evaluate` del ensamblador al
+devolver la penalización por infactibilidad.
+
 ## Qué falta (siguientes pasos del plan, §9)
 
 1. **Correr la generación real** con `gpt-5.4-mini` (`examples.lotsizing.generate`)
@@ -170,6 +211,6 @@ superan al MIP completo con el mismo tiempo (§10, primera pregunta).
    runner y `config_space()` el espacio; falta solo el adaptador
    (`suggest_from_space` para Optuna, `to_irace_parameters` + script
    `target-runner` para irace) y la separación train/test.
-3. Esqueletos restantes de §5: TS, VNS, GRASP+LS, Local Branching,
-   MIP-guided Perturbation — cada uno una entrada en `SKELETONS` más una
-   rama en `Assembler.assemble`.
+3. MIP-guided Perturbation (§5.2), el único esqueleto de la tabla que
+   falta; y generación LLM del `ProblemModel` completo (§6.1), donde la
+   capa semántica tiene algo real que rechazar.

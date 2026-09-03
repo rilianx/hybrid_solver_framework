@@ -326,3 +326,49 @@ def test_lns_mip_variant_passes_on_clsp(clsp_ctx):
 
     report = validate_variant(run, clsp_ctx, name="LNS-MIP/CLSP", budget_seconds=2.0)
     assert report.passed, report.feedback()
+
+
+# --------------------------------------------------------------------------- calidad por componente
+
+
+def test_quality_gate_rejects_inert_neighborhood(clsp_ctx):
+    class NoOp:
+        """Movimientos válidos (undo/delta consistentes) que nunca cambian nada."""
+
+        def moves(self, sol):
+            return [(0, 0)]
+
+        def apply(self, sol, m):
+            return sol
+
+        def undo(self, sol, m):
+            return sol
+
+        def delta(self, sol, m):
+            return 0.0
+
+    report = validate_component({"name": "noop", "slot": "neighborhood"}, NoOp(), clsp_ctx)
+    assert report.failed_layer == "quality"
+    assert any(c.name == "neighborhood.has_improving_move" for c in report.failures())
+
+
+def test_quality_gate_rejects_much_worse_constructor(clsp_ctx):
+    class AllSetups:
+        def build(self, inst, rng):
+            return tuple(tuple(True for _ in range(inst.n_periods)) for _ in range(inst.n_items))
+
+    report = validate_component({"name": "all_setups", "slot": "constructor"}, AllSetups(), clsp_ctx)
+    assert report.failed_layer == "quality"
+    assert any(c.name == "constructor.not_much_worse_than_trivial" for c in report.failures())
+
+
+def test_quality_gate_rejects_destruction_ignoring_ratio(clsp_ctx):
+    class FixedOne:
+        def destroy(self, sol, ratio, rng):
+            names = sorted(clsp_ctx.variables(clsp_ctx.instances[0]))
+            free = {names[0]}
+            partial = {v: clsp_ctx.problem.to_assignment(sol)[v] for v in names if v not in free}
+            return partial, free
+
+    report = validate_component({"name": "fixed_one", "slot": "destruction"}, FixedOne(), clsp_ctx)
+    assert any(c.name == "destruction.ratio_monotone" for c in report.failures())

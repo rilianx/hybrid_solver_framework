@@ -25,11 +25,11 @@ from .llm_spec import make_contexts
 
 HANDWRITTEN = [
     (
-        {"name": "lot_for_lot", "slot": "constructor", "compatible_skeletons": ["SA", "ILS", "LNS_MIP", "FIX_OPT"], "params": {}},
+        {"name": "lot_for_lot", "slot": "constructor", "compatible_skeletons": ["SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH"], "params": {}},
         lambda problem: LotForLotConstructor(),
     ),
     (
-        {"name": "setup_flip", "slot": "neighborhood", "compatible_skeletons": ["SA", "ILS"], "params": {}},
+        {"name": "setup_flip", "slot": "neighborhood", "compatible_skeletons": ["SA", "ILS", "TS", "VNS", "GRASP"], "params": {}},
         lambda problem: SetupFlipNeighborhood(problem),
     ),
     (

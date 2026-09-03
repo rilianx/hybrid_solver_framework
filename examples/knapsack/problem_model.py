@@ -106,7 +106,7 @@ class KnapsackMip:
     def variables(self) -> list[str]:
         return [f"x{i}" for i in range(self.inst.n)]
 
-    def solve(self, fixed, integer, relaxed, time_limit, warm_start=None):
+    def solve(self, fixed, integer, relaxed, time_limit, warm_start=None, near=None):
         import pulp
 
         inst = self.inst
@@ -125,6 +125,9 @@ class KnapsackMip:
                     x[name].setInitialValue(int(round(warm_start[name])))
         prob += -pulp.lpSum(inst.values[i] * x[f"x{i}"] for i in range(inst.n))
         prob += pulp.lpSum(inst.weights[i] * x[f"x{i}"] for i in range(inst.n)) <= inst.capacity
+        if near is not None:
+            x_bar, k = near
+            prob += pulp.lpSum((1 - v) if round(x_bar.get(n, 0.0)) >= 1 else v for n, v in x.items() if n not in fixed) <= k
         prob.solve(pulp.PULP_CBC_CMD(msg=False, timeLimit=max(1, int(round(time_limit))), warmStart=bool(warm_start)))
         self.last_objective = None
         if pulp.LpStatus[prob.status] not in ("Optimal", "Not Solved"):

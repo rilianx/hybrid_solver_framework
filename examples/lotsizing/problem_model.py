@@ -26,7 +26,23 @@ import pulp
 
 Solution = tuple[tuple[bool, ...], ...]  # y[i][t]
 
-SHORTAGE_PENALTY = 1000.0
+SHORTAGE_PENALTY = 1000.0  # valor de referencia; ver `shortage_penalty(inst)`
+
+
+def shortage_penalty(inst: "CLSPInstance") -> float:
+    """Penalización por unidad de faltante, relativa a la instancia.
+
+    Debe ser tal que **ninguna** reducción de costo legítima (ahorrarse un
+    setup, vaciar inventario) compense dejar demanda sin cubrir; si no, la
+    búsqueda descubre que "un poco de faltante" es rentable y devuelve planes
+    infactibles con mejor objetivo penalizado (ocurrió con LNS-MIP en
+    instancias Trigeiro, donde un setup ≈ 1000 = la penalización fija).
+    Regla: 20 × (setup más caro + inventario de una unidad durante todo el
+    horizonte), con piso 1000, por unidad.
+    """
+    worst_setup = max(inst.setup_cost) if inst.setup_cost else 0.0
+    worst_hold = (max(inst.holding_cost) if inst.holding_cost else 0.0) * inst.n_periods
+    return max(1000.0, 20.0 * (worst_setup + worst_hold))
 
 
 @dataclass(frozen=True)
@@ -153,6 +169,7 @@ class CLSPMip:
         self.inst = inst
         self._names = [var_name(i, t) for i in range(inst.n_items) for t in range(inst.n_periods)]
         self.last_objective: float | None = None
+        self.penalty = shortage_penalty(inst)
 
     def variables(self) -> list[str]:
         return list(self._names)
@@ -185,14 +202,24 @@ class CLSPMip:
                 <= inst.capacity[t]
             )
         prob += pulp.lpSum(
-            inst.setup_cost[i] * y[i, t] + inst.holding_cost[i] * s[i, t] + SHORTAGE_PENALTY * u[i, t]
+            inst.setup_cost[i] * y[i, t] + inst.holding_cost[i] * s[i, t] + self.penalty * u[i, t]
             for i in range(inst.n_items)
             for t in range(inst.n_periods)
         )
         return prob, y, u
 
-    def solve(self, fixed, integer, relaxed, time_limit, warm_start=None):
+    def solve(self, fixed, integer, relaxed, time_limit, warm_start=None, near=None):
         prob, y, _u = self._build(fixed, integer, relaxed)
+        if near is not None:
+            x_bar, k = near
+            prob += (
+                pulp.lpSum(
+                    (1 - y[i, t]) if round(x_bar.get(var_name(i, t), 0.0)) >= 1 else y[i, t]
+                    for (i, t) in y
+                    if var_name(i, t) not in fixed
+                )
+                <= k
+            )
         if warm_start:
             for (i, t), v in y.items():
                 if v.cat == "Binary" and var_name(i, t) in warm_start:

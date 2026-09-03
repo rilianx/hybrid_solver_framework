@@ -31,8 +31,13 @@ class MIPModel(Protocol):
         relaxed: set[str],
         time_limit: float,
         warm_start: dict[str, float] | None = None,
+        near: tuple[dict[str, float], int] | None = None,
     ) -> dict[str, float] | None:
         """Resuelve con `fixed` fijadas, `integer` enteras y `relaxed` continuas.
+
+        `near=(x̄, k)` agrega la restricción de Local Branching (§5.2):
+        distancia de Hamming a x̄ sobre las variables enteras ≤ k, es decir
+        Σ_{x̄_j=0} x_j + Σ_{x̄_j=1} (1 − x_j) ≤ k.
 
         Toda variable de `variables()` debe caer en exactamente uno de los
         tres conjuntos. Devuelve la asignación de *todas* las variables de

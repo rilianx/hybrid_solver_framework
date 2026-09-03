@@ -103,3 +103,56 @@ def test_better_acceptance_rejects_worse():
     acc = BetterAcceptance()
     assert acc.accept(f_cur=10, f_cand=11, state=None) is False
     assert acc.accept(f_cur=10, f_cand=9, state=None) is True
+
+
+# --------------------------------------------------------------------------- esqueletos de §5 restantes
+
+
+def test_tabu_search_escapes_local_optimum_and_tracks_best():
+    from skeletons.ts import TabuMemory, build_ts
+
+    problem = ToyProblem()
+    neighborhood = ToyNeighborhood(problem)
+    memory = TabuMemory(tenure=3, neighborhood=neighborhood)
+    skeleton = build_ts(problem, ToyConstructor(), neighborhood, MaxIterationsStop(60), memory=memory, candidate_size=10)
+    result = skeleton.run(None, Random(3))
+    assert result.best_objective == 0
+    # TS siempre se mueve (AlwaysAccept): la solución actual se aleja del óptimo pero `best` lo conserva
+    assert result.iterations == 60 and result.accepted > 0
+
+
+def test_tabu_memory_expires_after_tenure():
+    from skeletons.ts import TabuMemory
+
+    mem = TabuMemory(tenure=2)
+    mem.forbid("a", None)
+    mem.forbid("b", None)
+    assert mem.is_tabu("a", None)
+    mem.forbid("c", None)  # expulsa "a"
+    assert not mem.is_tabu("a", None) and mem.is_tabu("b", None) and mem.is_tabu("c", None)
+
+
+def test_vns_cycles_k_and_reaches_optimum():
+    from skeletons.vns import build_vns
+
+    problem = ToyProblem()
+
+    class BigStep(ToyNeighborhood):
+        def moves(self, sol):
+            for step in (-5, 5):
+                if LO <= sol + step <= HI:
+                    yield step
+
+    n1, n2 = ToyNeighborhood(problem), BigStep(problem)
+    skeleton = build_vns(problem, ToyConstructor(), [n1, n2], MaxIterationsStop(15), shake_strength=2)
+    result = skeleton.run(None, Random(5))
+    assert result.best_objective == 0
+
+
+def test_grasp_restarts_and_keeps_best():
+    from skeletons.grasp import build_grasp, run_grasp
+
+    problem = ToyProblem()
+    skeleton = build_grasp(problem, ToyConstructor(), ToyNeighborhood(problem), MaxIterationsStop(5))
+    result = run_grasp(skeleton, None, Random(1))
+    assert result.best_objective == 0  # cada reinicio termina en el óptimo con hill_climb
