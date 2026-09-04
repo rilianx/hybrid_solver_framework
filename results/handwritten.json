@@ -1,0 +1,682 @@
+{
+  "catalog": "handwritten",
+  "generated_components": [],
+  "settings": {
+    "trials": 30,
+    "budget": 5.0,
+    "train": 3,
+    "test": 3,
+    "items": 10,
+    "periods": 15,
+    "seed": 0,
+    "seeds_test": 3
+  },
+  "tuning": {
+    "best_config": {
+      "skeleton": "LOCAL_BRANCH",
+      "constructor": "lot_for_lot",
+      "LOCAL_BRANCH.k": 12,
+      "LOCAL_BRANCH.k_step": 2,
+      "LOCAL_BRANCH.mip_time_share": 0.10986943465892073
+    },
+    "best_cost": 73694.76666666666,
+    "best_summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+    "best_default_cost": 74094.33333333333,
+    "best_default_summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+    "n_trials": 30,
+    "n_failed": 0,
+    "seconds": 489.6,
+    "skeleton_usage": {
+      "LOCAL_BRANCH": 14,
+      "LNS_MIP": 3,
+      "GRASP": 3,
+      "SA": 2,
+      "ILS": 2,
+      "FIX_OPT": 2,
+      "TS": 2,
+      "VNS": 2
+    },
+    "incumbent_curve": [
+      83462.46666666667,
+      83462.46666666667,
+      74752.46666666666,
+      74553.66666666667,
+      74553.66666666667,
+      74553.66666666667,
+      74553.66666666667,
+      74094.33333333333,
+      74094.33333333333,
+      74094.33333333333,
+      74094.33333333333,
+      74094.33333333333,
+      73694.76666666666,
+      73694.76666666666,
+      73694.76666666666,
+      73694.76666666666,
+      73694.76666666666,
+      73694.76666666666,
+      73694.76666666666,
+      73694.76666666666,
+      73694.76666666666,
+      73694.76666666666,
+      73694.76666666666,
+      73694.76666666666,
+      73694.76666666666,
+      73694.76666666666,
+      73694.76666666666,
+      73694.76666666666,
+      73694.76666666666,
+      73694.76666666666
+    ],
+    "trials": [
+      {
+        "number": 0,
+        "cost": 83462.46666666667,
+        "seconds": 15.2,
+        "enqueued": true,
+        "summary": "SA[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 1,
+        "cost": 106867.13333333333,
+        "seconds": 17.16,
+        "enqueued": true,
+        "summary": "ILS[constructor=lot_for_lot, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        }
+      },
+      {
+        "number": 2,
+        "cost": 74752.46666666666,
+        "seconds": 16.37,
+        "enqueued": true,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=period_window]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.07745966692414834
+        }
+      },
+      {
+        "number": 3,
+        "cost": 74553.66666666667,
+        "seconds": 15.56,
+        "enqueued": true,
+        "summary": "FIX_OPT[constructor=lot_for_lot, fixing_policy=sliding_window]",
+        "config": {
+          "skeleton": "FIX_OPT",
+          "constructor": "lot_for_lot",
+          "fixing_policy": "sliding_window",
+          "sliding_window.window_size": 2,
+          "sliding_window.overlap": 1,
+          "FIX_OPT.block_size": 2,
+          "FIX_OPT.mip_time_share": 0.07745966692414834,
+          "FIX_OPT.order": "sequential"
+        }
+      },
+      {
+        "number": 4,
+        "cost": 110815.4,
+        "seconds": 15.83,
+        "enqueued": true,
+        "summary": "TS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "TS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "TS.tenure": 16,
+          "TS.candidate_size": 52
+        }
+      },
+      {
+        "number": 5,
+        "cost": 106756.1,
+        "seconds": 17.2,
+        "enqueued": true,
+        "summary": "VNS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16
+        }
+      },
+      {
+        "number": 6,
+        "cost": 108835.26666666666,
+        "seconds": 17.27,
+        "enqueued": true,
+        "summary": "GRASP[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "GRASP",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "GRASP.ls_strategy": "first",
+          "GRASP.ls_time_share": 0.16
+        }
+      },
+      {
+        "number": 7,
+        "cost": 74094.33333333333,
+        "seconds": 16.01,
+        "enqueued": true,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 11,
+          "LOCAL_BRANCH.k_step": 6,
+          "LOCAL_BRANCH.mip_time_share": 0.15811388300841897
+        }
+      },
+      {
+        "number": 8,
+        "cost": 74121.63333333333,
+        "seconds": 16.01,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 11,
+          "LOCAL_BRANCH.k_step": 6,
+          "LOCAL_BRANCH.mip_time_share": 0.16480611701586986
+        }
+      },
+      {
+        "number": 9,
+        "cost": 74103.66666666666,
+        "seconds": 16.56,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 14,
+          "LOCAL_BRANCH.k_step": 2,
+          "LOCAL_BRANCH.mip_time_share": 0.08846683077020462
+        }
+      },
+      {
+        "number": 10,
+        "cost": 76999.73333333334,
+        "seconds": 16.4,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 3,
+          "LOCAL_BRANCH.k_step": 10,
+          "LOCAL_BRANCH.mip_time_share": 0.4763839718044629
+        }
+      },
+      {
+        "number": 11,
+        "cost": 74103.66666666666,
+        "seconds": 16.56,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 14,
+          "LOCAL_BRANCH.k_step": 1,
+          "LOCAL_BRANCH.mip_time_share": 0.08514153051591863
+        }
+      },
+      {
+        "number": 12,
+        "cost": 73694.76666666666,
+        "seconds": 16.24,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 12,
+          "LOCAL_BRANCH.k_step": 2,
+          "LOCAL_BRANCH.mip_time_share": 0.10986943465892073
+        }
+      },
+      {
+        "number": 13,
+        "cost": 74937.20000000001,
+        "seconds": 16.85,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 8,
+          "LOCAL_BRANCH.k_step": 5,
+          "LOCAL_BRANCH.mip_time_share": 0.19006744305798165
+        }
+      },
+      {
+        "number": 14,
+        "cost": 88089.0,
+        "seconds": 15.38,
+        "enqueued": false,
+        "summary": "TS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "TS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "TS.tenure": 29,
+          "TS.candidate_size": 5
+        }
+      },
+      {
+        "number": 15,
+        "cost": 113533.76666666666,
+        "seconds": 18.29,
+        "enqueued": false,
+        "summary": "GRASP[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "GRASP",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "GRASP.ls_strategy": "best",
+          "GRASP.ls_time_share": 0.2993981771837083
+        }
+      },
+      {
+        "number": 16,
+        "cost": 77845.2,
+        "seconds": 15.99,
+        "enqueued": false,
+        "summary": "FIX_OPT[constructor=lot_for_lot, fixing_policy=sliding_window]",
+        "config": {
+          "skeleton": "FIX_OPT",
+          "constructor": "lot_for_lot",
+          "fixing_policy": "sliding_window",
+          "sliding_window.window_size": 4,
+          "sliding_window.overlap": 2,
+          "FIX_OPT.block_size": 4,
+          "FIX_OPT.mip_time_share": 0.266750809144391,
+          "FIX_OPT.order": "random"
+        }
+      },
+      {
+        "number": 17,
+        "cost": 103290.96666666667,
+        "seconds": 15.35,
+        "enqueued": false,
+        "summary": "ILS[constructor=lot_for_lot, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.027960213216129876
+        }
+      },
+      {
+        "number": 18,
+        "cost": 76368.8,
+        "seconds": 15.22,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.05004408679337102,
+          "LNS_MIP.mip_time_share": 0.27861467164109144
+        }
+      },
+      {
+        "number": 19,
+        "cost": 84856.26666666666,
+        "seconds": 15.18,
+        "enqueued": false,
+        "summary": "SA[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "SA.T0": 1.2345631310464151,
+          "SA.alpha": 0.9978980749554762,
+          "SA.iters_per_T": 1
+        }
+      },
+      {
+        "number": 20,
+        "cost": 73750.43333333332,
+        "seconds": 17.77,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 18,
+          "LOCAL_BRANCH.k_step": 5,
+          "LOCAL_BRANCH.mip_time_share": 0.1605727710218818
+        }
+      },
+      {
+        "number": 21,
+        "cost": 74039.93333333333,
+        "seconds": 16.92,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 20,
+          "LOCAL_BRANCH.k_step": 5,
+          "LOCAL_BRANCH.mip_time_share": 0.16092054536833053
+        }
+      },
+      {
+        "number": 22,
+        "cost": 73880.83333333333,
+        "seconds": 16.68,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 18,
+          "LOCAL_BRANCH.k_step": 4,
+          "LOCAL_BRANCH.mip_time_share": 0.13723908784293584
+        }
+      },
+      {
+        "number": 23,
+        "cost": 106608.16666666666,
+        "seconds": 17.66,
+        "enqueued": false,
+        "summary": "VNS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.28901996670655505
+        }
+      },
+      {
+        "number": 24,
+        "cost": 74257.86666666667,
+        "seconds": 17.06,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 20,
+          "LOCAL_BRANCH.k_step": 3,
+          "LOCAL_BRANCH.mip_time_share": 0.10553318496279473
+        }
+      },
+      {
+        "number": 25,
+        "cost": 74264.5,
+        "seconds": 15.92,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 17,
+          "LOCAL_BRANCH.k_step": 3,
+          "LOCAL_BRANCH.mip_time_share": 0.2722726651419617
+        }
+      },
+      {
+        "number": 26,
+        "cost": 73906.93333333333,
+        "seconds": 15.91,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 17,
+          "LOCAL_BRANCH.k_step": 4,
+          "LOCAL_BRANCH.mip_time_share": 0.05220902697605267
+        }
+      },
+      {
+        "number": 27,
+        "cost": 74321.40000000001,
+        "seconds": 15.87,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 17,
+          "LOCAL_BRANCH.k_step": 7,
+          "LOCAL_BRANCH.mip_time_share": 0.11098655953082563
+        }
+      },
+      {
+        "number": 28,
+        "cost": 75532.33333333331,
+        "seconds": 15.59,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=period_window]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.5197298736437416,
+          "LNS_MIP.mip_time_share": 0.02229291775760144
+        }
+      },
+      {
+        "number": 29,
+        "cost": 113546.76666666666,
+        "seconds": 15.46,
+        "enqueued": false,
+        "summary": "GRASP[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "GRASP",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "GRASP.ls_strategy": "best",
+          "GRASP.ls_time_share": 0.03554074075578756
+        }
+      }
+    ]
+  },
+  "test": {
+    "tuned": {
+      "label": "tuned",
+      "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+      "mean": 77605.20000000001,
+      "std": 5095.32026078831,
+      "per_instance": [
+        77718.2,
+        71309.00000000003,
+        83788.4
+      ],
+      "config": {
+        "skeleton": "LOCAL_BRANCH",
+        "constructor": "lot_for_lot",
+        "LOCAL_BRANCH.k": 12,
+        "LOCAL_BRANCH.k_step": 2,
+        "LOCAL_BRANCH.mip_time_share": 0.10986943465892073
+      }
+    },
+    "baselines": [
+      {
+        "label": "default:LOCAL_BRANCH",
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "mean": 77740.64444444445,
+        "std": 5392.72754305094,
+        "per_instance": [
+          78784.26666666666,
+          70694.06666666668,
+          83743.6
+        ],
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 11,
+          "LOCAL_BRANCH.k_step": 6,
+          "LOCAL_BRANCH.mip_time_share": 0.15811388300841897
+        }
+      },
+      {
+        "label": "default:LNS_MIP",
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=period_window]",
+        "mean": 77847.22222222222,
+        "std": 5465.278898195567,
+        "per_instance": [
+          78443.86666666667,
+          71161.13333333333,
+          83936.66666666667
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.07745966692414834
+        }
+      },
+      {
+        "label": "default:FIX_OPT",
+        "summary": "FIX_OPT[constructor=lot_for_lot, fixing_policy=sliding_window]",
+        "mean": 79927.53333333334,
+        "std": 2939.0534636549633,
+        "per_instance": [
+          80241.6,
+          76181.2,
+          83359.8
+        ],
+        "config": {
+          "skeleton": "FIX_OPT",
+          "constructor": "lot_for_lot",
+          "fixing_policy": "sliding_window",
+          "sliding_window.window_size": 2,
+          "sliding_window.overlap": 1,
+          "FIX_OPT.block_size": 2,
+          "FIX_OPT.mip_time_share": 0.07745966692414834,
+          "FIX_OPT.order": "sequential"
+        }
+      },
+      {
+        "label": "default:SA",
+        "summary": "SA[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "mean": 85917.6888888889,
+        "std": 5567.434231402082,
+        "per_instance": [
+          87210.86666666667,
+          78876.33333333333,
+          91665.86666666667
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "label": "default:ILS",
+        "summary": "ILS[constructor=lot_for_lot, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "mean": 107730.82222222222,
+        "std": 9445.058937028958,
+        "per_instance": [
+          111623.33333333333,
+          94953.73333333334,
+          116615.4
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        }
+      },
+      {
+        "label": "default:VNS",
+        "summary": "VNS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "mean": 108964.75555555556,
+        "std": 9074.436614175633,
+        "per_instance": [
+          112880.73333333332,
+          96836.26666666666,
+          117177.26666666666
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16
+        }
+      },
+      {
+        "label": "default:TS",
+        "summary": "TS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "mean": 110682.59999999999,
+        "std": 6855.560675020601,
+        "per_instance": [
+          113247.8,
+          101326.26666666666,
+          117473.73333333332
+        ],
+        "config": {
+          "skeleton": "TS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "TS.tenure": 16,
+          "TS.candidate_size": 52
+        }
+      },
+      {
+        "label": "default:GRASP",
+        "summary": "GRASP[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "mean": 111163.62222222223,
+        "std": 10441.53716884612,
+        "per_instance": [
+          114992.6,
+          96902.0,
+          121596.26666666666
+        ],
+        "config": {
+          "skeleton": "GRASP",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "GRASP.ls_strategy": "first",
+          "GRASP.ls_time_share": 0.16
+        }
+      }
+    ],
+    "best_baseline": "default:LOCAL_BRANCH",
+    "gain_vs_best_baseline": 0.001742260376311007,
+    "wins_per_instance": "1/3",
+    "reference": 117098.0
+  }
+}

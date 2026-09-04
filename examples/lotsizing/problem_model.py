@@ -300,23 +300,47 @@ class LotSizingModel:
         parts = [f"ítem {i} período {t}: {q:.0f} unidades" for (i, t), q in rows]
         extra = f" (+{len(detail) - 5} celdas más)" if len(detail) > 5 else ""
 
+        setup_total = [sum(inst.setup_time[i] for i in range(inst.n_items) if sol[i][t]) for t in range(inst.n_periods)]
         hints = []
         for (i, t), _q in rows[:3]:
-            if not any(sol[i][tt] for tt in range(t + 1)):
+            on = [tt for tt in range(t + 1) if sol[i][tt]]
+            if not on:
                 hints.append(f"el ítem {i} no tiene ningún setup en t ≤ {t}: hay que ENCENDER uno")
                 continue
+            # Cota superior de lo que el ítem i puede haber producido hasta t: en sus períodos con
+            # setup, toda la capacidad menos los tiempos de setup (como si produjera solo él).
+            cum_demand = sum(inst.demand[i][: t + 1])
+            usable = sum(inst.capacity[tt] - setup_total[tt] for tt in on)
+            if usable < cum_demand - 1e-6:
+                # Corrida 8: aquí el mensaje anterior decía "ADELANTAR producción a t-1", el modelo
+                # MOVIÓ el setup a t-1 (que tampoco alcanza solo) y recibió "revisa la secuencia".
+                # Lo que hace falta no es mover el setup sino AGREGAR otro.
+                free = [(tt, inst.capacity[tt] - used[tt][0]) for tt in range(t + 1)
+                        if not sol[i][tt] and inst.capacity[tt] - used[tt][0] > 1e-6]
+                where = (", ".join(f"t={tt} tiene {f:.0f} libres" for tt, f in free[-3:])
+                         if free else "ningún otro período ≤ t tiene holgura")
+                hints.append(
+                    f"el ítem {i} solo tiene setup en t={on} hasta t={t}, y aun produciendo SOLO ese ítem ahí caben "
+                    f"{usable:.1f} unidades (capacidad menos tiempos de setup) contra {cum_demand:.0f} de demanda acumulada: "
+                    f"no basta con mover ese setup, hace falta OTRO setup del ítem {i} en algún período ≤ {t} "
+                    f"({where}) y repartir la producción entre ambos"
+                )
+                continue
             u, cap = used[t]
-            if u > cap + 1e-6:
+            saturated = [tt for tt in on if used[tt][0] > used[tt][1] + 1e-6]
+            if u > cap + 1e-6 or saturated:
+                tt_sat = t if u > cap + 1e-6 else saturated[-1]
+                us, cs = used[tt_sat]
                 free = [(tt, used[tt][1] - used[tt][0]) for tt in range(t) if used[tt][1] - used[tt][0] > 1e-6]
                 where = (", ".join(f"t={tt} tiene {f:.0f} libres" for tt, f in free[-3:])
                          if free else "ningún período anterior tiene holgura")
                 hints.append(
-                    f"el período {t} está SATURADO (usa {u:.1f} de {cap:.1f} de capacidad, se pasa por {u - cap:.1f}): "
-                    f"no falta un setup, falta ADELANTAR producción del ítem {i} a un período anterior con holgura "
-                    f"({where}) y dejar que el inventario cubra t={t}"
+                    f"el período {tt_sat} está SATURADO (usa {us:.1f} de {cs:.1f} de capacidad, se pasa por {us - cs:.1f}) "
+                    f"compitiendo varios ítems: no falta un setup del ítem {i}, falta ADELANTAR producción (suya o de otro ítem) "
+                    f"a un período anterior con holgura ({where}) y dejar que el inventario cubra t={t}"
                 )
             else:
-                hints.append(f"el ítem {i} en t={t} queda sin cubrir aunque el período no está saturado: revisa la secuencia de setups")
+                hints.append(f"el ítem {i} en t={t} queda sin cubrir aunque sus períodos con setup no están saturados: revisa la secuencia de setups")
 
         total = sum(detail.values())
         rule = ("Regla: sin backlog, la demanda del período t solo puede producirse en t o ANTES (y almacenarse); "

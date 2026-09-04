@@ -377,7 +377,9 @@ def test_quality_gate_rejects_destruction_ignoring_ratio(clsp_ctx):
 def test_infeasibility_feedback_distinguishes_capacity_from_missing_setup():
     """Corrida 5: tres constructores murieron por 1,67 unidades en un período saturado
     teniendo el anterior libre, y el mensaje solo decía "faltante 2 unidades". El detalle
-    debe distinguir las dos causas, porque el arreglo es distinto en cada una."""
+    debe distinguir las causas, porque el arreglo es distinto en cada una: sin setup
+    (encender uno), un solo setup que no da abasto para el ítem (agregar OTRO), o período
+    saturado por varios ítems (adelantar producción)."""
     from examples.lotsizing.components import LotForLotConstructor
     from examples.lotsizing.llm_spec import make_contexts
 
@@ -386,8 +388,12 @@ def test_infeasibility_feedback_distinguishes_capacity_from_missing_setup():
     # (a) capacidad saturada: lot-for-lot en la micro-instancia donde el pico no cabe
     ctx = next(c for c in ctxs if not c.problem.is_feasible(LotForLotConstructor().build(c.instances[0], Random(0))))
     msg = ctx.problem.explain_infeasibility(LotForLotConstructor().build(ctx.instances[0], Random(0)))
-    assert "SATURADO" in msg and "ADELANTAR" in msg and "libres" in msg
-    assert "no falta un setup" in msg
+    # Corrida 8: el mensaje anterior ("ADELANTAR producción a t-1") hizo que el modelo MOVIERA el
+    # setup a t-1, que tampoco alcanza solo (33,3 útiles vs 35 de demanda). La causa real es que
+    # un solo período con setup no basta para ese ítem: hace falta OTRO setup, no otro lugar.
+    assert "OTRO setup" in msg and "no basta con mover" in msg and "libres" in msg
+    assert "33.3 unidades" in msg and "35 de demanda acumulada" in msg
+    assert "ENCENDER" not in msg  # sí hay setup: la causa no es esa
 
     # (b) falta el setup: sin ningún setup, la causa es otra y el mensaje lo dice
     ctx0 = ctxs[0]

@@ -182,14 +182,32 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 99 passed (~35 s)
+python -m pytest -q                 # 104 passed (~45 s)
 
 export OPENAI_API_KEY=...
 python -m examples.lotsizing.generate --slots neighborhood destruction --n 3   # generación real
 
 # opcional: precios en USD por millón de tokens, para estimar el costo de la corrida
 export LLM_PRICE_IN=0.25 LLM_PRICE_OUT=2.00
+
+# tuning real (§8): Optuna sobre el espacio completo, con y sin componentes LLM,
+# evaluado en instancias de TEST; --irace escribe además un escenario irace
+python -m examples.lotsizing.tune --trials 40 --budget 5 --train 3 --test 3 --catalog both --irace tuning_out/irace
 ```
+
+**Tuner.** `tuning/` conecta `Assembler.config_space()` (el espacio) con
+`Assembler.evaluate()` (el target runner). `tune_with_optuna` corre TPE
+define-by-run sobre el espacio condicional (`suggest_from_space`), encolando el
+default de cada esqueleto como primeros trials: el tuner no puede quedar por
+debajo de "elegir el esqueleto por defecto", y si queda, es un hallazgo.
+`evaluate_on_test` mide la configuración ganadora en instancias que el tuner no
+vio, con varias semillas, contra el default de cada esqueleto: el costo de train
+del ganador es optimista por construcción y la pregunta de §10 —¿el catálogo
+ampliado **ayuda o diluye**?— solo se responde ahí. `examples.lotsizing.tune`
+hace las dos corridas (`handwritten` / `all`) y escribe `tuning_out/comparison.json`.
+Para irace, `tuning.irace_scenario` genera `parameters.txt`, `instances.txt`,
+`scenario.txt` y el `target-runner` (`scripts/irace_target_runner.py`, que
+parsea `--param=valor` con los tipos del espacio); irace corre afuera, en R.
 
 **Contador de tokens.** Cada cliente que la API informa (`OpenAIClient`,
 `AnthropicClient`) acumula `TokenUsage` —entrada, salida, entrada servida desde
@@ -211,13 +229,14 @@ sería mecánico.
 
 ## Correr en GitHub Actions
 
-Tres workflows en `.github/workflows/`:
+Cuatro workflows en `.github/workflows/`:
 
 | workflow | disparo | qué hace |
 |---|---|---|
 | `tests` | push, PR | `pytest` en Python 3.11 y 3.12; verifica primero que haya un solver MIP disponible. Sin secretos, así que corre en PRs de forks. |
 | `generar componentes con LLM` | **manual** | Corre `examples.lotsizing.generate` con los slots, `n`, rondas, proveedor y modelo que elijas; los inputs `price_in`/`price_out` (o las *variables* de repo `LLM_PRICE_IN`/`LLM_PRICE_OUT`) agregan el costo estimado al resumen. Escribe la tabla de aceptación por capa y los reportes del validador en el *summary* de la corrida, sube `generated/` como artefacto y abre un PR con los módulos generados. |
 | `benchmark` | **manual** | Utilidad y diversidad por componente, y/o la comparación de los ocho esqueletos. |
+| `tuning (Optuna) sobre el catálogo` | **manual** | Afina con el catálogo a mano y con el ampliado, evalúa ambos ganadores en test y responde "¿ayuda o diluye?" en el *summary*; sube `tuning_out/` (incluido el escenario irace). |
 
 Los dos últimos son `workflow_dispatch` a propósito: cada corrida de generación
 gasta llamadas de API, así que nunca se disparan por push ni por schedule.
@@ -276,13 +295,13 @@ devolver la penalización por infactibilidad.
 
 ## Qué falta (siguientes pasos del plan, §9)
 
-1. **Correr la generación real** con `gpt-5.4-mini` (`examples.lotsizing.generate`)
-   y analizar `stats.json`; los aceptados entran solos al catálogo de
-   `random_search`/`Assembler` vía `load_generated`.
-2. **Tuning real** con irace/Optuna: `Assembler.evaluate` ya es el target
-   runner y `config_space()` el espacio; falta solo el adaptador
-   (`suggest_from_space` para Optuna, `to_irace_parameters` + script
-   `target-runner` para irace) y la separación train/test.
+1. ~~Correr la generación real~~ — hecho: 8 corridas analizadas (ver
+   `claude/resultados_generacion_llm.md` en el proyecto); los aceptados entran
+   solos al catálogo vía `load_generated`.
+2. ~~Tuning real~~ — hecho con Optuna (`tuning/`, `examples.lotsizing.tune`,
+   workflow `tune.yml`); irace queda preparado (escenario + target-runner) para
+   correr afuera. Pendiente: más instancias y presupuesto para que la comparación
+   "a mano vs con LLM" tenga potencia estadística.
 3. MIP-guided Perturbation (§5.2), el único esqueleto de la tabla que
    falta; y generación LLM del `ProblemModel` completo (§6.1), donde la
    capa semántica tiene algo real que rechazar.
