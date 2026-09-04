@@ -1,0 +1,103 @@
+name: tuning (Optuna) sobre el catálogo
+
+# Manual: cada corrida son minutos de CPU. Responde la pregunta de §10: ¿el catálogo
+# ampliado con componentes LLM ayuda o diluye? Afina con el catálogo a mano y con el
+# ampliado, evalúa ambos ganadores en instancias de TEST y compara.
+on:
+  workflow_dispatch:
+    inputs:
+      trials:
+        description: "Trials de Optuna por catálogo (los 8 defaults van incluidos)"
+        default: "40"
+        type: string
+      budget:
+        description: "Segundos por corrida (tuning y test)"
+        default: "5"
+        type: string
+      train:
+        description: "Instancias de entrenamiento"
+        default: "3"
+        type: string
+      test:
+        description: "Instancias de test (no vistas)"
+        default: "3"
+        type: string
+      catalog:
+        description: "Catálogo"
+        default: both
+        type: choice
+        options: [both, handwritten, all]
+      generated_ref:
+        description: "Rama/tag con generated/clsp (vacío = la rama actual)"
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  tune:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.generated_ref || github.ref }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Localizar la raíz del framework
+        run: |
+          HIT="$(find . -path ./.git -prune -o -path '*/core/skeleton.py' -print | head -1)"
+          if [ -z "$HIT" ]; then echo "::error::No encontré core/skeleton.py en el repo."; exit 1; fi
+          echo "ROOT=$(dirname "$(dirname "$HIT")")" >> "$GITHUB_ENV"
+
+      - name: Instalar dependencias
+        working-directory: ${{ env.ROOT }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Afinar y evaluar en test
+        working-directory: ${{ env.ROOT }}
+        env:
+          TRIALS: ${{ inputs.trials }}
+          BUDGET: ${{ inputs.budget }}
+          TRAIN: ${{ inputs.train }}
+          TEST: ${{ inputs.test }}
+          CATALOG: ${{ inputs.catalog }}
+        run: |
+          set -o pipefail
+          python -W ignore -m examples.lotsizing.tune --trials "$TRIALS" --budget "$BUDGET" \
+            --train "$TRAIN" --test "$TEST" --catalog "$CATALOG" --out tuning_out --irace tuning_out/irace 2>&1 | tee tune.log
+
+      - name: Resumen
+        if: always()
+        working-directory: ${{ env.ROOT }}
+        run: |
+          {
+            echo "## Tuning con Optuna"
+            echo ""
+            python -m scripts.tuning_summary tuning_out
+            echo ""
+            echo "<details><summary>Log completo</summary>"
+            echo ""
+            echo '```'
+            cat tune.log 2>/dev/null || echo "(sin log)"
+            echo '```'
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Subir resultados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tuning-${{ github.run_number }}
+          path: |
+            ${{ env.ROOT }}/tuning_out/
+            ${{ env.ROOT }}/tune.log
+          if-no-files-found: warn
+          retention-days: 30
