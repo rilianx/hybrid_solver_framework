@@ -100,13 +100,24 @@ SKELETONS_FOR_SLOT = {
 }
 
 
-def generation_prompt(spec: ProblemSpec, slot: str, n_variants: int, avoid_names: list[str] | None = None) -> str:
+def generation_prompt(spec: ProblemSpec, slot: str, n_variants: int, avoid_names: list[str] | None = None,
+                      idea: "Idea | None" = None) -> str:
+    """Con `idea` (generación con planificador) pide UN módulo que implemente esa idea y no otra."""
     fewshot = FEWSHOT.get(slot)
-    parts = [
-        f"# Tarea\nGenera {n_variants} componentes ESTRUCTURALMENTE DISTINTOS para el slot `{slot}` del problema descrito abajo.",
-        "Distintos significa ideas algorítmicas diferentes (no el mismo operador con otro parámetro). Nombra cada uno de forma descriptiva.",
-        f"\n# Contrato del slot `{slot}` (Protocol exacto)\n```python\n{protocol_source(slot)}```",
-    ]
+    if idea is not None:
+        task = [
+            f"# Tarea\nImplementa UN componente para el slot `{slot}` del problema descrito abajo, siguiendo EXACTAMENTE esta idea:",
+            f"\n**{idea.name}**: {idea.text}",
+            f"\nUsa `COMPONENT[\"name\"] = \"{idea.name}\"`. No reemplaces la idea por otra más fácil: si no mejora, el "
+            "validador te lo dirá y podrás corregir la implementación.",
+        ]
+        n_variants = 1
+    else:
+        task = [
+            f"# Tarea\nGenera {n_variants} componentes ESTRUCTURALMENTE DISTINTOS para el slot `{slot}` del problema descrito abajo.",
+            "Distintos significa ideas algorítmicas diferentes (no el mismo operador con otro parámetro). Nombra cada uno de forma descriptiva.",
+        ]
+    parts = task + [f"\n# Contrato del slot `{slot}` (Protocol exacto)\n```python\n{protocol_source(slot)}```"]
     if slot in SLOT_HINTS:
         parts.append(f"\n# Propiedades que verificará el validador\n{SLOT_HINTS[slot]}")
     if slot in SKELETONS_FOR_SLOT:
@@ -142,12 +153,87 @@ def generation_prompt(spec: ProblemSpec, slot: str, n_variants: int, avoid_names
     return "\n".join(parts)
 
 
-def correction_prompt(spec: ProblemSpec, slot: str, module_source: str, feedback: str) -> str:
+@dataclass
+class Idea:
+    """Una idea de componente propuesta por el planificador: nombre snake_case y 2–4 frases."""
+
+    name: str
+    text: str
+
+
+def planning_prompt(spec: ProblemSpec, slot: str, n_ideas: int, avoid_names: list[str] | None = None,
+                    accepted: list[Idea] | None = None, rejected: list[tuple[Idea, str]] | None = None) -> str:
+    """El planificador propone ideas en texto, sin código: la diversidad se decide aquí, antes
+    de gastar una implementación en algo que el gate de diversidad rechazaría después.
+
+    `accepted` / `rejected` son las ideas de una ronda anterior (replaneo): las aceptadas no se
+    repiten y las rechazadas vienen con el motivo (duplicado de otra, o no se logró implementar)."""
+    parts = [
+        f"# Tarea\nPropón {n_ideas} ideas ESTRUCTURALMENTE DISTINTAS de componente para el slot `{slot}` del problema de abajo. "
+        "No escribas código: cada idea la implementará después otra persona, por separado y sin ver las demás.",
+        "Cada idea: qué hace el operador en términos del problema, por qué debería mejorar las soluciones desde donde "
+        "arranca el esqueleto, y en qué se diferencia de las otras. Distintas significa ideas algorítmicas diferentes, "
+        "no el mismo operador con otro parámetro ni uno contenido en otro.",
+        f"\n# Contrato del slot `{slot}` (lo que tendrá que implementar cada idea)\n```python\n{protocol_source(slot)}```",
+    ]
+    if slot in SLOT_HINTS:
+        parts.append(f"\n# Propiedades que verificará el validador\n{SLOT_HINTS[slot]}")
+    parts.append(f"\n# Problema: {spec.name}\n{spec.description}")
+    parts.append(f"\n## Representación de la solución\n{spec.solution_representation}")
+    if spec.notes:
+        parts.append("\n## Avisos\n" + "\n".join(f"- {n}" for n in spec.notes))
+    if spec.starting_solution and slot in ("neighborhood", "perturbation"):
+        parts.append(f"\n## Desde dónde arranca el esqueleto\n```\n{spec.starting_solution}\n```")
+    if avoid_names:
+        parts.append(f"\nYa existen componentes llamados {avoid_names}; propone ideas y nombres distintos.")
+    if accepted:
+        parts.append("\n## Ideas ya aceptadas (no las repitas ni propongas variantes de ellas)\n"
+                     + "\n".join(f"- {i.name}: {i.text}" for i in accepted))
+    if rejected:
+        parts.append("\n## Ideas descartadas en la ronda anterior, con el motivo\n"
+                     + "\n".join(f"- {i.name}: {i.text} → {why}" for i, why in rejected))
+    parts.append(
+        f"\nDevuelve SOLO un bloque ```json``` con una lista de {n_ideas} objetos "
+        '`{"name": "<snake_case único>", "idea": "<2 a 4 frases>"}`.'
+    )
+    return "\n".join(parts)
+
+
+def parse_ideas(text: str, n_max: int | None = None) -> list[Idea]:
+    """Extrae la lista JSON de ideas (tolera texto alrededor y bloques sin etiqueta); nombres
+    normalizados a snake_case y sin repetir."""
+    import json
+    import re
+
+    m = re.search(r"```(?:json)?\s*(\[.*?\])\s*```", text, re.S) or re.search(r"(\[\s*\{.*\}\s*\])", text, re.S)
+    if not m:
+        return []
+    try:
+        items = json.loads(m.group(1))
+    except json.JSONDecodeError:
+        return []
+    out, seen = [], set()
+    for it in items if isinstance(items, list) else []:
+        if not isinstance(it, dict):
+            continue
+        name = re.sub(r"[^a-z0-9_]+", "_", str(it.get("name", "")).strip().lower()).strip("_")
+        text_ = str(it.get("idea") or it.get("description") or "").strip()
+        if not name or not text_ or name in seen:
+            continue
+        seen.add(name)
+        out.append(Idea(name, text_))
+    return out[:n_max] if n_max else out
+
+
+def correction_prompt(spec: ProblemSpec, slot: str, module_source: str, feedback: str, idea: Idea | None = None) -> str:
+    pinned = ([f"La idea que este componente debe implementar, y que NO debes cambiar por otra: **{idea.name}**: {idea.text}"]
+              if idea is not None else [])
     return "\n".join(
         [
             f"El siguiente componente para el slot `{slot}` del problema '{spec.name}' fue RECHAZADO por el validador automático.",
             "Corrígelo manteniendo la misma idea algorítmica y el mismo `COMPONENT['name']`. Devuelve el módulo completo corregido "
             "en un único bloque ```python```.",
+            *pinned,
             "Importante: arregla SOLO lo que el reporte señala y no rompas lo que ya pasaba. Si el problema es que el operador no "
             "mejora, NO agregues movimientos compuestos (dos setups a la vez, mover+quitar): mantén movimientos elementales con "
             "`undo` exacto y usa las pistas del reporte sobre qué movimientos concretos sí mejoran.",
@@ -159,6 +245,7 @@ def correction_prompt(spec: ProblemSpec, slot: str, module_source: str, feedback
     )
 
 
-__all__ = ["ProblemSpec", "SYSTEM_PROMPT", "generation_prompt", "correction_prompt", "protocol_source"]
+__all__ = ["Idea", "ProblemSpec", "SYSTEM_PROMPT", "correction_prompt", "generation_prompt", "parse_ideas",
+           "planning_prompt", "protocol_source"]
 
 _ = contracts  # el import explícito documenta de dónde salen los Protocols

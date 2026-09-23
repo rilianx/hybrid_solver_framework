@@ -54,6 +54,11 @@ class GenerationStats:
     rejections_by_layer: Counter = field(default_factory=Counter)  # capa -> nº de rechazos (todas las rondas)
     rounds_per_accepted: dict[str, int] = field(default_factory=dict)
     abandoned: list[str] = field(default_factory=list)  # nombres que agotaron max_rounds
+    # con planificador (`llm.planner`): ideas pedidas, descartadas en la unión, replaneos, tiempo de pared
+    planned: list[str] = field(default_factory=list)
+    duplicates: dict[str, str] = field(default_factory=dict)
+    replans: int = 0
+    wall_seconds: float = 0.0
 
     def summary(self) -> str:
         rate = f"{self.accepted}/{self.parsed}" if self.parsed else "0/0"
@@ -65,6 +70,8 @@ class GenerationStats:
             + (f", {self.tokens}" if self.tokens.total_tokens else "")
             + f") rechazos por capa: {layers}; rondas por aceptado: {rounds}"
             + (f"; abandonados: {self.abandoned}" if self.abandoned else "")
+            + (f"; ideas: {len(self.planned)}, duplicadas: {len(self.duplicates)}, replaneos: {self.replans}, "
+               f"{self.wall_seconds:.0f}s de pared" if self.planned else "")
         )
 
 

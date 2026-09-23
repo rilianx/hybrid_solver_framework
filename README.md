@@ -188,6 +188,8 @@ export OPENAI_API_KEY=...
 python -m examples.lotsizing.generate --slots neighborhood destruction --n 3   # generación real
 # desde cero: sin ver los componentes escritos a mano (ni diversidad contra el catálogo, ni pistas de setup_flip)
 python -m examples.lotsizing.generate --from-scratch --workspace generated/clsp_scratch --slots neighborhood destruction constructor perturbation
+# con planificador: ideas en texto, implementación y corrección en paralelo, diversidad al unir
+python -m examples.lotsizing.generate --planner --workers 3 --replans 1 --slots neighborhood destruction constructor perturbation
 
 # opcional: precios en USD por millón de tokens, para estimar el costo de la corrida
 export LLM_PRICE_IN=0.25 LLM_PRICE_OUT=2.00
@@ -240,6 +242,13 @@ dependen del proveedor: si defines `LLM_PRICE_IN` / `LLM_PRICE_OUT` (USD por
 millón de tokens) se agrega el costo estimado; si no, se informan solo los
 tokens. Un cliente que no cuenta tokens (`ScriptedClient` en los tests) deja el
 contador en cero sin romper nada.
+
+**Planificador** (`llm/planner.py`, `--planner`). Un planificador propone las ideas de
+cada slot en texto, sin código; cada idea se implementa, valida y corrige en paralelo con
+la idea fija en el prompt de corrección, y el gate de diversidad se aplica al unir (si
+faltan componentes se replanifica, mostrando las ideas aceptadas y las descartadas con su
+motivo). Los slots también corren en paralelo. Usa hilos: la validación pesada es CBC, que
+corre como proceso aparte, y los clientes guardan `last_usage` por hilo.
 
 Sobre orquestación: el ciclo es un bucle determinista corto, así que se
 implementó en Python plano. Si más adelante el flujo se vuelve un grafo

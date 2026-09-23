@@ -46,6 +46,10 @@ on:
         description: "Desde cero: sin componentes de referencia (escribe en generated/clsp_scratch)"
         default: false
         type: boolean
+      planner:
+        description: "Planificador de ideas + implementación en paralelo (escribe en <dir>_planner)"
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -56,8 +60,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      WS: ${{ inputs.from_scratch && 'generated/clsp_scratch' || 'generated/clsp' }}
+      WS: ${{ format('{0}{1}', inputs.from_scratch && 'generated/clsp_scratch' || 'generated/clsp', inputs.planner && '_planner' || '') }}
       SCRATCH: ${{ inputs.from_scratch && 'true' || 'false' }}
+      PLANNER: ${{ inputs.planner && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -119,6 +124,7 @@ jobs:
           ARGS="--slots $SLOTS --n $N --rounds $ROUNDS --provider $PROVIDER --workspace $WS"
           if [ -n "$MODEL" ]; then ARGS="$ARGS --model $MODEL"; fi
           if [ "$SCRATCH" = "true" ]; then ARGS="$ARGS --from-scratch"; fi
+          if [ "$PLANNER" = "true" ]; then ARGS="$ARGS --planner"; fi
           echo "python -m examples.lotsizing.generate $ARGS"
           python -W ignore -m examples.lotsizing.generate $ARGS 2>&1 | tee generate.log
 
@@ -205,6 +211,7 @@ jobs:
           fi
           BRANCH="llm-generated/$PROVIDER-run$RUN"
           [ "$SCRATCH" = "true" ] && BRANCH="llm-generated/$PROVIDER-scratch-run$RUN"
+          [ "$PLANNER" = "true" ] && BRANCH="$BRANCH-planner"
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
@@ -212,6 +219,7 @@ jobs:
           find "$WS" -name __pycache__ -type d -prune -exec rm -rf {} +
           git add -f "$WS"
           TAG=""; [ "$SCRATCH" = "true" ] && TAG=", desde cero"
+          [ "$PLANNER" = "true" ] && TAG="$TAG, con planificador"
           git commit -m "Componentes generados por $PROVIDER (corrida $RUN$TAG)" || { echo "Sin cambios."; exit 0; }
           git push -u origin "$BRANCH"
           {

@@ -14,15 +14,22 @@ prompt no nombra los existentes y el feedback no muestra movimientos de
 
     python -m examples.lotsizing.generate --from-scratch --workspace generated/clsp_scratch \
         --slots neighborhood destruction constructor perturbation
+
+Con `--planner` cada slot se genera con `llm.planner`: un planificador propone ideas en
+texto, cada idea se implementa y corrige en paralelo (`--workers` por slot) y el gate de
+diversidad se aplica al unir; si faltan componentes, se replanifica (`--replans`). Los
+slots también corren en paralelo entre sí.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from llm import OpenAIClient, TokenUsage, TranscriptClient, generate_slot
+from llm import OpenAIClient, TokenUsage, TranscriptClient, generate_slot, generate_slot_planned
 
 from .catalog import build_registry
 from .llm_spec import make_contexts, make_spec
@@ -38,6 +45,10 @@ def main() -> None:
     ap.add_argument("--workspace", default="generated/clsp")
     ap.add_argument("--from-scratch", action="store_true",
                     help="sin componentes de referencia: ni diversidad contra el catálogo, ni nombres, ni pistas de setup_flip")
+    ap.add_argument("--planner", action="store_true", help="planificador de ideas + implementación en paralelo")
+    ap.add_argument("--ideas", type=int, default=None, help="ideas por slot en la primera planificación (default: --n)")
+    ap.add_argument("--workers", type=int, default=3, help="implementaciones en paralelo por slot (con --planner)")
+    ap.add_argument("--replans", type=int, default=1, help="replaneos máximos si faltan componentes (con --planner)")
     args = ap.parse_args()
 
     if args.provider == "openai":
@@ -54,7 +65,9 @@ def main() -> None:
     # no hay pares: la diversidad se mide solo entre los aceptados de esta corrida.
     registry = build_registry()
     all_stats = {}
-    for slot in args.slots:
+    t_run = time.perf_counter()
+
+    def run_slot(slot):
         probe = contexts[0].diversity_probe
         peer_problem = probe.problem if probe is not None else contexts[0].problem
         peers = [] if args.from_scratch else [
@@ -63,11 +76,25 @@ def main() -> None:
         ]
         if peers:
             print(f"[{slot}] comparando diversidad contra {[n for n, _ in peers]}")
-        accepted, stats = generate_slot(
+        if args.planner:
+            return generate_slot_planned(
+                client, spec, slot, args.n, contexts, args.workspace,
+                max_rounds=args.rounds, catalog_peers=peers, avoid_names=[n for n, _ in peers],
+                n_ideas=args.ideas, max_workers=args.workers, max_replans=args.replans,
+            )
+        return generate_slot(
             client, spec, slot, args.n, contexts, args.workspace,
             max_rounds=args.rounds, catalog_peers=peers,
             avoid_names=[n for n, _ in peers],
         )
+
+    if args.planner:
+        with ThreadPoolExecutor(max_workers=len(args.slots)) as pool:
+            results = dict(zip(args.slots, pool.map(run_slot, args.slots)))
+    else:
+        results = {slot: run_slot(slot) for slot in args.slots}
+
+    for slot, (accepted, stats) in results.items():
         all_stats[slot] = {
             "requested": stats.requested, "parsed": stats.parsed, "accepted": stats.accepted,
             "llm_calls": stats.llm_calls, "llm_seconds": round(stats.llm_seconds, 1),
@@ -76,6 +103,9 @@ def main() -> None:
             "accepted_files": [str(c.path) for c in accepted],
             "tokens": stats.tokens.as_dict(inner.model),
         }
+        if args.planner:
+            all_stats[slot].update({"planned": stats.planned, "duplicates": stats.duplicates,
+                                    "replans": stats.replans, "wall_seconds": round(stats.wall_seconds, 1)})
     total = TokenUsage()
     for s in all_stats.values():
         t = s["tokens"]
@@ -83,6 +113,7 @@ def main() -> None:
                              t.get("reasoning_tokens", 0), t["calls"]))
     all_stats["_run"] = {
         "model": inner.model, "provider": args.provider, "from_scratch": args.from_scratch,
+        "planner": args.planner, "wall_seconds": round(time.perf_counter() - t_run, 1),
         "tokens": total.as_dict(inner.model),
         "note": ("costo estimado con LLM_PRICE_IN/LLM_PRICE_OUT (USD por millón de tokens)"
                  if total.cost_usd(inner.model) is not None

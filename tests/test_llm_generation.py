@@ -512,3 +512,95 @@ def test_from_scratch_hides_the_handwritten_components(spec_and_ctx):
     scratch = make_contexts(n_contexts=1, reference_free=True)
     assert all(c.reference_neighborhood is None for c in scratch)
     assert all(c.trivial_solutions for c in scratch)  # la partida del esqueleto se mantiene
+
+
+class RoutedClient:
+    """Cliente falso para el planificador: responde según el prompt (las llamadas llegan
+    en paralelo, así que un guion en orden no sirve)."""
+
+    def __init__(self, plans, modules, fixes):
+        import threading
+
+        self.plans, self.modules, self.fixes = list(plans), modules, fixes
+        self.calls, self._lock = [], threading.Lock()
+
+    def complete(self, system, user):
+        with self._lock:
+            self.calls.append(user)
+        if "Propón" in user:
+            with self._lock:
+                return self.plans.pop(0)
+        name = next(n for n in self.modules if f"**{n}**" in user)
+        if "RECHAZADO" in user:
+            return fence(self.fixes.get(name, self.modules[name]))
+        return fence(self.modules[name])
+
+
+def _ideas_json(*names):
+    import json
+
+    return "```json\n" + json.dumps([{"name": n, "idea": f"idea {n} en dos frases. Distinta."} for n in names]) + "\n```"
+
+
+def test_planner_plans_implements_in_parallel_dedupes_and_replans(spec_and_ctx, tmp_path):
+    from llm import generate_slot_planned
+
+    import dataclasses
+
+    from examples.lotsizing.llm_spec import make_diversity_probe
+
+    spec, contexts = spec_and_ctx
+    probe = make_diversity_probe()  # la generación real siempre la tiene: es donde la unión mide duplicados
+    contexts = [dataclasses.replace(c, diversity_probe=probe) for c in contexts]
+    shift_copy = GOOD_SHIFT.replace('"name": "shift_setup_earlier"', '"name": "shift_copy"')
+    client = RoutedClient(
+        plans=[_ideas_json("shift_setup_earlier", "toggle_setup", "shift_copy"), _ideas_json("no_factory")],
+        modules={"shift_setup_earlier": GOOD_SHIFT, "toggle_setup": BAD_TOGGLE, "shift_copy": shift_copy,
+                 "no_factory": NO_FACTORY},
+        fixes={"toggle_setup": FIXED_TOGGLE},
+    )
+    accepted, stats = generate_slot_planned(client, spec, "neighborhood", 3, contexts, tmp_path,
+                                            max_rounds=2, max_workers=3, max_replans=1, verbose=False)
+
+    assert sorted(c.name for c in accepted) == ["shift_setup_earlier", "toggle_setup"]
+    assert stats.planned == ["shift_setup_earlier", "toggle_setup", "shift_copy", "no_factory"]
+    assert list(stats.duplicates) == ["shift_copy"]  # mismo operador que shift_setup_earlier: fuera en la unión
+    assert stats.abandoned == ["no_factory"] and stats.replans == 1
+    assert stats.rounds_per_accepted == {"shift_setup_earlier": 1, "toggle_setup": 2}
+    # la idea va fija en la corrección, y el replaneo ve lo aceptado y lo descartado con su motivo
+    fix = next(c for c in client.calls if "RECHAZADO" in c)
+    assert "**toggle_setup**" in fix and "NO debes cambiar" in fix
+    replan = [c for c in client.calls if "Propón" in c][1]
+    assert "Ideas ya aceptadas" in replan and "shift_copy" in replan and "duplicado" in replan
+    # un archivo por idea y ronda
+    assert (tmp_path / "neighborhood" / "toggle_setup_r2.py").exists()
+    assert (tmp_path / "neighborhood" / "shift_copy_r1.py").exists()
+
+
+def test_parse_ideas_tolerates_noise_and_repeats():
+    from llm.prompts import parse_ideas
+
+    text = 'Aquí van:\n```json\n[{"name": "Move Earlier", "idea": "a"}, {"name": "move earlier", "idea": "b"},' \
+           ' {"name": "x", "idea": ""}, {"name": "swap-pair", "description": "c"}]\n```\nlisto'
+    assert [(i.name, i.text) for i in parse_ideas(text)] == [("move_earlier", "a"), ("swap_pair", "c")]
+    assert parse_ideas("sin json") == []
+
+
+def test_clients_keep_last_usage_per_thread():
+    import threading
+
+    from llm import TokenUsage
+
+    client = ScriptedClient(responses=["a"] * 8, usage_per_call=TokenUsage(10, 5))
+    seen = []
+
+    def call():
+        client.complete("s", "u")
+        seen.append(client.last_usage.total_tokens)
+
+    threads = [threading.Thread(target=call) for _ in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert seen == [15] * 8 and client.usage.total_tokens == 8 * 15

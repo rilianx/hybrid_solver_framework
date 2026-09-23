@@ -52,6 +52,16 @@ def render(stats: dict) -> str:
             line += " · costo: define `LLM_PRICE_IN` y `LLM_PRICE_OUT` (USD por millón de tokens) para estimarlo"
         out += ["", line]
 
+    if run.get("planner"):
+        dups = {slot: s_.get("duplicates", {}) for slot, s_ in stats.items() if s_.get("duplicates")}
+        ideas = sum(len(s_.get("planned", [])) for s_ in stats.values())
+        line = (f"Con planificador: {ideas} ideas, {sum(len(d) for d in dups.values())} descartadas por duplicadas en la unión, "
+                f"{sum(s_.get('replans', 0) for s_ in stats.values())} replaneos · {run.get('wall_seconds', 0):.0f} s de pared "
+                f"(suma de llamadas: {tot_s:.0f} s)")
+        out += ["", line]
+        for slot, d in dups.items():
+            out += [f"- `{slot}`: " + "; ".join(f"`{k}` ({v[:90]})" for k, v in d.items())]
+
     if tot_par and tot_acc == tot_par and tot_rej == 0:
         out += ["", "> Todos los componentes fueron aceptados a la primera, sin un solo rechazo en ninguna capa.",
                 "> Ojo: eso puede significar que el",
