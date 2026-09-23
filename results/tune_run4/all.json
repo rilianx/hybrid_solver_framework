@@ -1,0 +1,1240 @@
+{
+  "catalog": "all",
+  "generated_components": [
+    "backward_capacity_packing",
+    "earliest_slack_repair",
+    "adjacent_pair_merge_destruction",
+    "capacity_critical_period_destruction",
+    "whole_item_destruction",
+    "drop_single_setup",
+    "left_shift_setup_chain",
+    "merge_consecutive_setups",
+    "congested_period_relocation_perturbation",
+    "item_block_compaction_perturbation",
+    "period_swap_relink_perturbation"
+  ],
+  "settings": {
+    "trials": 30,
+    "budget": 20.0,
+    "train": 5,
+    "test": 5,
+    "items": 20,
+    "periods": 20,
+    "seed": 0,
+    "seeds_test": 3,
+    "objective": "ratio",
+    "skeletons": [
+      "SA",
+      "ILS",
+      "VNS"
+    ],
+    "ref_time": 120.0
+  },
+  "tuning": {
+    "best_config": {
+      "skeleton": "SA",
+      "constructor": "earliest_slack_repair",
+      "earliest_slack_repair.window": 8,
+      "neighborhood": "setup_flip",
+      "SA.T0": 97.76183463953595,
+      "SA.alpha": 0.8757144423483892,
+      "SA.iters_per_T": 2
+    },
+    "best_cost": 0.7595766488789527,
+    "best_summary": "SA[constructor=earliest_slack_repair, neighborhood=setup_flip]",
+    "best_default_cost": 0.7650531909471558,
+    "best_default_summary": "SA[constructor=lot_for_lot, neighborhood=setup_flip]",
+    "n_trials": 30,
+    "n_failed": 0,
+    "seconds": 3123.2,
+    "skeleton_usage": {
+      "SA": 19,
+      "ILS": 6,
+      "VNS": 5
+    },
+    "incumbent_curve": [
+      0.7650531909471558,
+      0.7650531909471558,
+      0.7650531909471558,
+      0.7650531909471558,
+      0.7650531909471558,
+      0.7650531909471558,
+      0.7650531909471558,
+      0.7647365744753012,
+      0.7647365744753012,
+      0.7647365744753012,
+      0.7647365744753012,
+      0.763796872656935,
+      0.7633707374895549,
+      0.7633707374895549,
+      0.7633707374895549,
+      0.7633707374895549,
+      0.7596137602551897,
+      0.7596137602551897,
+      0.7596137602551897,
+      0.7596137602551897,
+      0.7596137602551897,
+      0.7596137602551897,
+      0.7596137602551897,
+      0.7596137602551897,
+      0.7596137602551897,
+      0.7595766488789527,
+      0.7595766488789527,
+      0.7595766488789527,
+      0.7595766488789527,
+      0.7595766488789527
+    ],
+    "trials": [
+      {
+        "number": 0,
+        "cost": 0.7650531909471558,
+        "seconds": 100.69,
+        "enqueued": true,
+        "summary": "SA[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 1,
+        "cost": 0.9551678584287087,
+        "seconds": 113.38,
+        "enqueued": true,
+        "summary": "ILS[constructor=lot_for_lot, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        }
+      },
+      {
+        "number": 2,
+        "cost": 0.9798578635038916,
+        "seconds": 113.43,
+        "enqueued": true,
+        "summary": "VNS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16
+        }
+      },
+      {
+        "number": 3,
+        "cost": 0.9708310644435729,
+        "seconds": 118.52,
+        "enqueued": false,
+        "summary": "ILS[constructor=earliest_slack_repair, neighborhood=drop_single_setup, perturbation=item_block_compaction_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "earliest_slack_repair",
+          "earliest_slack_repair.window": 5,
+          "neighborhood": "drop_single_setup",
+          "perturbation": "item_block_compaction_perturbation",
+          "item_block_compaction_perturbation.strength": 1.609905097910785,
+          "item_block_compaction_perturbation.block_span": 1,
+          "ILS.strength": 5,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.2940131358251739
+        }
+      },
+      {
+        "number": 4,
+        "cost": 0.8401959562593887,
+        "seconds": 100.7,
+        "enqueued": false,
+        "summary": "SA[constructor=backward_capacity_packing, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "backward_capacity_packing",
+          "neighborhood": "setup_flip",
+          "SA.T0": 210.2330874348011,
+          "SA.alpha": 0.8907739161110932,
+          "SA.iters_per_T": 29
+        }
+      },
+      {
+        "number": 5,
+        "cost": 1.0630181909284337,
+        "seconds": 104.01,
+        "enqueued": false,
+        "summary": "ILS[constructor=backward_capacity_packing, neighborhood=left_shift_setup_chain, perturbation=congested_period_relocation_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "backward_capacity_packing",
+          "neighborhood": "left_shift_setup_chain",
+          "perturbation": "congested_period_relocation_perturbation",
+          "congested_period_relocation_perturbation.strength": 2.577141754620919,
+          "congested_period_relocation_perturbation.window": 2,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.04857254700944785
+        }
+      },
+      {
+        "number": 6,
+        "cost": 0.7680839491055946,
+        "seconds": 100.69,
+        "enqueued": false,
+        "summary": "SA[constructor=lot_for_lot, neighborhood=merge_consecutive_setups]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "merge_consecutive_setups",
+          "SA.T0": 8.416384318991254,
+          "SA.alpha": 0.9437935836971335,
+          "SA.iters_per_T": 16
+        }
+      },
+      {
+        "number": 7,
+        "cost": 0.7647365744753012,
+        "seconds": 100.66,
+        "enqueued": false,
+        "summary": "SA[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "SA.T0": 3.7397634138960094,
+          "SA.alpha": 0.8025967400678249,
+          "SA.iters_per_T": 50
+        }
+      },
+      {
+        "number": 8,
+        "cost": 0.9922458270013697,
+        "seconds": 100.56,
+        "enqueued": false,
+        "summary": "SA[constructor=earliest_slack_repair, neighborhood=left_shift_setup_chain]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "earliest_slack_repair",
+          "earliest_slack_repair.window": 10,
+          "neighborhood": "left_shift_setup_chain",
+          "SA.T0": 1.4389571783938626,
+          "SA.alpha": 0.8032632862559052,
+          "SA.iters_per_T": 50
+        }
+      },
+      {
+        "number": 9,
+        "cost": 1.1776896015575067,
+        "seconds": 117.95,
+        "enqueued": false,
+        "summary": "VNS[constructor=backward_capacity_packing, neighborhood=merge_consecutive_setups]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "backward_capacity_packing",
+          "neighborhood": "merge_consecutive_setups",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.2920818491443909
+        }
+      },
+      {
+        "number": 10,
+        "cost": 0.953588334858543,
+        "seconds": 102.1,
+        "enqueued": false,
+        "summary": "VNS[constructor=earliest_slack_repair, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "earliest_slack_repair",
+          "earliest_slack_repair.window": 1,
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 1,
+          "VNS.ls_time_share": 0.025896442394562985
+        }
+      },
+      {
+        "number": 11,
+        "cost": 0.763796872656935,
+        "seconds": 100.62,
+        "enqueued": false,
+        "summary": "SA[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "SA.T0": 27.961865295698356,
+          "SA.alpha": 0.8035891249543932,
+          "SA.iters_per_T": 50
+        }
+      },
+      {
+        "number": 12,
+        "cost": 0.7633707374895549,
+        "seconds": 100.63,
+        "enqueued": false,
+        "summary": "SA[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "SA.T0": 12.208289735000927,
+          "SA.alpha": 0.8034775999344493,
+          "SA.iters_per_T": 50
+        }
+      },
+      {
+        "number": 13,
+        "cost": 0.9994004668776454,
+        "seconds": 100.63,
+        "enqueued": false,
+        "summary": "SA[constructor=lot_for_lot, neighborhood=drop_single_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "drop_single_setup",
+          "SA.T0": 46.84902817735173,
+          "SA.alpha": 0.8313516377862348,
+          "SA.iters_per_T": 41
+        }
+      },
+      {
+        "number": 14,
+        "cost": 0.9994414010421502,
+        "seconds": 100.52,
+        "enqueued": false,
+        "summary": "SA[constructor=lot_for_lot, neighborhood=left_shift_setup_chain]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "left_shift_setup_chain",
+          "SA.T0": 21.461573379826437,
+          "SA.alpha": 0.8512488489279745,
+          "SA.iters_per_T": 40
+        }
+      },
+      {
+        "number": 15,
+        "cost": 0.9736923635787142,
+        "seconds": 120.1,
+        "enqueued": false,
+        "summary": "ILS[constructor=lot_for_lot, neighborhood=merge_consecutive_setups, perturbation=period_swap_relink_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "merge_consecutive_setups",
+          "perturbation": "period_swap_relink_perturbation",
+          "period_swap_relink_perturbation.strength": 5.36315434025664,
+          "period_swap_relink_perturbation.radius": 3,
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.2979951829119432
+        }
+      },
+      {
+        "number": 16,
+        "cost": 0.7596137602551897,
+        "seconds": 100.67,
+        "enqueued": false,
+        "summary": "SA[constructor=earliest_slack_repair, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "earliest_slack_repair",
+          "earliest_slack_repair.window": 10,
+          "neighborhood": "setup_flip",
+          "SA.T0": 193.73620893564853,
+          "SA.alpha": 0.8489889626472295,
+          "SA.iters_per_T": 1
+        }
+      },
+      {
+        "number": 17,
+        "cost": 0.761453602951629,
+        "seconds": 100.69,
+        "enqueued": false,
+        "summary": "SA[constructor=earliest_slack_repair, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "earliest_slack_repair",
+          "earliest_slack_repair.window": 10,
+          "neighborhood": "setup_flip",
+          "SA.T0": 782.1483024775117,
+          "SA.alpha": 0.8587514894352778,
+          "SA.iters_per_T": 3
+        }
+      },
+      {
+        "number": 18,
+        "cost": 0.7597419250611213,
+        "seconds": 100.67,
+        "enqueued": false,
+        "summary": "SA[constructor=earliest_slack_repair, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "earliest_slack_repair",
+          "earliest_slack_repair.window": 10,
+          "neighborhood": "setup_flip",
+          "SA.T0": 613.5396469646569,
+          "SA.alpha": 0.8739125926318614,
+          "SA.iters_per_T": 2
+        }
+      },
+      {
+        "number": 19,
+        "cost": 0.7804312723423559,
+        "seconds": 100.66,
+        "enqueued": false,
+        "summary": "SA[constructor=earliest_slack_repair, neighborhood=merge_consecutive_setups]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "earliest_slack_repair",
+          "earliest_slack_repair.window": 10,
+          "neighborhood": "merge_consecutive_setups",
+          "SA.T0": 201.847866442525,
+          "SA.alpha": 0.8964928464421217,
+          "SA.iters_per_T": 1
+        }
+      },
+      {
+        "number": 20,
+        "cost": 0.982838523184127,
+        "seconds": 101.16,
+        "enqueued": false,
+        "summary": "ILS[constructor=earliest_slack_repair, neighborhood=setup_flip, perturbation=period_swap_relink_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "earliest_slack_repair",
+          "earliest_slack_repair.window": 7,
+          "neighborhood": "setup_flip",
+          "perturbation": "period_swap_relink_perturbation",
+          "period_swap_relink_perturbation.strength": 1.0831667182377953,
+          "period_swap_relink_perturbation.radius": 1,
+          "ILS.strength": 2,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.03554074075578756
+        }
+      },
+      {
+        "number": 21,
+        "cost": 0.7605161789029494,
+        "seconds": 100.62,
+        "enqueued": false,
+        "summary": "SA[constructor=earliest_slack_repair, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "earliest_slack_repair",
+          "earliest_slack_repair.window": 10,
+          "neighborhood": "setup_flip",
+          "SA.T0": 974.0731747784585,
+          "SA.alpha": 0.8667469994939594,
+          "SA.iters_per_T": 1
+        }
+      },
+      {
+        "number": 22,
+        "cost": 0.9923448115533795,
+        "seconds": 100.66,
+        "enqueued": false,
+        "summary": "SA[constructor=earliest_slack_repair, neighborhood=drop_single_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "earliest_slack_repair",
+          "earliest_slack_repair.window": 8,
+          "neighborhood": "drop_single_setup",
+          "SA.T0": 931.559138423783,
+          "SA.alpha": 0.8686183038511057,
+          "SA.iters_per_T": 9
+        }
+      },
+      {
+        "number": 23,
+        "cost": 0.763603266045909,
+        "seconds": 100.67,
+        "enqueued": false,
+        "summary": "SA[constructor=earliest_slack_repair, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "earliest_slack_repair",
+          "earliest_slack_repair.window": 8,
+          "neighborhood": "setup_flip",
+          "SA.T0": 282.8935697601717,
+          "SA.alpha": 0.9227086583704903,
+          "SA.iters_per_T": 9
+        }
+      },
+      {
+        "number": 24,
+        "cost": 0.7656481590656236,
+        "seconds": 100.65,
+        "enqueued": false,
+        "summary": "SA[constructor=earliest_slack_repair, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "earliest_slack_repair",
+          "earliest_slack_repair.window": 10,
+          "neighborhood": "setup_flip",
+          "SA.T0": 383.5439341825072,
+          "SA.alpha": 0.8400000338094098,
+          "SA.iters_per_T": 8
+        }
+      },
+      {
+        "number": 25,
+        "cost": 0.7595766488789527,
+        "seconds": 100.65,
+        "enqueued": false,
+        "summary": "SA[constructor=earliest_slack_repair, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "earliest_slack_repair",
+          "earliest_slack_repair.window": 8,
+          "neighborhood": "setup_flip",
+          "SA.T0": 97.76183463953595,
+          "SA.alpha": 0.8757144423483892,
+          "SA.iters_per_T": 2
+        }
+      },
+      {
+        "number": 26,
+        "cost": 0.9855109794485764,
+        "seconds": 111.06,
+        "enqueued": false,
+        "summary": "VNS[constructor=earliest_slack_repair, neighborhood=left_shift_setup_chain]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "earliest_slack_repair",
+          "earliest_slack_repair.window": 8,
+          "neighborhood": "left_shift_setup_chain",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.28750074742556087
+        }
+      },
+      {
+        "number": 27,
+        "cost": 1.2041989307663346,
+        "seconds": 100.54,
+        "enqueued": false,
+        "summary": "SA[constructor=backward_capacity_packing, neighborhood=left_shift_setup_chain]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "backward_capacity_packing",
+          "neighborhood": "left_shift_setup_chain",
+          "SA.T0": 82.4021268280653,
+          "SA.alpha": 0.8798364664212913,
+          "SA.iters_per_T": 15
+        }
+      },
+      {
+        "number": 28,
+        "cost": 0.9387620910091614,
+        "seconds": 102.04,
+        "enqueued": false,
+        "summary": "VNS[constructor=earliest_slack_repair, neighborhood=merge_consecutive_setups]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "earliest_slack_repair",
+          "earliest_slack_repair.window": 6,
+          "neighborhood": "merge_consecutive_setups",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.03525117986256654
+        }
+      },
+      {
+        "number": 29,
+        "cost": 1.120750058166521,
+        "seconds": 107.16,
+        "enqueued": false,
+        "summary": "ILS[constructor=backward_capacity_packing, neighborhood=drop_single_setup, perturbation=item_block_compaction_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "backward_capacity_packing",
+          "neighborhood": "drop_single_setup",
+          "perturbation": "item_block_compaction_perturbation",
+          "item_block_compaction_perturbation.strength": 7.943733602445955,
+          "item_block_compaction_perturbation.block_span": 5,
+          "ILS.strength": 6,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.17587594367031587
+        }
+      }
+    ]
+  },
+  "test": {
+    "tuned": {
+      "label": "tuned",
+      "summary": "SA[constructor=earliest_slack_repair, neighborhood=setup_flip]",
+      "mean": 265900.68,
+      "std": 36806.869511441306,
+      "per_instance": [
+        237282.6,
+        279050.0,
+        297261.4,
+        209828.66666666666,
+        306080.7333333334
+      ],
+      "config": {
+        "skeleton": "SA",
+        "constructor": "earliest_slack_repair",
+        "earliest_slack_repair.window": 8,
+        "neighborhood": "setup_flip",
+        "SA.T0": 97.76183463953595,
+        "SA.alpha": 0.8757144423483892,
+        "SA.iters_per_T": 2
+      },
+      "gap_per_instance": [
+        0.12793305490247162,
+        0.12905314095665052,
+        0.12114544423189504,
+        0.13509868094813046,
+        0.1584458262226929
+      ],
+      "mean_gap": 0.13433522945236812
+    },
+    "baselines": [
+      {
+        "label": "default:SA",
+        "summary": "SA[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "mean": 265402.43333333335,
+        "std": 36696.14040890706,
+        "per_instance": [
+          237262.5,
+          278581.3333333333,
+          296502.6666666666,
+          209192.16666666666,
+          305473.49999999994
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.12783750868709995,
+          0.12715688733879812,
+          0.11828382001814372,
+          0.1316554416524663,
+          0.15614758643189447
+        ],
+        "mean_gap": 0.1322162488256805
+      },
+      {
+        "label": "SA:constructor=earliest_slack_repair",
+        "summary": "SA[constructor=earliest_slack_repair, neighborhood=setup_flip]",
+        "mean": 265558.55333333334,
+        "std": 36449.958382744735,
+        "per_instance": [
+          237776.6,
+          278758.3333333333,
+          297608.60000000003,
+          209446.33333333334,
+          304202.9
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "earliest_slack_repair",
+          "earliest_slack_repair.window": 6,
+          "neighborhood": "setup_flip",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.13028130517080913,
+          0.12787304002093153,
+          0.12245493715037463,
+          0.13303039319105972,
+          0.1513386549752533
+        ],
+        "mean_gap": 0.13299566610168567
+      },
+      {
+        "label": "SA:neighborhood=merge_consecutive_setups",
+        "summary": "SA[constructor=lot_for_lot, neighborhood=merge_consecutive_setups]",
+        "mean": 273024.66,
+        "std": 39503.712418654184,
+        "per_instance": [
+          244358.5,
+          278376.3333333333,
+          311302.06666666665,
+          214412.33333333334,
+          316674.06666666665
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "merge_consecutive_setups",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.1615686501934217,
+          0.1263274449668357,
+          0.1741009556683342,
+          0.1598946922362573,
+          0.19853917888864192
+        ],
+        "mean_gap": 0.16408618439069816
+      },
+      {
+        "label": "SA:constructor=backward_capacity_packing",
+        "summary": "SA[constructor=backward_capacity_packing, neighborhood=setup_flip]",
+        "mean": 290229.6,
+        "std": 35990.55488982259,
+        "per_instance": [
+          261275.19999999998,
+          308542.0,
+          323611.1333333333,
+          234695.83333333334,
+          323023.8333333333
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "backward_capacity_packing",
+          "neighborhood": "setup_flip",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.24198291196343188,
+          0.24837955282941002,
+          0.22052559746871592,
+          0.2696212346614013,
+          0.2225715987419921
+        ],
+        "mean_gap": 0.24061617913299024
+      },
+      {
+        "label": "ILS:neighborhood=merge_consecutive_setups",
+        "summary": "ILS[constructor=lot_for_lot, neighborhood=merge_consecutive_setups, perturbation=setup_flip_perturbation]",
+        "mean": 329916.36,
+        "std": 48832.373861115266,
+        "per_instance": [
+          289830.60000000003,
+          347777.0,
+          368906.8666666667,
+          257256.83333333334,
+          385810.5
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "merge_consecutive_setups",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          0.37772223526805726,
+          0.40712673070231514,
+          0.3913621240739513,
+          0.3916682444799077,
+          0.4602048242976314
+        ],
+        "mean_gap": 0.4056168317643726
+      },
+      {
+        "label": "VNS:neighborhood=merge_consecutive_setups",
+        "summary": "VNS[constructor=lot_for_lot, neighborhood=merge_consecutive_setups]",
+        "mean": 332747.55333333334,
+        "std": 48937.39621839133,
+        "per_instance": [
+          293632.1333333333,
+          349703.6666666667,
+          373332.2666666667,
+          259295.33333333334,
+          387774.36666666664
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "merge_consecutive_setups",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          0.3957929876366682,
+          0.4149221403119783,
+          0.4080528785711846,
+          0.40269580662320925,
+          0.46763761210652705
+        ],
+        "mean_gap": 0.4178202850499135
+      },
+      {
+        "label": "default:ILS",
+        "summary": "ILS[constructor=lot_for_lot, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "mean": 333039.26,
+        "std": 45584.260394099496,
+        "per_instance": [
+          291526.6666666667,
+          348816.3333333333,
+          368250.2666666667,
+          268813.6666666667,
+          387789.3666666667
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          0.3857845611893493,
+          0.41133193609382535,
+          0.38888570399827843,
+          0.45418661473407096,
+          0.4676943836883387
+        ],
+        "mean_gap": 0.42157663994077255
+      },
+      {
+        "label": "ILS:constructor=earliest_slack_repair",
+        "summary": "ILS[constructor=earliest_slack_repair, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "mean": 333170.17333333334,
+        "std": 45592.40900193023,
+        "per_instance": [
+          290898.9,
+          348816.3333333333,
+          369602.8666666667,
+          269379.8333333333,
+          387152.93333333335
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "earliest_slack_repair",
+          "earliest_slack_repair.window": 6,
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          0.3828004453119134,
+          0.41133193609382535,
+          0.39398714444048866,
+          0.4572493756367602,
+          0.46528562855161437
+        ],
+        "mean_gap": 0.4221309060069204
+      },
+      {
+        "label": "ILS:perturbation=item_block_compaction_perturbation",
+        "summary": "ILS[constructor=lot_for_lot, neighborhood=setup_flip, perturbation=item_block_compaction_perturbation]",
+        "mean": 335068.04,
+        "std": 45590.95931823618,
+        "per_instance": [
+          296852.06666666665,
+          349689.0,
+          371594.93333333335,
+          268333.5,
+          388870.7
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "perturbation": "item_block_compaction_perturbation",
+          "item_block_compaction_perturbation.strength": 4.5,
+          "item_block_compaction_perturbation.block_span": 3,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          0.4110990793654717,
+          0.41486279809349635,
+          0.4015003852041382,
+          0.45158908333558734,
+          0.47178698394159035
+        ],
+        "mean_gap": 0.4301676659880568
+      },
+      {
+        "label": "VNS:constructor=earliest_slack_repair",
+        "summary": "VNS[constructor=earliest_slack_repair, neighborhood=setup_flip]",
+        "mean": 335757.88,
+        "std": 46953.339091473936,
+        "per_instance": [
+          294601.93333333335,
+          351076.6666666667,
+          376045.46666666673,
+          267967.6666666667,
+          389097.6666666667
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "earliest_slack_repair",
+          "earliest_slack_repair.window": 6,
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          0.4004029736897731,
+          0.420477381173951,
+          0.4182859321034965,
+          0.44961005472757937,
+          0.4726460010539329
+        ],
+        "mean_gap": 0.43228446854974656
+      },
+      {
+        "label": "default:VNS",
+        "summary": "VNS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "mean": 336530.24666666664,
+        "std": 46259.62776796296,
+        "per_instance": [
+          296491.0,
+          351076.6666666667,
+          375371.8,
+          269630.5,
+          390081.26666666666
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          0.4093827334203549,
+          0.420477381173951,
+          0.4157451437123219,
+          0.45860539341646156,
+          0.4763687029119153
+        ],
+        "mean_gap": 0.43611587092700094
+      },
+      {
+        "label": "ILS:neighborhood=left_shift_setup_chain",
+        "summary": "ILS[constructor=lot_for_lot, neighborhood=left_shift_setup_chain, perturbation=setup_flip_perturbation]",
+        "mean": 340310.7133333333,
+        "std": 44278.360715031995,
+        "per_instance": [
+          301097.4,
+          351776.0,
+          377807.93333333335,
+          277981.0,
+          392891.23333333334
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "left_shift_setup_chain",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          0.43127945414114427,
+          0.4233069260461089,
+          0.4249332178726675,
+          0.5037786373103244,
+          0.4870037864121886
+        ],
+        "mean_gap": 0.45406040435648676
+      },
+      {
+        "label": "ILS:perturbation=congested_period_relocation_perturbation",
+        "summary": "ILS[constructor=lot_for_lot, neighborhood=setup_flip, perturbation=congested_period_relocation_perturbation]",
+        "mean": 341911.9066666667,
+        "std": 53016.068260310996,
+        "per_instance": [
+          303341.9,
+          359813.0,
+          390779.6,
+          259083.5,
+          396541.5333333333
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "perturbation": "congested_period_relocation_perturbation",
+          "congested_period_relocation_perturbation.strength": 3.5,
+          "congested_period_relocation_perturbation.window": 2,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          0.4419487815243093,
+          0.4558251130873868,
+          0.4738569092346406,
+          0.4015498634064537,
+          0.5008193400846097
+        ],
+        "mean_gap": 0.45480000146748
+      },
+      {
+        "label": "ILS:neighborhood=drop_single_setup",
+        "summary": "ILS[constructor=lot_for_lot, neighborhood=drop_single_setup, perturbation=setup_flip_perturbation]",
+        "mean": 340966.94666666666,
+        "std": 44096.08661228896,
+        "per_instance": [
+          302236.0333333333,
+          352376.6666666667,
+          378924.39999999997,
+          278530.8333333333,
+          392766.80000000005
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "drop_single_setup",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          0.43669199671308345,
+          0.42573725963029807,
+          0.42914406232462143,
+          0.5067530406715172,
+          0.4865328346012952
+        ],
+        "mean_gap": 0.45697183878816305
+      },
+      {
+        "label": "ILS:perturbation=period_swap_relink_perturbation",
+        "summary": "ILS[constructor=lot_for_lot, neighborhood=setup_flip, perturbation=period_swap_relink_perturbation]",
+        "mean": 343050.5933333333,
+        "std": 48325.535072843435,
+        "per_instance": [
+          303051.1666666666,
+          358822.6666666667,
+          390779.6,
+          271008.6666666667,
+          391590.86666666664
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "perturbation": "period_swap_relink_perturbation",
+          "period_swap_relink_perturbation.strength": 3.5,
+          "period_swap_relink_perturbation.radius": 2,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          0.4405667681072753,
+          0.4518181646530774,
+          0.4738569092346406,
+          0.4660607863821194,
+          0.482082194905419
+        ],
+        "mean_gap": 0.46287696465650635
+      },
+      {
+        "label": "VNS:neighborhood=left_shift_setup_chain",
+        "summary": "VNS[constructor=lot_for_lot, neighborhood=left_shift_setup_chain]",
+        "mean": 346263.12666666665,
+        "std": 44567.50611364693,
+        "per_instance": [
+          309428.7,
+          354614.6666666667,
+          386229.8,
+          282044.8333333333,
+          398997.63333333336
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "left_shift_setup_chain",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          0.4708826473812257,
+          0.43479234269591704,
+          0.45669697006269877,
+          0.5257625345991902,
+          0.5101151188904158
+        ],
+        "mean_gap": 0.4796499227258895
+      },
+      {
+        "label": "VNS:neighborhood=drop_single_setup",
+        "summary": "VNS[constructor=lot_for_lot, neighborhood=drop_single_setup]",
+        "mean": 346397.86,
+        "std": 44903.54444037872,
+        "per_instance": [
+          309472.6666666667,
+          355348.3333333333,
+          386043.60000000003,
+          281469.5,
+          399655.2
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "drop_single_setup",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          0.47109164482413646,
+          0.4377608023067938,
+          0.45599470168303047,
+          0.5226501852803549,
+          0.5126038588779589
+        ],
+        "mean_gap": 0.4800202385944549
+      },
+      {
+        "label": "SA:neighborhood=drop_single_setup",
+        "summary": "SA[constructor=lot_for_lot, neighborhood=drop_single_setup]",
+        "mean": 350110.82,
+        "std": 45609.80332460994,
+        "per_instance": [
+          311928.5,
+          359813.0,
+          390779.6,
+          284346.5,
+          403686.5
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "drop_single_setup",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.48276555430590196,
+          0.4558251130873868,
+          0.4738569092346406,
+          0.5382137350896649,
+          0.5278614107283907
+        ],
+        "mean_gap": 0.495704544489197
+      },
+      {
+        "label": "SA:neighborhood=left_shift_setup_chain",
+        "summary": "SA[constructor=lot_for_lot, neighborhood=left_shift_setup_chain]",
+        "mean": 350133.08,
+        "std": 45624.28983539652,
+        "per_instance": [
+          311938.43333333335,
+          359813.0,
+          390779.6,
+          284361.1666666667,
+          403773.2
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "left_shift_setup_chain",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.48281277283356494,
+          0.4558251130873868,
+          0.4738569092346406,
+          0.5382930765554985,
+          0.5281895504712609
+        ],
+        "mean_gap": 0.49579548443647037
+      },
+      {
+        "label": "ILS:constructor=backward_capacity_packing",
+        "summary": "ILS[constructor=backward_capacity_packing, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "mean": 391627.54,
+        "std": 48439.92081730111,
+        "per_instance": [
+          349638.6,
+          421883.6666666667,
+          425983.73333333334,
+          319101.6666666667,
+          441530.0333333334
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "backward_capacity_packing",
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          0.6620221382007079,
+          0.7069667764497709,
+          0.6066321491574792,
+          0.7262268624958301,
+          0.671090560639556
+        ],
+        "mean_gap": 0.6745876973886689
+      },
+      {
+        "label": "VNS:constructor=backward_capacity_packing",
+        "summary": "VNS[constructor=backward_capacity_packing, neighborhood=setup_flip]",
+        "mean": 397912.6866666667,
+        "std": 50277.99657114256,
+        "per_instance": [
+          353303.4,
+          429775.0,
+          434295.26666666666,
+          322778.3333333333,
+          449411.4333333334
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "backward_capacity_packing",
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          0.6794429227824961,
+          0.7388955873665811,
+          0.6379797702453439,
+          0.7461163254082027,
+          0.7009198636321375
+        ],
+        "mean_gap": 0.7006708938869523
+      }
+    ],
+    "best_baseline": "default:SA",
+    "gain_vs_best_baseline": -0.0018773251639364929,
+    "wins_per_instance": "0/5",
+    "reference": 350148.14,
+    "best_known": [
+      210369.4,
+      247154.0,
+      265140.8,
+      184855.0,
+      264216.7
+    ],
+    "best_baseline_by_gap": "default:SA",
+    "mip_reference": [
+      210369.4,
+      247154.0,
+      265140.8,
+      184855.0,
+      264216.7
+    ]
+  }
+}
