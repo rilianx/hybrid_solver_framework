@@ -1,0 +1,45 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH")
+constructor "--constructor=" c ("lot_for_lot", "consecutive_lot_merge_constructor", "cumulative_backward_repair", "randomized_priority_capacity_packing") | skeleton %in% c("SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH")
+consecutive_lot_merge_constructor.merge_bias "--consecutive_lot_merge_constructor.merge_bias=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH") & constructor == "consecutive_lot_merge_constructor"
+consecutive_lot_merge_constructor.sparsify "--consecutive_lot_merge_constructor.sparsify=" c ("TRUE", "FALSE") | skeleton %in% c("SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH") & constructor == "consecutive_lot_merge_constructor"
+cumulative_backward_repair.lookahead "--cumulative_backward_repair.lookahead=" i (1, 8) | skeleton %in% c("SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH") & constructor == "cumulative_backward_repair"
+cumulative_backward_repair.random_tie_break "--cumulative_backward_repair.random_tie_break=" c ("TRUE", "FALSE") | skeleton %in% c("SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH") & constructor == "cumulative_backward_repair"
+randomized_priority_capacity_packing.alpha "--randomized_priority_capacity_packing.alpha=" r (0.05, 1.0) | skeleton %in% c("SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH") & constructor == "randomized_priority_capacity_packing"
+randomized_priority_capacity_packing.period_bias "--randomized_priority_capacity_packing.period_bias=" r (0.0, 2.0) | skeleton %in% c("SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH") & constructor == "randomized_priority_capacity_packing"
+neighborhood "--neighborhood=" c ("setup_flip", "cross_period_setup_exchange", "redundant_setup_pruner", "same_period_setup_swap") | skeleton %in% c("SA", "ILS", "TS", "VNS", "GRASP")
+perturbation "--perturbation=" c ("setup_flip_perturbation", "neighbor_shift_perturbation", "period_compaction_perturbation", "two_item_swap_perturbation") | skeleton %in% c("ILS")
+neighbor_shift_perturbation.strength "--neighbor_shift_perturbation.strength=" r (1.0, 10.0) | skeleton %in% c("ILS") & perturbation == "neighbor_shift_perturbation"
+neighbor_shift_perturbation.radius "--neighbor_shift_perturbation.radius=" i (1, 3) | skeleton %in% c("ILS") & perturbation == "neighbor_shift_perturbation"
+period_compaction_perturbation.strength "--period_compaction_perturbation.strength=" r (1.0, 12.0) | skeleton %in% c("ILS") & perturbation == "period_compaction_perturbation"
+period_compaction_perturbation.window "--period_compaction_perturbation.window=" i (2, 6) | skeleton %in% c("ILS") & perturbation == "period_compaction_perturbation"
+two_item_swap_perturbation.strength "--two_item_swap_perturbation.strength=" r (1.0, 10.0) | skeleton %in% c("ILS") & perturbation == "two_item_swap_perturbation"
+two_item_swap_perturbation.swap_bias "--two_item_swap_perturbation.swap_bias=" r (0.0, 1.0) | skeleton %in% c("ILS") & perturbation == "two_item_swap_perturbation"
+destruction "--destruction=" c ("period_window", "random_setups", "capacity_bottleneck_destruction", "item_chain_destruction", "low_leverage_setup_destruction") | skeleton %in% c("LNS_MIP")
+capacity_bottleneck_destruction.ratio "--capacity_bottleneck_destruction.ratio=" r (0.05, 0.6) | skeleton %in% c("LNS_MIP") & destruction == "capacity_bottleneck_destruction"
+item_chain_destruction.ratio "--item_chain_destruction.ratio=" r (0.05, 0.6) | skeleton %in% c("LNS_MIP") & destruction == "item_chain_destruction"
+low_leverage_setup_destruction.ratio "--low_leverage_setup_destruction.ratio=" r (0.05, 0.6) | skeleton %in% c("LNS_MIP") & destruction == "low_leverage_setup_destruction"
+fixing_policy "--fixing_policy=" c ("sliding_window") | skeleton %in% c("FIX_OPT")
+sliding_window.window_size "--sliding_window.window_size=" i (1, 4) | skeleton %in% c("FIX_OPT") & fixing_policy == "sliding_window"
+sliding_window.overlap "--sliding_window.overlap=" i (0, 2) | skeleton %in% c("FIX_OPT") & fixing_policy == "sliding_window"
+SA.T0 "--SA.T0=" r (1.0, 1000.0) | skeleton == "SA"  # log-scale
+SA.alpha "--SA.alpha=" r (0.8, 0.999) | skeleton == "SA"
+SA.iters_per_T "--SA.iters_per_T=" i (1, 50) | skeleton == "SA"
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+LNS_MIP.destroy_ratio "--LNS_MIP.destroy_ratio=" r (0.05, 0.6) | skeleton == "LNS_MIP"
+LNS_MIP.mip_time_share "--LNS_MIP.mip_time_share=" r (0.02, 0.3) | skeleton == "LNS_MIP"  # log-scale
+FIX_OPT.block_size "--FIX_OPT.block_size=" i (1, 4) | skeleton == "FIX_OPT"
+FIX_OPT.mip_time_share "--FIX_OPT.mip_time_share=" r (0.02, 0.3) | skeleton == "FIX_OPT"  # log-scale
+FIX_OPT.order "--FIX_OPT.order=" c ("sequential", "random") | skeleton == "FIX_OPT"
+TS.tenure "--TS.tenure=" i (3, 30) | skeleton == "TS"
+TS.candidate_size "--TS.candidate_size=" i (5, 100) | skeleton == "TS"  # log-scale
+VNS.shake_strength "--VNS.shake_strength=" i (1, 4) | skeleton == "VNS"
+VNS.ls_time_share "--VNS.ls_time_share=" r (0.02, 0.3) | skeleton == "VNS"
+GRASP.ls_strategy "--GRASP.ls_strategy=" c ("first", "best") | skeleton == "GRASP"
+GRASP.ls_time_share "--GRASP.ls_time_share=" r (0.02, 0.3) | skeleton == "GRASP"
+LOCAL_BRANCH.k "--LOCAL_BRANCH.k=" i (2, 20) | skeleton == "LOCAL_BRANCH"
+LOCAL_BRANCH.k_step "--LOCAL_BRANCH.k_step=" i (1, 10) | skeleton == "LOCAL_BRANCH"
+LOCAL_BRANCH.mip_time_share "--LOCAL_BRANCH.mip_time_share=" r (0.05, 0.5) | skeleton == "LOCAL_BRANCH"  # log-scale
