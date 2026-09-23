@@ -1,0 +1,1162 @@
+{
+  "catalog": "handwritten",
+  "generated_components": [],
+  "settings": {
+    "trials": 60,
+    "budget": 5.0,
+    "train": 5,
+    "test": 5,
+    "items": 10,
+    "periods": 15,
+    "seed": 0,
+    "seeds_test": 3
+  },
+  "tuning": {
+    "best_config": {
+      "skeleton": "LNS_MIP",
+      "constructor": "lot_for_lot",
+      "destruction": "random_setups",
+      "LNS_MIP.destroy_ratio": 0.5881936268251104,
+      "LNS_MIP.mip_time_share": 0.02006158967313097
+    },
+    "best_cost": 72823.68,
+    "best_summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+    "best_default_cost": 73359.72,
+    "best_default_summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+    "n_trials": 60,
+    "n_failed": 0,
+    "seconds": 1631.0,
+    "skeleton_usage": {
+      "LNS_MIP": 23,
+      "LOCAL_BRANCH": 13,
+      "SA": 4,
+      "ILS": 4,
+      "FIX_OPT": 4,
+      "TS": 4,
+      "VNS": 4,
+      "GRASP": 4
+    },
+    "incumbent_curve": [
+      79780.48000000001,
+      79780.48000000001,
+      75618.4,
+      74094.68000000001,
+      74094.68000000001,
+      74094.68000000001,
+      74094.68000000001,
+      73359.72,
+      73049.56,
+      72919.16,
+      72919.16,
+      72919.16,
+      72919.16,
+      72919.16,
+      72919.16,
+      72919.16,
+      72919.16,
+      72919.16,
+      72919.16,
+      72919.16,
+      72919.16,
+      72919.16,
+      72919.16,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68,
+      72823.68
+    ],
+    "trials": [
+      {
+        "number": 0,
+        "cost": 79780.48000000001,
+        "seconds": 25.17,
+        "enqueued": true,
+        "summary": "SA[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 1,
+        "cost": 104390.56,
+        "seconds": 28.42,
+        "enqueued": true,
+        "summary": "ILS[constructor=lot_for_lot, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        }
+      },
+      {
+        "number": 2,
+        "cost": 75618.4,
+        "seconds": 26.14,
+        "enqueued": true,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=period_window]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.07745966692414834
+        }
+      },
+      {
+        "number": 3,
+        "cost": 74094.68000000001,
+        "seconds": 25.49,
+        "enqueued": true,
+        "summary": "FIX_OPT[constructor=lot_for_lot, fixing_policy=sliding_window]",
+        "config": {
+          "skeleton": "FIX_OPT",
+          "constructor": "lot_for_lot",
+          "fixing_policy": "sliding_window",
+          "sliding_window.window_size": 2,
+          "sliding_window.overlap": 1,
+          "FIX_OPT.block_size": 2,
+          "FIX_OPT.mip_time_share": 0.07745966692414834,
+          "FIX_OPT.order": "sequential"
+        }
+      },
+      {
+        "number": 4,
+        "cost": 104796.92,
+        "seconds": 26.7,
+        "enqueued": true,
+        "summary": "TS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "TS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "TS.tenure": 16,
+          "TS.candidate_size": 52
+        }
+      },
+      {
+        "number": 5,
+        "cost": 104153.2,
+        "seconds": 28.38,
+        "enqueued": true,
+        "summary": "VNS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16
+        }
+      },
+      {
+        "number": 6,
+        "cost": 105399.09999999999,
+        "seconds": 28.42,
+        "enqueued": true,
+        "summary": "GRASP[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "GRASP",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "GRASP.ls_strategy": "first",
+          "GRASP.ls_time_share": 0.16
+        }
+      },
+      {
+        "number": 7,
+        "cost": 73359.72,
+        "seconds": 27.61,
+        "enqueued": true,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 11,
+          "LOCAL_BRANCH.k_step": 6,
+          "LOCAL_BRANCH.mip_time_share": 0.15811388300841897
+        }
+      },
+      {
+        "number": 8,
+        "cost": 73049.56,
+        "seconds": 34.24,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 20,
+          "LOCAL_BRANCH.k_step": 4,
+          "LOCAL_BRANCH.mip_time_share": 0.30952450833870915
+        }
+      },
+      {
+        "number": 9,
+        "cost": 72919.16,
+        "seconds": 25.29,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.4895372103191979,
+          "LNS_MIP.mip_time_share": 0.06978656783163392
+        }
+      },
+      {
+        "number": 10,
+        "cost": 93047.78,
+        "seconds": 26.12,
+        "enqueued": false,
+        "summary": "TS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "TS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "TS.tenure": 24,
+          "TS.candidate_size": 19
+        }
+      },
+      {
+        "number": 11,
+        "cost": 106496.95999999999,
+        "seconds": 27.27,
+        "enqueued": false,
+        "summary": "VNS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.21533673485963414
+        }
+      },
+      {
+        "number": 12,
+        "cost": 73047.76,
+        "seconds": 33.0,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 20,
+          "LOCAL_BRANCH.k_step": 1,
+          "LOCAL_BRANCH.mip_time_share": 0.4252167456807775
+        }
+      },
+      {
+        "number": 13,
+        "cost": 73298.6,
+        "seconds": 26.29,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.5193088413253422,
+          "LNS_MIP.mip_time_share": 0.032398172622110914
+        }
+      },
+      {
+        "number": 14,
+        "cost": 75857.48,
+        "seconds": 25.23,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.05626478467395357,
+          "LNS_MIP.mip_time_share": 0.2834054579327251
+        }
+      },
+      {
+        "number": 15,
+        "cost": 74855.02,
+        "seconds": 26.78,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 3,
+          "LOCAL_BRANCH.k_step": 1,
+          "LOCAL_BRANCH.mip_time_share": 0.05022759687664127
+        }
+      },
+      {
+        "number": 16,
+        "cost": 79778.96,
+        "seconds": 25.2,
+        "enqueued": false,
+        "summary": "SA[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "SA.T0": 1.0394186004739006,
+          "SA.alpha": 0.8121315795374389,
+          "SA.iters_per_T": 49
+        }
+      },
+      {
+        "number": 17,
+        "cost": 110117.62,
+        "seconds": 25.59,
+        "enqueued": false,
+        "summary": "GRASP[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "GRASP",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "GRASP.ls_strategy": "best",
+          "GRASP.ls_time_share": 0.025171988115286897
+        }
+      },
+      {
+        "number": 18,
+        "cost": 109507.08,
+        "seconds": 29.77,
+        "enqueued": false,
+        "summary": "ILS[constructor=lot_for_lot, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.2948432817510625
+        }
+      },
+      {
+        "number": 19,
+        "cost": 73619.4,
+        "seconds": 25.52,
+        "enqueued": false,
+        "summary": "FIX_OPT[constructor=lot_for_lot, fixing_policy=sliding_window]",
+        "config": {
+          "skeleton": "FIX_OPT",
+          "constructor": "lot_for_lot",
+          "fixing_policy": "sliding_window",
+          "sliding_window.window_size": 4,
+          "sliding_window.overlap": 0,
+          "FIX_OPT.block_size": 4,
+          "FIX_OPT.mip_time_share": 0.2850583608480628,
+          "FIX_OPT.order": "random"
+        }
+      },
+      {
+        "number": 20,
+        "cost": 73010.44,
+        "seconds": 33.22,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 20,
+          "LOCAL_BRANCH.k_step": 10,
+          "LOCAL_BRANCH.mip_time_share": 0.46856619880120437
+        }
+      },
+      {
+        "number": 21,
+        "cost": 73008.28,
+        "seconds": 33.58,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 20,
+          "LOCAL_BRANCH.k_step": 9,
+          "LOCAL_BRANCH.mip_time_share": 0.49775089246031345
+        }
+      },
+      {
+        "number": 22,
+        "cost": 73010.44,
+        "seconds": 33.19,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 20,
+          "LOCAL_BRANCH.k_step": 10,
+          "LOCAL_BRANCH.mip_time_share": 0.47790320784689266
+        }
+      },
+      {
+        "number": 23,
+        "cost": 72823.68,
+        "seconds": 25.96,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.5881936268251104,
+          "LNS_MIP.mip_time_share": 0.02006158967313097
+        }
+      },
+      {
+        "number": 24,
+        "cost": 73030.64,
+        "seconds": 26.45,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.593863302541986,
+          "LNS_MIP.mip_time_share": 0.024027027135627307
+        }
+      },
+      {
+        "number": 25,
+        "cost": 73057.78,
+        "seconds": 26.61,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.4489931311554007,
+          "LNS_MIP.mip_time_share": 0.07131751535895614
+        }
+      },
+      {
+        "number": 26,
+        "cost": 73436.28,
+        "seconds": 25.53,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.40576439408316683,
+          "LNS_MIP.mip_time_share": 0.06430987121584031
+        }
+      },
+      {
+        "number": 27,
+        "cost": 74071.22,
+        "seconds": 26.66,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=period_window]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.5628366856634911,
+          "LNS_MIP.mip_time_share": 0.18300207108714295
+        }
+      },
+      {
+        "number": 28,
+        "cost": 73393.92,
+        "seconds": 25.48,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.31264775759597035,
+          "LNS_MIP.mip_time_share": 0.03742567512795522
+        }
+      },
+      {
+        "number": 29,
+        "cost": 80212.45999999999,
+        "seconds": 25.18,
+        "enqueued": false,
+        "summary": "SA[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "SA.T0": 835.0108066087482,
+          "SA.alpha": 0.9752069121076996,
+          "SA.iters_per_T": 3
+        }
+      },
+      {
+        "number": 30,
+        "cost": 96914.45999999999,
+        "seconds": 25.3,
+        "enqueued": false,
+        "summary": "ILS[constructor=lot_for_lot, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 6,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.020553840524356576
+        }
+      },
+      {
+        "number": 31,
+        "cost": 73343.28,
+        "seconds": 29.31,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 14,
+          "LOCAL_BRANCH.k_step": 10,
+          "LOCAL_BRANCH.mip_time_share": 0.256572065482304
+        }
+      },
+      {
+        "number": 32,
+        "cost": 73744.08,
+        "seconds": 26.83,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 15,
+          "LOCAL_BRANCH.k_step": 8,
+          "LOCAL_BRANCH.mip_time_share": 0.48609980255598717
+        }
+      },
+      {
+        "number": 33,
+        "cost": 73372.4,
+        "seconds": 28.38,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 16,
+          "LOCAL_BRANCH.k_step": 8,
+          "LOCAL_BRANCH.mip_time_share": 0.26043590028665053
+        }
+      },
+      {
+        "number": 34,
+        "cost": 76569.04000000001,
+        "seconds": 25.22,
+        "enqueued": false,
+        "summary": "FIX_OPT[constructor=lot_for_lot, fixing_policy=sliding_window]",
+        "config": {
+          "skeleton": "FIX_OPT",
+          "constructor": "lot_for_lot",
+          "fixing_policy": "sliding_window",
+          "sliding_window.window_size": 1,
+          "sliding_window.overlap": 2,
+          "FIX_OPT.block_size": 1,
+          "FIX_OPT.mip_time_share": 0.020207683654593155,
+          "FIX_OPT.order": "random"
+        }
+      },
+      {
+        "number": 35,
+        "cost": 80916.62,
+        "seconds": 25.39,
+        "enqueued": false,
+        "summary": "TS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "TS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "TS.tenure": 3,
+          "TS.candidate_size": 6
+        }
+      },
+      {
+        "number": 36,
+        "cost": 97530.00000000001,
+        "seconds": 25.42,
+        "enqueued": false,
+        "summary": "VNS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.029018577347364904
+        }
+      },
+      {
+        "number": 37,
+        "cost": 105399.09999999999,
+        "seconds": 28.76,
+        "enqueued": false,
+        "summary": "GRASP[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "GRASP",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "GRASP.ls_strategy": "first",
+          "GRASP.ls_time_share": 0.28456506520640823
+        }
+      },
+      {
+        "number": 38,
+        "cost": 72981.8,
+        "seconds": 26.06,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.4539951228072362,
+          "LNS_MIP.mip_time_share": 0.12945278856767567
+        }
+      },
+      {
+        "number": 39,
+        "cost": 73119.48,
+        "seconds": 26.13,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.4653827073047357,
+          "LNS_MIP.mip_time_share": 0.11984849594627729
+        }
+      },
+      {
+        "number": 40,
+        "cost": 73506.72,
+        "seconds": 25.66,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.38007787891690314,
+          "LNS_MIP.mip_time_share": 0.12892680604102436
+        }
+      },
+      {
+        "number": 41,
+        "cost": 72964.76,
+        "seconds": 25.65,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.506723861870959,
+          "LNS_MIP.mip_time_share": 0.05112723126389416
+        }
+      },
+      {
+        "number": 42,
+        "cost": 73106.56,
+        "seconds": 26.2,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.5099373721357656,
+          "LNS_MIP.mip_time_share": 0.04849273637084264
+        }
+      },
+      {
+        "number": 43,
+        "cost": 73220.92,
+        "seconds": 25.65,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.512527692553023,
+          "LNS_MIP.mip_time_share": 0.021418370890385733
+        }
+      },
+      {
+        "number": 44,
+        "cost": 73030.64,
+        "seconds": 26.36,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.5943773096064127,
+          "LNS_MIP.mip_time_share": 0.10499826973116594
+        }
+      },
+      {
+        "number": 45,
+        "cost": 73338.36,
+        "seconds": 26.32,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.4682456277201165,
+          "LNS_MIP.mip_time_share": 0.04707283310705348
+        }
+      },
+      {
+        "number": 46,
+        "cost": 108603.7,
+        "seconds": 29.09,
+        "enqueued": false,
+        "summary": "TS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "TS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "TS.tenure": 30,
+          "TS.candidate_size": 100
+        }
+      },
+      {
+        "number": 47,
+        "cost": 104962.58,
+        "seconds": 30.06,
+        "enqueued": false,
+        "summary": "VNS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.29783799437661607
+        }
+      },
+      {
+        "number": 48,
+        "cost": 79778.96,
+        "seconds": 25.17,
+        "enqueued": false,
+        "summary": "SA[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "SA.T0": 1.0311501731144823,
+          "SA.alpha": 0.8081026264180603,
+          "SA.iters_per_T": 1
+        }
+      },
+      {
+        "number": 49,
+        "cost": 99585.84,
+        "seconds": 25.44,
+        "enqueued": false,
+        "summary": "ILS[constructor=lot_for_lot, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.025938569050483362
+        }
+      },
+      {
+        "number": 50,
+        "cost": 74071.22,
+        "seconds": 26.71,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=period_window]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.5302170528851236,
+          "LNS_MIP.mip_time_share": 0.17357175597478958
+        }
+      },
+      {
+        "number": 51,
+        "cost": 73519.74,
+        "seconds": 27.53,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 17,
+          "LOCAL_BRANCH.k_step": 8,
+          "LOCAL_BRANCH.mip_time_share": 0.17357415197852072
+        }
+      },
+      {
+        "number": 52,
+        "cost": 73683.28,
+        "seconds": 30.81,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 10,
+          "LOCAL_BRANCH.k_step": 10,
+          "LOCAL_BRANCH.mip_time_share": 0.33237613860458454
+        }
+      },
+      {
+        "number": 53,
+        "cost": 73845.06,
+        "seconds": 25.45,
+        "enqueued": false,
+        "summary": "FIX_OPT[constructor=lot_for_lot, fixing_policy=sliding_window]",
+        "config": {
+          "skeleton": "FIX_OPT",
+          "constructor": "lot_for_lot",
+          "fixing_policy": "sliding_window",
+          "sliding_window.window_size": 4,
+          "sliding_window.overlap": 2,
+          "FIX_OPT.block_size": 4,
+          "FIX_OPT.mip_time_share": 0.021567336423519604,
+          "FIX_OPT.order": "sequential"
+        }
+      },
+      {
+        "number": 54,
+        "cost": 110217.01999999999,
+        "seconds": 25.45,
+        "enqueued": false,
+        "summary": "GRASP[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "GRASP",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "GRASP.ls_strategy": "best",
+          "GRASP.ls_time_share": 0.025160456466743503
+        }
+      },
+      {
+        "number": 55,
+        "cost": 73258.28,
+        "seconds": 25.53,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.4108458600344468,
+          "LNS_MIP.mip_time_share": 0.08887185792797246
+        }
+      },
+      {
+        "number": 56,
+        "cost": 73472.72,
+        "seconds": 31.35,
+        "enqueued": false,
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 18,
+          "LOCAL_BRANCH.k_step": 7,
+          "LOCAL_BRANCH.mip_time_share": 0.4969754395723677
+        }
+      },
+      {
+        "number": 57,
+        "cost": 72932.24,
+        "seconds": 25.52,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.4751251382544174,
+          "LNS_MIP.mip_time_share": 0.057365830255940796
+        }
+      },
+      {
+        "number": 58,
+        "cost": 72932.24,
+        "seconds": 25.44,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.4706895751239728,
+          "LNS_MIP.mip_time_share": 0.05201374587474408
+        }
+      },
+      {
+        "number": 59,
+        "cost": 73013.88,
+        "seconds": 26.18,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.44285088584198234,
+          "LNS_MIP.mip_time_share": 0.05385774803800993
+        }
+      }
+    ]
+  },
+  "test": {
+    "tuned": {
+      "label": "tuned",
+      "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+      "mean": 85910.48,
+      "std": 15815.46972383685,
+      "per_instance": [
+        77310.53333333333,
+        70137.73333333332,
+        83153.8,
+        82887.66666666667,
+        116062.66666666667
+      ],
+      "config": {
+        "skeleton": "LNS_MIP",
+        "constructor": "lot_for_lot",
+        "destruction": "random_setups",
+        "LNS_MIP.destroy_ratio": 0.5881936268251104,
+        "LNS_MIP.mip_time_share": 0.02006158967313097
+      }
+    },
+    "baselines": [
+      {
+        "label": "default:LOCAL_BRANCH",
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "mean": 86521.12,
+        "std": 16849.415487357423,
+        "per_instance": [
+          77726.59999999999,
+          69946.79999999999,
+          82961.4,
+          83147.79999999999,
+          118823.0
+        ],
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 11,
+          "LOCAL_BRANCH.k_step": 6,
+          "LOCAL_BRANCH.mip_time_share": 0.15811388300841897
+        }
+      },
+      {
+        "label": "default:LNS_MIP",
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=period_window]",
+        "mean": 86564.90666666666,
+        "std": 15620.875110247684,
+        "per_instance": [
+          78435.53333333333,
+          70751.0,
+          83825.6,
+          83743.06666666667,
+          116069.33333333333
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.07745966692414834
+        }
+      },
+      {
+        "label": "default:FIX_OPT",
+        "summary": "FIX_OPT[constructor=lot_for_lot, fixing_policy=sliding_window]",
+        "mean": 88158.92,
+        "std": 14087.864225694397,
+        "per_instance": [
+          80241.6,
+          76181.2,
+          83359.8,
+          85369.0,
+          115643.0
+        ],
+        "config": {
+          "skeleton": "FIX_OPT",
+          "constructor": "lot_for_lot",
+          "fixing_policy": "sliding_window",
+          "sliding_window.window_size": 2,
+          "sliding_window.overlap": 1,
+          "FIX_OPT.block_size": 2,
+          "FIX_OPT.mip_time_share": 0.07745966692414834,
+          "FIX_OPT.order": "sequential"
+        }
+      },
+      {
+        "label": "default:SA",
+        "summary": "SA[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "mean": 92491.22666666667,
+        "std": 16173.909186318837,
+        "per_instance": [
+          84042.8,
+          76303.0,
+          89988.4,
+          88891.93333333335,
+          123230.0
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "label": "default:ILS",
+        "summary": "ILS[constructor=lot_for_lot, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "mean": 117109.04,
+        "std": 21271.898477029892,
+        "per_instance": [
+          110540.59999999999,
+          93315.8,
+          115888.13333333333,
+          109252.99999999999,
+          156547.66666666666
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        }
+      },
+      {
+        "label": "default:VNS",
+        "summary": "VNS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "mean": 118483.01333333334,
+        "std": 21568.28357472662,
+        "per_instance": [
+          111136.0,
+          94452.13333333333,
+          116242.46666666666,
+          111896.13333333333,
+          158688.33333333334
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16
+        }
+      },
+      {
+        "label": "default:TS",
+        "summary": "TS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "mean": 119048.89333333334,
+        "std": 21520.440320757585,
+        "per_instance": [
+          110045.8,
+          98597.2,
+          114806.06666666667,
+          111093.73333333335,
+          160701.66666666666
+        ],
+        "config": {
+          "skeleton": "TS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "TS.tenure": 16,
+          "TS.candidate_size": 52
+        }
+      },
+      {
+        "label": "default:GRASP",
+        "summary": "GRASP[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "mean": 119738.82666666666,
+        "std": 22761.99622433459,
+        "per_instance": [
+          113256.79999999999,
+          96432.8,
+          118539.6,
+          107634.93333333333,
+          162830.0
+        ],
+        "config": {
+          "skeleton": "GRASP",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "GRASP.ls_strategy": "first",
+          "GRASP.ls_time_share": 0.16
+        }
+      }
+    ],
+    "best_baseline": "default:LOCAL_BRANCH",
+    "gain_vs_best_baseline": 0.007057698744537743,
+    "wins_per_instance": "3/5",
+    "reference": 129394.44
+  }
+}

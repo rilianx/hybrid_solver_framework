@@ -199,6 +199,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
           # las transcripciones incluyen los prompts completos: útiles, pero pesadas
+          find generated/clsp -name __pycache__ -type d -prune -exec rm -rf {} +
           git add -f generated/clsp
           git commit -m "Componentes generados por $PROVIDER (corrida $RUN)" || { echo "Sin cambios."; exit 0; }
           git push -u origin "$BRANCH"

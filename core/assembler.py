@@ -34,6 +34,13 @@ from skeletons.vns import build_vns
 
 VariantRunner = Callable[[Any, Random, float], RunResult]
 
+# `mip_time_share` es la fracción del presupuesto que recibe cada sub-MIP. Antes había un
+# piso de 1 s (y CBC redondeaba a segundos enteros): con 5 s de presupuesto todo el rango
+# caía en 1–2 s y el parámetro era inerte. CBC respeta límites fraccionarios; el piso
+# solo evita llamadas que no alcanzan a arrancar el solver. Los rangos (log, [0.04, 1])
+# tienen default 0.2: 1 s con 5 s de presupuesto, lo mismo que se usaba de hecho antes.
+MIN_MIP_SECONDS = 0.2
+
 
 @dataclass(frozen=True)
 class SkeletonDef:
@@ -64,14 +71,14 @@ SKELETONS: dict[str, SkeletonDef] = {
         "LNS_MIP", ("constructor", "destruction"), optional_slots=("repair_mip",),
         params={
             "destroy_ratio": {"type": "float", "range": [0.05, 0.6]},
-            "mip_time_share": {"type": "float", "range": [0.02, 0.3], "log": True},
+            "mip_time_share": {"type": "float", "range": [0.04, 1.0], "log": True},
         },
     ),
     "FIX_OPT": SkeletonDef(
         "FIX_OPT", ("constructor", "fixing_policy"),
         params={
             "block_size": {"type": "int", "range": [1, 4]},
-            "mip_time_share": {"type": "float", "range": [0.02, 0.3], "log": True},
+            "mip_time_share": {"type": "float", "range": [0.04, 1.0], "log": True},
             "order": {"type": "cat", "values": ["sequential", "random"]},
         },
     ),
@@ -103,7 +110,7 @@ SKELETONS: dict[str, SkeletonDef] = {
         params={
             "k": {"type": "int", "range": [2, 20]},
             "k_step": {"type": "int", "range": [1, 10]},
-            "mip_time_share": {"type": "float", "range": [0.05, 0.5], "log": True},
+            "mip_time_share": {"type": "float", "range": [0.04, 1.0], "log": True},
         },
     ),
 }
@@ -212,12 +219,12 @@ class Assembler:
                 repair = self._component(config, "repair_mip", skeleton, P, required=False) or MIPModelRepair(P)
                 ratio = sp("destroy_ratio")
                 sk = build_lns_mip(P, constructor, destr, repair, BetterAcceptance(), MaxTimeStop(budget),
-                                   destroy_ratio=ratio, mip_time_limit=max(1.0, budget * sp("mip_time_share")))
+                                   destroy_ratio=ratio, mip_time_limit=max(MIN_MIP_SECONDS, budget * sp("mip_time_share")))
                 return run_lns_mip(sk, inst, rng, ratio)
             if skeleton == "FIX_OPT":
                 policy = self._component(config, "fixing_policy", skeleton, P)
                 sk = build_fix_and_optimize(P, constructor, policy, BetterAcceptance(), MaxTimeStop(budget),
-                                            block_size=sp("block_size"), time_limit=max(1.0, budget * sp("mip_time_share")),
+                                            block_size=sp("block_size"), time_limit=max(MIN_MIP_SECONDS, budget * sp("mip_time_share")),
                                             order=sp("order"))
                 return run_fix_and_optimize(sk, inst, rng)
             if skeleton == "TS":
@@ -241,7 +248,7 @@ class Assembler:
                 return run_grasp(sk, inst, rng)
             if skeleton == "LOCAL_BRANCH":
                 sk = build_local_branching(P, constructor, MaxTimeStop(budget), k=sp("k"), k_step=sp("k_step"),
-                                           time_limit=max(1.0, budget * sp("mip_time_share")))
+                                           time_limit=max(MIN_MIP_SECONDS, budget * sp("mip_time_share")))
                 return run_local_branching(sk, inst, rng)
             raise AssemblyError(f"esqueleto {skeleton} declarado pero sin constructor de variante")
 
@@ -249,13 +256,19 @@ class Assembler:
 
     # ------------------------------------------------------------------ target-runner
     def evaluate(self, config: dict[str, Any], instances: list[Any], budget: float, seed: int = 0,
-                 on_error: str = "penalize") -> float:
+                 on_error: str = "penalize", normalizers: list[float] | None = None) -> float:
         """Costo medio de la configuración sobre `instances` con `budget` s por corrida.
 
         Es el *target runner* de §8: recibe la configuración, ensambla y ejecuta.
         Si la variante falla o devuelve infactible, retorna `penalty_cost`
         (o relanza si `on_error="raise"`).
+
+        Con `normalizers` (un costo de referencia por instancia) devuelve la media de
+        `costo / referencia`: sin eso, la instancia de mayor escala domina el promedio y
+        el tuner optimiza para ella.
         """
+        if normalizers is not None and len(normalizers) != len(instances):
+            raise ValueError("normalizers debe tener un valor por instancia")
         try:
             runner = self.assemble(config)
             costs = []
@@ -263,7 +276,7 @@ class Assembler:
                 result = runner(inst, Random(seed + k), budget)
                 if not self.problem_factory(inst).is_feasible(result.best_solution):
                     return self.penalty_cost
-                costs.append(result.best_objective)
+                costs.append(result.best_objective / normalizers[k] if normalizers is not None else result.best_objective)
             return mean(costs)
         except Exception:
             if on_error == "raise":

@@ -128,7 +128,7 @@ class KnapsackMip:
         if near is not None:
             x_bar, k = near
             prob += pulp.lpSum((1 - v) if round(x_bar.get(n, 0.0)) >= 1 else v for n, v in x.items() if n not in fixed) <= k
-        prob.solve(pulp.PULP_CBC_CMD(msg=False, timeLimit=max(1, int(round(time_limit))), warmStart=bool(warm_start)))
+        prob.solve(pulp.PULP_CBC_CMD(msg=False, timeLimit=max(0.1, float(time_limit)), warmStart=bool(warm_start)))
         self.last_objective = None
         if pulp.LpStatus[prob.status] not in ("Optimal", "Not Solved"):
             return None
