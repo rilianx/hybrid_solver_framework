@@ -148,3 +148,11 @@ def test_generated_score_goes_through_the_llm_cycle_and_into_the_catalog(tmp_pat
     reg = build_registry(load_generated(tmp_path, verbose=False))
     spec = reg.get("constructor", "greedy_urgency_then_cost")
     assert {"rule", "alpha", "w"} <= set(spec.params)
+
+
+def test_construction_types_import_from_the_problem_module():
+    """El prompt indica importar desde el módulo del problema (corrida 10: ImportError)."""
+    import examples.lotsizing.problem_model as pm
+    from examples.lotsizing import construction
+
+    assert pm.CoverAction is construction.CoverAction and pm.CLSPPartial is construction.CLSPPartial

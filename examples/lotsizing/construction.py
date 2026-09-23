@@ -20,8 +20,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from random import Random
+from typing import TYPE_CHECKING
 
-from .problem_model import CLSPInstance, var_name
+if TYPE_CHECKING:  # `problem_model` re-exporta los tipos de aquí: importarlo al cargar sería circular
+    from .problem_model import CLSPInstance
 
 EPS = 1e-7
 
@@ -147,6 +149,8 @@ class CLSPConstructionView:
         """Callejón sin salida: fija en 1 los setups ya encendidos y deja que el MIP decida
         el resto (con tiempo límite). Si el MIP no encuentra nada, devuelve los setups
         decididos más lot-for-lot para lo pendiente (puede quedar infactible)."""
+        from .problem_model import var_name
+
         inst = self.inst
         fixed = {var_name(i, t): 1.0 for i in range(inst.n_items) for t in range(inst.n_periods) if p.setup[i][t]}
         model = self.problem.build_mip(inst)
