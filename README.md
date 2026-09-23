@@ -161,7 +161,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   Fix-and-Optimize y el MIP completo.
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 104 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 109 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -182,7 +182,7 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 104 passed (~45 s)
+python -m pytest -q                 # 109 passed (~50 s)
 
 export OPENAI_API_KEY=...
 python -m examples.lotsizing.generate --slots neighborhood destruction --n 3   # generación real
@@ -193,6 +193,8 @@ export LLM_PRICE_IN=0.25 LLM_PRICE_OUT=2.00
 # tuning real (§8): Optuna sobre el espacio completo, con y sin componentes LLM,
 # evaluado en instancias de TEST; --irace escribe además un escenario irace
 python -m examples.lotsizing.tune --trials 40 --budget 5 --train 3 --test 3 --catalog both --irace tuning_out/irace
+# esqueleto fijo: compara cada componente generado contra el de mano en igualdad de condiciones
+python -m examples.lotsizing.tune --skeletons SA ILS VNS --trials 40 --budget 20 --items 20 --periods 20 --ref-time 60
 ```
 
 **Tuner.** `tuning/` conecta `Assembler.config_space()` (el espacio) con
@@ -205,6 +207,21 @@ vio, con varias semillas, contra el default de cada esqueleto: el costo de train
 del ganador es optimista por construcción y la pregunta de §10 —¿el catálogo
 ampliado **ayuda o diluye**?— solo se responde ahí. `examples.lotsizing.tune`
 hace las dos corridas (`handwritten` / `all`) y escribe `tuning_out/comparison.json`.
+El costo de un trial es la media por instancia de `costo / lot-for-lot`
+(`--objective ratio`, el default; `raw` es el costo medio en bruto), porque en la
+primera corrida de 60 trials una sola instancia dominaba la varianza. En test,
+cada configuración se resume además como **gap relativo por instancia** contra la
+mejor solución conocida: el mínimo entre todas las corridas de test de ambos
+catálogos y, con `--ref-time S`, el MIP completo con S segundos
+(`tuning.best_known_costs`). Con `--skeletons SA ILS …` el espacio se restringe a
+esos esqueletos y los baselines de test pasan a ser una variante por componente de
+cada slot, con los demás slots en su default (`tuning.one_slot_baselines`). Es la
+comparación que el espacio completo no da: con presupuestos cortos siempre gana un
+matheurístico y el tuner descarta los vecindarios y perturbaciones generados por el
+esqueleto, no por su calidad. `mip_time_share` (LNS_MIP, FIX_OPT, LOCAL_BRANCH) ya
+no tiene piso de 1 s: con 5 s de presupuesto todo su rango antiguo caía en 1–2 s y
+el parámetro era inerte; el rango nuevo, log [0.04, 1], mantiene como default el
+1 s que se usaba de hecho.
 Para irace, `tuning.irace_scenario` genera `parameters.txt`, `instances.txt`,
 `scenario.txt` y el `target-runner` (`scripts/irace_target_runner.py`, que
 parsea `--param=valor` con los tipos del espacio); irace corre afuera, en R.
@@ -236,7 +253,7 @@ Cuatro workflows en `.github/workflows/`:
 | `tests` | push, PR | `pytest` en Python 3.11 y 3.12; verifica primero que haya un solver MIP disponible. Sin secretos, así que corre en PRs de forks. |
 | `generar componentes con LLM` | **manual** | Corre `examples.lotsizing.generate` con los slots, `n`, rondas, proveedor y modelo que elijas; los inputs `price_in`/`price_out` (o las *variables* de repo `LLM_PRICE_IN`/`LLM_PRICE_OUT`) agregan el costo estimado al resumen. Escribe la tabla de aceptación por capa y los reportes del validador en el *summary* de la corrida, sube `generated/` como artefacto y abre un PR con los módulos generados. |
 | `benchmark` | **manual** | Utilidad y diversidad por componente, y/o la comparación de los ocho esqueletos. |
-| `tuning (Optuna) sobre el catálogo` | **manual** | Afina con el catálogo a mano y con el ampliado, evalúa ambos ganadores en test y responde "¿ayuda o diluye?" en el *summary*; sube `tuning_out/` (incluido el escenario irace). |
+| `tuning (Optuna) sobre el catálogo` | **manual** | Afina con el catálogo a mano y con el ampliado, evalúa ambos ganadores en test y responde "¿ayuda o diluye?" en el *summary*. Inputs para fijar esqueletos, tamaño de instancia (`20x20`) y segundos del MIP de referencia. Commitea los resultados en la rama `tuning/runN` (carpeta `results/tune_runN/`, con un `README.md` del resumen) y además los sube como artefacto, que expira a los 30 días. |
 
 Los dos últimos son `workflow_dispatch` a propósito: cada corrida de generación
 gasta llamadas de API, así que nunca se disparan por push ni por schedule.

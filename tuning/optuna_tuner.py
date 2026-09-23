@@ -107,8 +107,12 @@ def tune_with_optuna(
     enqueue_defaults: bool = True,
     timeout: float | None = None,
     on_trial: Callable[[Trial], None] | None = None,
+    normalizers: list[float] | None = None,
 ) -> TuningResult:
-    """Corre `n_trials` evaluaciones (incluidos los defaults encolados) y devuelve el resultado."""
+    """Corre `n_trials` evaluaciones (incluidos los defaults encolados) y devuelve el resultado.
+
+    Con `normalizers` el costo de cada trial es la media de `costo / referencia` por
+    instancia (ver `Assembler.evaluate`)."""
     import optuna
 
     optuna.logging.set_verbosity(optuna.logging.WARNING)
@@ -127,7 +131,7 @@ def tune_with_optuna(
     def objective(trial: "optuna.Trial") -> float:
         config = suggest_from_space(space, trial)
         t0 = time.perf_counter()
-        cost = assembler.evaluate(config, train_instances, budget, seed=seed)
+        cost = assembler.evaluate(config, train_instances, budget, seed=seed, normalizers=normalizers)
         rec = Trial(trial.number, config, cost, time.perf_counter() - t0, enqueued=trial.number in enqueued)
         trials.append(rec)
         if on_trial is not None:

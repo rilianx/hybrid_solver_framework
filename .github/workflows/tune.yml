@@ -27,18 +27,30 @@ on:
         default: both
         type: choice
         options: [both, handwritten, all]
+      skeletons:
+        description: "Esqueletos (separados por espacio; vacío = todos). Ej.: SA ILS VNS"
+        default: ""
+        type: string
+      size:
+        description: "Tamaño de las instancias, ítems×períodos"
+        default: "10x15"
+        type: string
+      ref_time:
+        description: "Segundos del MIP completo por instancia de test como referencia del gap (0 = sin MIP)"
+        default: "60"
+        type: string
       generated_ref:
         description: "Rama/tag con generated/clsp (vacío = la rama actual)"
         default: ""
         type: string
 
 permissions:
-  contents: read
+  contents: write  # para commitear los resultados en la rama tuning/runN
 
 jobs:
   tune:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
         with:
@@ -69,10 +81,17 @@ jobs:
           TRAIN: ${{ inputs.train }}
           TEST: ${{ inputs.test }}
           CATALOG: ${{ inputs.catalog }}
+          SKELETONS: ${{ inputs.skeletons }}
+          SIZE: ${{ inputs.size }}
+          REF_TIME: ${{ inputs.ref_time }}
         run: |
           set -o pipefail
+          ITEMS="${SIZE%%x*}"; PERIODS="${SIZE##*x}"
+          SK_ARGS=()
+          if [ -n "$SKELETONS" ]; then read -ra SK <<< "$SKELETONS"; SK_ARGS=(--skeletons "${SK[@]}"); fi
           python -W ignore -m examples.lotsizing.tune --trials "$TRIALS" --budget "$BUDGET" \
-            --train "$TRAIN" --test "$TEST" --catalog "$CATALOG" --out tuning_out --irace tuning_out/irace 2>&1 | tee tune.log
+            --train "$TRAIN" --test "$TEST" --catalog "$CATALOG" --items "$ITEMS" --periods "$PERIODS" \
+            --ref-time "$REF_TIME" "${SK_ARGS[@]}" --out tuning_out --irace tuning_out/irace 2>&1 | tee tune.log
 
       - name: Resumen
         if: always()
@@ -90,6 +109,29 @@ jobs:
             echo '```'
             echo "</details>"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # El artefacto de abajo expira a los 30 días; la rama queda. Los resultados van a
+      # results/tune_runN/ para que fusionarla a main los deje junto a los anteriores.
+      - name: Guardar resultados en la rama tuning/run${{ github.run_number }}
+        if: always()
+        working-directory: ${{ env.ROOT }}
+        env:
+          RUN: ${{ github.run_number }}
+        run: |
+          if [ -z "$(ls -A tuning_out 2>/dev/null)" ]; then echo "Sin resultados que guardar."; exit 0; fi
+          DEST="results/tune_run$RUN"
+          mkdir -p "$DEST"
+          cp -r tuning_out/. "$DEST/"
+          cp tune.log "$DEST/" 2>/dev/null || true
+          python -m scripts.tuning_summary tuning_out > "$DEST/README.md"
+          BRANCH="tuning/run$RUN"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add -f "$DEST"
+          git commit -m "Resultados de tuning (corrida $RUN)" || { echo "Sin cambios."; exit 0; }
+          git push -u origin "$BRANCH"
+          echo "Resultados en la rama \`$BRANCH\`, carpeta \`$DEST\`." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Subir resultados
         if: always()

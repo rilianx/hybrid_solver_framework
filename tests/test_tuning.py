@@ -99,3 +99,71 @@ def test_target_runner_prints_a_single_cost(tmp_path, monkeypatch, capsys):
     out = capsys.readouterr().out.strip().splitlines()
     assert rc == 0 and len(out) == 1
     assert float(out[0]) < 1e12
+
+
+def test_evaluate_with_normalizers_averages_cost_ratios(assembler, tiny):
+    cfg = assembler.default_config("LNS_MIP")
+    raw = [assembler.evaluate(cfg, [inst], 0.2, seed=k) for k, inst in enumerate(tiny)]
+    refs = [2.0 * raw[0], 4.0 * raw[1]]
+    ratio = assembler.evaluate(cfg, tiny, 0.2, seed=0, normalizers=refs)
+    assert ratio == pytest.approx((0.5 + 0.25) / 2, rel=0.05)
+    with pytest.raises(ValueError):
+        assembler.evaluate(cfg, tiny, 0.2, normalizers=[1.0])
+
+
+def test_gap_against_best_known_weighs_instances_equally():
+    from tuning.evaluation import ConfigScore, TestReport, best_known_costs
+
+    # instancia 0 de escala 100, instancia 1 de escala 10 000: en bruto domina la 1
+    a = ConfigScore("a", {"skeleton": "SA"}, [110.0, 10000.0], [110.0, 10000.0], [[110.0], [10000.0]])
+    b = ConfigScore("b", {"skeleton": "ILS"}, [100.0, 10500.0], [100.0, 10500.0], [[100.0], [10500.0]])
+    fail = ConfigScore("f", {"skeleton": "TS"}, [1e12, 1e12], [1e12, 1e12], [[1e12], [1e12]])
+    bk = best_known_costs([a, b, fail], external=[None, 9000.0], penalty_cost=1e12)
+    assert bk == [100.0, 9000.0]  # la fallida no cuenta; el MIP externo gana en la instancia 1
+    assert a.gaps(bk) == pytest.approx([0.10, 1000 / 9000])
+    assert b.mean_gap(bk) == pytest.approx((0.0 + 1500 / 9000) / 2)
+    assert fail.n_failed(1e12) == 2
+    d = TestReport(tuned=a, baselines=[b, fail], best_known=bk).to_dict()
+    assert d["best_known"] == bk and d["best_baseline_by_gap"] == "b"
+    assert d["tuned"]["mean_gap"] == pytest.approx(a.mean_gap(bk))
+
+
+def test_one_slot_baselines_vary_one_slot_at_a_time():
+    from core.assembler import SKELETONS
+    from tuning import one_slot_baselines
+
+    a = Assembler(problem_factory=LotSizingModel, registry=build_registry(), skeletons={"ILS": SKELETONS["ILS"]})
+    base = one_slot_baselines(a)
+    default = a.default_config("ILS")
+    assert base["default:ILS"] == default
+    for label, cfg in base.items():
+        if label == "default:ILS":
+            continue
+        slot, name = label.split(":", 1)[1].split("=")
+        assert cfg[slot] == name != default[slot]
+        others = {s for s in ("constructor", "neighborhood", "perturbation") if s != slot}
+        assert all(cfg[s] == default[s] for s in others), label
+
+
+def test_optuna_with_restricted_skeletons_only_samples_those(tiny):
+    from core.assembler import SKELETONS
+
+    a = Assembler(problem_factory=LotSizingModel, registry=build_registry(),
+                  skeletons={k: SKELETONS[k] for k in ("SA", "VNS")})
+    result = tune_with_optuna(a, tiny, budget=0.2, n_trials=5, seed=0, normalizers=[1e5, 1e5])
+    assert {t.config["skeleton"] for t in result.trials} <= {"SA", "VNS"}
+    assert result.best_cost < 1.0  # costos normalizados, no en bruto
+
+
+def test_mip_time_share_is_not_floored_to_one_second(assembler, tiny, monkeypatch):
+    import core.assembler as asm
+
+    seen = []
+    real = asm.build_lns_mip
+    monkeypatch.setattr(asm, "build_lns_mip", lambda *a, **kw: seen.append(kw["mip_time_limit"]) or real(*a, **kw))
+    for share in (0.1, 0.5):
+        cfg = dict(assembler.default_config("LNS_MIP"), **{"LNS_MIP.mip_time_share": share})
+        assembler.evaluate(cfg, tiny[:1], budget=4.0)
+    assert seen == pytest.approx([0.4, 2.0])  # antes: max(1.0, ·) → 1.0 y 2.0, y CBC redondeaba
+    assert asm.MIN_MIP_SECONDS < 1.0
+    assert assembler.default_config("LNS_MIP")["LNS_MIP.mip_time_share"] == pytest.approx(0.2)

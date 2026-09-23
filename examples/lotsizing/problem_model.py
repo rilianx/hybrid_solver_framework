@@ -224,7 +224,7 @@ class CLSPMip:
             for (i, t), v in y.items():
                 if v.cat == "Binary" and var_name(i, t) in warm_start:
                     v.setInitialValue(int(round(warm_start[var_name(i, t)])))
-        solver = pulp.PULP_CBC_CMD(msg=False, timeLimit=max(1, int(round(time_limit))), warmStart=bool(warm_start))
+        solver = pulp.PULP_CBC_CMD(msg=False, timeLimit=max(0.1, float(time_limit)), warmStart=bool(warm_start))
         prob.solve(solver)
         self.last_objective = None
         if pulp.LpStatus[prob.status] not in ("Optimal", "Not Solved"):
