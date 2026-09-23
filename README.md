@@ -128,7 +128,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   clase + `build_component(problem, **params)`.
 - **`core/assembler.py`** — El pegamento de §8: `Assembler(problem_factory,
   registry)` conoce qué slots y parámetros propios tiene cada esqueleto
-  (`SKELETONS`: SA, ILS, LNS_MIP, FIX_OPT), construye el `ConfigSpace`
+  (`SKELETONS`: SA, ILS, LNS_MIP, FIX_OPT, TS, VNS, GRASP, LOCAL_BRANCH), construye el `ConfigSpace`
   completo a partir del catálogo, y dado un punto del espacio
   (`{"skeleton": ..., "<slot>": <componente>, "<componente>.<param>": ...}`)
   instancia los componentes con `ComponentSpec.make(problem, **params)` y
@@ -161,7 +161,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   Fix-and-Optimize y el MIP completo.
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 88 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 104 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
