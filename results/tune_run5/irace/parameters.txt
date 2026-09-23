@@ -1,0 +1,21 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("SA", "ILS", "VNS")
+constructor "--constructor=" c ("lot_for_lot", "batch_covering_merge", "prefix_capacity_earliest_feasible") | skeleton %in% c("SA", "ILS", "VNS")
+batch_covering_merge.merge_window "--batch_covering_merge.merge_window=" i (1, 8) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "batch_covering_merge"
+batch_covering_merge.inventory_bias "--batch_covering_merge.inventory_bias=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "batch_covering_merge"
+prefix_capacity_earliest_feasible.lookahead "--prefix_capacity_earliest_feasible.lookahead=" i (0, 10) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "prefix_capacity_earliest_feasible"
+prefix_capacity_earliest_feasible.slack_bias "--prefix_capacity_earliest_feasible.slack_bias=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "prefix_capacity_earliest_feasible"
+neighborhood "--neighborhood=" c ("setup_flip", "backward_merge_setup", "bridge_setup_removal", "cross_item_period_exchange") | skeleton %in% c("SA", "ILS", "VNS")
+perturbation "--perturbation=" c ("setup_flip_perturbation", "critical_period_block_shift", "same_period_setup_swap", "window_reseed_by_item") | skeleton %in% c("ILS")
+critical_period_block_shift.strength "--critical_period_block_shift.strength=" r (1.0, 6.0) | skeleton %in% c("ILS") & perturbation == "critical_period_block_shift"
+same_period_setup_swap.strength "--same_period_setup_swap.strength=" r (1.0, 8.0) | skeleton %in% c("ILS") & perturbation == "same_period_setup_swap"
+window_reseed_by_item.strength "--window_reseed_by_item.strength=" r (1.0, 5.0) | skeleton %in% c("ILS") & perturbation == "window_reseed_by_item"
+SA.T0 "--SA.T0=" r (1.0, 1000.0) | skeleton == "SA"  # log-scale
+SA.alpha "--SA.alpha=" r (0.8, 0.999) | skeleton == "SA"
+SA.iters_per_T "--SA.iters_per_T=" i (1, 50) | skeleton == "SA"
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+VNS.shake_strength "--VNS.shake_strength=" i (1, 4) | skeleton == "VNS"
+VNS.ls_time_share "--VNS.ls_time_share=" r (0.02, 0.3) | skeleton == "VNS"

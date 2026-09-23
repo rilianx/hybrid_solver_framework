@@ -1,0 +1,1288 @@
+{
+  "catalog": "generated",
+  "generated_components": [
+    "batch_covering_merge",
+    "prefix_capacity_earliest_feasible",
+    "bottleneck_period_destruction",
+    "global_utility_destruction",
+    "low_value_item_chain_destruction",
+    "backward_merge_setup",
+    "bridge_setup_removal",
+    "cross_item_period_exchange",
+    "critical_period_block_shift",
+    "same_period_setup_swap",
+    "window_reseed_by_item"
+  ],
+  "settings": {
+    "trials": 40,
+    "budget": 5.0,
+    "train": 5,
+    "test": 5,
+    "items": 10,
+    "periods": 15,
+    "seed": 0,
+    "seeds_test": 3,
+    "objective": "ratio",
+    "skeletons": [
+      "SA",
+      "ILS",
+      "VNS"
+    ],
+    "ref_time": 60.0
+  },
+  "tuning": {
+    "best_config": {
+      "skeleton": "SA",
+      "constructor": "prefix_capacity_earliest_feasible",
+      "prefix_capacity_earliest_feasible.lookahead": 2,
+      "prefix_capacity_earliest_feasible.slack_bias": 0.4193781617009581,
+      "neighborhood": "backward_merge_setup",
+      "SA.T0": 16.0076844948838,
+      "SA.alpha": 0.8716099089893607,
+      "SA.iters_per_T": 20
+    },
+    "best_cost": 0.68513830380843,
+    "best_summary": "SA[constructor=prefix_capacity_earliest_feasible, neighborhood=backward_merge_setup]",
+    "best_default_cost": 1000000000000.0,
+    "best_default_summary": "SA[constructor=batch_covering_merge, neighborhood=backward_merge_setup]",
+    "n_trials": 40,
+    "n_failed": 12,
+    "seconds": 798.0,
+    "skeleton_usage": {
+      "SA": 24,
+      "ILS": 9,
+      "VNS": 7
+    },
+    "incumbent_curve": [
+      1000000000000.0,
+      1000000000000.0,
+      1000000000000.0,
+      1000000000000.0,
+      1000000000000.0,
+      1000000000000.0,
+      0.9484833023282051,
+      0.9406118366946509,
+      0.733891663450632,
+      0.733891663450632,
+      0.7317307757173006,
+      0.7317307757173006,
+      0.7317307757173006,
+      0.7317307757173006,
+      0.7317307757173006,
+      0.7317307757173006,
+      0.7317307757173006,
+      0.6920089896169506,
+      0.6920089896169506,
+      0.6920089896169506,
+      0.690204145874268,
+      0.690204145874268,
+      0.6860969391233457,
+      0.6860969391233457,
+      0.6852174205351231,
+      0.6852174205351231,
+      0.6852174205351231,
+      0.6852174205351231,
+      0.6852174205351231,
+      0.6852174205351231,
+      0.6852174205351231,
+      0.6852174205351231,
+      0.68513830380843,
+      0.68513830380843,
+      0.68513830380843,
+      0.68513830380843,
+      0.68513830380843,
+      0.68513830380843,
+      0.68513830380843,
+      0.68513830380843
+    ],
+    "trials": [
+      {
+        "number": 0,
+        "cost": 1000000000000.0,
+        "seconds": 5.06,
+        "enqueued": true,
+        "summary": "SA[constructor=batch_covering_merge, neighborhood=backward_merge_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "batch_covering_merge",
+          "batch_covering_merge.merge_window": 4,
+          "batch_covering_merge.inventory_bias": 0.5,
+          "neighborhood": "backward_merge_setup",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 1,
+        "cost": 1000000000000.0,
+        "seconds": 5.71,
+        "enqueued": true,
+        "summary": "ILS[constructor=batch_covering_merge, neighborhood=backward_merge_setup, perturbation=critical_period_block_shift]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "batch_covering_merge",
+          "batch_covering_merge.merge_window": 4,
+          "batch_covering_merge.inventory_bias": 0.5,
+          "neighborhood": "backward_merge_setup",
+          "perturbation": "critical_period_block_shift",
+          "critical_period_block_shift.strength": 3.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        }
+      },
+      {
+        "number": 2,
+        "cost": 1000000000000.0,
+        "seconds": 5.75,
+        "enqueued": true,
+        "summary": "VNS[constructor=batch_covering_merge, neighborhood=backward_merge_setup]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "batch_covering_merge",
+          "batch_covering_merge.merge_window": 4,
+          "batch_covering_merge.inventory_bias": 0.5,
+          "neighborhood": "backward_merge_setup",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16
+        }
+      },
+      {
+        "number": 3,
+        "cost": 1000000000000.0,
+        "seconds": 10.3,
+        "enqueued": false,
+        "summary": "ILS[constructor=batch_covering_merge, neighborhood=bridge_setup_removal, perturbation=critical_period_block_shift]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "batch_covering_merge",
+          "batch_covering_merge.merge_window": 6,
+          "batch_covering_merge.inventory_bias": 0.4375872112626925,
+          "neighborhood": "bridge_setup_removal",
+          "perturbation": "critical_period_block_shift",
+          "critical_period_block_shift.strength": 5.627983191463305,
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.25313355675342264
+        }
+      },
+      {
+        "number": 4,
+        "cost": 1000000000000.0,
+        "seconds": 5.65,
+        "enqueued": false,
+        "summary": "VNS[constructor=batch_covering_merge, neighborhood=cross_item_period_exchange]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "batch_covering_merge",
+          "batch_covering_merge.merge_window": 7,
+          "batch_covering_merge.inventory_bias": 0.11827442586893322,
+          "neighborhood": "cross_item_period_exchange",
+          "VNS.shake_strength": 3,
+          "VNS.ls_time_share": 0.1361053431973466
+        }
+      },
+      {
+        "number": 5,
+        "cost": 1000000000000.0,
+        "seconds": 5.3,
+        "enqueued": false,
+        "summary": "ILS[constructor=batch_covering_merge, neighborhood=bridge_setup_removal, perturbation=window_reseed_by_item]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "batch_covering_merge",
+          "batch_covering_merge.merge_window": 5,
+          "batch_covering_merge.inventory_bias": 0.6120957227224214,
+          "neighborhood": "bridge_setup_removal",
+          "perturbation": "window_reseed_by_item",
+          "window_reseed_by_item.strength": 1.2409018865170793,
+          "ILS.strength": 5,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.056099363343358924
+        }
+      },
+      {
+        "number": 6,
+        "cost": 0.9484833023282051,
+        "seconds": 26.92,
+        "enqueued": false,
+        "summary": "VNS[constructor=prefix_capacity_earliest_feasible, neighborhood=bridge_setup_removal]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 1,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.2088767560948347,
+          "neighborhood": "bridge_setup_removal",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.08843916576044876
+        }
+      },
+      {
+        "number": 7,
+        "cost": 0.9406118366946509,
+        "seconds": 27.08,
+        "enqueued": false,
+        "summary": "VNS[constructor=prefix_capacity_earliest_feasible, neighborhood=bridge_setup_removal]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 4,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.8209932298479351,
+          "neighborhood": "bridge_setup_removal",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.1512223364613564
+        }
+      },
+      {
+        "number": 8,
+        "cost": 0.733891663450632,
+        "seconds": 25.28,
+        "enqueued": false,
+        "summary": "SA[constructor=prefix_capacity_earliest_feasible, neighborhood=cross_item_period_exchange]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 6,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.9296403550278305,
+          "neighborhood": "cross_item_period_exchange",
+          "SA.T0": 1.2110667473884347,
+          "SA.alpha": 0.8028548595567332,
+          "SA.iters_per_T": 3
+        }
+      },
+      {
+        "number": 9,
+        "cost": 0.7355966470290983,
+        "seconds": 25.27,
+        "enqueued": false,
+        "summary": "SA[constructor=prefix_capacity_earliest_feasible, neighborhood=cross_item_period_exchange]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 10,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.9342759738519454,
+          "neighborhood": "cross_item_period_exchange",
+          "SA.T0": 1.3075815622867646,
+          "SA.alpha": 0.8134611368447463,
+          "SA.iters_per_T": 3
+        }
+      },
+      {
+        "number": 10,
+        "cost": 0.7317307757173006,
+        "seconds": 25.27,
+        "enqueued": false,
+        "summary": "SA[constructor=prefix_capacity_earliest_feasible, neighborhood=backward_merge_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 9,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.005596828096247397,
+          "neighborhood": "backward_merge_setup",
+          "SA.T0": 480.0254282505108,
+          "SA.alpha": 0.9917658009205752,
+          "SA.iters_per_T": 47
+        }
+      },
+      {
+        "number": 11,
+        "cost": 0.739166659908815,
+        "seconds": 25.29,
+        "enqueued": false,
+        "summary": "SA[constructor=prefix_capacity_earliest_feasible, neighborhood=backward_merge_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 8,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.02105872283772492,
+          "neighborhood": "backward_merge_setup",
+          "SA.T0": 771.1650380359322,
+          "SA.alpha": 0.9953350466730766,
+          "SA.iters_per_T": 50
+        }
+      },
+      {
+        "number": 12,
+        "cost": 0.9685303541449123,
+        "seconds": 29.65,
+        "enqueued": false,
+        "summary": "ILS[constructor=prefix_capacity_earliest_feasible, neighborhood=cross_item_period_exchange, perturbation=same_period_setup_swap]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 6,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.4885575171641538,
+          "neighborhood": "cross_item_period_exchange",
+          "perturbation": "same_period_setup_swap",
+          "same_period_setup_swap.strength": 5.517556449935969,
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.2921042665970683
+        }
+      },
+      {
+        "number": 13,
+        "cost": 0.9988886906717234,
+        "seconds": 25.23,
+        "enqueued": false,
+        "summary": "SA[constructor=prefix_capacity_earliest_feasible, neighborhood=bridge_setup_removal]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 7,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.5308087861577976,
+          "neighborhood": "bridge_setup_removal",
+          "SA.T0": 1.155531373831909,
+          "SA.alpha": 0.8000159514034197,
+          "SA.iters_per_T": 3
+        }
+      },
+      {
+        "number": 14,
+        "cost": 1000000000000.0,
+        "seconds": 5.07,
+        "enqueued": false,
+        "summary": "SA[constructor=batch_covering_merge, neighborhood=cross_item_period_exchange]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "batch_covering_merge",
+          "batch_covering_merge.merge_window": 1,
+          "batch_covering_merge.inventory_bias": 0.9785338669547462,
+          "neighborhood": "cross_item_period_exchange",
+          "SA.T0": 944.7567652665513,
+          "SA.alpha": 0.9900096982594218,
+          "SA.iters_per_T": 47
+        }
+      },
+      {
+        "number": 15,
+        "cost": 0.9772249665624743,
+        "seconds": 25.58,
+        "enqueued": false,
+        "summary": "ILS[constructor=prefix_capacity_earliest_feasible, neighborhood=backward_merge_setup, perturbation=same_period_setup_swap]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 10,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.6420430545943405,
+          "neighborhood": "backward_merge_setup",
+          "perturbation": "same_period_setup_swap",
+          "same_period_setup_swap.strength": 1.5470376265184402,
+          "ILS.strength": 6,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.031168198972177208
+        }
+      },
+      {
+        "number": 16,
+        "cost": 0.9557717459846947,
+        "seconds": 29.38,
+        "enqueued": false,
+        "summary": "VNS[constructor=prefix_capacity_earliest_feasible, neighborhood=cross_item_period_exchange]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 4,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.30688399690689855,
+          "neighborhood": "cross_item_period_exchange",
+          "VNS.shake_strength": 1,
+          "VNS.ls_time_share": 0.2894034153925258
+        }
+      },
+      {
+        "number": 17,
+        "cost": 0.6920089896169506,
+        "seconds": 25.3,
+        "enqueued": false,
+        "summary": "SA[constructor=prefix_capacity_earliest_feasible, neighborhood=backward_merge_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 5,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.006855112892424215,
+          "neighborhood": "backward_merge_setup",
+          "SA.T0": 31.13038906760298,
+          "SA.alpha": 0.8996112054942736,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 18,
+        "cost": 0.6958463275501111,
+        "seconds": 25.29,
+        "enqueued": false,
+        "summary": "SA[constructor=prefix_capacity_earliest_feasible, neighborhood=backward_merge_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 0,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.0019780018727018067,
+          "neighborhood": "backward_merge_setup",
+          "SA.T0": 81.043827569571,
+          "SA.alpha": 0.9206145896224727,
+          "SA.iters_per_T": 32
+        }
+      },
+      {
+        "number": 19,
+        "cost": 0.8726736864326813,
+        "seconds": 29.67,
+        "enqueued": false,
+        "summary": "VNS[constructor=prefix_capacity_earliest_feasible, neighborhood=backward_merge_setup]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 0,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.17266601836824574,
+          "neighborhood": "backward_merge_setup",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.29210716066370324
+        }
+      },
+      {
+        "number": 20,
+        "cost": 0.690204145874268,
+        "seconds": 25.3,
+        "enqueued": false,
+        "summary": "SA[constructor=prefix_capacity_earliest_feasible, neighborhood=backward_merge_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 2,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.14204716247252763,
+          "neighborhood": "backward_merge_setup",
+          "SA.T0": 52.81009510098802,
+          "SA.alpha": 0.9101184562738699,
+          "SA.iters_per_T": 29
+        }
+      },
+      {
+        "number": 21,
+        "cost": 0.6934810505744444,
+        "seconds": 25.28,
+        "enqueued": false,
+        "summary": "SA[constructor=prefix_capacity_earliest_feasible, neighborhood=backward_merge_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 2,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.1291377426088175,
+          "neighborhood": "backward_merge_setup",
+          "SA.T0": 43.28378915356256,
+          "SA.alpha": 0.9116669978107667,
+          "SA.iters_per_T": 28
+        }
+      },
+      {
+        "number": 22,
+        "cost": 0.6860969391233457,
+        "seconds": 25.29,
+        "enqueued": false,
+        "summary": "SA[constructor=prefix_capacity_earliest_feasible, neighborhood=backward_merge_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 3,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.1823490250790723,
+          "neighborhood": "backward_merge_setup",
+          "SA.T0": 28.850402455905105,
+          "SA.alpha": 0.9023955822692568,
+          "SA.iters_per_T": 27
+        }
+      },
+      {
+        "number": 23,
+        "cost": 1000000000000.0,
+        "seconds": 5.06,
+        "enqueued": false,
+        "summary": "SA[constructor=batch_covering_merge, neighborhood=bridge_setup_removal]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "batch_covering_merge",
+          "batch_covering_merge.merge_window": 8,
+          "batch_covering_merge.inventory_bias": 0.95235159358745,
+          "neighborhood": "bridge_setup_removal",
+          "SA.T0": 10.220151817671885,
+          "SA.alpha": 0.8745998728649277,
+          "SA.iters_per_T": 19
+        }
+      },
+      {
+        "number": 24,
+        "cost": 0.6852174205351231,
+        "seconds": 25.27,
+        "enqueued": false,
+        "summary": "SA[constructor=prefix_capacity_earliest_feasible, neighborhood=backward_merge_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 3,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.32173083490254484,
+          "neighborhood": "backward_merge_setup",
+          "SA.T0": 14.014279616912715,
+          "SA.alpha": 0.8753963324956034,
+          "SA.iters_per_T": 19
+        }
+      },
+      {
+        "number": 25,
+        "cost": 0.6886459855233463,
+        "seconds": 25.27,
+        "enqueued": false,
+        "summary": "SA[constructor=prefix_capacity_earliest_feasible, neighborhood=backward_merge_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 3,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.34863408695146936,
+          "neighborhood": "backward_merge_setup",
+          "SA.T0": 8.946943642545968,
+          "SA.alpha": 0.8647333019151285,
+          "SA.iters_per_T": 15
+        }
+      },
+      {
+        "number": 26,
+        "cost": 1.0,
+        "seconds": 27.38,
+        "enqueued": false,
+        "summary": "ILS[constructor=prefix_capacity_earliest_feasible, neighborhood=backward_merge_setup, perturbation=window_reseed_by_item]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 3,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.3456218718780529,
+          "neighborhood": "backward_merge_setup",
+          "perturbation": "window_reseed_by_item",
+          "window_reseed_by_item.strength": 4.990025872730434,
+          "ILS.strength": 3,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.15351194074525165
+        }
+      },
+      {
+        "number": 27,
+        "cost": 1000000000000.0,
+        "seconds": 5.43,
+        "enqueued": false,
+        "summary": "ILS[constructor=batch_covering_merge, neighborhood=cross_item_period_exchange, perturbation=window_reseed_by_item]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "batch_covering_merge",
+          "batch_covering_merge.merge_window": 1,
+          "batch_covering_merge.inventory_bias": 0.1271693413424559,
+          "neighborhood": "cross_item_period_exchange",
+          "perturbation": "window_reseed_by_item",
+          "window_reseed_by_item.strength": 2.153133751584829,
+          "ILS.strength": 3,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.13284715593904614
+        }
+      },
+      {
+        "number": 28,
+        "cost": 0.926981020090252,
+        "seconds": 27.57,
+        "enqueued": false,
+        "summary": "ILS[constructor=prefix_capacity_earliest_feasible, neighborhood=bridge_setup_removal, perturbation=critical_period_block_shift]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 3,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.39538126292992637,
+          "neighborhood": "bridge_setup_removal",
+          "perturbation": "critical_period_block_shift",
+          "critical_period_block_shift.strength": 1.2143341920817314,
+          "ILS.strength": 6,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.2167633798266578
+        }
+      },
+      {
+        "number": 29,
+        "cost": 1000000000000.0,
+        "seconds": 5.05,
+        "enqueued": false,
+        "summary": "SA[constructor=batch_covering_merge, neighborhood=backward_merge_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "batch_covering_merge",
+          "batch_covering_merge.merge_window": 2,
+          "batch_covering_merge.inventory_bias": 0.7407349379922061,
+          "neighborhood": "backward_merge_setup",
+          "SA.T0": 6.953437964077565,
+          "SA.alpha": 0.8574196091680513,
+          "SA.iters_per_T": 15
+        }
+      },
+      {
+        "number": 30,
+        "cost": 1000000000000.0,
+        "seconds": 5.05,
+        "enqueued": false,
+        "summary": "SA[constructor=batch_covering_merge, neighborhood=backward_merge_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "batch_covering_merge",
+          "batch_covering_merge.merge_window": 8,
+          "batch_covering_merge.inventory_bias": 0.26773647735492045,
+          "neighborhood": "backward_merge_setup",
+          "SA.T0": 8.587803192083427,
+          "SA.alpha": 0.8508194944375,
+          "SA.iters_per_T": 14
+        }
+      },
+      {
+        "number": 31,
+        "cost": 0.691642806702783,
+        "seconds": 25.28,
+        "enqueued": false,
+        "summary": "SA[constructor=prefix_capacity_earliest_feasible, neighborhood=backward_merge_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 2,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.2730667316972557,
+          "neighborhood": "backward_merge_setup",
+          "SA.T0": 117.19953555030338,
+          "SA.alpha": 0.9429765357027347,
+          "SA.iters_per_T": 36
+        }
+      },
+      {
+        "number": 32,
+        "cost": 0.68513830380843,
+        "seconds": 25.28,
+        "enqueued": false,
+        "summary": "SA[constructor=prefix_capacity_earliest_feasible, neighborhood=backward_merge_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 2,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.4193781617009581,
+          "neighborhood": "backward_merge_setup",
+          "SA.T0": 16.0076844948838,
+          "SA.alpha": 0.8716099089893607,
+          "SA.iters_per_T": 20
+        }
+      },
+      {
+        "number": 33,
+        "cost": 0.6861844024631386,
+        "seconds": 25.28,
+        "enqueued": false,
+        "summary": "SA[constructor=prefix_capacity_earliest_feasible, neighborhood=backward_merge_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 3,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.43418360562392416,
+          "neighborhood": "backward_merge_setup",
+          "SA.T0": 16.5511144765291,
+          "SA.alpha": 0.8742531210048398,
+          "SA.iters_per_T": 20
+        }
+      },
+      {
+        "number": 34,
+        "cost": 0.9990617690546382,
+        "seconds": 25.26,
+        "enqueued": false,
+        "summary": "SA[constructor=prefix_capacity_earliest_feasible, neighborhood=bridge_setup_removal]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 4,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.46863317670441884,
+          "neighborhood": "bridge_setup_removal",
+          "SA.T0": 17.554910443506806,
+          "SA.alpha": 0.8773247922560161,
+          "SA.iters_per_T": 21
+        }
+      },
+      {
+        "number": 35,
+        "cost": 0.8655674214167073,
+        "seconds": 25.6,
+        "enqueued": false,
+        "summary": "VNS[constructor=prefix_capacity_earliest_feasible, neighborhood=backward_merge_setup]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 1,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.5890888624351999,
+          "neighborhood": "backward_merge_setup",
+          "VNS.shake_strength": 1,
+          "VNS.ls_time_share": 0.023964418362757978
+        }
+      },
+      {
+        "number": 36,
+        "cost": 0.6901309562482744,
+        "seconds": 25.29,
+        "enqueued": false,
+        "summary": "SA[constructor=prefix_capacity_earliest_feasible, neighborhood=backward_merge_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 3,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.4253770132019566,
+          "neighborhood": "backward_merge_setup",
+          "SA.T0": 4.794858999815825,
+          "SA.alpha": 0.8406177225910724,
+          "SA.iters_per_T": 20
+        }
+      },
+      {
+        "number": 37,
+        "cost": 0.6902415461884033,
+        "seconds": 25.28,
+        "enqueued": false,
+        "summary": "SA[constructor=prefix_capacity_earliest_feasible, neighborhood=backward_merge_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 1,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.2546152323232893,
+          "neighborhood": "backward_merge_setup",
+          "SA.T0": 3.4360037717648844,
+          "SA.alpha": 0.8793978854780106,
+          "SA.iters_per_T": 9
+        }
+      },
+      {
+        "number": 38,
+        "cost": 1000000000000.0,
+        "seconds": 5.25,
+        "enqueued": false,
+        "summary": "ILS[constructor=batch_covering_merge, neighborhood=backward_merge_setup, perturbation=same_period_setup_swap]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "batch_covering_merge",
+          "batch_covering_merge.merge_window": 3,
+          "batch_covering_merge.inventory_bias": 0.7921060846077009,
+          "neighborhood": "backward_merge_setup",
+          "perturbation": "same_period_setup_swap",
+          "same_period_setup_swap.strength": 7.972478798598046,
+          "ILS.strength": 2,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.08467033439088736
+        }
+      },
+      {
+        "number": 39,
+        "cost": 0.68513830380843,
+        "seconds": 25.24,
+        "enqueued": false,
+        "summary": "SA[constructor=prefix_capacity_earliest_feasible, neighborhood=backward_merge_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 5,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.6599533275324387,
+          "neighborhood": "backward_merge_setup",
+          "SA.T0": 16.571564041843448,
+          "SA.alpha": 0.8356686066869052,
+          "SA.iters_per_T": 23
+        }
+      }
+    ]
+  },
+  "test": {
+    "tuned": {
+      "label": "tuned",
+      "summary": "SA[constructor=prefix_capacity_earliest_feasible, neighborhood=backward_merge_setup]",
+      "mean": 92335.04,
+      "std": 17105.471923911755,
+      "per_instance": [
+        83660.8,
+        76721.20000000001,
+        88504.0,
+        87283.53333333333,
+        125505.66666666667
+      ],
+      "config": {
+        "skeleton": "SA",
+        "constructor": "prefix_capacity_earliest_feasible",
+        "prefix_capacity_earliest_feasible.lookahead": 2,
+        "prefix_capacity_earliest_feasible.slack_bias": 0.4193781617009581,
+        "neighborhood": "backward_merge_setup",
+        "SA.T0": 16.0076844948838,
+        "SA.alpha": 0.8716099089893607,
+        "SA.iters_per_T": 20
+      },
+      "gap_per_instance": [
+        0.07487293340117078,
+        0.09956087046251946,
+        0.07705001423832267,
+        0.05500263901143831,
+        0.11305332363705166
+      ],
+      "mean_gap": 0.08390795615010058
+    },
+    "baselines": [
+      {
+        "label": "SA:constructor=prefix_capacity_earliest_feasible",
+        "summary": "SA[constructor=prefix_capacity_earliest_feasible, neighborhood=backward_merge_setup]",
+        "mean": 92465.10666666667,
+        "std": 17536.490645335958,
+        "per_instance": [
+          84994.73333333334,
+          75641.40000000001,
+          88000.53333333334,
+          87432.2,
+          126256.66666666667
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 5,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.5,
+          "neighborhood": "backward_merge_setup",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.09201129252469821,
+          0.08408528056135223,
+          0.0709230733034288,
+          0.056799584204609975,
+          0.11971360494746866
+        ],
+        "mean_gap": 0.08470656710831158
+      },
+      {
+        "label": "ILS:constructor=prefix_capacity_earliest_feasible",
+        "summary": "ILS[constructor=prefix_capacity_earliest_feasible, neighborhood=backward_merge_setup, perturbation=critical_period_block_shift]",
+        "mean": 113222.4,
+        "std": 21763.130536452394,
+        "per_instance": [
+          108187.33333333333,
+          90606.73333333334,
+          111473.33333333333,
+          102367.93333333333,
+          153476.66666666666
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 5,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.5,
+          "neighborhood": "backward_merge_setup",
+          "perturbation": "critical_period_block_shift",
+          "critical_period_block_shift.strength": 3.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          0.38998953317264784,
+          0.29856700069557524,
+          0.35657546838402726,
+          0.23732891752182725,
+          0.36111554538628443
+        ],
+        "mean_gap": 0.3287152930320724
+      },
+      {
+        "label": "VNS:constructor=prefix_capacity_earliest_feasible",
+        "summary": "VNS[constructor=prefix_capacity_earliest_feasible, neighborhood=backward_merge_setup]",
+        "mean": 115391.26666666666,
+        "std": 23451.017968257915,
+        "per_instance": [
+          111531.0,
+          91500.73333333334,
+          112947.93333333333,
+          101679.0,
+          159297.66666666666
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "prefix_capacity_earliest_feasible",
+          "prefix_capacity_earliest_feasible.lookahead": 5,
+          "prefix_capacity_earliest_feasible.slack_bias": 0.5,
+          "neighborhood": "backward_merge_setup",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          0.4329489215399085,
+          0.3113797228400867,
+          0.37452062285157495,
+          0.22900172845176653,
+          0.4127393769547762
+        ],
+        "mean_gap": 0.35211807452762256
+      },
+      {
+        "label": "SA:neighborhood=bridge_setup_removal",
+        "summary": "SA[constructor=batch_covering_merge, neighborhood=bridge_setup_removal]",
+        "mean": 933333340506.1466,
+        "std": 249443798946.71942,
+        "per_instance": [
+          666666702530.7333,
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "batch_covering_merge",
+          "batch_covering_merge.merge_window": 4,
+          "batch_covering_merge.inventory_bias": 0.5,
+          "neighborhood": "bridge_setup_removal",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          8565324.626220345,
+          14331902.964777913,
+          12169505.623862455,
+          12087074.290391983,
+          8868549.346760318
+        ],
+        "mean_gap": 11204471.370402602
+      },
+      {
+        "label": "default:SA",
+        "summary": "SA[constructor=batch_covering_merge, neighborhood=backward_merge_setup]",
+        "mean": 1000000000000.0,
+        "std": 0.0,
+        "per_instance": [
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "batch_covering_merge",
+          "batch_covering_merge.merge_window": 4,
+          "batch_covering_merge.inventory_bias": 0.5,
+          "neighborhood": "backward_merge_setup",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          12847986.748158885,
+          14331902.964777913,
+          12169505.623862455,
+          12087074.290391983,
+          8868549.346760318
+        ],
+        "mean_gap": 12061003.79479031
+      },
+      {
+        "label": "SA:neighborhood=cross_item_period_exchange",
+        "summary": "SA[constructor=batch_covering_merge, neighborhood=cross_item_period_exchange]",
+        "mean": 1000000000000.0,
+        "std": 0.0,
+        "per_instance": [
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "batch_covering_merge",
+          "batch_covering_merge.merge_window": 4,
+          "batch_covering_merge.inventory_bias": 0.5,
+          "neighborhood": "cross_item_period_exchange",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          12847986.748158885,
+          14331902.964777913,
+          12169505.623862455,
+          12087074.290391983,
+          8868549.346760318
+        ],
+        "mean_gap": 12061003.79479031
+      },
+      {
+        "label": "default:ILS",
+        "summary": "ILS[constructor=batch_covering_merge, neighborhood=backward_merge_setup, perturbation=critical_period_block_shift]",
+        "mean": 1000000000000.0,
+        "std": 0.0,
+        "per_instance": [
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "batch_covering_merge",
+          "batch_covering_merge.merge_window": 4,
+          "batch_covering_merge.inventory_bias": 0.5,
+          "neighborhood": "backward_merge_setup",
+          "perturbation": "critical_period_block_shift",
+          "critical_period_block_shift.strength": 3.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          12847986.748158885,
+          14331902.964777913,
+          12169505.623862455,
+          12087074.290391983,
+          8868549.346760318
+        ],
+        "mean_gap": 12061003.79479031
+      },
+      {
+        "label": "ILS:neighborhood=bridge_setup_removal",
+        "summary": "ILS[constructor=batch_covering_merge, neighborhood=bridge_setup_removal, perturbation=critical_period_block_shift]",
+        "mean": 1000000000000.0,
+        "std": 0.0,
+        "per_instance": [
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "batch_covering_merge",
+          "batch_covering_merge.merge_window": 4,
+          "batch_covering_merge.inventory_bias": 0.5,
+          "neighborhood": "bridge_setup_removal",
+          "perturbation": "critical_period_block_shift",
+          "critical_period_block_shift.strength": 3.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          12847986.748158885,
+          14331902.964777913,
+          12169505.623862455,
+          12087074.290391983,
+          8868549.346760318
+        ],
+        "mean_gap": 12061003.79479031
+      },
+      {
+        "label": "ILS:neighborhood=cross_item_period_exchange",
+        "summary": "ILS[constructor=batch_covering_merge, neighborhood=cross_item_period_exchange, perturbation=critical_period_block_shift]",
+        "mean": 1000000000000.0,
+        "std": 0.0,
+        "per_instance": [
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "batch_covering_merge",
+          "batch_covering_merge.merge_window": 4,
+          "batch_covering_merge.inventory_bias": 0.5,
+          "neighborhood": "cross_item_period_exchange",
+          "perturbation": "critical_period_block_shift",
+          "critical_period_block_shift.strength": 3.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          12847986.748158885,
+          14331902.964777913,
+          12169505.623862455,
+          12087074.290391983,
+          8868549.346760318
+        ],
+        "mean_gap": 12061003.79479031
+      },
+      {
+        "label": "ILS:perturbation=same_period_setup_swap",
+        "summary": "ILS[constructor=batch_covering_merge, neighborhood=backward_merge_setup, perturbation=same_period_setup_swap]",
+        "mean": 1000000000000.0,
+        "std": 0.0,
+        "per_instance": [
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "batch_covering_merge",
+          "batch_covering_merge.merge_window": 4,
+          "batch_covering_merge.inventory_bias": 0.5,
+          "neighborhood": "backward_merge_setup",
+          "perturbation": "same_period_setup_swap",
+          "same_period_setup_swap.strength": 4.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          12847986.748158885,
+          14331902.964777913,
+          12169505.623862455,
+          12087074.290391983,
+          8868549.346760318
+        ],
+        "mean_gap": 12061003.79479031
+      },
+      {
+        "label": "ILS:perturbation=window_reseed_by_item",
+        "summary": "ILS[constructor=batch_covering_merge, neighborhood=backward_merge_setup, perturbation=window_reseed_by_item]",
+        "mean": 1000000000000.0,
+        "std": 0.0,
+        "per_instance": [
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "batch_covering_merge",
+          "batch_covering_merge.merge_window": 4,
+          "batch_covering_merge.inventory_bias": 0.5,
+          "neighborhood": "backward_merge_setup",
+          "perturbation": "window_reseed_by_item",
+          "window_reseed_by_item.strength": 3.0,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          12847986.748158885,
+          14331902.964777913,
+          12169505.623862455,
+          12087074.290391983,
+          8868549.346760318
+        ],
+        "mean_gap": 12061003.79479031
+      },
+      {
+        "label": "default:VNS",
+        "summary": "VNS[constructor=batch_covering_merge, neighborhood=backward_merge_setup]",
+        "mean": 1000000000000.0,
+        "std": 0.0,
+        "per_instance": [
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "batch_covering_merge",
+          "batch_covering_merge.merge_window": 4,
+          "batch_covering_merge.inventory_bias": 0.5,
+          "neighborhood": "backward_merge_setup",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          12847986.748158885,
+          14331902.964777913,
+          12169505.623862455,
+          12087074.290391983,
+          8868549.346760318
+        ],
+        "mean_gap": 12061003.79479031
+      },
+      {
+        "label": "VNS:neighborhood=bridge_setup_removal",
+        "summary": "VNS[constructor=batch_covering_merge, neighborhood=bridge_setup_removal]",
+        "mean": 1000000000000.0,
+        "std": 0.0,
+        "per_instance": [
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "batch_covering_merge",
+          "batch_covering_merge.merge_window": 4,
+          "batch_covering_merge.inventory_bias": 0.5,
+          "neighborhood": "bridge_setup_removal",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          12847986.748158885,
+          14331902.964777913,
+          12169505.623862455,
+          12087074.290391983,
+          8868549.346760318
+        ],
+        "mean_gap": 12061003.79479031
+      },
+      {
+        "label": "VNS:neighborhood=cross_item_period_exchange",
+        "summary": "VNS[constructor=batch_covering_merge, neighborhood=cross_item_period_exchange]",
+        "mean": 1000000000000.0,
+        "std": 0.0,
+        "per_instance": [
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0,
+          1000000000000.0
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "batch_covering_merge",
+          "batch_covering_merge.merge_window": 4,
+          "batch_covering_merge.inventory_bias": 0.5,
+          "neighborhood": "cross_item_period_exchange",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          12847986.748158885,
+          14331902.964777913,
+          12169505.623862455,
+          12087074.290391983,
+          8868549.346760318
+        ],
+        "mean_gap": 12061003.79479031
+      }
+    ],
+    "best_baseline": "SA:constructor=prefix_capacity_earliest_feasible",
+    "gain_vs_best_baseline": 0.001406656752536563,
+    "wins_per_instance": "3/5",
+    "reference": 129394.44,
+    "best_known": [
+      77833.2,
+      69774.4,
+      82172.6,
+      82733.0,
+      112758.0
+    ],
+    "best_baseline_by_gap": "SA:constructor=prefix_capacity_earliest_feasible",
+    "mip_reference": [
+      77833.2,
+      69774.4,
+      82172.6,
+      82733.0,
+      112758.0
+    ]
+  }
+}
