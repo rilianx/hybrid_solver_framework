@@ -107,7 +107,11 @@ def make_contexts(
     partida del esqueleto y la base de las pruebas, no una pista de diseño.
     """
     # Una sola sonda compartida por todos los contextos (construirla cuesta un MIP chico).
-    probe = make_diversity_probe() if strict else None
+    # También en modo leniente: la admisión al catálogo relaja solo `improves_from_start`,
+    # no la factibilidad en tamaño realista. Sin sonda entraba un constructor que la
+    # generación había abandonado por infactible (`batch_covering_merge`, corrida 9) y el
+    # tuner perdía 12 de 40 trials en él.
+    probe = make_diversity_probe()
     contexts = []
     k, retry = 0, 0
     while len(contexts) < n_contexts and retry < 10:

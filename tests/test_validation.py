@@ -484,14 +484,18 @@ def test_diversity_probe_discriminates_better_than_micro_instance():
     assert sim(10, 15, 100) > 0.9
 
 
-def test_make_contexts_carries_a_diversity_probe_when_strict():
+def test_make_contexts_carries_a_diversity_probe_in_both_modes():
+    """La sonda va en ambos modos; lo único que relaja el leniente (admisión al catálogo) es
+    exigir mejoras desde la partida. Sin sonda, el catálogo admitía constructores infactibles
+    en tamaño realista (corrida 9)."""
     from examples.lotsizing.llm_spec import make_contexts
 
     strict = make_contexts(n_contexts=1, n_items=2, n_periods=4, strict=True)
     lax = make_contexts(n_contexts=1, n_items=2, n_periods=4, strict=False)
     probe = strict[0].diversity_probe
     assert probe is not None and len(probe.solution) >= 10  # instancia grande, no la micro
-    assert lax[0].diversity_probe is None
+    assert lax[0].diversity_probe is not None
+    assert strict[0].require_improving_from_start and not lax[0].require_improving_from_start
 
 
 def test_perturbation_signature_is_a_shape_profile_too():
