@@ -28,6 +28,7 @@ class ProblemSpec:
     variable_naming: str  # cómo se llaman las variables de la vista MIP
     notes: list[str] = field(default_factory=list)  # avisos (minimización, penalización, costo de objective...)
     starting_solution: str | None = None  # micro-instancia + solución de partida, para slots que operan sobre ella
+    construction_source: str | None = None  # vista constructiva (estado parcial y acción), para el slot greedy_score
 
 
 SYSTEM_PROMPT = """Eres un experto en metaheurísticas y matheurísticas que escribe componentes algorítmicos en Python.
@@ -74,6 +75,16 @@ SLOT_HINTS = {
         "holgura. Comprueba la factibilidad con `problem.is_feasible(sol)` dentro de `build` y repara antes de devolver."
     ),
     "perturbation": "Se verificará: `perturb(sol, strength, rng)` devuelve una solución distinta de `sol` (para strength >= 1).",
+    "greedy_score": (
+        "Escribes SOLO el criterio de un constructor greedy: `score(partial, action)` devuelve un número, MENOR es mejor. "
+        "El bucle, la regla de selección (greedy, lista restringida de GRASP o ruleta) y la factibilidad son del framework: "
+        "los candidatos ya vienen filtrados, así que el puntaje no tiene que comprobar capacidad ni reparar nada. "
+        "Se llama para cada candidato en cada paso de la construcción, así que debe ser BARATO: usa los datos de la "
+        "instancia y los atributos del parcial, nunca `problem.objective` ni `problem.is_feasible`. Se verificará: devuelve "
+        "un número finito, es determinista, NO modifica `partial` (solo lo lee), y el constructor greedy que arma produce "
+        "soluciones factibles y no mucho peores que la de referencia. Distintos puntajes = distintas ideas sobre qué conviene "
+        "cubrir primero y desde dónde (costo, urgencia, holgura de capacidad, balance entre ítems...)."
+    ),
     "destruction": (
         "`destroy(sol, ratio, rng)` devuelve `(partial, free_vars)`: `free_vars` es un set de NOMBRES de variables de la vista MIP "
         "(exactamente los que produce `problem.to_assignment(sol)`), y `partial` es el dict de las variables NO liberadas con su valor "
@@ -90,6 +101,7 @@ SLOT_HINTS = {
 # de todos los esqueletos donde tiene sentido (no solo a los del ejemplo few-shot).
 SKELETONS_FOR_SLOT = {
     "constructor": ["SA", "ILS", "TS", "VNS", "GRASP", "LNS_MIP", "FIX_OPT", "LOCAL_BRANCH"],
+    "greedy_score": ["SA", "ILS", "TS", "VNS", "GRASP", "LNS_MIP", "FIX_OPT", "LOCAL_BRANCH"],
     "neighborhood": ["SA", "ILS", "TS", "VNS", "GRASP"],
     "perturbation": ["ILS"],
     "destruction": ["LNS_MIP"],
@@ -139,6 +151,9 @@ def generation_prompt(spec: ProblemSpec, slot: str, n_variants: int, avoid_names
     )
     if spec.notes:
         parts.append("\n## Avisos\n" + "\n".join(f"- {n}" for n in spec.notes))
+    if spec.construction_source and slot == "greedy_score":
+        parts.append("\n## Vista constructiva: el estado parcial y la acción que recibe `score`\n"
+                     f"```python\n{spec.construction_source}\n```")
     if spec.starting_solution and slot in ("neighborhood", "perturbation"):
         parts.append(
             "\n## Desde dónde arranca el esqueleto (el validador exige que haya movimientos de mejora desde aquí)\n"
@@ -182,6 +197,8 @@ def planning_prompt(spec: ProblemSpec, slot: str, n_ideas: int, avoid_names: lis
     parts.append(f"\n## Representación de la solución\n{spec.solution_representation}")
     if spec.notes:
         parts.append("\n## Avisos\n" + "\n".join(f"- {n}" for n in spec.notes))
+    if spec.construction_source and slot == "greedy_score":
+        parts.append(f"\n## Vista constructiva (estado parcial y acción)\n```python\n{spec.construction_source}\n```")
     if spec.starting_solution and slot in ("neighborhood", "perturbation"):
         parts.append(f"\n## Desde dónde arranca el esqueleto\n```\n{spec.starting_solution}\n```")
     if avoid_names:

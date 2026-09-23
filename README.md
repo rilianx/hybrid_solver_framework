@@ -161,7 +161,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   Fix-and-Optimize y el MIP completo.
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 109 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 127 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -182,7 +182,7 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 109 passed (~50 s)
+python -m pytest -q                 # 127 passed (~65 s)
 
 export OPENAI_API_KEY=...
 python -m examples.lotsizing.generate --slots neighborhood destruction --n 3   # generación real
@@ -242,6 +242,18 @@ dependen del proveedor: si defines `LLM_PRICE_IN` / `LLM_PRICE_OUT` (USD por
 millón de tokens) se agrega el costo estimado; si no, se informan solo los
 tokens. Un cliente que no cuenta tokens (`ScriptedClient` en los tests) deja el
 contador en cero sin romper nada.
+
+**Constructor modular** (`core/construction.py`, slot `greedy_score`). El bucle greedy y la
+regla de selección (`greedy`, RCL-α de GRASP, `roulette`) son del framework; el problema aporta
+una vista constructiva (`ConstructionView`: estado parcial, candidatos, aplicar, completo y un
+cierre de respaldo) y el LLM genera solo el puntaje de una acción. Cada puntaje entra al
+catálogo como constructor `greedy_<nombre>` con la regla y α como parámetros del tuner. En el
+CLSP la acción es "cubrir demanda pendiente de (i, t) produciendo en s ≤ t", recorriendo los
+deadlines en orden, y los candidatos se filtran con una condición necesaria de capacidad
+acumulada (con tiempos de setup, decidir si un parcial se puede completar es NP-completo); el
+cierre de respaldo fija los setups decididos y resuelve el resto con el MIP. En 360
+construcciones de prueba (Trigeiro 0,95 y 0,98, instancias aleatorias, hasta 20×20) no hizo
+falta el respaldo ni una vez.
 
 **Planificador** (`llm/planner.py`, `--planner`). Un planificador propone las ideas de
 cada slot en texto, sin código; cada idea se implementa, valida y corrige en paralelo con

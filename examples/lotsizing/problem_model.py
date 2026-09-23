@@ -361,3 +361,9 @@ class LotSizingModel:
 
     def variable_groups(self, inst: CLSPInstance) -> dict[str, list[str]]:
         return {f"t{t}": [var_name(i, t) for i in range(inst.n_items)] for t in range(inst.n_periods)}
+
+    def construction_view(self, inst: CLSPInstance):
+        """Vista constructiva para `core.construction.GreedyConstructor` (ver `construction.py`)."""
+        from .construction import CLSPConstructionView
+
+        return CLSPConstructionView(self, inst)

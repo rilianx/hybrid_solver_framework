@@ -50,6 +50,10 @@ on:
         description: "Planificador de ideas + implementación en paralelo (escribe en <dir>_planner)"
         default: false
         type: boolean
+      workspace:
+        description: "Directorio de salida (vacío = según from_scratch/planner); úsalo para no pisar una corrida anterior"
+        default: ""
+        type: string
 
 permissions:
   contents: write
@@ -60,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      WS: ${{ format('{0}{1}', inputs.from_scratch && 'generated/clsp_scratch' || 'generated/clsp', inputs.planner && '_planner' || '') }}
+      WS: ${{ inputs.workspace || format('{0}{1}', inputs.from_scratch && 'generated/clsp_scratch' || 'generated/clsp', inputs.planner && '_planner' || '') }}
       SCRATCH: ${{ inputs.from_scratch && 'true' || 'false' }}
       PLANNER: ${{ inputs.planner && 'true' || 'false' }}
     steps:

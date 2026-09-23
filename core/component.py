@@ -30,6 +30,7 @@ VALID_PARAM_TYPES = {"int", "float", "cat", "bool"}
 # Slots reconocidos por el núcleo (tabla de la sección 4).
 KNOWN_SLOTS = {
     "constructor",
+    "greedy_score",
     "neighborhood",
     "evaluator",
     "acceptance",

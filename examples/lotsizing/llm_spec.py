@@ -51,6 +51,20 @@ def make_spec() -> ProblemSpec:
             "por setups con menor 'utilidad' (lote pequeño).",
         ],
         starting_solution=starting_solution_example(),
+        construction_source=_construction_source(),
+    )
+
+
+def _construction_source() -> str:
+    """Lo que ve el LLM al escribir un `greedy_score`: la acción, el estado parcial y cómo se
+    generan los candidatos (sin los puntajes escritos a mano)."""
+    from . import construction as c
+
+    return "\n\n".join(inspect.getsource(o) for o in (c.CoverAction, c.CLSPPartial)) + (
+        "\n\n# Candidatos en cada paso: t* = el período más temprano con demanda pendiente; para cada ítem i con\n"
+        "# rem[i][t*] > 0 y cada período s <= t* con capacidad libre (descontando el tiempo de setup si hay que\n"
+        "# encenderlo), una CoverAction(i, t*, s, q, new_setup) con q = min(pendiente, capacidad libre). Ya vienen\n"
+        "# filtrados por capacidad acumulada. `score` elige cuál conviene; menor = mejor."
     )
 
 

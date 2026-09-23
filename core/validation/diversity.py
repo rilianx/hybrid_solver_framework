@@ -203,6 +203,19 @@ SIGNATURE = {
 }
 
 
+def greedy_score_signature(impl, sol=None, problem=None) -> set:
+    """Acciones que elige el constructor greedy con este puntaje al construir desde cero la
+    instancia del `problem` (regla greedy, sin azar). Calibrado en la sonda 10×15: ideas
+    distintas quedan en Jaccard 0,28–0,38; "producir lo más tarde posible" y "minimizar
+    solo inventario", que eligen lo mismo, en 0,97."""
+    from core.construction import GreedyConstructor
+
+    return set(GreedyConstructor(problem, impl).trace(problem.inst, Random(0))[1])
+
+
+SIGNATURE["greedy_score"] = greedy_score_signature
+
+
 def signature(slot: str, impl, sol, problem=None):
     fn = SIGNATURE.get(slot)
     if fn is None:
