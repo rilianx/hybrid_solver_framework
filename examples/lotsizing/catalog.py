@@ -56,10 +56,14 @@ HANDWRITTEN = [
 ]
 
 
-def build_registry(generated: list[GeneratedComponent] | None = None) -> ComponentRegistry:
+def build_registry(generated: list[GeneratedComponent] | None = None, handwritten: bool = True) -> ComponentRegistry:
+    """`handwritten=False`: solo los generados, salvo en los slots que el LLM no genera
+    (p.ej. `fixing_policy`), donde se mantiene el de mano para que el esqueleto exista."""
     registry = ComponentRegistry()
+    generated_slots = {c.slot for c in generated or []}
     for component, factory in HANDWRITTEN:
-        registry.register(ComponentSpec.from_dict(component, factory))
+        if handwritten or component["slot"] not in generated_slots:
+            registry.register(ComponentSpec.from_dict(component, factory))
     if generated:
         register_generated(registry, generated)
     return registry

@@ -91,7 +91,8 @@ def make_diversity_probe(n_items: int = 10, n_periods: int = 15, seed: int = 100
 
 
 def make_contexts(
-    n_contexts: int = 2, n_items: int = 3, n_periods: int = 5, seed: int = 7, strict: bool = True
+    n_contexts: int = 2, n_items: int = 3, n_periods: int = 5, seed: int = 7, strict: bool = True,
+    reference_free: bool = False,
 ) -> list[ValidationContext]:
     """Micro-contextos de validación.
 
@@ -99,6 +100,11 @@ def make_contexts(
     solución de PARTIDA, no solo desde soluciones aleatorias — empuja al modelo a
     operadores útiles donde el esqueleto arranca. `strict=False` (admisión al
     catálogo): tolera operadores estrechos, que pueden valer en combinación.
+
+    `reference_free=True` (generación desde cero): sin vecindario de referencia, así el
+    feedback de "no mejora desde la partida" no le muestra al modelo los movimientos de
+    `setup_flip`. La solución trivial (lot-for-lot o Relax-and-Fix) se mantiene: es la
+    partida del esqueleto y la base de las pruebas, no una pista de diseño.
     """
     # Una sola sonda compartida por todos los contextos (construirla cuesta un MIP chico).
     probe = make_diversity_probe() if strict else None
@@ -125,7 +131,7 @@ def make_contexts(
                 trivial_solutions=[trivial],
                 baseline_constructor=LotForLotConstructor(),
                 reference_destruction=PeriodWindowDestruction(inst),
-                reference_neighborhood=SetupFlipNeighborhood(problem),  # verdad-terreno para el feedback
+                reference_neighborhood=None if reference_free else SetupFlipNeighborhood(problem),  # verdad-terreno para el feedback
                 mip_time_limit=5.0,
                 max_moves_checked=30,
                 require_improving_from_start=strict,

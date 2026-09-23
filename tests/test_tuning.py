@@ -167,3 +167,18 @@ def test_mip_time_share_is_not_floored_to_one_second(assembler, tiny, monkeypatc
     assert seen == pytest.approx([0.4, 2.0])  # antes: max(1.0, ·) → 1.0 y 2.0, y CBC redondeaba
     assert asm.MIN_MIP_SECONDS < 1.0
     assert assembler.default_config("LNS_MIP")["LNS_MIP.mip_time_share"] == pytest.approx(0.2)
+
+
+def test_generated_only_catalog_drops_handwritten_in_generated_slots():
+    from examples.lotsizing.catalog import load_generated
+
+    gen = load_generated("generated/clsp", revalidate=False, verbose=False)
+    assert gen, "se espera el catálogo de la corrida 8 en generated/clsp"
+    only = build_registry(gen, handwritten=False)
+    gen_slots = {c.slot for c in gen}
+    for slot in gen_slots:
+        names = {s.name for s in only.for_slot(slot)}
+        assert names and names <= {c.name for c in gen}, slot
+    # slots que el LLM no genera conservan el de mano, así FIX_OPT sigue existiendo
+    assert {s.name for s in only.for_slot("fixing_policy")} == {"sliding_window"}
+    assert {s.name for s in build_registry(gen).for_slot("neighborhood")} >= {"setup_flip"}

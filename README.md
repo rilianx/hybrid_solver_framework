@@ -186,6 +186,8 @@ python -m pytest -q                 # 109 passed (~50 s)
 
 export OPENAI_API_KEY=...
 python -m examples.lotsizing.generate --slots neighborhood destruction --n 3   # generación real
+# desde cero: sin ver los componentes escritos a mano (ni diversidad contra el catálogo, ni pistas de setup_flip)
+python -m examples.lotsizing.generate --from-scratch --workspace generated/clsp_scratch --slots neighborhood destruction constructor perturbation
 
 # opcional: precios en USD por millón de tokens, para estimar el costo de la corrida
 export LLM_PRICE_IN=0.25 LLM_PRICE_OUT=2.00
@@ -193,6 +195,8 @@ export LLM_PRICE_IN=0.25 LLM_PRICE_OUT=2.00
 # tuning real (§8): Optuna sobre el espacio completo, con y sin componentes LLM,
 # evaluado en instancias de TEST; --irace escribe además un escenario irace
 python -m examples.lotsizing.tune --trials 40 --budget 5 --train 3 --test 3 --catalog both --irace tuning_out/irace
+# solo generados vs a mano vs ambos (--catalog three), con los generados desde cero
+python -m examples.lotsizing.tune --catalog three --generated generated/clsp_scratch --skeletons SA ILS VNS --ref-time 60
 # esqueleto fijo: compara cada componente generado contra el de mano en igualdad de condiciones
 python -m examples.lotsizing.tune --skeletons SA ILS VNS --trials 40 --budget 20 --items 20 --periods 20 --ref-time 60
 ```

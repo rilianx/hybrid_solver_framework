@@ -6,6 +6,14 @@
 Guarda los módulos (aceptados y rechazados, por ronda) en `generated/clsp/<slot>/`,
 la transcripción de cada llamada en `generated/clsp/transcript/`, y un resumen
 `stats.json` con tasas de aprobación por capa y rondas de corrección.
+
+Con `--from-scratch` el modelo no ve los componentes escritos a mano: la diversidad
+se exige solo entre los aceptados de la misma corrida (no contra el catálogo), el
+prompt no nombra los existentes y el feedback no muestra movimientos de
+`setup_flip`. Es el experimento "¿llega solo a algo tan bueno como lo de mano?":
+
+    python -m examples.lotsizing.generate --from-scratch --workspace generated/clsp_scratch \
+        --slots neighborhood destruction constructor perturbation
 """
 
 from __future__ import annotations
@@ -28,6 +36,8 @@ def main() -> None:
     ap.add_argument("--provider", choices=["openai", "anthropic"], default="openai")
     ap.add_argument("--model", default=None)
     ap.add_argument("--workspace", default="generated/clsp")
+    ap.add_argument("--from-scratch", action="store_true",
+                    help="sin componentes de referencia: ni diversidad contra el catálogo, ni nombres, ni pistas de setup_flip")
     args = ap.parse_args()
 
     if args.provider == "openai":
@@ -38,15 +48,16 @@ def main() -> None:
         inner = AnthropicClient(model=args.model or "claude-sonnet-4-5")
     client = TranscriptClient(inner, Path(args.workspace) / "transcript")
 
-    spec, contexts = make_spec(), make_contexts()
+    spec, contexts = make_spec(), make_contexts(reference_free=args.from_scratch)
     # Componentes que ya existen en el catálogo: el gate de diversidad los usa para que el
-    # modelo no reinvente `setup_flip` con otro nombre (corrida 5: Jaccard 1,00).
+    # modelo no reinvente `setup_flip` con otro nombre (corrida 5: Jaccard 1,00). Desde cero
+    # no hay pares: la diversidad se mide solo entre los aceptados de esta corrida.
     registry = build_registry()
     all_stats = {}
     for slot in args.slots:
         probe = contexts[0].diversity_probe
         peer_problem = probe.problem if probe is not None else contexts[0].problem
-        peers = [
+        peers = [] if args.from_scratch else [
             (spec_c.name, spec_c.make(peer_problem, **spec_c.default_params()))
             for spec_c in registry.for_slot(slot)
         ]
@@ -71,7 +82,7 @@ def main() -> None:
         total.add(TokenUsage(t["input_tokens"], t["output_tokens"], t.get("cached_input_tokens", 0),
                              t.get("reasoning_tokens", 0), t["calls"]))
     all_stats["_run"] = {
-        "model": inner.model, "provider": args.provider,
+        "model": inner.model, "provider": args.provider, "from_scratch": args.from_scratch,
         "tokens": total.as_dict(inner.model),
         "note": ("costo estimado con LLM_PRICE_IN/LLM_PRICE_OUT (USD por millón de tokens)"
                  if total.cost_usd(inner.model) is not None

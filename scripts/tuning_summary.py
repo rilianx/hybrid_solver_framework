@@ -49,20 +49,29 @@ def render_catalog(payload: dict) -> str:
 
 def render(out_dir: Path) -> str:
     parts = []
-    for name in ("handwritten", "all"):
+    for name in ("handwritten", "generated", "all"):
         p = out_dir / f"{name}.json"
         if p.exists():
             parts.append(render_catalog(json.loads(p.read_text())))
     cmp = out_dir / "comparison.json"
     if cmp.exists():
         c = json.loads(cmp.read_text())
-        d = c["relative_gain_from_llm_catalog"]
-        verdict = "el catálogo ampliado **ayuda**" if d > 0.005 else ("el catálogo ampliado **diluye**" if d < -0.005 else "**empate**: el tuner eligió lo mismo o equivalente")
-        gaps = (f" Gap medio vs mejor conocido: a mano {c['handwritten_tuned_gap']:.2%}, con LLM {c['all_tuned_gap']:.2%}."
-                if "handwritten_tuned_gap" in c else "")
-        parts.append("### ¿Ayuda o diluye?\n\n"
-                     f"Afinado en test — a mano: {c['handwritten_tuned_test']:.1f} (`{c['handwritten_best']}`) · "
-                     f"con LLM: {c['all_tuned_test']:.1f} (`{c['all_best']}`) → **{d:+.2%}**, {verdict}.{gaps}")
+        if "relative_gain_from_llm_catalog" in c:
+            d = c["relative_gain_from_llm_catalog"]
+            verdict = "el catálogo ampliado **ayuda**" if d > 0.005 else ("el catálogo ampliado **diluye**" if d < -0.005 else "**empate**: el tuner eligió lo mismo o equivalente")
+            gaps = (f" Gap medio vs mejor conocido: a mano {c['handwritten_tuned_gap']:.2%}, con LLM {c['all_tuned_gap']:.2%}."
+                    if "handwritten_tuned_gap" in c else "")
+            parts.append("### ¿Ayuda o diluye?\n\n"
+                         f"Afinado en test — a mano: {c['handwritten_tuned_test']:.1f} (`{c['handwritten_best']}`) · "
+                         f"con LLM: {c['all_tuned_test']:.1f} (`{c['all_best']}`) → **{d:+.2%}**, {verdict}.{gaps}")
+        if "relative_gain_generated_only" in c:
+            d = c["relative_gain_generated_only"]
+            verdict = ("solo generados **supera** a lo de mano" if d > 0.005 else
+                       ("solo generados **queda por debajo** de lo de mano" if d < -0.005 else "**empate** entre solo generados y a mano"))
+            parts.append("### Solo generados vs a mano\n\n"
+                         f"Afinado en test — a mano: {c['handwritten_tuned_test']:.1f}, gap {c['handwritten_tuned_gap']:.2%} "
+                         f"(`{c['handwritten_best']}`) · solo LLM: {c['generated_tuned_test']:.1f}, gap {c['generated_tuned_gap']:.2%} "
+                         f"(`{c['generated_best']}`) → **{d:+.2%}**, {verdict}.")
     if not parts:
         return f"> No hay resultados en `{out_dir}`: el tuning no llegó a completarse (revisa el log)."
     return "\n\n".join(parts)

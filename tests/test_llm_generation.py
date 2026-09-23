@@ -497,3 +497,18 @@ def test_probe_checks_constructor_feasibility_on_realistic_instance(tmp_path):
     res = probe_checks("constructor", LotForLotConstructor(), probe)
     assert res and res[0].passed
     assert probe_checks("neighborhood", object(), probe) == []
+
+
+def test_from_scratch_hides_the_handwritten_components(spec_and_ctx):
+    """Desde cero: el prompt no nombra `setup_flip` ni otros componentes de mano, y el
+    feedback no puede mostrar sus movimientos (no hay vecindario de referencia)."""
+    spec, _ = spec_and_ctx
+    for slot in ("neighborhood", "perturbation", "destruction", "constructor"):
+        prompt = generation_prompt(spec, slot, 3, avoid_names=None)
+        for name in ("setup_flip", "lot_for_lot", "period_window", "random_setups"):
+            assert name not in prompt, (slot, name)
+    with_catalog = generation_prompt(spec, "neighborhood", 3, avoid_names=["setup_flip"])
+    assert "setup_flip" in with_catalog and "ya existe" in with_catalog
+    scratch = make_contexts(n_contexts=1, reference_free=True)
+    assert all(c.reference_neighborhood is None for c in scratch)
+    assert all(c.trivial_solutions for c in scratch)  # la partida del esqueleto se mantiene

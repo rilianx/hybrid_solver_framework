@@ -63,8 +63,7 @@ SLOT_HINTS = {
         "incremental barata); `moves(sol)` no vacío; y al menos un movimiento debe MEJORAR la solución de partida del esqueleto "
         "(no basta con que mejore soluciones aleatorias). Un vecindario con 6 movimientos que nunca mejoran es inútil aunque sea correcto. "
         "Además se mide si es una IDEA distinta de los vecindarios ya aceptados: se compara qué vecinos alcanza y, sobre todo, si sus "
-        "movimientos que mejoran llegan a soluciones que los otros no alcanzan. Mezclar flips de un setup dentro de otro operador para "
-        "que \"mejore\" no cuenta: esas mejoras ya las hace `setup_flip`."
+        "movimientos que mejoran llegan a soluciones que los otros no alcanzan."
     ),
     "constructor": (
         "Se verificará: `build(inst, rng)` devuelve una solución FACTIBLE y es determinista dada la semilla del rng. "
@@ -136,6 +135,9 @@ def generation_prompt(spec: ProblemSpec, slot: str, n_variants: int, avoid_names
         )
     if avoid_names:
         parts.append(f"\nYa existen componentes llamados {avoid_names}; usa ideas y nombres distintos.")
+        if slot == "neighborhood":
+            parts.append("Mezclar movimientos de un vecindario que ya existe dentro de otro operador para que \"mejore\" no "
+                         "cuenta como idea nueva: esas mejoras ya las hace el existente.")
     parts.append(f"\nDevuelve exactamente {n_variants} bloques ```python```, cada uno un módulo completo.")
     return "\n".join(parts)
 

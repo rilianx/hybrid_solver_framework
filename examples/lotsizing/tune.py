@@ -4,7 +4,8 @@ componentes generados por LLM **ayuda o diluye**?
     python -m examples.lotsizing.tune --trials 30 --budget 5 --train 3 --test 3 --catalog both
     python -m examples.lotsizing.tune --skeletons SA ILS VNS --ref-time 60   # esqueleto fijo
 
-Para cada catálogo (`handwritten` = solo componentes a mano, `all` = + generados):
+Para cada catálogo (`handwritten` = solo componentes a mano, `all` = + generados,
+`generated` = solo generados; `--catalog both` corre los dos primeros y `three` los tres):
 1. Optuna (TPE) sobre el espacio completo, con los defaults de cada esqueleto
    encolados como primeros trials. El costo de un trial es la media, por instancia
    de entrenamiento, de `costo / lot-for-lot` (`--objective ratio`): así ninguna
@@ -52,8 +53,8 @@ def make_instances(n: int, items: int, periods: int, seed0: int, utilization: fl
 
 def make_assembler(catalog: str, generated_dir: str, verbose: bool = False,
                    skeletons: list[str] | None = None) -> tuple[Assembler, list[str]]:
-    generated = load_generated(generated_dir, verbose=verbose) if catalog == "all" else []
-    registry = build_registry(generated)
+    generated = load_generated(generated_dir, verbose=verbose) if catalog in ("all", "generated") else []
+    registry = build_registry(generated, handwritten=catalog != "generated")
     sks = {k: SKELETONS[k] for k in skeletons} if skeletons else dict(SKELETONS)
     return Assembler(problem_factory=LotSizingModel, registry=registry, skeletons=sks), [c.name for c in generated]
 
@@ -123,7 +124,7 @@ def main() -> None:
     ap.add_argument("--items", type=int, default=10)
     ap.add_argument("--periods", type=int, default=15)
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--catalog", choices=["handwritten", "all", "both"], default="both")
+    ap.add_argument("--catalog", choices=["handwritten", "all", "generated", "both", "three"], default="both")
     ap.add_argument("--skeletons", nargs="*", choices=sorted(SKELETONS), default=None,
                     help="restringe el espacio a estos esqueletos (baselines de test: uno por componente)")
     ap.add_argument("--objective", choices=["ratio", "raw"], default="ratio",
@@ -139,7 +140,7 @@ def main() -> None:
     test = make_instances(args.test, args.items, args.periods, 500 + args.seed * 1000)
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
-    catalogs = ["handwritten", "all"] if args.catalog == "both" else [args.catalog]
+    catalogs = {"both": ["handwritten", "all"], "three": ["handwritten", "generated", "all"]}.get(args.catalog, [args.catalog])
     runs = {c: run_experiment(c, args, train, test, out_dir) for c in catalogs}
 
     # mejor conocido por instancia de test: todas las corridas de ambos catálogos (+ MIP completo)
@@ -161,17 +162,22 @@ def main() -> None:
         (out_dir / f"{c}.json").write_text(json.dumps(payload, indent=2, ensure_ascii=False))
         results[c] = payload
 
-    if len(results) == 2:
-        h, a = results["handwritten"]["test"], results["all"]["test"]
-        diff = (h["tuned"]["mean"] - a["tuned"]["mean"]) / h["tuned"]["mean"]
-        print(f"\n=== ¿ayuda o diluye? test afinado: a mano {h['tuned']['mean']:.1f} (gap {h['tuned']['mean_gap']:.2%}) "
-              f"vs con LLM {a['tuned']['mean']:.1f} (gap {a['tuned']['mean_gap']:.2%}) ({diff:+.2%}) ===")
-        (out_dir / "comparison.json").write_text(json.dumps({
-            "handwritten_tuned_test": h["tuned"]["mean"], "all_tuned_test": a["tuned"]["mean"],
-            "relative_gain_from_llm_catalog": diff,
-            "handwritten_tuned_gap": h["tuned"]["mean_gap"], "all_tuned_gap": a["tuned"]["mean_gap"],
-            "handwritten_best": h["tuned"]["summary"], "all_best": a["tuned"]["summary"],
-        }, indent=2, ensure_ascii=False))
+    if "handwritten" in results and len(results) > 1:
+        h = results["handwritten"]["test"]
+        comparison = {"handwritten_tuned_test": h["tuned"]["mean"], "handwritten_tuned_gap": h["tuned"]["mean_gap"],
+                      "handwritten_best": h["tuned"]["summary"]}
+        for other in ("all", "generated"):
+            if other not in results:
+                continue
+            o = results[other]["test"]
+            diff = (h["tuned"]["mean"] - o["tuned"]["mean"]) / h["tuned"]["mean"]
+            label = "con LLM" if other == "all" else "solo LLM"
+            print(f"\n=== a mano vs {label}: test afinado {h['tuned']['mean']:.1f} (gap {h['tuned']['mean_gap']:.2%}) "
+                  f"vs {o['tuned']['mean']:.1f} (gap {o['tuned']['mean_gap']:.2%}) ({diff:+.2%}) ===")
+            comparison.update({f"{other}_tuned_test": o["tuned"]["mean"], f"{other}_tuned_gap": o["tuned"]["mean_gap"],
+                               f"{other}_best": o["tuned"]["summary"],
+                               "relative_gain_from_llm_catalog" if other == "all" else "relative_gain_generated_only": diff})
+        (out_dir / "comparison.json").write_text(json.dumps(comparison, indent=2, ensure_ascii=False))
 
     if args.irace:
         from tuning.irace_scenario import write_irace_scenario
@@ -186,7 +192,7 @@ def main() -> None:
         assembler, _ = make_assembler(catalogs[-1], args.generated, skeletons=args.skeletons)
         scenario = write_irace_scenario(assembler.config_space(), args.irace, paths, args.budget,
                                         max_experiments=args.trials * len(train),
-                                        generated_dir=args.generated if catalogs[-1] == "all" else None)
+                                        generated_dir=args.generated if catalogs[-1] != "handwritten" else None)
         print(f"\nEscenario irace escrito en {scenario} (correr: irace --scenario {scenario})")
 
 
