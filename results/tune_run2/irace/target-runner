@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# irace llama: target-runner <config_id> <instance_id> <seed> <instance> [--param=valor ...]
+set -euo pipefail
+cd "$(dirname "$0")/../.."  # raíz del repo
+export HSF_BUDGET=5.0
+export HSF_GENERATED=generated/clsp
+exec python -W ignore -m scripts.irace_target_runner "$@"
