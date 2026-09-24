@@ -1,0 +1,254 @@
+{
+  "greedy_score": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 4,
+    "llm_seconds": 38.7,
+    "rejections_by_layer": {},
+    "rounds_per_accepted": {
+      "marginal_setup_savings": 1,
+      "earliness_holding_tradeoff": 1,
+      "capacity_balance_pressure": 1
+    },
+    "abandoned": [],
+    "accepted_files": [
+      "generated/clsp_scratch4_planner/greedy_score/marginal_setup_savings_r1.py",
+      "generated/clsp_scratch4_planner/greedy_score/earliness_holding_tradeoff_r1.py",
+      "generated/clsp_scratch4_planner/greedy_score/capacity_balance_pressure_r1.py"
+    ],
+    "tokens": {
+      "calls": 4,
+      "input_tokens": 18720,
+      "output_tokens": 4615,
+      "total_tokens": 23335,
+      "reasoning_tokens": 1754
+    },
+    "planned": [
+      "marginal_setup_savings",
+      "earliness_holding_tradeoff",
+      "capacity_balance_pressure"
+    ],
+    "duplicates": {},
+    "replans": 0,
+    "wall_seconds": 19.1
+  },
+  "constructor": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 6,
+    "llm_seconds": 190.3,
+    "rejections_by_layer": {
+      "contractual": 2
+    },
+    "rounds_per_accepted": {
+      "greedy_capacity_shifting": 2,
+      "windowed_lookahead_balancing": 1,
+      "critical_period_repair_constructor": 2
+    },
+    "abandoned": [],
+    "accepted_files": [
+      "generated/clsp_scratch4_planner/constructor/greedy_capacity_shifting_r2.py",
+      "generated/clsp_scratch4_planner/constructor/windowed_lookahead_balancing_r1.py",
+      "generated/clsp_scratch4_planner/constructor/critical_period_repair_constructor_r2.py"
+    ],
+    "tokens": {
+      "calls": 6,
+      "input_tokens": 22723,
+      "output_tokens": 24403,
+      "total_tokens": 47126,
+      "reasoning_tokens": 14764
+    },
+    "planned": [
+      "greedy_capacity_shifting",
+      "windowed_lookahead_balancing",
+      "critical_period_repair_constructor"
+    ],
+    "duplicates": {},
+    "replans": 0,
+    "wall_seconds": 73.2
+  },
+  "neighborhood": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 9,
+    "llm_seconds": 88.5,
+    "rejections_by_layer": {
+      "contractual": 4,
+      "quality": 1
+    },
+    "rounds_per_accepted": {
+      "left_shift_merge": 3,
+      "period_capacity_swap": 3,
+      "window_block_removal": 2
+    },
+    "abandoned": [],
+    "accepted_files": [
+      "generated/clsp_scratch4_planner/neighborhood/left_shift_merge_r3.py",
+      "generated/clsp_scratch4_planner/neighborhood/period_capacity_swap_r3.py",
+      "generated/clsp_scratch4_planner/neighborhood/window_block_removal_r2.py"
+    ],
+    "tokens": {
+      "calls": 9,
+      "input_tokens": 27509,
+      "output_tokens": 11480,
+      "total_tokens": 38989,
+      "reasoning_tokens": 5514
+    },
+    "combinations": {
+      "left_shift_merge": {
+        "compatible_skeletons": [
+          "SA",
+          "ILS",
+          "TS",
+          "VNS",
+          "GRASP"
+        ],
+        "gains": {
+          "SA/lot_for_lot": 0.0409,
+          "SA/greedy_unit_marginal_cost": 0.0249,
+          "VNS/lot_for_lot": 0.0431,
+          "VNS/greedy_unit_marginal_cost": 0.0321,
+          "TS/lot_for_lot": 0.0136,
+          "TS/greedy_unit_marginal_cost": 0.0178,
+          "GRASP/lot_for_lot": 0.0339,
+          "GRASP/greedy_unit_marginal_cost": 0.0197
+        }
+      },
+      "period_capacity_swap": {
+        "compatible_skeletons": [
+          "SA",
+          "ILS",
+          "TS",
+          "VNS",
+          "GRASP"
+        ],
+        "gains": {
+          "SA/lot_for_lot": 0.0172,
+          "SA/greedy_unit_marginal_cost": 0.0181,
+          "VNS/lot_for_lot": 0.0378,
+          "VNS/greedy_unit_marginal_cost": 0.0,
+          "TS/lot_for_lot": 0.0106,
+          "TS/greedy_unit_marginal_cost": 0.0181,
+          "GRASP/lot_for_lot": 0.0484,
+          "GRASP/greedy_unit_marginal_cost": 0.0
+        }
+      },
+      "window_block_removal": {
+        "compatible_skeletons": [
+          "SA",
+          "ILS",
+          "TS",
+          "VNS",
+          "GRASP"
+        ],
+        "gains": {
+          "SA/lot_for_lot": 0.0636,
+          "SA/greedy_unit_marginal_cost": 0.0178,
+          "VNS/lot_for_lot": 0.0362,
+          "VNS/greedy_unit_marginal_cost": 0.0,
+          "TS/lot_for_lot": 0.0164,
+          "TS/greedy_unit_marginal_cost": 0.0,
+          "GRASP/lot_for_lot": 0.033,
+          "GRASP/greedy_unit_marginal_cost": 0.0
+        }
+      }
+    },
+    "planned": [
+      "left_shift_merge",
+      "period_capacity_swap",
+      "window_block_removal"
+    ],
+    "duplicates": {},
+    "replans": 0,
+    "wall_seconds": 94.4
+  },
+  "destruction": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 4,
+    "llm_seconds": 35.5,
+    "rejections_by_layer": {},
+    "rounds_per_accepted": {
+      "capacidad_concentrada": 1,
+      "items_cronicos": 1,
+      "setup_poco_efectivo": 1
+    },
+    "abandoned": [],
+    "accepted_files": [
+      "generated/clsp_scratch4_planner/destruction/capacidad_concentrada_r1.py",
+      "generated/clsp_scratch4_planner/destruction/items_cronicos_r1.py",
+      "generated/clsp_scratch4_planner/destruction/setup_poco_efectivo_r1.py"
+    ],
+    "tokens": {
+      "calls": 4,
+      "input_tokens": 16263,
+      "output_tokens": 4426,
+      "total_tokens": 20689,
+      "reasoning_tokens": 1190
+    },
+    "planned": [
+      "capacidad_concentrada",
+      "items_cronicos",
+      "setup_poco_efectivo"
+    ],
+    "duplicates": {},
+    "replans": 0,
+    "wall_seconds": 16.3
+  },
+  "perturbation": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 6,
+    "llm_seconds": 59.4,
+    "rejections_by_layer": {
+      "quality": 2
+    },
+    "rounds_per_accepted": {
+      "window_merge_and_shift": 3,
+      "bottleneck_period_repair": 1,
+      "low_utility_setup_removal": 1
+    },
+    "abandoned": [],
+    "accepted_files": [
+      "generated/clsp_scratch4_planner/perturbation/window_merge_and_shift_r3.py",
+      "generated/clsp_scratch4_planner/perturbation/bottleneck_period_repair_r1.py",
+      "generated/clsp_scratch4_planner/perturbation/low_utility_setup_removal_r1.py"
+    ],
+    "tokens": {
+      "calls": 6,
+      "input_tokens": 21569,
+      "output_tokens": 8524,
+      "total_tokens": 30093,
+      "reasoning_tokens": 2112
+    },
+    "planned": [
+      "window_merge_and_shift",
+      "bottleneck_period_repair",
+      "low_utility_setup_removal"
+    ],
+    "duplicates": {},
+    "replans": 0,
+    "wall_seconds": 37.0
+  },
+  "_run": {
+    "model": "gpt-5.4-mini",
+    "provider": "openai",
+    "from_scratch": true,
+    "catalog_diversity": "annotate",
+    "planner": true,
+    "wall_seconds": 94.4,
+    "tokens": {
+      "calls": 29,
+      "input_tokens": 106784,
+      "output_tokens": 53448,
+      "total_tokens": 160232,
+      "reasoning_tokens": 25334
+    },
+    "note": "define LLM_PRICE_IN y LLM_PRICE_OUT (USD por millón de tokens) para estimar el costo"
+  }
+}
