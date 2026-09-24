@@ -55,7 +55,7 @@ def parse_irace_params(space: ConfigSpace, argv: list[str]) -> dict[str, Any]:
             config[k] = v.upper() in ("TRUE", "1", "T", "YES")
         else:
             config[k] = v
-    return config
+    return space.fold(config)
 
 
 def write_irace_scenario(

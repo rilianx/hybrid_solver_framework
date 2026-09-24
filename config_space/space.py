@@ -16,7 +16,7 @@ como pide la sección 8.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from core.component import ComponentRegistry
@@ -61,6 +61,12 @@ class ParamNode:
     range: tuple[float, float] | None = None  # para "int"/"float"
     log: bool = False
     conditions: tuple[Condition, ...] = field(default_factory=tuple)
+    # clave en la configuración final, si difiere de `name` (ver `ConfigSpace.fold`)
+    key: str | None = None
+
+    @property
+    def config_key(self) -> str:
+        return self.key or self.name
 
     def is_active(self, assignment: dict[str, Any]) -> bool:
         return all(c.holds(assignment) for c in self.conditions)
@@ -83,6 +89,12 @@ class ConfigSpace:
 
     def active_nodes(self, assignment: dict[str, Any]) -> list[ParamNode]:
         return [n for n in self.nodes if n.is_active(assignment)]
+
+    def fold(self, assignment: dict[str, Any]) -> dict[str, Any]:
+        """Asignación por nombre de nodo → configuración para el ensamblador: los nodos con
+        `key` (un slot partido por grupo de esqueletos) vuelven a su clave común."""
+        by_name = {n.name: n for n in self.nodes}
+        return {(by_name[k].config_key if k in by_name else k): v for k, v in assignment.items()}
 
 
 def build_config_space(
@@ -111,36 +123,36 @@ def build_config_space(
             skeletons_using_slot.setdefault(slot, []).append(skel)
 
     for slot, skeletons in skeletons_using_slot.items():
-        components = [
-            c
-            for skel in skeletons
-            for c in registry.compatible(slot, skel)
-        ]
-        # de-duplicar preservando orden
-        seen = set()
-        unique = []
-        for c in components:
-            if c.name not in seen:
-                seen.add(c.name)
-                unique.append(c)
-        if not unique:
-            continue
-
-        slot_condition = Condition(parent="skeleton", kind="in", values=tuple(skeletons))
-        space.add(
-            ParamNode(
-                name=slot,
-                type="cat",
-                values=tuple(c.name for c in unique),
-                conditions=(slot_condition,),
+        # Esqueletos agrupados por el conjunto de componentes compatibles. Si todos comparten
+        # el mismo, un único parámetro `slot` (lo usual). Si no (la validación por combinación
+        # poda `compatible_skeletons` por componente), un parámetro por grupo, con
+        # `key=slot`: con uno solo, el tuner podía elegir un componente incompatible con el
+        # esqueleto muestreado y la variante fallaba (runs 9–14: hasta 5 de 40 trials).
+        groups: dict[tuple[str, ...], list[str]] = {}
+        for skel in skeletons:
+            names = tuple(c.name for c in registry.compatible(slot, skel))
+            if names:
+                groups.setdefault(names, []).append(skel)
+        split = len(groups) > 1
+        for names, group in groups.items():
+            suffix = f"__{'_'.join(group)}" if split else ""
+            node_name = slot + suffix
+            slot_condition = Condition(parent="skeleton", kind="in", values=tuple(group))
+            space.add(
+                ParamNode(
+                    name=node_name,
+                    type="cat",
+                    values=names,
+                    conditions=(slot_condition,),
+                    key=slot if split else None,
+                )
             )
-        )
-
-        for comp in unique:
-            comp_condition = Condition(parent=slot, kind="eq", values=(comp.name,))
-            for pname, pspec in comp.params.items():
-                full_name = f"{comp.name}.{pname}"
-                space.add(_param_node_from_spec(full_name, pspec, conditions=(slot_condition, comp_condition)))
+            for comp in (registry.get(slot, n) for n in names):
+                comp_condition = Condition(parent=node_name, kind="eq", values=(comp.name,))
+                for pname, pspec in comp.params.items():
+                    full_name = f"{comp.name}.{pname}"
+                    node = _param_node_from_spec(full_name + suffix, pspec, conditions=(slot_condition, comp_condition))
+                    space.add(replace(node, key=full_name) if split else node)
 
     for skel, params in (skeleton_params or {}).items():
         skel_condition = Condition(parent="skeleton", kind="eq", values=(skel,))

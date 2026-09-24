@@ -1,0 +1,47 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("SA", "ILS", "VNS")
+constructor "--constructor=" c ("critical_period_repair_constructor", "greedy_capacity_shifting", "windowed_lookahead_balancing", "greedy_capacity_balance_pressure", "greedy_earliness_holding_tradeoff", "greedy_marginal_setup_savings") | skeleton %in% c("SA", "ILS", "VNS")
+critical_period_repair_constructor.max_repairs "--critical_period_repair_constructor.max_repairs=" i (1, 50) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "critical_period_repair_constructor"
+critical_period_repair_constructor.lookback "--critical_period_repair_constructor.lookback=" i (1, 20) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "critical_period_repair_constructor"
+greedy_capacity_shifting.lookahead "--greedy_capacity_shifting.lookahead=" i (1, 12) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_capacity_shifting"
+greedy_capacity_shifting.shift_window "--greedy_capacity_shifting.shift_window=" i (0, 12) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_capacity_shifting"
+greedy_capacity_shifting.cost_bias "--greedy_capacity_shifting.cost_bias=" r (0.0, 5.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_capacity_shifting"
+greedy_capacity_shifting.random_tie_break "--greedy_capacity_shifting.random_tie_break=" c ("TRUE", "FALSE") | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_capacity_shifting"
+windowed_lookahead_balancing.window "--windowed_lookahead_balancing.window=" i (2, 5) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "windowed_lookahead_balancing"
+greedy_capacity_balance_pressure.rule "--greedy_capacity_balance_pressure.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_capacity_balance_pressure"
+greedy_capacity_balance_pressure.alpha "--greedy_capacity_balance_pressure.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_capacity_balance_pressure"
+greedy_capacity_balance_pressure.target_pressure_weight "--greedy_capacity_balance_pressure.target_pressure_weight=" r (0.0, 5.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_capacity_balance_pressure"
+greedy_capacity_balance_pressure.new_setup_penalty "--greedy_capacity_balance_pressure.new_setup_penalty=" r (0.0, 2.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_capacity_balance_pressure"
+greedy_earliness_holding_tradeoff.rule "--greedy_earliness_holding_tradeoff.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_earliness_holding_tradeoff"
+greedy_earliness_holding_tradeoff.alpha "--greedy_earliness_holding_tradeoff.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_earliness_holding_tradeoff"
+greedy_earliness_holding_tradeoff.holding_weight "--greedy_earliness_holding_tradeoff.holding_weight=" r (0.0, 5.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_earliness_holding_tradeoff"
+greedy_earliness_holding_tradeoff.urgency_weight "--greedy_earliness_holding_tradeoff.urgency_weight=" r (0.0, 5.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_earliness_holding_tradeoff"
+greedy_earliness_holding_tradeoff.setup_weight "--greedy_earliness_holding_tradeoff.setup_weight=" r (0.0, 5.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_earliness_holding_tradeoff"
+greedy_earliness_holding_tradeoff.free_capacity_weight "--greedy_earliness_holding_tradeoff.free_capacity_weight=" r (0.0, 5.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_earliness_holding_tradeoff"
+greedy_marginal_setup_savings.rule "--greedy_marginal_setup_savings.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_marginal_setup_savings"
+greedy_marginal_setup_savings.alpha "--greedy_marginal_setup_savings.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_marginal_setup_savings"
+greedy_marginal_setup_savings.setup_weight "--greedy_marginal_setup_savings.setup_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_marginal_setup_savings"
+greedy_marginal_setup_savings.amortization_weight "--greedy_marginal_setup_savings.amortization_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_marginal_setup_savings"
+greedy_marginal_setup_savings.holding_weight "--greedy_marginal_setup_savings.holding_weight=" r (0.0, 5.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_marginal_setup_savings"
+greedy_marginal_setup_savings.consolidation_weight "--greedy_marginal_setup_savings.consolidation_weight=" r (0.0, 5.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_marginal_setup_savings"
+neighborhood "--neighborhood=" c ("left_shift_merge", "period_capacity_swap", "window_block_removal") | skeleton %in% c("SA", "ILS", "VNS")
+window_block_removal.min_window "--window_block_removal.min_window=" i (1, 6) | skeleton %in% c("SA", "ILS", "VNS") & neighborhood == "window_block_removal"
+window_block_removal.max_window "--window_block_removal.max_window=" i (1, 6) | skeleton %in% c("SA", "ILS", "VNS") & neighborhood == "window_block_removal"
+window_block_removal.max_items "--window_block_removal.max_items=" i (1, 10) | skeleton %in% c("SA", "ILS", "VNS") & neighborhood == "window_block_removal"
+window_block_removal.max_masks_per_window "--window_block_removal.max_masks_per_window=" i (1, 32) | skeleton %in% c("SA", "ILS", "VNS") & neighborhood == "window_block_removal"
+perturbation "--perturbation=" c ("bottleneck_period_repair", "window_merge_and_shift") | skeleton %in% c("ILS")
+bottleneck_period_repair.strength "--bottleneck_period_repair.strength=" r (1.0, 10.0) | skeleton %in% c("ILS") & perturbation == "bottleneck_period_repair"
+window_merge_and_shift.window_ratio "--window_merge_and_shift.window_ratio=" r (0.1, 0.5) | skeleton %in% c("ILS") & perturbation == "window_merge_and_shift"
+window_merge_and_shift.attempts "--window_merge_and_shift.attempts=" i (1, 12) | skeleton %in% c("ILS") & perturbation == "window_merge_and_shift"
+window_merge_and_shift.merge_bias "--window_merge_and_shift.merge_bias=" r (0.5, 1.0) | skeleton %in% c("ILS") & perturbation == "window_merge_and_shift"
+SA.T0 "--SA.T0=" r (1.0, 1000.0) | skeleton == "SA"  # log-scale
+SA.alpha "--SA.alpha=" r (0.8, 0.999) | skeleton == "SA"
+SA.iters_per_T "--SA.iters_per_T=" i (1, 50) | skeleton == "SA"
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+ILS.ls_sample "--ILS.ls_sample=" i (4, 256) | skeleton == "ILS"  # log-scale
+VNS.shake_strength "--VNS.shake_strength=" i (1, 4) | skeleton == "VNS"
+VNS.ls_time_share "--VNS.ls_time_share=" r (0.02, 0.3) | skeleton == "VNS"
+VNS.ls_sample "--VNS.ls_sample=" i (4, 256) | skeleton == "VNS"  # log-scale
