@@ -230,6 +230,10 @@ def generate_slot_planned(
             overlap = annotate_overlap(slot, o.component.build_component, annotate_peers, contexts)
             if overlap:
                 st.catalog_overlap[o.component.name] = overlap
+            comp = o.component.component or {}
+            if comp.get("combination_gains"):
+                st.combinations[o.component.name] = {"compatible_skeletons": comp["compatible_skeletons"],
+                                                     "gains": comp["combination_gains"]}
             if verbose:
                 print(f"[{slot}] ✔ {o.component.name} aceptado (ronda {o.rounds})")
         missing = n_variants - len(state.accepted)

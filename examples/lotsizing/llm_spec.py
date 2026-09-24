@@ -104,9 +104,39 @@ def make_diversity_probe(n_items: int = 10, n_periods: int = 15, seed: int = 100
     return DiversityProbe(problem=problem, solution=sol, max_similarity=0.8)
 
 
+def make_combination_probe(probe: DiversityProbe | None, budget: float = 1.0):
+    """Sonda de combinación sobre la instancia 10×15 de la sonda de diversidad: socios de mano
+    para los demás slots y dos partidas (lot-for-lot y el greedy de costo marginal). Es
+    infraestructura de validación: el LLM no la ve, así que vale también desde cero."""
+    from core.assembler import Assembler
+    from core.component import ComponentSpec
+    from core.validation.combination import CombinationProbe
+
+    if probe is None:
+        return None
+
+    def assembler_for(slot, components):
+        from .catalog import build_registry
+
+        # Sin los componentes de mano de ESTE slot: en VNS harían el trabajo del shake.
+        registry = build_registry(exclude_slots={slot})
+        names = []
+        for component, factory in components:
+            spec = dict(component)
+            spec.pop("combination_gains", None)
+            registry.register(ComponentSpec.from_dict(spec, factory))
+            names.append(spec["name"])
+        assembler = Assembler(problem_factory=pm.LotSizingModel, registry=registry)
+        assembler.probe_component = names[0]
+        return assembler
+
+    return CombinationProbe(instance=probe.problem.inst, assembler_for=assembler_for,
+                            starts=["lot_for_lot", "greedy_unit_marginal_cost"], budget=budget)
+
+
 def make_contexts(
     n_contexts: int = 2, n_items: int = 3, n_periods: int = 5, seed: int = 7, strict: bool = True,
-    reference_free: bool = False,
+    reference_free: bool = False, combination: bool = False,
 ) -> list[ValidationContext]:
     """Micro-contextos de validación.
 
@@ -126,6 +156,7 @@ def make_contexts(
     # generación había abandonado por infactible (`batch_covering_merge`, corrida 9) y el
     # tuner perdía 12 de 40 trials en él.
     probe = make_diversity_probe()
+    combo = make_combination_probe(probe) if combination else None
     contexts = []
     k, retry = 0, 0
     while len(contexts) < n_contexts and retry < 10:
@@ -154,6 +185,7 @@ def make_contexts(
                 max_moves_checked=30,
                 require_improving_from_start=strict,
                 diversity_probe=probe,
+                combination=combo,
             )
         )
     return contexts

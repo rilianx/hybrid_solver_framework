@@ -68,7 +68,8 @@ HANDWRITTEN = [
 ]
 
 
-def build_registry(generated: list[GeneratedComponent] | None = None, handwritten: bool = True) -> ComponentRegistry:
+def build_registry(generated: list[GeneratedComponent] | None = None, handwritten: bool = True,
+                   exclude_slots: set[str] | None = None) -> ComponentRegistry:
     """`handwritten=False`: solo los generados, salvo en los slots que un esqueleto necesita
     y el LLM no genera (p.ej. `fixing_policy`), donde se mantiene el de mano para que el
     esqueleto exista. Los puntajes (`greedy_score`) no los necesita ningún esqueleto, así
@@ -80,6 +81,8 @@ def build_registry(generated: list[GeneratedComponent] | None = None, handwritte
     registry = ComponentRegistry()
     generated_slots = {c.slot for c in generated or []}
     for component, factory in HANDWRITTEN:
+        if exclude_slots and component["slot"] in exclude_slots:
+            continue
         keep = component["slot"] not in generated_slots and component["slot"] != "greedy_score"
         if handwritten or keep:
             registry.register(ComponentSpec.from_dict(component, factory))
@@ -102,7 +105,8 @@ def greedy_constructor_spec(score_spec: ComponentSpec) -> ComponentSpec:
     return ComponentSpec.from_dict(component, factory)
 
 
-def load_generated(workspace: str | Path = "generated/clsp", revalidate: bool = True, verbose: bool = True) -> list[GeneratedComponent]:
+def load_generated(workspace: str | Path = "generated/clsp", revalidate: bool = True, verbose: bool = True,
+                   combination: bool = True) -> list[GeneratedComponent]:
     """Carga los módulos aceptados de una corrida previa de `generate.py`.
 
     Con `revalidate=True` vuelve a pasar cada módulo por el validador (sobre
@@ -112,7 +116,7 @@ def load_generated(workspace: str | Path = "generated/clsp", revalidate: bool = 
     workspace = Path(workspace)
     if not workspace.exists():
         return []
-    contexts = make_contexts(strict=False) if revalidate else []  # admisión leniente: la utilidad la decide el tuning
+    contexts = make_contexts(strict=False, combination=combination) if revalidate else []  # admisión leniente: la utilidad la decide el tuning
     latest: dict[tuple[str, str], Path] = {}
     for path in sorted(workspace.glob("*/*.py")):
         slot = path.parent.name

@@ -100,7 +100,13 @@ VNS. En ILS funcionan (41–42 % de gap en la run 2, cerca del 39 % de `setup_fl
 frente a lot-for-lot, en las runs 2 y 4. El filtro de calidad mira el componente
 aislado, no dentro de cada esqueleto que declara.
 
-**Propuesta:** una corrida corta del componente en cada esqueleto compatible.
+**Implementado** (`core/validation/combination.py`): aporte de cada vecindario sobre un
+vecindario nulo, en cada esqueleto donde es el único motor, desde lot-for-lot y desde el
+greedy. Sobre los catálogos de las corridas 8 y 10 quita VNS a `drop_single_setup`,
+`left_shift_setup_chain` y `shift_setup_to_adjacent_period` (en la run 2, esos vecindarios en
+VNS quedaron por debajo del VNS por defecto) y conserva SA, donde sí aportan partiendo del
+greedy. `merge_with_previous_setup` es inerte con sus parámetros por defecto y útil con otros,
+por eso el chequeo prueba configuraciones al azar antes de rechazar.
 
 ### Validador: la admisión al catálogo no revisaba factibilidad en tamaño realista (corregido)
 

@@ -55,6 +55,7 @@ class GenerationStats:
     rounds_per_accepted: dict[str, int] = field(default_factory=dict)
     abandoned: list[str] = field(default_factory=list)  # nombres que agotaron max_rounds
     catalog_overlap: dict[str, dict] = field(default_factory=dict)  # política annotate: parecido con el catálogo
+    combinations: dict[str, dict] = field(default_factory=dict)  # mejora por esqueleto/partida y esqueletos podados
     # con planificador (`llm.planner`): ideas pedidas, descartadas en la unión, replaneos, tiempo de pared
     planned: list[str] = field(default_factory=list)
     duplicates: dict[str, str] = field(default_factory=dict)
@@ -152,6 +153,20 @@ def validate_generated_module(
         if not report.passed:
             return report, module, component
 
+    # Combinación: el componente dentro de cada esqueleto que declara, desde varias partidas.
+    # Poda `compatible_skeletons` a donde es útil; rechaza si no es útil en ninguno.
+    combo = contexts[0].combination if contexts else None
+    if combo is not None:
+        from core.validation.combination import SLOT_SKELETONS, check_combinations
+
+        if slot_name in SLOT_SKELETONS:
+            results, keep, gains = check_combinations(component, factory, combo)
+            report.extend(results)
+            if not report.passed:
+                return report, module, component
+            component["compatible_skeletons"] = keep
+            component["combination_gains"] = gains
+
     if reports:
         # aprobado: se reporta el último contexto, sin los fallos agregables que quedaron compensados
         report.extend([r for r in reports[-1].results if r.name not in AGGREGATE_ANY or r.passed])
@@ -239,6 +254,9 @@ def generate_slot(
             overlap = annotate_overlap(slot, module.build_component, annotate_peers, contexts)
             if overlap:
                 stats.catalog_overlap[name] = overlap
+            if (component or {}).get("combination_gains"):
+                stats.combinations[name] = {"compatible_skeletons": component["compatible_skeletons"],
+                                            "gains": component["combination_gains"]}
             if verbose:
                 print(f"[{slot}] ✔ {name} aceptado (ronda {round_no})")
             continue

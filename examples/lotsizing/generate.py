@@ -62,7 +62,7 @@ def main() -> None:
         inner = AnthropicClient(model=args.model or "claude-sonnet-4-5")
     client = TranscriptClient(inner, Path(args.workspace) / "transcript")
 
-    spec, contexts = make_spec(), make_contexts(reference_free=args.from_scratch)
+    spec, contexts = make_spec(), make_contexts(reference_free=args.from_scratch, combination=True)
     # Componentes que ya existen en el catálogo: el gate de diversidad los usa para que el
     # modelo no reinvente `setup_flip` con otro nombre (corrida 5: Jaccard 1,00). Desde cero
     # no hay pares: la diversidad se mide solo entre los aceptados de esta corrida.
@@ -106,6 +106,8 @@ def main() -> None:
         }
         if stats.catalog_overlap:
             all_stats[slot]["catalog_overlap"] = stats.catalog_overlap
+        if stats.combinations:
+            all_stats[slot]["combinations"] = stats.combinations
         if args.planner:
             all_stats[slot].update({"planned": stats.planned, "duplicates": stats.duplicates,
                                     "replans": stats.replans, "wall_seconds": round(stats.wall_seconds, 1)})

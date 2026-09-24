@@ -192,5 +192,5 @@ def test_catalog_admission_checks_constructor_feasibility_at_realistic_size():
     from examples.lotsizing.llm_spec import make_contexts
 
     assert all(c.diversity_probe is not None for c in make_contexts(n_contexts=1, strict=False))
-    names = {c.name for c in load_generated("generated/clsp_scratch", verbose=False)}
+    names = {c.name for c in load_generated("generated/clsp_scratch", verbose=False, combination=False)}
     assert "batch_covering_merge" not in names and "prefix_capacity_earliest_feasible" in names

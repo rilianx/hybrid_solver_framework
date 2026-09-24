@@ -662,3 +662,42 @@ def test_planner_retries_once_when_the_plan_has_no_ideas(spec_and_ctx, tmp_path)
     accepted, stats = generate_slot_planned(client, spec, "neighborhood", 1, contexts, tmp_path,
                                             max_rounds=1, max_replans=0, verbose=False)
     assert [c.name for c in accepted] == ["toggle_setup"] and stats.llm_calls == 3
+
+
+def _combo_contexts(budget=0.3, starts=None):
+    import dataclasses
+
+    from examples.lotsizing.llm_spec import make_combination_probe
+
+    ctxs = make_contexts(n_contexts=1, n_items=2, n_periods=4, strict=False)
+    combo = make_combination_probe(ctxs[0].diversity_probe, budget=budget)
+    if starts is not None:
+        combo.starts = starts
+    return [dataclasses.replace(c, combination=combo) for c in ctxs]
+
+
+def test_combination_check_rejects_a_neighborhood_inert_in_every_skeleton(tmp_path):
+    """Un operador que solo ENCIENDE setups pasa las capas aisladas en modo leniente, pero
+    partiendo de lot-for-lot (setup donde hay demanda) encender otro solo agrega costo: no
+    aporta nada sobre el vecindario nulo y se rechaza con la matriz de aportes. (Desde el
+    greedy, que consolida lotes, encender un setup sí puede bajar inventario: por eso aquí
+    la sonda usa una sola partida.)"""
+    from llm.generator import validate_generated_module
+
+    path = tmp_path / "add_only_r1.py"
+    path.write_text(ADD_ONLY)
+    report, _, _ = validate_generated_module(path, _combo_contexts(starts=["lot_for_lot"]))
+    assert not report.passed and report.failed_layer == "quality"
+    msg = report.feedback()
+    assert "useful_in_some_skeleton" in msg and "SA/lot_for_lot" in msg and "componente nulo" in msg
+
+
+def test_combination_check_keeps_useful_skeletons_and_records_the_gains(tmp_path):
+    from llm.generator import validate_generated_module
+
+    path = tmp_path / "toggle_setup_r1.py"
+    path.write_text(FIXED_TOGGLE.replace('"compatible_skeletons": ["SA"]', '"compatible_skeletons": ["SA", "ILS", "VNS"]'))
+    report, _, component = validate_generated_module(path, _combo_contexts())
+    assert report.passed, report.feedback()
+    assert "SA" in component["compatible_skeletons"] and "ILS" in component["compatible_skeletons"]  # ILS no se juzga
+    assert component["combination_gains"]["SA/lot_for_lot"] > 0.005

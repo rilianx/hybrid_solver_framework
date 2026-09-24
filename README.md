@@ -161,7 +161,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   Fix-and-Optimize y el MIP completo.
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 131 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 133 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -182,7 +182,7 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 131 passed (~67 s)
+python -m pytest -q                 # 133 passed (~75 s)
 
 export OPENAI_API_KEY=...
 python -m examples.lotsizing.generate --slots neighborhood destruction --n 3   # generación real
@@ -242,6 +242,16 @@ dependen del proveedor: si defines `LLM_PRICE_IN` / `LLM_PRICE_OUT` (USD por
 millón de tokens) se agrega el costo estimado; si no, se informan solo los
 tokens. Un cliente que no cuenta tokens (`ScriptedClient` en los tests) deja el
 contador en cero sin romper nada.
+
+**Validación por combinación** (`core/validation/combination.py`). Tras las capas aisladas,
+cada vecindario se corre 1 s en la sonda 10×15 dentro de cada esqueleto que declara donde es
+el único motor de la búsqueda (SA, VNS, TS, GRASP), desde lot-for-lot y desde el constructor
+greedy, y se mide su aporte sobre el mismo esqueleto con un vecindario nulo. Se quitan de
+`compatible_skeletons` los esqueletos sin aporte desde ninguna partida y, si no queda
+ninguno, se rechaza; si no aporta con los parámetros por defecto se prueban tres
+configuraciones al azar. Los aportes quedan en `stats.json` (`combinations`). ILS y las
+perturbaciones no se juzgan: en 1 s la resta mezcla velocidad con aporte. Se usa en la
+generación y en la admisión al catálogo.
 
 **Diversidad contra el catálogo** (`generate.py --catalog-diversity`). Por defecto
 (`annotate`) la diversidad se exige solo entre los componentes de la misma corrida, y el
