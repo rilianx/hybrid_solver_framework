@@ -1,0 +1,257 @@
+{
+  "greedy_score": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 5,
+    "llm_seconds": 49.1,
+    "rejections_by_layer": {
+      "contractual": 1
+    },
+    "rounds_per_accepted": {
+      "forward_cover_cost": 1,
+      "capacity_pressure_balance": 1,
+      "setup_consolidation_urgency": 2
+    },
+    "abandoned": [],
+    "accepted_files": [
+      "generated/clsp_scratch5_planner/greedy_score/forward_cover_cost_r1.py",
+      "generated/clsp_scratch5_planner/greedy_score/capacity_pressure_balance_r1.py",
+      "generated/clsp_scratch5_planner/greedy_score/setup_consolidation_urgency_r2.py"
+    ],
+    "tokens": {
+      "calls": 5,
+      "input_tokens": 21160,
+      "output_tokens": 6117,
+      "total_tokens": 27277,
+      "cached_input_tokens": 1280,
+      "reasoning_tokens": 1853
+    },
+    "planned": [
+      "forward_cover_cost",
+      "capacity_pressure_balance",
+      "setup_consolidation_urgency"
+    ],
+    "duplicates": {},
+    "replans": 0,
+    "wall_seconds": 28.7
+  },
+  "constructor": {
+    "requested": 3,
+    "parsed": 4,
+    "accepted": 2,
+    "llm_calls": 13,
+    "llm_seconds": 360.2,
+    "rejections_by_layer": {
+      "contractual": 7,
+      "quality": 2
+    },
+    "rounds_per_accepted": {
+      "critical_period_seeding": 2,
+      "clustered_item_windowing": 3
+    },
+    "abandoned": [
+      "forward_capacity_greedy",
+      "itemwise_economic_lots_then_capacity_packing"
+    ],
+    "accepted_files": [
+      "generated/clsp_scratch5_planner/constructor/critical_period_seeding_r2.py",
+      "generated/clsp_scratch5_planner/constructor/clustered_item_windowing_r3.py"
+    ],
+    "tokens": {
+      "calls": 13,
+      "input_tokens": 44577,
+      "output_tokens": 46039,
+      "total_tokens": 90616,
+      "reasoning_tokens": 25092
+    },
+    "planned": [
+      "forward_capacity_greedy",
+      "critical_period_seeding",
+      "clustered_item_windowing",
+      "itemwise_economic_lots_then_capacity_packing"
+    ],
+    "duplicates": {},
+    "replans": 1,
+    "wall_seconds": 194.9
+  },
+  "neighborhood": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 7,
+    "llm_seconds": 50.5,
+    "rejections_by_layer": {
+      "syntactic": 3
+    },
+    "rounds_per_accepted": {
+      "remove_redundant_setup": 3,
+      "shift_setup_in_time": 2,
+      "swap_capacity_pressure": 1
+    },
+    "abandoned": [],
+    "accepted_files": [
+      "generated/clsp_scratch5_planner/neighborhood/remove_redundant_setup_r3.py",
+      "generated/clsp_scratch5_planner/neighborhood/shift_setup_in_time_r2.py",
+      "generated/clsp_scratch5_planner/neighborhood/swap_capacity_pressure_r1.py"
+    ],
+    "tokens": {
+      "calls": 7,
+      "input_tokens": 23054,
+      "output_tokens": 6267,
+      "total_tokens": 29321,
+      "cached_input_tokens": 1280,
+      "reasoning_tokens": 2684
+    },
+    "combinations": {
+      "remove_redundant_setup": {
+        "compatible_skeletons": [
+          "SA",
+          "ILS",
+          "TS",
+          "VNS",
+          "GRASP"
+        ],
+        "gains": {
+          "SA/lot_for_lot": 0.095,
+          "SA/greedy_unit_marginal_cost": 0.0,
+          "VNS/lot_for_lot": 0.0367,
+          "VNS/greedy_unit_marginal_cost": 0.0,
+          "TS/lot_for_lot": 0.0136,
+          "TS/greedy_unit_marginal_cost": 0.0178,
+          "GRASP/lot_for_lot": 0.0491,
+          "GRASP/greedy_unit_marginal_cost": 0.0178
+        }
+      },
+      "shift_setup_in_time": {
+        "compatible_skeletons": [
+          "ILS",
+          "TS"
+        ],
+        "gains": {
+          "SA/lot_for_lot": 0.0018,
+          "SA/greedy_unit_marginal_cost": 0.0,
+          "VNS/lot_for_lot": 0.0013,
+          "VNS/greedy_unit_marginal_cost": 0.0,
+          "TS/lot_for_lot": 0.0019,
+          "TS/greedy_unit_marginal_cost": 0.0076,
+          "GRASP/lot_for_lot": 0.0005,
+          "GRASP/greedy_unit_marginal_cost": 0.002
+        }
+      },
+      "swap_capacity_pressure": {
+        "compatible_skeletons": [
+          "SA",
+          "ILS",
+          "TS",
+          "VNS",
+          "GRASP"
+        ],
+        "gains": {
+          "SA/lot_for_lot": 0.1745,
+          "SA/greedy_unit_marginal_cost": 0.0008,
+          "VNS/lot_for_lot": 0.0776,
+          "VNS/greedy_unit_marginal_cost": 0.0,
+          "TS/lot_for_lot": 0.0321,
+          "TS/greedy_unit_marginal_cost": 0.0008,
+          "GRASP/lot_for_lot": 0.1198,
+          "GRASP/greedy_unit_marginal_cost": 0.0051
+        }
+      }
+    },
+    "planned": [
+      "remove_redundant_setup",
+      "shift_setup_in_time",
+      "swap_capacity_pressure"
+    ],
+    "duplicates": {},
+    "replans": 0,
+    "wall_seconds": 52.5
+  },
+  "destruction": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 4,
+    "llm_seconds": 40.3,
+    "rejections_by_layer": {},
+    "rounds_per_accepted": {
+      "window_capacity_shock": 1,
+      "item_line_reset": 1,
+      "low_value_setup_removal": 1
+    },
+    "abandoned": [],
+    "accepted_files": [
+      "generated/clsp_scratch5_planner/destruction/window_capacity_shock_r1.py",
+      "generated/clsp_scratch5_planner/destruction/item_line_reset_r1.py",
+      "generated/clsp_scratch5_planner/destruction/low_value_setup_removal_r1.py"
+    ],
+    "tokens": {
+      "calls": 4,
+      "input_tokens": 16310,
+      "output_tokens": 5097,
+      "total_tokens": 21407,
+      "reasoning_tokens": 1880
+    },
+    "planned": [
+      "window_capacity_shock",
+      "item_line_reset",
+      "low_value_setup_removal"
+    ],
+    "duplicates": {},
+    "replans": 0,
+    "wall_seconds": 22.2
+  },
+  "perturbation": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 5,
+    "llm_seconds": 49.5,
+    "rejections_by_layer": {},
+    "rounds_per_accepted": {
+      "merge_adjacent_lots": 1,
+      "backward_lot_shift": 1,
+      "remove_low_value_setup_and_recover": 1
+    },
+    "abandoned": [],
+    "accepted_files": [
+      "generated/clsp_scratch5_planner/perturbation/merge_adjacent_lots_r1.py",
+      "generated/clsp_scratch5_planner/perturbation/backward_lot_shift_r1.py",
+      "generated/clsp_scratch5_planner/perturbation/remove_low_value_setup_and_recover_r1.py"
+    ],
+    "tokens": {
+      "calls": 5,
+      "input_tokens": 18577,
+      "output_tokens": 5997,
+      "total_tokens": 24574,
+      "cached_input_tokens": 1280,
+      "reasoning_tokens": 1738
+    },
+    "planned": [
+      "merge_adjacent_lots",
+      "backward_lot_shift",
+      "remove_low_value_setup_and_recover"
+    ],
+    "duplicates": {},
+    "replans": 1,
+    "wall_seconds": 40.0
+  },
+  "_run": {
+    "model": "gpt-5.4-mini",
+    "provider": "openai",
+    "from_scratch": true,
+    "catalog_diversity": "annotate",
+    "planner": true,
+    "wall_seconds": 194.9,
+    "tokens": {
+      "calls": 34,
+      "input_tokens": 123678,
+      "output_tokens": 69517,
+      "total_tokens": 193195,
+      "cached_input_tokens": 3840,
+      "reasoning_tokens": 33247
+    },
+    "note": "define LLM_PRICE_IN y LLM_PRICE_OUT (USD por millón de tokens) para estimar el costo"
+  }
+}
