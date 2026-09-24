@@ -18,6 +18,7 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run2/`](tune_run2/) | 23 sep | corrida 8 (con referencias) | SA, ILS, VNS | 5+5, 10×15 | 5 s | 40 | componente generado vs de mano, mismo esqueleto |
 | [`tune_run4/`](tune_run4/) | 23 sep | corrida 8 (con referencias) | SA, ILS, VNS | 5+5, 20×20 | 20 s | 30 | lo mismo con más presupuesto |
 | [`tune_run5/`](tune_run5/) | 23 sep | **corrida 9 (desde cero)** | SA, ILS, VNS | 5+5, 10×15 | 5 s | 40 | ¿el LLM llega solo a algo tan bueno como lo de mano? |
+| [`tune_run6/`](tune_run6/) | 24 sep | **corrida 10 (desde cero, con `greedy_score`)** | SA, ILS, VNS | 5+5, 10×15 | 5 s | 40 | ¿se repite? ¿constructor monolítico o modular? |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -38,6 +39,46 @@ límite de tiempo) y quedó relanzada como la 4.
 - `backward_merge_setup` reinventa `setup_flip`: 77 de sus 83 movimientos que mejoran
   desde la partida coinciden con los de `setup_flip` (que tiene 95). En el mismo
   esqueleto rinde mejor: 8,5 % contra 11,2 %, y gana en las 5 instancias.
+
+### Replicación (run 6, otra generación desde cero): lo generado sigue a la par o por encima
+
+| Catálogo afinado (run 6) | Gap | Configuración elegida |
+|---|---|---|
+| solo a mano | 8,1 % | `greedy_unit_marginal_cost` (de mano) + `setup_flip` en SA |
+| solo generados desde cero | 7,5 % | ILS con `greedy_setup_consolidation_balance` + `merge_with_previous_setup` + `item_break_repair` |
+| ambos | **6,9 %** | `greedy_unit_marginal_cost` (de mano) + `merge_with_previous_setup` (generado) en SA |
+
+El catálogo de mano es ahora más fuerte (8,1 % contra 11,1 % en la run 5) porque incluye
+el constructor greedy con costo marginal. Aun así, solo generados queda 0,5 puntos por
+debajo en gap y gana en 3 de 5 instancias; la mezcla, que combina un puntaje de mano con un
+vecindario generado, es la mejor. La ventaja es menor y menos consistente que en la run 5.
+
+`merge_with_previous_setup` es inerte en SA partiendo de lot-for-lot (51,9 %) y es parte de
+la mejor configuración partiendo del constructor greedy: la utilidad de un componente
+depende de con qué se combina, otra razón para validar por combinación y no aislado.
+
+### Constructor modular: los puntajes le ganan a los constructores monolíticos
+
+En la run 6, con SA y `setup_flip` fijos, cambiando solo el constructor:
+
+| Constructor | Tipo | Gap |
+|---|---|---|
+| `greedy_unit_marginal_cost` | puntaje de mano | 6,5 % |
+| `greedy_amortized_unit_cost` | puntaje generado | 7,1 % |
+| `greedy_setup_consolidation_balance` | puntaje generado | 7,5 % |
+| `greedy_deadline_pressure` | puntaje generado | 9,6 % |
+| `saturation_balancer_constructor` | monolítico generado | 11,3 % |
+| `lot_for_lot` | de mano | 11,3 % |
+| `backward_inventory_constructor` | monolítico generado | 14,6 % |
+| `forward_urgency_constructor` | monolítico generado | 15,9 % |
+
+Los tres puntajes generados superan a los tres constructores monolíticos generados, y el
+mejor queda a 0,5 puntos del puntaje de mano. Ningún monolítico generado mejora a
+lot-for-lot. El tuner eligió un constructor greedy en los tres catálogos. Costo de
+generación en la corrida 10: los monolíticos salieron a la primera (10,6 mil tokens) y los
+puntajes costaron 19,9 mil, pero sus 5 rechazos fueron un bug de interfaz ya corregido
+(importaban `CoverAction` desde `problem_model`, donde no estaba); sin él habrían pasado a
+la primera.
 
 ### Filtro de diversidad: exigirlo contra el catálogo dejaba fuera lo mejor
 
@@ -78,9 +119,10 @@ un movimiento al azar ni una muestra, así que cualquier problema con evaluacion
 va a sufrir lo mismo. Mientras esto siga así, comparar componentes dentro de ILS o VNS
 mide ese cuello de botella.
 
-### Generación: el constructor es el slot caro
+### Generación: el constructor monolítico es caro e irregular
 
-En la generación desde cero, el constructor se llevó 65 mil de 99 mil tokens, con 11
-rechazos y 1 de 3 aceptado; casi todos los rechazos fueron por factibilidad. Siguiente
-paso en curso: descomponer el constructor en un bucle greedy del framework y un slot
-atómico de puntaje, con candidatos factibles por construcción.
+En la corrida 9 el constructor se llevó 65 mil de 99 mil tokens, con 11 rechazos y 1 de 3
+aceptado, casi todos por factibilidad; en la corrida 10 salió a la primera. Con el
+constructor modular (`core/construction.py`) la factibilidad queda en la vista del problema
+y el LLM escribe solo un puntaje; en 360 construcciones de prueba ninguna fue infactible y en
+la run 6 los puntajes generados superaron a los constructores monolíticos generados.
