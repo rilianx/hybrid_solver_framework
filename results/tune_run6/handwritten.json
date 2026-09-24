@@ -1,0 +1,1078 @@
+{
+  "catalog": "handwritten",
+  "generated_components": [],
+  "settings": {
+    "trials": 40,
+    "budget": 5.0,
+    "train": 5,
+    "test": 5,
+    "items": 10,
+    "periods": 15,
+    "seed": 0,
+    "seeds_test": 3,
+    "objective": "ratio",
+    "skeletons": [
+      "SA",
+      "ILS",
+      "VNS"
+    ],
+    "ref_time": 60.0
+  },
+  "tuning": {
+    "best_config": {
+      "skeleton": "SA",
+      "constructor": "greedy_unit_marginal_cost",
+      "greedy_unit_marginal_cost.rule": "roulette",
+      "greedy_unit_marginal_cost.alpha": 0.8512048105570044,
+      "neighborhood": "setup_flip",
+      "SA.T0": 38.42429428150985,
+      "SA.alpha": 0.8335737091853774,
+      "SA.iters_per_T": 21
+    },
+    "best_cost": 0.6923203045187221,
+    "best_summary": "SA[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+    "best_default_cost": 0.7143341076595406,
+    "best_default_summary": "SA[constructor=lot_for_lot, neighborhood=setup_flip]",
+    "n_trials": 40,
+    "n_failed": 0,
+    "seconds": 1059.7,
+    "skeleton_usage": {
+      "SA": 22,
+      "VNS": 10,
+      "ILS": 8
+    },
+    "incumbent_curve": [
+      0.7143341076595406,
+      0.7143341076595406,
+      0.7143341076595406,
+      0.7143341076595406,
+      0.7143341076595406,
+      0.7143341076595406,
+      0.7143341076595406,
+      0.7143341076595406,
+      0.7143341076595406,
+      0.7139316046587234,
+      0.7139316046587234,
+      0.7139316046587234,
+      0.7139316046587234,
+      0.7139316046587234,
+      0.7139316046587234,
+      0.7139316046587234,
+      0.7139316046587234,
+      0.7139316046587234,
+      0.7139316046587234,
+      0.6965064515630828,
+      0.6965064515630828,
+      0.6965064515630828,
+      0.6965064515630828,
+      0.6965064515630828,
+      0.6953783636007809,
+      0.6946135123452879,
+      0.6946135123452879,
+      0.6946135123452879,
+      0.6946135123452879,
+      0.6946135123452879,
+      0.6946135123452879,
+      0.6946135123452879,
+      0.6946135123452879,
+      0.6946135123452879,
+      0.6946135123452879,
+      0.6945278323315791,
+      0.6923203045187221,
+      0.6923203045187221,
+      0.6923203045187221,
+      0.6923203045187221
+    ],
+    "trials": [
+      {
+        "number": 0,
+        "cost": 0.7143341076595406,
+        "seconds": 25.29,
+        "enqueued": true,
+        "summary": "SA[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 1,
+        "cost": 0.9256467481017695,
+        "seconds": 28.55,
+        "enqueued": true,
+        "summary": "ILS[constructor=lot_for_lot, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        }
+      },
+      {
+        "number": 2,
+        "cost": 0.922865771723076,
+        "seconds": 28.57,
+        "enqueued": true,
+        "summary": "VNS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16
+        }
+      },
+      {
+        "number": 3,
+        "cost": 0.9745795960626836,
+        "seconds": 28.49,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_latest_source, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_latest_source",
+          "greedy_latest_source.rule": "roulette",
+          "greedy_latest_source.alpha": 0.3834415188257777,
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 5,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.2791670587219451
+        }
+      },
+      {
+        "number": 4,
+        "cost": 0.9488994292208306,
+        "seconds": 28.97,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_latest_source, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_latest_source",
+          "greedy_latest_source.rule": "greedy",
+          "greedy_latest_source.alpha": 0.7805291762864555,
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.2845072967738835
+        }
+      },
+      {
+        "number": 5,
+        "cost": 0.7197722909560048,
+        "seconds": 25.27,
+        "enqueued": false,
+        "summary": "SA[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "SA.T0": 1.1385953381489409,
+          "SA.alpha": 0.9229094639180996,
+          "SA.iters_per_T": 31
+        }
+      },
+      {
+        "number": 6,
+        "cost": 0.9717823053420884,
+        "seconds": 27.65,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_latest_source, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_latest_source",
+          "greedy_latest_source.rule": "roulette",
+          "greedy_latest_source.alpha": 0.2103825610738409,
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.17965509571700627
+        }
+      },
+      {
+        "number": 7,
+        "cost": 0.90032735347866,
+        "seconds": 26.21,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_latest_source, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_latest_source",
+          "greedy_latest_source.rule": "rcl",
+          "greedy_latest_source.alpha": 0.15896958364551972,
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.07504306127041498
+        }
+      },
+      {
+        "number": 8,
+        "cost": 0.7228164075552005,
+        "seconds": 25.37,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "rcl",
+          "greedy_unit_marginal_cost.alpha": 0.7982643897002482,
+          "neighborhood": "setup_flip",
+          "SA.T0": 93.6539978978006,
+          "SA.alpha": 0.8633279116322551,
+          "SA.iters_per_T": 17
+        }
+      },
+      {
+        "number": 9,
+        "cost": 0.7139316046587234,
+        "seconds": 29.97,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.06252552841724124,
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.29411639826159985
+        }
+      },
+      {
+        "number": 10,
+        "cost": 0.7139316046587234,
+        "seconds": 28.53,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.0033447210083116102,
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.27976306826900216
+        }
+      },
+      {
+        "number": 11,
+        "cost": 0.7139316046587234,
+        "seconds": 30.24,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.003854123217937846,
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.29691013616683065
+        }
+      },
+      {
+        "number": 12,
+        "cost": 0.7139316046587234,
+        "seconds": 29.25,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.011319449481887827,
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.2870122816371498
+        }
+      },
+      {
+        "number": 13,
+        "cost": 0.9321398313159577,
+        "seconds": 26.0,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_latest_source, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_latest_source",
+          "greedy_latest_source.rule": "greedy",
+          "greedy_latest_source.alpha": 0.9811345666986557,
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.25458818829621344
+        }
+      },
+      {
+        "number": 14,
+        "cost": 0.722497007615829,
+        "seconds": 25.64,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "roulette",
+          "greedy_unit_marginal_cost.alpha": 0.15160204383615017,
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 6,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.022809398968067357
+        }
+      },
+      {
+        "number": 15,
+        "cost": 0.7146001509389001,
+        "seconds": 29.22,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.3497092330804599,
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 3,
+          "VNS.ls_time_share": 0.19718921955269014
+        }
+      },
+      {
+        "number": 16,
+        "cost": 0.7141974560972322,
+        "seconds": 25.73,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.3394595093053733,
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 3,
+          "VNS.ls_time_share": 0.025162739803328255
+        }
+      },
+      {
+        "number": 17,
+        "cost": 0.7842829155308454,
+        "seconds": 25.35,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_latest_source, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_latest_source",
+          "greedy_latest_source.rule": "rcl",
+          "greedy_latest_source.alpha": 0.5876700072562158,
+          "neighborhood": "setup_flip",
+          "SA.T0": 777.6014114522271,
+          "SA.alpha": 0.9875615375667851,
+          "SA.iters_per_T": 44
+        }
+      },
+      {
+        "number": 18,
+        "cost": 0.714362157697908,
+        "seconds": 28.15,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.2695440724465985,
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 3,
+          "VNS.ls_time_share": 0.22078699273725
+        }
+      },
+      {
+        "number": 19,
+        "cost": 0.6965064515630828,
+        "seconds": 25.34,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "roulette",
+          "greedy_unit_marginal_cost.alpha": 0.16566965509973847,
+          "neighborhood": "setup_flip",
+          "SA.T0": 1.0478986663933656,
+          "SA.alpha": 0.8004244662696732,
+          "SA.iters_per_T": 1
+        }
+      },
+      {
+        "number": 20,
+        "cost": 0.6965064515630828,
+        "seconds": 25.36,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "roulette",
+          "greedy_unit_marginal_cost.alpha": 0.559652880650622,
+          "neighborhood": "setup_flip",
+          "SA.T0": 1.8024301174193582,
+          "SA.alpha": 0.8032351800908824,
+          "SA.iters_per_T": 4
+        }
+      },
+      {
+        "number": 21,
+        "cost": 0.6965064515630828,
+        "seconds": 25.34,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "roulette",
+          "greedy_unit_marginal_cost.alpha": 0.6478658672202553,
+          "neighborhood": "setup_flip",
+          "SA.T0": 1.4195706658589253,
+          "SA.alpha": 0.8010085792820922,
+          "SA.iters_per_T": 1
+        }
+      },
+      {
+        "number": 22,
+        "cost": 0.6965064515630828,
+        "seconds": 25.37,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "roulette",
+          "greedy_unit_marginal_cost.alpha": 0.6441526480339793,
+          "neighborhood": "setup_flip",
+          "SA.T0": 1.271761274682472,
+          "SA.alpha": 0.8050580572321571,
+          "SA.iters_per_T": 1
+        }
+      },
+      {
+        "number": 23,
+        "cost": 0.6965064515630828,
+        "seconds": 25.34,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "roulette",
+          "greedy_unit_marginal_cost.alpha": 0.5629682654606432,
+          "neighborhood": "setup_flip",
+          "SA.T0": 3.4556962038582153,
+          "SA.alpha": 0.8065203861504956,
+          "SA.iters_per_T": 1
+        }
+      },
+      {
+        "number": 24,
+        "cost": 0.6953783636007809,
+        "seconds": 25.38,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "roulette",
+          "greedy_unit_marginal_cost.alpha": 0.5352627943515881,
+          "neighborhood": "setup_flip",
+          "SA.T0": 4.3834228785917535,
+          "SA.alpha": 0.8030407352619316,
+          "SA.iters_per_T": 8
+        }
+      },
+      {
+        "number": 25,
+        "cost": 0.6946135123452879,
+        "seconds": 25.36,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "roulette",
+          "greedy_unit_marginal_cost.alpha": 0.9999271729001511,
+          "neighborhood": "setup_flip",
+          "SA.T0": 7.297952333980577,
+          "SA.alpha": 0.8410851215062154,
+          "SA.iters_per_T": 12
+        }
+      },
+      {
+        "number": 26,
+        "cost": 0.6946135123452879,
+        "seconds": 25.34,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "roulette",
+          "greedy_unit_marginal_cost.alpha": 0.9259645299261944,
+          "neighborhood": "setup_flip",
+          "SA.T0": 10.117434211628538,
+          "SA.alpha": 0.85317936417939,
+          "SA.iters_per_T": 13
+        }
+      },
+      {
+        "number": 27,
+        "cost": 0.717410003815103,
+        "seconds": 25.35,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_latest_source, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_latest_source",
+          "greedy_latest_source.rule": "greedy",
+          "greedy_latest_source.alpha": 0.018178442831860986,
+          "neighborhood": "setup_flip",
+          "SA.T0": 10.260779855820276,
+          "SA.alpha": 0.8479082008489321,
+          "SA.iters_per_T": 15
+        }
+      },
+      {
+        "number": 28,
+        "cost": 0.6946135123452879,
+        "seconds": 25.36,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "roulette",
+          "greedy_unit_marginal_cost.alpha": 0.9921853452416317,
+          "neighborhood": "setup_flip",
+          "SA.T0": 8.952376433342858,
+          "SA.alpha": 0.8497600186428643,
+          "SA.iters_per_T": 14
+        }
+      },
+      {
+        "number": 29,
+        "cost": 0.7136260730464629,
+        "seconds": 25.28,
+        "enqueued": false,
+        "summary": "SA[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "SA.T0": 19.41180597212318,
+          "SA.alpha": 0.8545085772494162,
+          "SA.iters_per_T": 15
+        }
+      },
+      {
+        "number": 30,
+        "cost": 0.8671272149938495,
+        "seconds": 27.74,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "rcl",
+          "greedy_unit_marginal_cost.alpha": 0.9945135436258866,
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 3,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.18086113504478912
+        }
+      },
+      {
+        "number": 31,
+        "cost": 0.6946135123452879,
+        "seconds": 25.37,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "roulette",
+          "greedy_unit_marginal_cost.alpha": 0.9984966176056226,
+          "neighborhood": "setup_flip",
+          "SA.T0": 6.6987872253612935,
+          "SA.alpha": 0.8408056598014613,
+          "SA.iters_per_T": 11
+        }
+      },
+      {
+        "number": 32,
+        "cost": 0.6946135123452879,
+        "seconds": 25.36,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "roulette",
+          "greedy_unit_marginal_cost.alpha": 0.9995753825068696,
+          "neighborhood": "setup_flip",
+          "SA.T0": 8.344229980513617,
+          "SA.alpha": 0.8404949486723559,
+          "SA.iters_per_T": 11
+        }
+      },
+      {
+        "number": 33,
+        "cost": 0.6946135123452879,
+        "seconds": 25.34,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "roulette",
+          "greedy_unit_marginal_cost.alpha": 0.8897285289971886,
+          "neighborhood": "setup_flip",
+          "SA.T0": 10.235699640536318,
+          "SA.alpha": 0.8820100719133449,
+          "SA.iters_per_T": 24
+        }
+      },
+      {
+        "number": 34,
+        "cost": 0.9269598180082469,
+        "seconds": 27.1,
+        "enqueued": false,
+        "summary": "ILS[constructor=lot_for_lot, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 3,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.11752290710874187
+        }
+      },
+      {
+        "number": 35,
+        "cost": 0.6945278323315791,
+        "seconds": 25.35,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "roulette",
+          "greedy_unit_marginal_cost.alpha": 0.8635472613726469,
+          "neighborhood": "setup_flip",
+          "SA.T0": 32.54728069022551,
+          "SA.alpha": 0.8339375498612273,
+          "SA.iters_per_T": 19
+        }
+      },
+      {
+        "number": 36,
+        "cost": 0.6923203045187221,
+        "seconds": 25.35,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "roulette",
+          "greedy_unit_marginal_cost.alpha": 0.8512048105570044,
+          "neighborhood": "setup_flip",
+          "SA.T0": 38.42429428150985,
+          "SA.alpha": 0.8335737091853774,
+          "SA.iters_per_T": 21
+        }
+      },
+      {
+        "number": 37,
+        "cost": 0.7153011413315122,
+        "seconds": 25.31,
+        "enqueued": false,
+        "summary": "SA[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "SA.T0": 57.87548923881348,
+          "SA.alpha": 0.8304542138256241,
+          "SA.iters_per_T": 21
+        }
+      },
+      {
+        "number": 38,
+        "cost": 0.934755280082951,
+        "seconds": 25.96,
+        "enqueued": false,
+        "summary": "VNS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 1,
+          "VNS.ls_time_share": 0.0912922231570885
+        }
+      },
+      {
+        "number": 39,
+        "cost": 0.6961454412244217,
+        "seconds": 25.32,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "roulette",
+          "greedy_unit_marginal_cost.alpha": 0.8353090470067276,
+          "neighborhood": "setup_flip",
+          "SA.T0": 156.26046512070738,
+          "SA.alpha": 0.877998156848616,
+          "SA.iters_per_T": 21
+        }
+      }
+    ]
+  },
+  "test": {
+    "tuned": {
+      "label": "tuned",
+      "summary": "SA[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+      "mean": 91822.82666666668,
+      "std": 15100.64909401653,
+      "per_instance": [
+        83819.13333333333,
+        77941.8,
+        87242.93333333333,
+        89104.93333333333,
+        121005.33333333333
+      ],
+      "config": {
+        "skeleton": "SA",
+        "constructor": "greedy_unit_marginal_cost",
+        "greedy_unit_marginal_cost.rule": "roulette",
+        "greedy_unit_marginal_cost.alpha": 0.8512048105570044,
+        "neighborhood": "setup_flip",
+        "SA.T0": 38.42429428150985,
+        "SA.alpha": 0.8335737091853774,
+        "SA.iters_per_T": 21
+      },
+      "gap_per_instance": [
+        0.07690719812796255,
+        0.11417372360438455,
+        0.06170345508519054,
+        0.07701803794535837,
+        0.07314189089318122
+      ],
+      "mean_gap": 0.08058886113121545
+    },
+    "baselines": [
+      {
+        "label": "SA:constructor=greedy_unit_marginal_cost",
+        "summary": "SA[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "mean": 90799.05333333333,
+        "std": 16637.231644472053,
+        "per_instance": [
+          83135.33333333333,
+          74720.4,
+          86630.20000000001,
+          86600.66666666667,
+          122908.66666666667
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.5,
+          "neighborhood": "setup_flip",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.06812174410577146,
+          0.06812398863265982,
+          0.054246792726529346,
+          0.046748778198139454,
+          0.09002169838651512
+        ],
+        "mean_gap": 0.06545260040992304
+      },
+      {
+        "label": "VNS:constructor=greedy_unit_marginal_cost",
+        "summary": "VNS[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "mean": 93211.71999999999,
+        "std": 16630.020668626166,
+        "per_instance": [
+          86912.73333333332,
+          75087.06666666665,
+          87969.2,
+          91517.59999999999,
+          124572.0
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.5,
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          0.11665373302566676,
+          0.07336546836909902,
+          0.07054176209588099,
+          0.10618012159597731,
+          0.10477305379662641
+        ],
+        "mean_gap": 0.0943028277766501
+      },
+      {
+        "label": "ILS:constructor=greedy_unit_marginal_cost",
+        "summary": "ILS[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "mean": 93582.78666666667,
+        "std": 16428.23241885208,
+        "per_instance": [
+          87078.59999999999,
+          75725.13333333332,
+          88558.73333333332,
+          91979.46666666667,
+          124572.0
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.5,
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          0.11878478592682808,
+          0.08248659610681917,
+          0.07771609190086862,
+          0.11176273877009989,
+          0.10477305379662641
+        ],
+        "mean_gap": 0.09910465330024844
+      },
+      {
+        "label": "default:SA",
+        "summary": "SA[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "mean": 94827.13333333333,
+        "std": 16639.131975062748,
+        "per_instance": [
+          86714.26666666666,
+          78876.33333333333,
+          90959.86666666667,
+          90988.86666666665,
+          126596.33333333333
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.11410383572391558,
+          0.12753282595809473,
+          0.10693669990564571,
+          0.09978928198743735,
+          0.12272595588191816
+        ],
+        "mean_gap": 0.11421771989140231
+      },
+      {
+        "label": "SA:constructor=greedy_latest_source",
+        "summary": "SA[constructor=greedy_latest_source, neighborhood=setup_flip]",
+        "mean": 95250.05333333333,
+        "std": 17493.206880305155,
+        "per_instance": [
+          85932.26666666666,
+          78397.53333333333,
+          91189.06666666667,
+          92134.73333333334,
+          128596.66666666667
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_latest_source",
+          "greedy_latest_source.rule": "greedy",
+          "greedy_latest_source.alpha": 0.5,
+          "neighborhood": "setup_flip",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.10405670930485533,
+          0.12068840641862062,
+          0.10972595082383495,
+          0.11363945866018804,
+          0.14046601275888781
+        ],
+        "mean_gap": 0.11771530759327735
+      },
+      {
+        "label": "default:ILS",
+        "summary": "ILS[constructor=lot_for_lot, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "mean": 118847.01333333334,
+        "std": 23024.24513808192,
+        "per_instance": [
+          111645.86666666665,
+          94692.40000000001,
+          115673.73333333334,
+          110003.73333333332,
+          162219.33333333334
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          0.4344247270659135,
+          0.35362262489493224,
+          0.40769226400689923,
+          0.32962340702420223,
+          0.4386503248845611
+        ],
+        "mean_gap": 0.3928026695753017
+      },
+      {
+        "label": "ILS:constructor=greedy_latest_source",
+        "summary": "ILS[constructor=greedy_latest_source, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "mean": 119252.14666666667,
+        "std": 22522.327532350846,
+        "per_instance": [
+          111433.13333333333,
+          95486.93333333332,
+          116151.0,
+          111508.99999999999,
+          161680.66666666666
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_latest_source",
+          "greedy_latest_source.rule": "greedy",
+          "greedy_latest_source.alpha": 0.5,
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          0.431691531805622,
+          0.3649804349856381,
+          0.41350036386824796,
+          0.34781767855631956,
+          0.43387313243110603
+        ],
+        "mean_gap": 0.39837262832938675
+      },
+      {
+        "label": "default:VNS",
+        "summary": "VNS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "mean": 119752.56,
+        "std": 21905.920429107744,
+        "per_instance": [
+          112501.33333333333,
+          96089.46666666667,
+          116911.93333333333,
+          112392.06666666667,
+          160868.0
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          0.44541575231820524,
+          0.3735936156870818,
+          0.4227605471085657,
+          0.3584913718427552,
+          0.42666595718263894
+        ],
+        "mean_gap": 0.4053854488278494
+      },
+      {
+        "label": "VNS:constructor=greedy_latest_source",
+        "summary": "VNS[constructor=greedy_latest_source, neighborhood=setup_flip]",
+        "mean": 119995.49333333333,
+        "std": 22021.248004823785,
+        "per_instance": [
+          112623.33333333333,
+          96623.26666666666,
+          115906.33333333334,
+          113256.86666666667,
+          161567.66666666666
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_latest_source",
+          "greedy_latest_source.rule": "greedy",
+          "greedy_latest_source.alpha": 0.5,
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16
+        },
+        "gap_per_instance": [
+          0.44698320682348064,
+          0.3812242571870216,
+          0.4105228912476097,
+          0.36894427455388623,
+          0.43287098624192216
+        ],
+        "mean_gap": 0.4081091232107841
+      }
+    ],
+    "best_baseline": "SA:constructor=greedy_unit_marginal_cost",
+    "gain_vs_best_baseline": -0.011275154263723,
+    "wins_per_instance": "1/5",
+    "reference": 129394.44,
+    "best_known": [
+      77833.2,
+      69954.8,
+      82172.6,
+      82733.0,
+      112758.0
+    ],
+    "best_baseline_by_gap": "SA:constructor=greedy_unit_marginal_cost",
+    "mip_reference": [
+      77833.2,
+      69954.8,
+      82172.6,
+      82733.0,
+      112758.0
+    ]
+  }
+}
