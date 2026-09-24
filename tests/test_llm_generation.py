@@ -699,5 +699,45 @@ def test_combination_check_keeps_useful_skeletons_and_records_the_gains(tmp_path
     path.write_text(FIXED_TOGGLE.replace('"compatible_skeletons": ["SA"]', '"compatible_skeletons": ["SA", "ILS", "VNS"]'))
     report, _, component = validate_generated_module(path, _combo_contexts())
     assert report.passed, report.feedback()
-    assert "SA" in component["compatible_skeletons"] and "ILS" in component["compatible_skeletons"]  # ILS no se juzga
-    assert component["combination_gains"]["SA/lot_for_lot"] > 0.005
+    assert "SA" in component["compatible_skeletons"] and "ILS" in component["compatible_skeletons"]
+    gains = component["combination_gains"]
+    assert gains["SA/lot_for_lot"] > 0.005
+    assert gains["ILS/lot_for_lot"] > 0.005  # en ILS: mejora de su búsqueda local
+
+
+def _pert_module(name, body):
+    head = (f'COMPONENT = {{"name": "{name}", "slot": "perturbation", "compatible_skeletons": ["ILS"], '
+            '"requires": [], "params": {}}\n\n\nclass P:\n    def __init__(self, problem):\n        self.problem = problem\n\n'
+            '    def perturb(self, sol, strength, rng):\n')
+    return head + textwrap.indent(textwrap.dedent(body).strip("\n"), " " * 8) + "\n\n\ndef build_component(problem):\n    return P(problem)\n"
+
+
+def test_combination_check_judges_perturbations_by_escaping_the_local_optimum(tmp_path):
+    """La perturbación se juzga en ILS por capacidad: desde un óptimo local de cada partida,
+    ¿alguna patada seguida de búsqueda local termina en otra solución factible, más allá de lo
+    que logran patadas nulas? (Sonda 5×8: la búsqueda local converge en ~1 s.)"""
+    from core.validation.combination import check_combinations
+    from core.validation.syntactic import load_module
+    from examples.lotsizing.llm_spec import make_combination_probe, make_diversity_probe
+
+    combo = make_combination_probe(make_diversity_probe(5, 8))
+    combo.ils_budget = 2.0
+    shaker = _pert_module("block_flip", '''
+        rows = [list(r) for r in sol]
+        n, T = len(rows), len(rows[0])
+        i, t0 = rng.randrange(n), rng.randrange(1, T - 3)
+        for t in range(t0, t0 + 3):
+            rows[i][t] = not rows[i][t]
+        return tuple(tuple(r) for r in rows)
+    ''')
+    still = _pert_module("stand_still", "return sol")
+    out = {}
+    for name, src in (("block_flip", shaker), ("stand_still", still)):
+        path = tmp_path / f"{name}_r1.py"
+        path.write_text(src)
+        module, _ = load_module(path)
+        out[name] = check_combinations(module.COMPONENT, module.build_component, combo)
+    results, keep, gains = out["block_flip"]
+    assert results[0].passed and keep == ["ILS"] and max(gains.values()) > 0, results[0].message
+    results, keep, gains = out["stand_still"]
+    assert not results[0].passed and keep == [] and "óptimo local" in results[0].message
