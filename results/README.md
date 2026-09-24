@@ -19,6 +19,8 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run4/`](tune_run4/) | 23 sep | corrida 8 (con referencias) | SA, ILS, VNS | 5+5, 20×20 | 20 s | 30 | lo mismo con más presupuesto |
 | [`tune_run5/`](tune_run5/) | 23 sep | **corrida 9 (desde cero)** | SA, ILS, VNS | 5+5, 10×15 | 5 s | 40 | ¿el LLM llega solo a algo tan bueno como lo de mano? |
 | [`tune_run6/`](tune_run6/) | 24 sep | **corrida 10 (desde cero, con `greedy_score`)** | SA, ILS, VNS | 5+5, 10×15 | 5 s | 40 | ¿se repite? ¿constructor monolítico o modular? |
+| [`tune_run7/`](tune_run7/) | 24 sep | corrida 11 (desde cero, **sin** planificador) | SA, ILS, VNS | 5+5, 10×15 | 5 s | 40 | calidad sin planificador (solo generados) |
+| [`tune_run8/`](tune_run8/) | 24 sep | corrida 12 (desde cero, **con** planificador) | SA, ILS, VNS | 5+5, 10×15 | 5 s | 40 | calidad con planificador (solo generados) |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -79,6 +81,27 @@ generación en la corrida 10: los monolíticos salieron a la primera (10,6 mil t
 puntajes costaron 19,9 mil, pero sus 5 rechazos fueron un bug de interfaz ya corregido
 (importaban `CoverAction` desde `problem_model`, donde no estaba); sin él habrían pasado a
 la primera.
+
+### Planificador: más rápido, más caro en tokens y, en esta corrida, mejores componentes
+
+Dos generaciones desde cero con los mismos cinco slots, una sin planificador (corrida 11) y
+otra con planificador (corrida 12); luego un tuning de solo generados para cada una
+(runs 7 y 8). Las instancias de test y la referencia MIP son las mismas.
+
+| | Sin planificador | Con planificador |
+|---|---|---|
+| Tiempo de pared de la generación | 202 s | **45 s** |
+| Tokens (4 slots comparables) | **29,7 mil** | 115,9 mil |
+| Gap del afinado (solo generados) | 11,9 % | **7,8 %** |
+| Mejor configuración por defecto | 9,1 % | **6,9 %** |
+
+Lo generado con planificador gana en las 5 instancias de test, por entre 2,1 y 5,8
+puntos. En la run 7 el tuner eligió una configuración peor que su mejor default (11,9 %
+contra 9,1 %): la comparación por mejor default (2,2 puntos) es la más conservadora. Es una
+sola generación por brazo y las generaciones varían mucho entre sí (corridas 9, 10 y 11),
+así que el resultado es indicativo, no concluyente. El slot de constructores monolíticos no
+se comparó: en la corrida 12 el planificador no leyó el plan por comas finales en el JSON
+(ya corregido).
 
 ### Filtro de diversidad: exigirlo contra el catálogo dejaba fuera lo mejor
 
