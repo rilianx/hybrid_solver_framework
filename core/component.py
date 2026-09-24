@@ -128,11 +128,14 @@ class ComponentSpec:
         return self.impl(problem, **accepted)
 
     def default_params(self) -> dict[str, Any]:
-        """Un valor razonable por parámetro (punto medio del rango / primer valor)."""
+        """Un valor razonable por parámetro: `default` si la especificación lo trae; si no,
+        punto medio del rango / primer valor."""
         out: dict[str, Any] = {}
         for name, spec in self.params.items():
             t = spec["type"]
-            if t == "int":
+            if "default" in spec:
+                out[name] = spec["default"]
+            elif t == "int":
                 lo, hi = spec["range"]
                 out[name] = int(round((lo + hi) / 2))
             elif t == "float":

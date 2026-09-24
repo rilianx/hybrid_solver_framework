@@ -100,7 +100,34 @@ def check_neighborhood(impl, ctx: ValidationContext) -> list[CheckResult]:
                 return out or [ok(LAYER, "neighborhood.undo_apply_identity"), ok(LAYER, "neighborhood.delta_consistent")]
 
             results += guard(LAYER, "neighborhood", _props)
+            if callable(getattr(impl, "sample", None)):
+                results += guard(LAYER, "neighborhood.sample", lambda k=k, sol=sol: _check_sample(impl, sol, k))
     return _collapse(results)
+
+
+def _check_sample(impl, sol, k: int) -> CheckResult:
+    """`sample(sol, n, rng)` opcional (`core.neighborhood.SampledNeighborhood`): hasta n
+    movimientos distintos de `moves(sol)`, deterministas dada la semilla."""
+    moves = list(impl.moves(sol))
+    try:
+        universe = set(moves)
+    except TypeError:
+        universe = None
+    for n in (1, 5):
+        got = list(impl.sample(sol, n, Random(3)))
+        if len(got) > n:
+            return fail(LAYER, "neighborhood.sample", f"sample(sol, {n}, rng) devolvió {len(got)} movimientos en inst_{k}")
+        if len(got) < min(n, len(moves)):
+            return fail(LAYER, "neighborhood.sample", f"sample(sol, {n}, rng) devolvió {len(got)} movimientos y moves(sol) tiene {len(moves)} en inst_{k}")
+        if got != list(impl.sample(sol, n, Random(3))):
+            return fail(LAYER, "neighborhood.sample", f"dos llamadas a sample(sol, {n}, rng) con la misma semilla difieren en inst_{k}")
+        if universe is not None:
+            if len(set(got)) != len(got):
+                return fail(LAYER, "neighborhood.sample", f"sample(sol, {n}, rng) repite movimientos en inst_{k}")
+            extra = [m for m in got if m not in universe]
+            if extra:
+                return fail(LAYER, "neighborhood.sample", f"sample devolvió {extra[0]!r}, que no está en moves(sol) (inst_{k})")
+    return ok(LAYER, "neighborhood.sample")
 
 
 def check_evaluator(impl, ctx: ValidationContext) -> list[CheckResult]:

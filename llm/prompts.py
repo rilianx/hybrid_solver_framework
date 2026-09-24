@@ -64,7 +64,10 @@ SLOT_HINTS = {
         "incremental barata); `moves(sol)` no vacío; y al menos un movimiento debe MEJORAR la solución de partida del esqueleto "
         "(no basta con que mejore soluciones aleatorias). Un vecindario con 6 movimientos que nunca mejoran es inútil aunque sea correcto. "
         "Además se mide si es una IDEA distinta de los vecindarios ya aceptados: se compara qué vecinos alcanza y, sobre todo, si sus "
-        "movimientos que mejoran llegan a soluciones que los otros no alcanzan."
+        "movimientos que mejoran llegan a soluciones que los otros no alcanzan. "
+        "Los esqueletos no recorren `moves` completo: toman movimientos al azar o muestras. Si enumerar `moves(sol)` es caro, "
+        "puedes agregar `sample(self, sol, k, rng) -> list` con hasta k movimientos DISTINTOS de `moves(sol)` elegidos con `rng` "
+        "(se verifica); si no, no hace falta."
     ),
     "constructor": (
         "Se verificará: `build(inst, rng)` devuelve una solución FACTIBLE y es determinista dada la semilla del rng. "
