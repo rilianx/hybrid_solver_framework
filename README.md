@@ -161,7 +161,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   Fix-and-Optimize y el MIP completo.
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 133 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 139 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -182,7 +182,7 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 133 passed (~75 s)
+python -m pytest -q                 # 139 passed (~95 s)
 
 export OPENAI_API_KEY=...
 python -m examples.lotsizing.generate --slots neighborhood destruction --n 3   # generación real
@@ -244,14 +244,26 @@ tokens. Un cliente que no cuenta tokens (`ScriptedClient` en los tests) deja el
 contador en cero sin romper nada.
 
 **Validación por combinación** (`core/validation/combination.py`). Tras las capas aisladas,
-cada vecindario se corre 1 s en la sonda 10×15 dentro de cada esqueleto que declara donde es
-el único motor de la búsqueda (SA, VNS, TS, GRASP), desde lot-for-lot y desde el constructor
-greedy, y se mide su aporte sobre el mismo esqueleto con un vecindario nulo. Se quitan de
-`compatible_skeletons` los esqueletos sin aporte desde ninguna partida y, si no queda
-ninguno, se rechaza; si no aporta con los parámetros por defecto se prueban tres
-configuraciones al azar. Los aportes quedan en `stats.json` (`combinations`). ILS y las
-perturbaciones no se juzgan: en 1 s la resta mezcla velocidad con aporte. Se usa en la
-generación y en la admisión al catálogo.
+cada vecindario y cada perturbación se prueban en la sonda 10×15 dentro de cada esqueleto que
+declaran, desde lot-for-lot y desde el constructor greedy. En SA, VNS, TS y GRASP el
+vecindario corre 1 s y se mide su aporte sobre el mismo esqueleto con un vecindario nulo. En
+ILS esa resta mezclaba velocidad con aporte, así que el vecindario se mide por lo que hace
+ahí: cuánto mejora su búsqueda local (con muestreo) la partida y perturbaciones factibles de
+ella. La perturbación se juzga por capacidad: desde un óptimo local de cada partida, qué
+fracción de patadas seguidas de búsqueda local termina en otra solución factible (medir la
+mejora de un ILS de pocos segundos no discriminaba). Se quitan de `compatible_skeletons` los
+esqueletos sin aporte desde ninguna partida y, si no queda ninguno, se rechaza; si no aporta
+con los parámetros por defecto se prueban tres configuraciones al azar. Los aportes quedan en
+`stats.json` (`combinations`). Se usa en la generación y en la admisión al catálogo.
+
+**Muestreo de vecindarios** (`core/neighborhood.py`). Los esqueletos piden movimientos con
+`random_move` (SA, shake de VNS) y `sample_moves` (búsqueda local, TS) en vez de recorrer
+`moves` completo. Un vecindario puede implementar `sample(sol, k, rng)` si sabe muestrear sin
+enumerar (el validador lo verifica); si no, se enumera y se muestrea. La búsqueda local de
+ILS, VNS y GRASP evalúa muestras de `ls_sample` movimientos (parámetro del esqueleto, 4–256,
+default 32). Motivo: cuando `delta` cuesta un LP, el recorrido completo cortado por tiempo
+evaluaba siempre los mismos primeros movimientos; con `setup_flip` en 10×15 y 5 s, desde
+lot-for-lot, ILS pasa de 39 % a 21 % de gap y VNS de 39 % a 18 %.
 
 **Diversidad contra el catálogo** (`generate.py --catalog-diversity`). Por defecto
 (`annotate`) la diversidad se exige solo entre los componentes de la misma corrida, y el
