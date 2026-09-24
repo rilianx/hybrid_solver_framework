@@ -194,6 +194,8 @@ def generate_slot_planned(
     ask_for = n_ideas or n_variants
     while True:
         ideas = plan(state, client, ask_for)
+        if not ideas:  # respuesta sin ideas legibles: un reintento antes de dar el slot por cerrado
+            ideas = plan(state, client, ask_for)
         state.ideas += ideas
         st.planned += [i.name for i in ideas]
         if verbose:

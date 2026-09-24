@@ -231,10 +231,16 @@ def parse_ideas(text: str, n_max: int | None = None) -> list[Idea]:
     m = re.search(r"```(?:json)?\s*(\[.*?\])\s*```", text, re.S) or re.search(r"(\[\s*\{.*\}\s*\])", text, re.S)
     if not m:
         return []
+    raw = m.group(1)
     try:
-        items = json.loads(m.group(1))
+        items = json.loads(raw)
     except json.JSONDecodeError:
-        return []
+        # Comas finales antes de `}` o `]` (corrida 12: el plan de constructores traía tres
+        # ideas válidas con `"...",\n  }` y el slot terminó sin ninguna).
+        try:
+            items = json.loads(re.sub(r",\s*([}\]])", r"\1", raw))
+        except json.JSONDecodeError:
+            return []
     out, seen = [], set()
     for it in items if isinstance(items, list) else []:
         if not isinstance(it, dict):

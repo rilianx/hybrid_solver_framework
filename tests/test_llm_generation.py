@@ -643,3 +643,22 @@ def test_annotate_policy_keeps_catalog_lookalikes_and_records_the_overlap(tmp_pa
     assert overlap["most_similar"] == "setup_flip" and overlap["similarity"] == 1.0
     prompt = client.calls[0][1]
     assert "usa nombres distintos" in prompt and "ideas y nombres distintos" not in prompt
+
+
+def test_parse_ideas_tolerates_trailing_commas():
+    """Corrida 12: el plan de constructores traía JSON con comas finales y el slot quedó vacío."""
+    from llm.prompts import parse_ideas
+
+    text = '```json\n[\n  {"name": "a", "idea": "uno",},\n  {"name": "b", "idea": "dos",},\n]\n```'
+    assert [i.name for i in parse_ideas(text)] == ["a", "b"]
+
+
+def test_planner_retries_once_when_the_plan_has_no_ideas(spec_and_ctx, tmp_path):
+    from llm import generate_slot_planned
+
+    spec, contexts = spec_and_ctx
+    client = RoutedClient(plans=["sin json", _ideas_json("toggle_setup")],
+                          modules={"toggle_setup": FIXED_TOGGLE}, fixes={})
+    accepted, stats = generate_slot_planned(client, spec, "neighborhood", 1, contexts, tmp_path,
+                                            max_rounds=1, max_replans=0, verbose=False)
+    assert [c.name for c in accepted] == ["toggle_setup"] and stats.llm_calls == 3
