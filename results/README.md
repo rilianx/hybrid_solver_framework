@@ -21,10 +21,12 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run6/`](tune_run6/) | 24 sep | **corrida 10 (desde cero, con `greedy_score`)** | SA, ILS, VNS | 5+5, 10×15 | 5 s | 40 | ¿se repite? ¿constructor monolítico o modular? |
 | [`tune_run7/`](tune_run7/) | 24 sep | corrida 11 (desde cero, **sin** planificador) | SA, ILS, VNS | 5+5, 10×15 | 5 s | 40 | calidad sin planificador (solo generados) |
 | [`tune_run8/`](tune_run8/) | 24 sep | corrida 12 (desde cero, **con** planificador) | SA, ILS, VNS | 5+5, 10×15 | 5 s | 40 | calidad con planificador (solo generados) |
+| [`tune_run9/`](tune_run9/)–[`tune_run14/`](tune_run14/) | 24 sep | corridas 11–16 (desde cero; 3 sin y 3 con planificador) | SA, ILS, VNS | 5+5, 10×15 | 5 s | 40 | réplicas de la comparación del planificador, con muestreo de vecindarios |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
-límite de tiempo) y quedó relanzada como la 4.
+límite de tiempo) y quedó relanzada como la 4. Runs 9–14, en orden: corridas 11, 12, 13, 14,
+15 y 16 (`generated/clsp_scratch3`, `…3_planner`, `…4`, `…4_planner`, `…5`, `…5_planner`).
 
 ## Lo que dicen del framework
 
@@ -82,26 +84,31 @@ puntajes costaron 19,9 mil, pero sus 5 rechazos fueron un bug de interfaz ya cor
 (importaban `CoverAction` desde `problem_model`, donde no estaba); sin él habrían pasado a
 la primera.
 
-### Planificador: más rápido, más caro en tokens y, en esta corrida, mejores componentes
+### Planificador: más rápido y más caro en tokens; la ventaja en calidad no se replica
 
-Dos generaciones desde cero con los mismos cinco slots, una sin planificador (corrida 11) y
-otra con planificador (corrida 12); luego un tuning de solo generados para cada una
-(runs 7 y 8). Las instancias de test y la referencia MIP son las mismas.
+Tres generaciones desde cero por brazo, con los mismos cinco slots, y un tuning de solo
+generados para cada una (runs 9–14, mismas instancias de test). Gap contra una referencia
+común: el mejor costo por instancia entre el MIP de 60 s y todas las corridas de las 6 runs.
 
-| | Sin planificador | Con planificador |
+| | Sin planificador (11, 13, 15) | Con planificador (12, 14, 16) |
 |---|---|---|
-| Tiempo de pared de la generación | 202 s | **45 s** |
-| Tokens (4 slots comparables) | **29,7 mil** | 115,9 mil |
-| Gap del afinado (solo generados) | 11,9 % | **7,8 %** |
-| Mejor configuración por defecto | 9,1 % | **6,9 %** |
+| Tiempo de pared de la generación | 202 · 253 · 170 s | **45 · 94 · 195 s** |
+| Tokens | **68 · 61 · 53 mil** | 118 · 160 · 193 mil |
+| Componentes aceptados (de 15) | 14 · 13 · 13 | 12 · 15 · 14 |
+| Gap del afinado | 9,2 · 6,4 · 4,4 % (**media 6,7 %**) | 7,6 · 6,5 · 10,7 % (media 8,3 %) |
+| Mejor configuración por defecto | 9,2 · 6,3 · 9,0 % (media 8,2 %) | 6,9 · 7,4 · 4,3 % (**media 6,2 %**) |
 
-Lo generado con planificador gana en las 5 instancias de test, por entre 2,1 y 5,8
-puntos. En la run 7 el tuner eligió una configuración peor que su mejor default (11,9 %
-contra 9,1 %): la comparación por mejor default (2,2 puntos) es la más conservadora. Es una
-sola generación por brazo y las generaciones varían mucho entre sí (corridas 9, 10 y 11),
-así que el resultado es indicativo, no concluyente. El slot de constructores monolíticos no
-se comparó: en la corrida 12 el planificador no leyó el plan por comas finales en el JSON
-(ya corregido).
+Por pares, el planificador gana en 4/5, 1/5 y 0/5 instancias en el afinado, y en 4/5, 1/5 y
+5/5 en la mejor configuración por defecto. Según qué se mire gana uno u otro brazo, siempre
+por menos que la variación entre réplicas del mismo brazo (4,4–9,2 % sin planificador). La
+ventaja de las runs 7 y 8 (7,8 % contra 11,9 %) era una sola réplica. Lo que sí se sostiene
+es el costo: el planificador tarda menos en 2 de 3 corridas y gasta entre 2 y 3 veces más
+tokens. Con este banco de pruebas, el planificador se justifica por tiempo de pared, no por
+calidad.
+
+La variación del propio tuner es del mismo orden: en la run 13 el afinado queda 4,6 puntos
+por debajo de su mejor default y en la run 14, 6,4 puntos por encima. Con 40 trials y 5
+instancias de entrenamiento, comparar catálogos por el afinado de una sola corrida es ruidoso.
 
 ### Filtro de diversidad: exigirlo contra el catálogo dejaba fuera lo mejor
 
@@ -112,9 +119,8 @@ rechazado. Las runs 2 y 4 ("lo de mano gana en todos los slots": `setup_flip` 11
 `merge_consecutive_setups` 17,5 % en la run 2) medían ese filtro, no la capacidad del
 LLM.
 
-**Decisión de diseño pendiente:** exigir diversidad entre los componentes de una misma
-corrida, y permitir que uno parecido a un componente del catálogo lo reemplace si rinde
-igual o mejor, en vez de rechazarlo.
+**Implementado** (`--catalog-diversity annotate`, por defecto): la diversidad se exige entre
+los componentes de una misma corrida y el parecido con el catálogo se anota sin rechazar.
 
 ### Validador: aprueba componentes que no sirven en todos sus esqueletos
 
@@ -131,6 +137,25 @@ VNS quedaron por debajo del VNS por defecto) y conserva SA, donde sí aportan pa
 greedy. `merge_with_previous_setup` es inerte con sus parámetros por defecto y útil con otros,
 por eso el chequeo prueba configuraciones al azar antes de rechazar.
 
+**ILS y perturbaciones, ahora también.** En ILS la resta contra el nulo mezclaba velocidad con
+aporte (`setup_flip` salía en −7 %), así que el vecindario se mide por lo que hace ahí: cuánto
+mejora su búsqueda local la partida y perturbaciones factibles de ella (`setup_flip` +8 % desde
+lot-for-lot, +3 % desde el greedy). Para las perturbaciones se probó medir la mejora de un ILS
+de 1, 3 y 10 s desde un óptimo local: todas salían en ~0, incluida `item_break_repair`, que el
+tuner eligió en la run 6; con un `delta` que cuesta un LP (~15 ms), la búsqueda local interna
+no alcanza a recuperarse de una patada. El criterio quedó en capacidad: fracción de patadas
+que, tras la búsqueda local, terminan en otra solución factible (menos la de patadas nulas).
+Todas las perturbaciones reales pasan (25–100 %); rechaza las que la búsqueda local deshace o
+que dejan soluciones infactibles. Se encontró además que el ILS no aplicaba la búsqueda local
+a la solución inicial (desde el greedy, cualquier perturbación salía peor que el nulo): corregido.
+
+**Error del espacio de configuración (corregido).** La poda por esqueleto funcionaba, pero el
+espacio tenía un solo parámetro `neighborhood` para SA, ILS y VNS, así que el tuner podía
+combinar VNS con un vecindario al que se le había quitado VNS: en las runs 9–14 se perdieron
+entre 0 y 5 de los 40 trials por eso. Ahora, si los esqueletos que usan un slot no admiten
+los mismos componentes, el slot se parte en un parámetro por grupo de esqueletos
+(`neighborhood__SA_ILS`, …) que se pliega a `neighborhood` al armar la configuración.
+
 ### Validador: la admisión al catálogo no revisaba factibilidad en tamaño realista (corregido)
 
 En la run 5 entró al catálogo `batch_covering_merge`, un constructor que la generación
@@ -139,14 +164,25 @@ había abandonado tras 5 rondas y que es infactible en 10×15. El tuner perdió 
 la admisión leniente no construía la sonda 10×15. Ya está corregido: el modo leniente
 relaja solo la exigencia de mejorar desde la partida.
 
-### Interfaz de los slots: evaluar el vecindario completo no escala
+### Interfaz de los slots: evaluar el vecindario completo no escalaba (corregido)
 
-ILS y VNS quedan en ~40 % de gap en la run 2 y en ~42 % en la run 4, con 4 veces más
-tiempo. Su búsqueda local recorre el vecindario completo, y cada movimiento cuesta una
-evaluación cara (un LP en el CLSP). El `Protocol` de vecindario no tiene forma de pedir
-un movimiento al azar ni una muestra, así que cualquier problema con evaluaciones caras
-va a sufrir lo mismo. Mientras esto siga así, comparar componentes dentro de ILS o VNS
-mide ese cuello de botella.
+ILS y VNS quedaban en ~40 % de gap en la run 2 y en ~42 % en la run 4, con 4 veces más
+tiempo. Su búsqueda local recorría el vecindario completo en el orden de `moves`, cortado por
+tiempo, así que con un `delta` caro (un LP en el CLSP) evaluaba siempre los mismos primeros
+movimientos. Ahora los esqueletos piden movimientos al azar o muestras (`core/neighborhood.py`;
+un vecindario puede implementar `sample(sol, k, rng)`) y la búsqueda local de ILS, VNS y
+GRASP evalúa muestras de `ls_sample` movimientos (parámetro del tuner, default 32).
+
+| `setup_flip`, 10×15, 5 s, desde lot-for-lot | Recorrido completo | Muestra de 32 |
+|---|---|---|
+| ILS | 39,0 % | 21,3 % |
+| VNS | 39,2 % | 18,1 % |
+| GRASP | 43,6 % | 29,4 % |
+
+Desde el greedy no cambia (6,9–9,3 %). En las runs 9–14 el mejor ILS queda en 7,6–12,3 % y el
+mejor VNS en 7,7–12,1 %, contra ~40 % antes; SA sigue siendo el mejor esqueleto en las seis,
+y lo elige el tuner en cinco. Las runs 9 y 10 reafinan los catálogos de las runs 7 y 8 con
+este código: 11,9 → 9,2 % y 7,8 → 7,6 %.
 
 ### Generación: el constructor monolítico es caro e irregular
 
