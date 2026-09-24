@@ -226,6 +226,22 @@ def signature(slot: str, impl, sol, problem=None):
         return None
 
 
+def catalog_overlap(slot: str, impl, peers: list[tuple[str, Any]], sol, problem=None) -> dict[str, Any] | None:
+    """Parecido con el catálogo, sin juzgar: el componente más parecido, la similitud y, en
+    vecindarios, qué fracción de sus mejoras desde `sol` no alcanza ningún par. Se usa para
+    anotar (política `annotate`): un componente parecido a uno existente no se rechaza,
+    queda en el catálogo junto al otro y el tuner elige."""
+    sim = most_similar(slot, impl, peers, sol, problem)
+    if sim is None:
+        return None
+    out: dict[str, Any] = {"most_similar": sim[0], "similarity": round(sim[1], 3)}
+    if slot == "neighborhood" and problem is not None:
+        novel, total, _ = novelty_of_improvements(impl, peers, sol, problem)
+        if total:
+            out["novel_improvements"] = round(novel / total, 3)
+    return out
+
+
 def most_similar(slot: str, impl, peers: list[tuple[str, Any]], sol, problem=None) -> tuple[str, float] | None:
     """(nombre, similitud) del par ya aceptado más parecido, o None si no aplica."""
     mine = signature(slot, impl, sol, problem)

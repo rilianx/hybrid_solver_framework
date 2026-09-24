@@ -45,6 +45,9 @@ def main() -> None:
     ap.add_argument("--workspace", default="generated/clsp")
     ap.add_argument("--from-scratch", action="store_true",
                     help="sin componentes de referencia: ni diversidad contra el catálogo, ni nombres, ni pistas de setup_flip")
+    ap.add_argument("--catalog-diversity", choices=["annotate", "reject"], default="annotate",
+                    help="annotate (default): la diversidad se exige solo dentro de la corrida y el parecido con el "
+                         "catálogo se anota en stats.json; reject: se rechaza lo parecido a un componente del catálogo")
     ap.add_argument("--planner", action="store_true", help="planificador de ideas + implementación en paralelo")
     ap.add_argument("--ideas", type=int, default=None, help="ideas por slot en la primera planificación (default: --n)")
     ap.add_argument("--workers", type=int, default=3, help="implementaciones en paralelo por slot (con --planner)")
@@ -76,17 +79,15 @@ def main() -> None:
         ]
         if peers:
             print(f"[{slot}] comparando diversidad contra {[n for n, _ in peers]}")
+        reject = args.catalog_diversity == "reject"
+        policy = dict(catalog_peers=peers if reject else None, annotate_peers=None if reject else peers,
+                      avoid_names=[n for n, _ in peers], avoid_ideas=reject)
         if args.planner:
             return generate_slot_planned(
-                client, spec, slot, args.n, contexts, args.workspace,
-                max_rounds=args.rounds, catalog_peers=peers, avoid_names=[n for n, _ in peers],
-                n_ideas=args.ideas, max_workers=args.workers, max_replans=args.replans,
+                client, spec, slot, args.n, contexts, args.workspace, max_rounds=args.rounds,
+                n_ideas=args.ideas, max_workers=args.workers, max_replans=args.replans, **policy,
             )
-        return generate_slot(
-            client, spec, slot, args.n, contexts, args.workspace,
-            max_rounds=args.rounds, catalog_peers=peers,
-            avoid_names=[n for n, _ in peers],
-        )
+        return generate_slot(client, spec, slot, args.n, contexts, args.workspace, max_rounds=args.rounds, **policy)
 
     if args.planner:
         with ThreadPoolExecutor(max_workers=len(args.slots)) as pool:
@@ -103,6 +104,8 @@ def main() -> None:
             "accepted_files": [str(c.path) for c in accepted],
             "tokens": stats.tokens.as_dict(inner.model),
         }
+        if stats.catalog_overlap:
+            all_stats[slot]["catalog_overlap"] = stats.catalog_overlap
         if args.planner:
             all_stats[slot].update({"planned": stats.planned, "duplicates": stats.duplicates,
                                     "replans": stats.replans, "wall_seconds": round(stats.wall_seconds, 1)})
@@ -113,6 +116,7 @@ def main() -> None:
                              t.get("reasoning_tokens", 0), t["calls"]))
     all_stats["_run"] = {
         "model": inner.model, "provider": args.provider, "from_scratch": args.from_scratch,
+        "catalog_diversity": args.catalog_diversity,
         "planner": args.planner, "wall_seconds": round(time.perf_counter() - t_run, 1),
         "tokens": total.as_dict(inner.model),
         "note": ("costo estimado con LLM_PRICE_IN/LLM_PRICE_OUT (USD por millón de tokens)"

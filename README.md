@@ -243,6 +243,13 @@ millón de tokens) se agrega el costo estimado; si no, se informan solo los
 tokens. Un cliente que no cuenta tokens (`ScriptedClient` en los tests) deja el
 contador en cero sin romper nada.
 
+**Diversidad contra el catálogo** (`generate.py --catalog-diversity`). Por defecto
+(`annotate`) la diversidad se exige solo entre los componentes de la misma corrida, y el
+parecido de cada aceptado con el catálogo se anota en `stats.json` (`catalog_overlap`) sin
+rechazarlo: los dos quedan en el catálogo y el tuner elige. `reject` es el comportamiento
+anterior. Motivo: en las runs de tuning 5 y 6, el gate contra el catálogo habría rechazado un
+`setup_flip` reinventado que rinde mejor que el original.
+
 **Constructor modular** (`core/construction.py`, slot `greedy_score`). El bucle greedy y la
 regla de selección (`greedy`, RCL-α de GRASP, `roulette`) son del framework; el problema aporta
 una vista constructiva (`ConstructionView`: estado parcial, candidatos, aplicar, completo y un

@@ -113,7 +113,7 @@ SKELETONS_FOR_SLOT = {
 
 
 def generation_prompt(spec: ProblemSpec, slot: str, n_variants: int, avoid_names: list[str] | None = None,
-                      idea: "Idea | None" = None) -> str:
+                      idea: "Idea | None" = None, avoid_ideas: bool = True) -> str:
     """Con `idea` (generación con planificador) pide UN módulo que implemente esa idea y no otra."""
     fewshot = FEWSHOT.get(slot)
     if idea is not None:
@@ -159,7 +159,10 @@ def generation_prompt(spec: ProblemSpec, slot: str, n_variants: int, avoid_names
             "\n## Desde dónde arranca el esqueleto (el validador exige que haya movimientos de mejora desde aquí)\n"
             f"```\n{spec.starting_solution}\n```"
         )
-    if avoid_names:
+    if avoid_names and not avoid_ideas:
+        parts.append(f"\nYa existen componentes llamados {avoid_names}; usa nombres distintos. Puedes partir de las mismas "
+                     "ideas si crees que las mejoras: los dos quedan en el catálogo y el tuner elige.")
+    elif avoid_names:
         parts.append(f"\nYa existen componentes llamados {avoid_names}; usa ideas y nombres distintos.")
         if slot == "neighborhood":
             parts.append("Mezclar movimientos de un vecindario que ya existe dentro de otro operador para que \"mejore\" no "
@@ -177,7 +180,8 @@ class Idea:
 
 
 def planning_prompt(spec: ProblemSpec, slot: str, n_ideas: int, avoid_names: list[str] | None = None,
-                    accepted: list[Idea] | None = None, rejected: list[tuple[Idea, str]] | None = None) -> str:
+                    accepted: list[Idea] | None = None, rejected: list[tuple[Idea, str]] | None = None,
+                    avoid_ideas: bool = True) -> str:
     """El planificador propone ideas en texto, sin código: la diversidad se decide aquí, antes
     de gastar una implementación en algo que el gate de diversidad rechazaría después.
 
@@ -201,7 +205,9 @@ def planning_prompt(spec: ProblemSpec, slot: str, n_ideas: int, avoid_names: lis
         parts.append(f"\n## Vista constructiva (estado parcial y acción)\n```python\n{spec.construction_source}\n```")
     if spec.starting_solution and slot in ("neighborhood", "perturbation"):
         parts.append(f"\n## Desde dónde arranca el esqueleto\n```\n{spec.starting_solution}\n```")
-    if avoid_names:
+    if avoid_names and not avoid_ideas:
+        parts.append(f"\nYa existen componentes llamados {avoid_names}; usa nombres distintos (las ideas pueden mejorar las suyas).")
+    elif avoid_names:
         parts.append(f"\nYa existen componentes llamados {avoid_names}; propone ideas y nombres distintos.")
     if accepted:
         parts.append("\n## Ideas ya aceptadas (no las repitas ni propongas variantes de ellas)\n"

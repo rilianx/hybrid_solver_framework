@@ -36,7 +36,7 @@ from core.validation import ValidationContext
 from core.validation.quality import diversity_check
 
 from .client import LLMClient, TokenUsage
-from .generator import GeneratedComponent, GenerationStats, validate_generated_module
+from .generator import GeneratedComponent, GenerationStats, annotate_overlap, validate_generated_module
 from .parser import materialize, parse_response
 from .prompts import SYSTEM_PROMPT, Idea, ProblemSpec, correction_prompt, generation_prompt, parse_ideas, planning_prompt
 
@@ -65,6 +65,7 @@ class GenerationState:
     max_rounds: int = 3
     catalog_peers: list[tuple[str, Any]] = field(default_factory=list)
     avoid_names: list[str] = field(default_factory=list)
+    avoid_ideas: bool = True  # False (política annotate): solo nombres distintos del catálogo
     ideas: list[Idea] = field(default_factory=list)  # todas las planificadas, en orden
     accepted: list[GeneratedComponent] = field(default_factory=list)  # tras la unión
     accepted_ideas: list[Idea] = field(default_factory=list)
@@ -90,7 +91,7 @@ def plan(state: GenerationState, client: LLMClient, n_ideas: int) -> list[Idea]:
     """Pide `n_ideas` ideas nuevas. Descarta nombres ya usados en este slot."""
     text, secs, used = _ask(client, planning_prompt(
         state.spec, state.slot, n_ideas, state.avoid_names or None,
-        accepted=state.accepted_ideas or None, rejected=state.rejected or None,
+        accepted=state.accepted_ideas or None, rejected=state.rejected or None, avoid_ideas=state.avoid_ideas,
     ))
     state.stats.llm_calls += 1
     state.stats.llm_seconds += secs
@@ -113,7 +114,7 @@ def implement_one(state: GenerationState, client: LLMClient, idea: Idea) -> Comp
             out.tokens.add(used)
         return text
 
-    prompt = generation_prompt(state.spec, state.slot, 1, state.avoid_names or None, idea=idea)
+    prompt = generation_prompt(state.spec, state.slot, 1, state.avoid_names or None, idea=idea, avoid_ideas=state.avoid_ideas)
     for round_no in range(1, state.max_rounds + 1):
         out.rounds = round_no
         modules = parse_response(ask(prompt))[:1]
@@ -181,12 +182,14 @@ def generate_slot_planned(
     max_workers: int = 4,
     max_replans: int = 1,
     verbose: bool = True,
+    annotate_peers: list[tuple[str, Any]] | None = None,
+    avoid_ideas: bool = True,
 ) -> tuple[list[GeneratedComponent], GenerationStats]:
     """Misma firma y salida que `generate_slot`, con planificador y cadenas en paralelo.
     `n_ideas` (default `n_variants`): ideas pedidas en la primera planificación."""
     t0 = time.perf_counter()
     state = GenerationState(spec, slot, n_variants, contexts, Path(workspace), max_rounds,
-                            list(catalog_peers or []), list(avoid_names or []))
+                            list(catalog_peers or []), list(avoid_names or []), avoid_ideas)
     st = state.stats
     ask_for = n_ideas or n_variants
     while True:
@@ -222,6 +225,9 @@ def generate_slot_planned(
             state.accepted_ideas.append(o.idea)
             st.accepted += 1
             st.rounds_per_accepted[o.component.name] = o.rounds
+            overlap = annotate_overlap(slot, o.component.build_component, annotate_peers, contexts)
+            if overlap:
+                st.catalog_overlap[o.component.name] = overlap
             if verbose:
                 print(f"[{slot}] ✔ {o.component.name} aceptado (ronda {o.rounds})")
         missing = n_variants - len(state.accepted)

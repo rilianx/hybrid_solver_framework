@@ -604,3 +604,42 @@ def test_clients_keep_last_usage_per_thread():
     for t in threads:
         t.join()
     assert seen == [15] * 8 and client.usage.total_tokens == 8 * 15
+
+
+DISGUISED_FLIP = textwrap.dedent('''
+    COMPONENT = {"name": "toggle_disguised", "slot": "neighborhood", "compatible_skeletons": ["SA"], "params": {}}
+
+    class ToggleDisguised:
+        def __init__(self, problem): self.problem = problem
+        def moves(self, sol):
+            return [(t, i, "flip") for i in range(len(sol)) for t in range(len(sol[i]))]
+        def apply(self, sol, m):
+            t, i, _ = m; row = sol[i][:t] + (not sol[i][t],) + sol[i][t + 1:]
+            return sol[:i] + (row,) + sol[i + 1:]
+        def undo(self, sol, m): return self.apply(sol, m)
+        def delta(self, sol, m):
+            return self.problem.objective(self.apply(sol, m)) - self.problem.objective(sol)
+
+    def build_component(problem):
+        return ToggleDisguised(problem)
+''')
+
+
+def test_annotate_policy_keeps_catalog_lookalikes_and_records_the_overlap(tmp_path):
+    """Política `annotate` (runs 5 y 6: rechazar lo parecido al catálogo dejaba fuera un
+    `setup_flip` reinventado que rinde mejor): el flip disfrazado se ACEPTA y queda anotado
+    que se parece a `setup_flip`; la diversidad sigue exigiéndose dentro de la corrida."""
+    from examples.lotsizing.components import SetupFlipNeighborhood
+
+    spec = make_spec()
+    contexts = make_contexts(n_contexts=1, n_items=2, n_periods=4, strict=False)
+    probe = contexts[0].diversity_probe
+    peers = [("setup_flip", SetupFlipNeighborhood(probe.problem))]
+    client = ScriptedClient(responses=[fence(DISGUISED_FLIP)])
+    accepted, stats = generate_slot(client, spec, "neighborhood", 1, contexts, tmp_path, verbose=False,
+                                    annotate_peers=peers, avoid_names=["setup_flip"], avoid_ideas=False)
+    assert [c.name for c in accepted] == ["toggle_disguised"]
+    overlap = stats.catalog_overlap["toggle_disguised"]
+    assert overlap["most_similar"] == "setup_flip" and overlap["similarity"] == 1.0
+    prompt = client.calls[0][1]
+    assert "usa nombres distintos" in prompt and "ideas y nombres distintos" not in prompt

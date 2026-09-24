@@ -52,6 +52,15 @@ def render(stats: dict) -> str:
             line += " · costo: define `LLM_PRICE_IN` y `LLM_PRICE_OUT` (USD por millón de tokens) para estimarlo"
         out += ["", line]
 
+    overlaps = {slot: s_["catalog_overlap"] for slot, s_ in stats.items() if s_.get("catalog_overlap")}
+    if overlaps:
+        out += ["", "Parecido con el catálogo (política `annotate`: se anota, no se rechaza):"]
+        for slot, d in overlaps.items():
+            out.append(f"- `{slot}`: " + "; ".join(
+                f"`{k}` ≈ `{v['most_similar']}` ({v['similarity']:.2f}"
+                + (f", {v['novel_improvements']:.0%} de mejoras nuevas" if "novel_improvements" in v else "") + ")"
+                for k, v in d.items()))
+
     if run.get("planner"):
         dups = {slot: s_.get("duplicates", {}) for slot, s_ in stats.items() if s_.get("duplicates")}
         ideas = sum(len(s_.get("planned", [])) for s_ in stats.values())

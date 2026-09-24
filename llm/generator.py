@@ -54,6 +54,7 @@ class GenerationStats:
     rejections_by_layer: Counter = field(default_factory=Counter)  # capa -> nº de rechazos (todas las rondas)
     rounds_per_accepted: dict[str, int] = field(default_factory=dict)
     abandoned: list[str] = field(default_factory=list)  # nombres que agotaron max_rounds
+    catalog_overlap: dict[str, dict] = field(default_factory=dict)  # política annotate: parecido con el catálogo
     # con planificador (`llm.planner`): ideas pedidas, descartadas en la unión, replaneos, tiempo de pared
     planned: list[str] = field(default_factory=list)
     duplicates: dict[str, str] = field(default_factory=dict)
@@ -183,11 +184,18 @@ def generate_slot(
     avoid_names: list[str] | None = None,
     catalog_peers: list[tuple[str, Any]] | None = None,
     verbose: bool = True,
+    annotate_peers: list[tuple[str, Any]] | None = None,
+    avoid_ideas: bool = True,
 ) -> tuple[list[GeneratedComponent], GenerationStats]:
     """`catalog_peers`: componentes del mismo slot que YA existen (escritos a mano o de
     corridas previas), como (nombre, impl) ligados al ProblemModel del primer contexto.
     El gate de diversidad los usa junto a los aceptados en esta corrida, para que el
-    modelo no reinvente un operador que ya está en el catálogo."""
+    modelo no reinvente un operador que ya está en el catálogo (política `reject`).
+
+    `annotate_peers` (política `annotate`): los mismos componentes, pero solo para anotar
+    en `stats.catalog_overlap` cuánto se parece cada aceptado a ellos; no rechazan. La
+    diversidad se exige entonces solo entre los aceptados de esta corrida.
+    `avoid_ideas=False` le pide al modelo solo nombres distintos, no ideas distintas."""
     workspace = Path(workspace)
     stats = GenerationStats(slot=slot, requested=n_variants)
     accepted: list[GeneratedComponent] = []
@@ -202,7 +210,7 @@ def generate_slot(
             stats.tokens.add(used)
         return text
 
-    modules = materialize(parse_response(_ask(generation_prompt(spec, slot, n_variants, avoid_names))), workspace, slot, 1)
+    modules = materialize(parse_response(_ask(generation_prompt(spec, slot, n_variants, avoid_names, avoid_ideas=avoid_ideas))), workspace, slot, 1)
     stats.parsed = len(modules)
     if verbose:
         print(f"[{slot}] ronda 1: {len(modules)} módulos parseados")
@@ -228,6 +236,9 @@ def generate_slot(
             )
             stats.accepted += 1
             stats.rounds_per_accepted[name] = round_no
+            overlap = annotate_overlap(slot, module.build_component, annotate_peers, contexts)
+            if overlap:
+                stats.catalog_overlap[name] = overlap
             if verbose:
                 print(f"[{slot}] ✔ {name} aceptado (ronda {round_no})")
             continue
@@ -251,6 +262,19 @@ def generate_slot(
     if verbose:
         print(stats.summary())
     return accepted, stats
+
+
+def annotate_overlap(slot: str, factory, annotate_peers, contexts) -> dict | None:
+    """Parecido del componente con el catálogo, medido en la sonda (política `annotate`)."""
+    from core.validation.diversity import catalog_overlap
+
+    probe = contexts[0].diversity_probe if contexts else None
+    if not annotate_peers or probe is None:
+        return None
+    try:
+        return catalog_overlap(slot, factory(probe.problem), annotate_peers, probe.solution, probe.problem)
+    except Exception:  # noqa: BLE001 — anotar nunca debe tumbar la generación
+        return None
 
 
 def register_generated(registry, components: list[GeneratedComponent]) -> list[str]:
