@@ -1,0 +1,40 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("SA", "ILS", "VNS")
+constructor "--constructor=" c ("backward_capacity_balancer", "period_first_slack_packer", "randomized_rcl_repair_constructor", "greedy_capacity_congestion_aware", "greedy_setup_and_holding_tradeoff", "greedy_urgency_first_lookahead") | skeleton %in% c("SA", "ILS", "VNS")
+backward_capacity_balancer.extra_setup_prob "--backward_capacity_balancer.extra_setup_prob=" r (0.0, 0.5) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "backward_capacity_balancer"
+backward_capacity_balancer.priority_bias "--backward_capacity_balancer.priority_bias=" r (0.0, 2.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "backward_capacity_balancer"
+period_first_slack_packer.prefer_early "--period_first_slack_packer.prefer_early=" c ("TRUE", "FALSE") | skeleton %in% c("SA", "ILS", "VNS") & constructor == "period_first_slack_packer"
+period_first_slack_packer.slack_margin "--period_first_slack_packer.slack_margin=" r (0.0, 0.3) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "period_first_slack_packer"
+randomized_rcl_repair_constructor.alpha "--randomized_rcl_repair_constructor.alpha=" r (0.05, 1.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "randomized_rcl_repair_constructor"
+randomized_rcl_repair_constructor.repair_rounds "--randomized_rcl_repair_constructor.repair_rounds=" i (1, 10) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "randomized_rcl_repair_constructor"
+greedy_capacity_congestion_aware.rule "--greedy_capacity_congestion_aware.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_capacity_congestion_aware"
+greedy_capacity_congestion_aware.alpha "--greedy_capacity_congestion_aware.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_capacity_congestion_aware"
+greedy_capacity_congestion_aware.congestion_weight "--greedy_capacity_congestion_aware.congestion_weight=" r (0.0, 20.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_capacity_congestion_aware"
+greedy_capacity_congestion_aware.setup_time_weight "--greedy_capacity_congestion_aware.setup_time_weight=" r (0.0, 20.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_capacity_congestion_aware"
+greedy_capacity_congestion_aware.load_balance_weight "--greedy_capacity_congestion_aware.load_balance_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_capacity_congestion_aware"
+greedy_setup_and_holding_tradeoff.rule "--greedy_setup_and_holding_tradeoff.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_setup_and_holding_tradeoff"
+greedy_setup_and_holding_tradeoff.alpha "--greedy_setup_and_holding_tradeoff.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_setup_and_holding_tradeoff"
+greedy_setup_and_holding_tradeoff.holding_weight "--greedy_setup_and_holding_tradeoff.holding_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_setup_and_holding_tradeoff"
+greedy_setup_and_holding_tradeoff.setup_weight "--greedy_setup_and_holding_tradeoff.setup_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_setup_and_holding_tradeoff"
+greedy_setup_and_holding_tradeoff.early_use_bonus "--greedy_setup_and_holding_tradeoff.early_use_bonus=" r (0.0, 5.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_setup_and_holding_tradeoff"
+greedy_urgency_first_lookahead.rule "--greedy_urgency_first_lookahead.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_urgency_first_lookahead"
+greedy_urgency_first_lookahead.alpha "--greedy_urgency_first_lookahead.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_urgency_first_lookahead"
+greedy_urgency_first_lookahead.urgency_weight "--greedy_urgency_first_lookahead.urgency_weight=" r (0.0, 20.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_urgency_first_lookahead"
+greedy_urgency_first_lookahead.source_delay_weight "--greedy_urgency_first_lookahead.source_delay_weight=" r (0.0, 5.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_urgency_first_lookahead"
+greedy_urgency_first_lookahead.setup_penalty_weight "--greedy_urgency_first_lookahead.setup_penalty_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_urgency_first_lookahead"
+neighborhood "--neighborhood=" c ("compress_setup_pair", "compress_setup_triple", "drop_redundant_late_setup") | skeleton %in% c("SA", "ILS", "VNS")
+perturbation "--perturbation=" c ("bottleneck_swap_perturbation", "destroy_repair_window_perturbation", "forward_shift_setup_perturbation") | skeleton %in% c("ILS")
+bottleneck_swap_perturbation.strength "--bottleneck_swap_perturbation.strength=" r (1.0, 10.0) | skeleton %in% c("ILS") & perturbation == "bottleneck_swap_perturbation"
+destroy_repair_window_perturbation.strength "--destroy_repair_window_perturbation.strength=" r (1.0, 10.0) | skeleton %in% c("ILS") & perturbation == "destroy_repair_window_perturbation"
+forward_shift_setup_perturbation.strength "--forward_shift_setup_perturbation.strength=" r (1.0, 10.0) | skeleton %in% c("ILS") & perturbation == "forward_shift_setup_perturbation"
+SA.T0 "--SA.T0=" r (1.0, 1000.0) | skeleton == "SA"  # log-scale
+SA.alpha "--SA.alpha=" r (0.8, 0.999) | skeleton == "SA"
+SA.iters_per_T "--SA.iters_per_T=" i (1, 50) | skeleton == "SA"
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+ILS.ls_sample "--ILS.ls_sample=" i (4, 256) | skeleton == "ILS"  # log-scale
+VNS.shake_strength "--VNS.shake_strength=" i (1, 4) | skeleton == "VNS"
+VNS.ls_time_share "--VNS.ls_time_share=" r (0.02, 0.3) | skeleton == "VNS"
+VNS.ls_sample "--VNS.ls_sample=" i (4, 256) | skeleton == "VNS"  # log-scale
