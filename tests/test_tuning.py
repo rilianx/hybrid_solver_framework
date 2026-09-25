@@ -242,3 +242,30 @@ def test_paired_comparison_separates_real_differences_from_noise():
     assert clear["significant"] and clear["ci95"][0] > 0 and clear["wins_a"] == 6
     noisy = paired_comparison(better, mixed, bk)
     assert not noisy["significant"] and noisy["ci95"][0] < 0 < noisy["ci95"][1]
+
+
+def test_replica_summary_uses_a_common_best_known_and_averages_the_untuned_baselines(tmp_path):
+    """Runs 15-22: dos semillas del tuner difieren en 3-4.5 puntos; el resumen agrega réplicas."""
+    import json
+
+    from scripts.tuning_replicas import render
+
+    def score(label, per_instance):
+        return {"label": label, "summary": f"SA[{label}]", "per_instance": per_instance}
+
+    def payload(seed, tuned, default, best_known):
+        return {"settings": {"trials": 40, "budget": 5, "train": 5, "test": 3, "tuner_seed": seed},
+                "test": {"tuned": score("tuned", tuned), "baselines": [score("default:SA", default)],
+                         "best_known": best_known}}
+
+    for k, (tuned, default, bk) in enumerate([([110, 120, 100], [115, 125, 110], [100, 100, 100]),
+                                               ([130, 100, 95], [116, 124, 108], [100, 98, 100])]):
+        (tmp_path / f"r{k}").mkdir()
+        (tmp_path / f"r{k}" / "generated.json").write_text(json.dumps(payload(k, tuned, default, bk)))
+    md, data = render(tmp_path)
+    a = data["generated"]
+    assert a["best_known"] == [100, 98, 95]  # mínimo entre réplicas y entre las corridas mismas
+    assert [round(r["mean_gap"], 4) for r in a["replicas"]] == [round((10 / 100 + 22 / 98 + 5 / 95) / 3, 4),
+                                                                round((30 / 100 + 2 / 98 + 0) / 3, 4)]
+    assert a["best_untuned"] == "default:SA" and "Réplicas del tuning (2)" in md
+    assert a["tuned_vs_best_untuned"]["replicas_ahead"] == 2  # 12,6 y 10,7 % contra 19,1 %
