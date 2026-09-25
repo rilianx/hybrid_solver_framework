@@ -127,3 +127,34 @@ def test_optuna_suggest_never_activates_param_of_inactive_branch():
         if assignment["skeleton"] == "ILS":
             assert not any(k.startswith("two_opt") or k.startswith("or_opt") for k in assignment)
             assert "SA.T0" not in assignment
+
+
+def test_slot_is_split_by_skeleton_group_when_compatibility_differs():
+    """La validación por combinación poda `compatible_skeletons` por componente. Con un solo
+    parámetro `neighborhood` para SA e ILS, el tuner podía elegir un vecindario que ILS no
+    admite (runs 9–14: trials perdidos por AssemblyError)."""
+    from examples.lotsizing.random_search import RandomTrial
+    from tuning.irace_scenario import parse_irace_params
+
+    registry = _toy_registry()
+    registry.register(ComponentSpec.from_dict(
+        {"name": "swap", "slot": "neighborhood", "compatible_skeletons": ["SA", "ILS"],
+         "params": {"k": {"type": "int", "range": [1, 3]}}}, impl=object()))
+    space = build_config_space(
+        registry, skeleton_names=["SA", "ILS"],
+        slots_per_skeleton={"SA": ["constructor", "neighborhood"], "ILS": ["constructor", "neighborhood"]},
+    )
+    nodes = {n.name: n for n in space.nodes if n.config_key == "neighborhood"}
+    assert set(nodes) == {"neighborhood__SA", "neighborhood__ILS"}
+    assert set(nodes["neighborhood__ILS"].values) == {"swap"}
+    allowed = {"SA": {"two_opt", "or_opt", "swap"}, "ILS": {"swap"}}
+    for seed in range(200):
+        config = suggest_from_space(space, RandomTrial(Random(seed)))
+        assert config["neighborhood"] in allowed[config["skeleton"]]
+        assert not any("__" in k for k in config)  # plegado a las claves del ensamblador
+        if config["neighborhood"] == "swap":
+            assert config["swap.k"] in (1, 2, 3)
+    text = to_irace_parameters(space)
+    assert "neighborhood__ILS" in text and 'skeleton %in% c("ILS")' in text
+    assert parse_irace_params(space, ["--skeleton=ILS", "--neighborhood__ILS=swap", "--swap.k__ILS=2"]) == \
+        {"skeleton": "ILS", "neighborhood": "swap", "swap.k": 2}

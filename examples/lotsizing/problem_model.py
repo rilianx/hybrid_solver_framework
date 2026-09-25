@@ -361,3 +361,16 @@ class LotSizingModel:
 
     def variable_groups(self, inst: CLSPInstance) -> dict[str, list[str]]:
         return {f"t{t}": [var_name(i, t) for i in range(inst.n_items)] for t in range(inst.n_periods)}
+
+    def construction_view(self, inst: CLSPInstance):
+        """Vista constructiva para `core.construction.GreedyConstructor` (ver `construction.py`)."""
+        from .construction import CLSPConstructionView
+
+        return CLSPConstructionView(self, inst)
+
+
+# La vista constructiva vive en `construction.py`, pero el prompt de generación le dice al LLM
+# que importe los tipos del problema desde este módulo: sin este re-export, los `greedy_score`
+# que anotan `CoverAction` o `CLSPPartial` fallaban en la capa sintáctica (corrida 10: 5 de 5
+# rechazos del slot fueron este ImportError, no errores del modelo).
+from .construction import CLSPPartial, CoverAction  # noqa: E402,F401

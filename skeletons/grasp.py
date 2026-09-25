@@ -29,9 +29,11 @@ def build_grasp(
     local_search: LocalSearch | None = None,
     ls_strategy: str = "first",
     ls_max_seconds: float | None = None,
+    ls_sample: int | None = None,
     record_history: bool = False,
 ) -> TrajectorySkeleton:
-    ls = local_search or hill_climb(problem, neighborhood, strategy=ls_strategy, max_seconds=ls_max_seconds)
+    ls = local_search or hill_climb(problem, neighborhood, strategy=ls_strategy, max_seconds=ls_max_seconds,
+                                     sample_size=ls_sample)
 
     def candidate_generator(sol, state: SearchState, rng: Random):
         return ls(constructor.build(state.extra["_inst"], rng), rng)

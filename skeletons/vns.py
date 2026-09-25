@@ -20,6 +20,7 @@ from typing import Callable, Sequence
 
 from core.common_components import BetterAcceptance
 from core.contracts import Constructor, Neighborhood, ProblemModel, StopCriterion
+from core.neighborhood import random_move
 from core.skeleton import SearchState, TrajectorySkeleton
 from skeletons.ils import LocalSearch, hill_climb
 
@@ -32,20 +33,22 @@ def build_vns(
     local_search: LocalSearch | None = None,
     shake_strength: int = 1,
     ls_max_seconds: float | None = None,
+    ls_sample: int | None = None,
     record_history: bool = False,
 ) -> TrajectorySkeleton:
     if not neighborhoods:
         raise ValueError("VNS necesita al menos un vecindario")
-    ls = local_search or hill_climb(problem, neighborhoods[0], strategy="first", max_seconds=ls_max_seconds)
+    ls = local_search or hill_climb(problem, neighborhoods[0], strategy="first", max_seconds=ls_max_seconds,
+                                     sample_size=ls_sample)
 
     def shake(sol, k: int, rng: Random):
         nbh = neighborhoods[k]
         cur = sol
         for _ in range(shake_strength):
-            moves = list(nbh.moves(cur))
-            if not moves:
+            m = random_move(nbh, cur, rng)
+            if m is None:
                 break
-            cur = nbh.apply(cur, rng.choice(moves))
+            cur = nbh.apply(cur, m)
         return cur
 
     def candidate_generator(sol, state: SearchState, rng: Random):

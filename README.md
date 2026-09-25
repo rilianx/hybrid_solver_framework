@@ -161,7 +161,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   Fix-and-Optimize y el MIP completo.
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 109 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 140 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -182,10 +182,14 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 109 passed (~50 s)
+python -m pytest -q                 # 140 passed (~95 s)
 
 export OPENAI_API_KEY=...
 python -m examples.lotsizing.generate --slots neighborhood destruction --n 3   # generación real
+# desde cero: sin ver los componentes escritos a mano (ni diversidad contra el catálogo, ni pistas de setup_flip)
+python -m examples.lotsizing.generate --from-scratch --workspace generated/clsp_scratch --slots neighborhood destruction constructor perturbation
+# con planificador: ideas en texto, implementación y corrección en paralelo, diversidad al unir
+python -m examples.lotsizing.generate --planner --workers 3 --replans 1 --slots neighborhood destruction constructor perturbation
 
 # opcional: precios en USD por millón de tokens, para estimar el costo de la corrida
 export LLM_PRICE_IN=0.25 LLM_PRICE_OUT=2.00
@@ -193,6 +197,8 @@ export LLM_PRICE_IN=0.25 LLM_PRICE_OUT=2.00
 # tuning real (§8): Optuna sobre el espacio completo, con y sin componentes LLM,
 # evaluado en instancias de TEST; --irace escribe además un escenario irace
 python -m examples.lotsizing.tune --trials 40 --budget 5 --train 3 --test 3 --catalog both --irace tuning_out/irace
+# solo generados vs a mano vs ambos (--catalog three), con los generados desde cero
+python -m examples.lotsizing.tune --catalog three --generated generated/clsp_scratch --skeletons SA ILS VNS --ref-time 60
 # esqueleto fijo: compara cada componente generado contra el de mano en igualdad de condiciones
 python -m examples.lotsizing.tune --skeletons SA ILS VNS --trials 40 --budget 20 --items 20 --periods 20 --ref-time 60
 ```
@@ -236,6 +242,54 @@ dependen del proveedor: si defines `LLM_PRICE_IN` / `LLM_PRICE_OUT` (USD por
 millón de tokens) se agrega el costo estimado; si no, se informan solo los
 tokens. Un cliente que no cuenta tokens (`ScriptedClient` en los tests) deja el
 contador en cero sin romper nada.
+
+**Validación por combinación** (`core/validation/combination.py`). Tras las capas aisladas,
+cada vecindario y cada perturbación se prueban en la sonda 10×15 dentro de cada esqueleto que
+declaran, desde lot-for-lot y desde el constructor greedy. En SA, VNS, TS y GRASP el
+vecindario corre 1 s y se mide su aporte sobre el mismo esqueleto con un vecindario nulo. En
+ILS esa resta mezclaba velocidad con aporte, así que el vecindario se mide por lo que hace
+ahí: cuánto mejora su búsqueda local (con muestreo) la partida y perturbaciones factibles de
+ella. La perturbación se juzga por capacidad: desde un óptimo local de cada partida, qué
+fracción de patadas seguidas de búsqueda local termina en otra solución factible (medir la
+mejora de un ILS de pocos segundos no discriminaba). Se quitan de `compatible_skeletons` los
+esqueletos sin aporte desde ninguna partida y, si no queda ninguno, se rechaza; si no aporta
+con los parámetros por defecto se prueban tres configuraciones al azar. Los aportes quedan en
+`stats.json` (`combinations`). Se usa en la generación y en la admisión al catálogo.
+
+**Muestreo de vecindarios** (`core/neighborhood.py`). Los esqueletos piden movimientos con
+`random_move` (SA, shake de VNS) y `sample_moves` (búsqueda local, TS) en vez de recorrer
+`moves` completo. Un vecindario puede implementar `sample(sol, k, rng)` si sabe muestrear sin
+enumerar (el validador lo verifica); si no, se enumera y se muestrea. La búsqueda local de
+ILS, VNS y GRASP evalúa muestras de `ls_sample` movimientos (parámetro del esqueleto, 4–256,
+default 32). Motivo: cuando `delta` cuesta un LP, el recorrido completo cortado por tiempo
+evaluaba siempre los mismos primeros movimientos; con `setup_flip` en 10×15 y 5 s, desde
+lot-for-lot, ILS pasa de 39 % a 21 % de gap y VNS de 39 % a 18 %.
+
+**Diversidad contra el catálogo** (`generate.py --catalog-diversity`). Por defecto
+(`annotate`) la diversidad se exige solo entre los componentes de la misma corrida, y el
+parecido de cada aceptado con el catálogo se anota en `stats.json` (`catalog_overlap`) sin
+rechazarlo: los dos quedan en el catálogo y el tuner elige. `reject` es el comportamiento
+anterior. Motivo: en las runs de tuning 5 y 6, el gate contra el catálogo habría rechazado un
+`setup_flip` reinventado que rinde mejor que el original.
+
+**Constructor modular** (`core/construction.py`, slot `greedy_score`). El bucle greedy y la
+regla de selección (`greedy`, RCL-α de GRASP, `roulette`) son del framework; el problema aporta
+una vista constructiva (`ConstructionView`: estado parcial, candidatos, aplicar, completo y un
+cierre de respaldo) y el LLM genera solo el puntaje de una acción. Cada puntaje entra al
+catálogo como constructor `greedy_<nombre>` con la regla y α como parámetros del tuner. En el
+CLSP la acción es "cubrir demanda pendiente de (i, t) produciendo en s ≤ t", recorriendo los
+deadlines en orden, y los candidatos se filtran con una condición necesaria de capacidad
+acumulada (con tiempos de setup, decidir si un parcial se puede completar es NP-completo); el
+cierre de respaldo fija los setups decididos y resuelve el resto con el MIP. En 360
+construcciones de prueba (Trigeiro 0,95 y 0,98, instancias aleatorias, hasta 20×20) no hizo
+falta el respaldo ni una vez.
+
+**Planificador** (`llm/planner.py`, `--planner`). Un planificador propone las ideas de
+cada slot en texto, sin código; cada idea se implementa, valida y corrige en paralelo con
+la idea fija en el prompt de corrección, y el gate de diversidad se aplica al unir (si
+faltan componentes se replanifica, mostrando las ideas aceptadas y las descartadas con su
+motivo). Los slots también corren en paralelo. Usa hilos: la validación pesada es CBC, que
+corre como proceso aparte, y los clientes guardan `last_usage` por hilo.
 
 Sobre orquestación: el ciclo es un bucle determinista corto, así que se
 implementó en Python plano. Si más adelante el flujo se vuelve un grafo

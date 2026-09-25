@@ -74,4 +74,4 @@ def suggest_from_space(space: ConfigSpace, trial: OptunaTrialLike) -> dict[str, 
                 f"no se pudieron resolver condiciones (¿referencian un parámetro inexistente?): {unresolved}"
             )
 
-    return assignment
+    return space.fold(assignment)

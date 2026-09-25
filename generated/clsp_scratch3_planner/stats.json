@@ -1,0 +1,181 @@
+{
+  "greedy_score": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 4,
+    "llm_seconds": 35.3,
+    "rejections_by_layer": {},
+    "rounds_per_accepted": {
+      "coste_holding_setup_inmediato": 1,
+      "urgencia_falta_capacidad": 1,
+      "balance_fifo_multiactivo": 1
+    },
+    "abandoned": [],
+    "accepted_files": [
+      "generated/clsp_scratch3_planner/greedy_score/coste_holding_setup_inmediato_r1.py",
+      "generated/clsp_scratch3_planner/greedy_score/urgencia_falta_capacidad_r1.py",
+      "generated/clsp_scratch3_planner/greedy_score/balance_fifo_multiactivo_r1.py"
+    ],
+    "tokens": {
+      "calls": 4,
+      "input_tokens": 18802,
+      "output_tokens": 4393,
+      "total_tokens": 23195,
+      "reasoning_tokens": 1010
+    },
+    "planned": [
+      "coste_holding_setup_inmediato",
+      "urgencia_falta_capacidad",
+      "balance_fifo_multiactivo"
+    ],
+    "duplicates": {},
+    "replans": 0,
+    "wall_seconds": 18.5
+  },
+  "constructor": {
+    "requested": 3,
+    "parsed": 0,
+    "accepted": 0,
+    "llm_calls": 1,
+    "llm_seconds": 7.1,
+    "rejections_by_layer": {},
+    "rounds_per_accepted": {},
+    "abandoned": [],
+    "accepted_files": [],
+    "tokens": {
+      "calls": 1,
+      "input_tokens": 1279,
+      "output_tokens": 523,
+      "total_tokens": 1802,
+      "reasoning_tokens": 19
+    },
+    "planned": [],
+    "duplicates": {},
+    "replans": 0,
+    "wall_seconds": 7.1
+  },
+  "neighborhood": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 7,
+    "llm_seconds": 85.3,
+    "rejections_by_layer": {
+      "contractual": 3
+    },
+    "rounds_per_accepted": {
+      "merge_with_previous_setup": 3,
+      "capacity_swap_between_items": 2,
+      "window_destroy_and_repair": 1
+    },
+    "abandoned": [],
+    "accepted_files": [
+      "generated/clsp_scratch3_planner/neighborhood/merge_with_previous_setup_r3.py",
+      "generated/clsp_scratch3_planner/neighborhood/capacity_swap_between_items_r2.py",
+      "generated/clsp_scratch3_planner/neighborhood/window_destroy_and_repair_r1.py"
+    ],
+    "tokens": {
+      "calls": 7,
+      "input_tokens": 23291,
+      "output_tokens": 11132,
+      "total_tokens": 34423,
+      "reasoning_tokens": 6962
+    },
+    "planned": [
+      "merge_with_previous_setup",
+      "capacity_swap_between_items",
+      "window_destroy_and_repair"
+    ],
+    "duplicates": {},
+    "replans": 0,
+    "wall_seconds": 41.4
+  },
+  "destruction": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 5,
+    "llm_seconds": 43.6,
+    "rejections_by_layer": {
+      "quality": 1
+    },
+    "rounds_per_accepted": {
+      "destroy_capacity_hotspots": 1,
+      "destroy_low_value_setups": 1,
+      "destroy_item_block": 2
+    },
+    "abandoned": [],
+    "accepted_files": [
+      "generated/clsp_scratch3_planner/destruction/destroy_capacity_hotspots_r1.py",
+      "generated/clsp_scratch3_planner/destruction/destroy_low_value_setups_r1.py",
+      "generated/clsp_scratch3_planner/destruction/destroy_item_block_r2.py"
+    ],
+    "tokens": {
+      "calls": 5,
+      "input_tokens": 18336,
+      "output_tokens": 6357,
+      "total_tokens": 24693,
+      "reasoning_tokens": 1557
+    },
+    "planned": [
+      "destroy_capacity_hotspots",
+      "destroy_low_value_setups",
+      "destroy_item_block"
+    ],
+    "duplicates": {},
+    "replans": 0,
+    "wall_seconds": 25.3
+  },
+  "perturbation": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 7,
+    "llm_seconds": 74.0,
+    "rejections_by_layer": {
+      "quality": 3
+    },
+    "rounds_per_accepted": {
+      "capacity_pressure_window_kick": 1,
+      "item_chain_shift_kick": 3,
+      "swap_and_rebalance_kick": 2
+    },
+    "abandoned": [],
+    "accepted_files": [
+      "generated/clsp_scratch3_planner/perturbation/capacity_pressure_window_kick_r1.py",
+      "generated/clsp_scratch3_planner/perturbation/item_chain_shift_kick_r3.py",
+      "generated/clsp_scratch3_planner/perturbation/swap_and_rebalance_kick_r2.py"
+    ],
+    "tokens": {
+      "calls": 7,
+      "input_tokens": 23676,
+      "output_tokens": 9883,
+      "total_tokens": 33559,
+      "reasoning_tokens": 2888
+    },
+    "planned": [
+      "capacity_pressure_window_kick",
+      "item_chain_shift_kick",
+      "swap_and_rebalance_kick"
+    ],
+    "duplicates": {},
+    "replans": 0,
+    "wall_seconds": 45.2
+  },
+  "_run": {
+    "model": "gpt-5.4-mini",
+    "provider": "openai",
+    "from_scratch": true,
+    "planner": true,
+    "wall_seconds": 45.2,
+    "tokens": {
+      "calls": 24,
+      "input_tokens": 85384,
+      "output_tokens": 32288,
+      "total_tokens": 117672,
+      "reasoning_tokens": 12436
+    },
+    "note": "define LLM_PRICE_IN y LLM_PRICE_OUT (USD por millón de tokens) para estimar el costo"
+  }
+}

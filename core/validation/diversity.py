@@ -203,6 +203,19 @@ SIGNATURE = {
 }
 
 
+def greedy_score_signature(impl, sol=None, problem=None) -> set:
+    """Acciones que elige el constructor greedy con este puntaje al construir desde cero la
+    instancia del `problem` (regla greedy, sin azar). Calibrado en la sonda 10×15: ideas
+    distintas quedan en Jaccard 0,28–0,38; "producir lo más tarde posible" y "minimizar
+    solo inventario", que eligen lo mismo, en 0,97."""
+    from core.construction import GreedyConstructor
+
+    return set(GreedyConstructor(problem, impl).trace(problem.inst, Random(0))[1])
+
+
+SIGNATURE["greedy_score"] = greedy_score_signature
+
+
 def signature(slot: str, impl, sol, problem=None):
     fn = SIGNATURE.get(slot)
     if fn is None:
@@ -211,6 +224,22 @@ def signature(slot: str, impl, sol, problem=None):
         return fn(impl, sol, problem)
     except Exception:  # noqa: BLE001
         return None
+
+
+def catalog_overlap(slot: str, impl, peers: list[tuple[str, Any]], sol, problem=None) -> dict[str, Any] | None:
+    """Parecido con el catálogo, sin juzgar: el componente más parecido, la similitud y, en
+    vecindarios, qué fracción de sus mejoras desde `sol` no alcanza ningún par. Se usa para
+    anotar (política `annotate`): un componente parecido a uno existente no se rechaza,
+    queda en el catálogo junto al otro y el tuner elige."""
+    sim = most_similar(slot, impl, peers, sol, problem)
+    if sim is None:
+        return None
+    out: dict[str, Any] = {"most_similar": sim[0], "similarity": round(sim[1], 3)}
+    if slot == "neighborhood" and problem is not None:
+        novel, total, _ = novelty_of_improvements(impl, peers, sol, problem)
+        if total:
+            out["novel_improvements"] = round(novel / total, 3)
+    return out
 
 
 def most_similar(slot: str, impl, peers: list[tuple[str, Any]], sol, problem=None) -> tuple[str, float] | None:

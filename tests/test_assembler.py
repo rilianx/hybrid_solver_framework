@@ -78,8 +78,12 @@ def test_generated_component_enters_catalog_and_space(inst, tmp_path):
     assert registry.get("neighborhood", "shift_setup_earlier").is_compatible_with("SA")
 
     assembler = Assembler(problem_factory=LotSizingModel, registry=registry)
-    node = next(n for n in assembler.config_space().nodes if n.name == "neighborhood")
-    assert set(node.values) == {"setup_flip", "shift_setup_earlier"}
+    # el generado declara menos esqueletos que setup_flip: el slot se parte por grupo y el
+    # grupo que incluye SA ofrece ambos
+    nodes = [n for n in assembler.config_space().nodes if n.config_key == "neighborhood"]
+    sa = next(n for n in nodes if "SA" in n.conditions[0].values)
+    assert set(sa.values) == {"setup_flip", "shift_setup_earlier"}
+    assert all("shift_setup_earlier" not in n.values for n in nodes if "SA" not in n.conditions[0].values)
 
     config = assembler.default_config("SA", choices={"neighborhood": "shift_setup_earlier"})
     result = assembler.assemble(config)(inst, Random(0), budget=1.0)

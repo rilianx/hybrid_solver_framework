@@ -153,3 +153,33 @@ class WorstRatioDestruction:
 def build_component(problem):
     return WorstRatioDestruction(problem, problem.inst)
 '''
+
+FEWSHOT["greedy_score"] = '''
+COMPONENT = {
+    "name": "value_density_with_slack",
+    "slot": "greedy_score",
+    "compatible_skeletons": ["SA", "ILS", "LNS_MIP"],
+    "requires": [],
+    "params": {"slack_weight": {"type": "float", "range": [0.0, 2.0]}},
+}
+
+
+class ValueDensityWithSlack:
+    """Mochila: la acción es `action.item` (meter el ítem); el parcial expone `partial.remaining`
+    (capacidad libre). Prefiere mayor valor por unidad de peso y penaliza dejar la mochila
+    casi llena (poca holgura para lo que viene). Menor puntaje = mejor."""
+
+    def __init__(self, problem, slack_weight: float = 0.5):
+        self.inst = problem.inst
+        self.slack_weight = slack_weight
+
+    def score(self, partial, action):
+        w, v = self.inst.weights[action.item], self.inst.values[action.item]
+        density = v / max(w, 1e-9)
+        left = partial.remaining - w
+        return -density + self.slack_weight * (1.0 / (1.0 + left))
+
+
+def build_component(problem, slack_weight: float = 0.5):
+    return ValueDensityWithSlack(problem, slack_weight)
+'''

@@ -65,6 +65,7 @@ SKELETONS: dict[str, SkeletonDef] = {
             "strength": {"type": "int", "range": [1, 6]},
             "ls_strategy": {"type": "cat", "values": ["first", "best"]},
             "ls_time_share": {"type": "float", "range": [0.02, 0.3]},
+            "ls_sample": {"type": "int", "range": [4, 256], "log": True, "default": 32},
         },
     ),
     "LNS_MIP": SkeletonDef(
@@ -96,6 +97,7 @@ SKELETONS: dict[str, SkeletonDef] = {
         params={
             "shake_strength": {"type": "int", "range": [1, 4]},
             "ls_time_share": {"type": "float", "range": [0.02, 0.3]},
+            "ls_sample": {"type": "int", "range": [4, 256], "log": True, "default": 32},
         },
     ),
     "GRASP": SkeletonDef(
@@ -103,6 +105,7 @@ SKELETONS: dict[str, SkeletonDef] = {
         params={
             "ls_strategy": {"type": "cat", "values": ["first", "best"]},
             "ls_time_share": {"type": "float", "range": [0.02, 0.3]},
+            "ls_sample": {"type": "int", "range": [4, 256], "log": True, "default": 32},
         },
     ),
     "LOCAL_BRANCH": SkeletonDef(
@@ -211,7 +214,8 @@ class Assembler:
             if skeleton == "ILS":
                 nbh = self._component(config, "neighborhood", skeleton, P)
                 pert = self._component(config, "perturbation", skeleton, P)
-                ls = hill_climb(P, nbh, strategy=sp("ls_strategy"), max_seconds=budget * sp("ls_time_share"))
+                ls = hill_climb(P, nbh, strategy=sp("ls_strategy"), max_seconds=budget * sp("ls_time_share"),
+                                sample_size=sp("ls_sample"))
                 sk = build_ils(P, constructor, ls, pert, BetterAcceptance(), MaxTimeStop(budget), strength=sp("strength"))
                 return sk.run(inst, rng)
             if skeleton == "LNS_MIP":
@@ -239,12 +243,13 @@ class Assembler:
                     if spec.name != config["neighborhood"]
                 ]
                 sk = build_vns(P, constructor, [ls_nbh] + others, MaxTimeStop(budget),
-                               shake_strength=sp("shake_strength"), ls_max_seconds=budget * sp("ls_time_share"))
+                               shake_strength=sp("shake_strength"), ls_max_seconds=budget * sp("ls_time_share"),
+                               ls_sample=sp("ls_sample"))
                 return sk.run(inst, rng)
             if skeleton == "GRASP":
                 nbh = self._component(config, "neighborhood", skeleton, P)
                 sk = build_grasp(P, constructor, nbh, MaxTimeStop(budget), ls_strategy=sp("ls_strategy"),
-                                 ls_max_seconds=budget * sp("ls_time_share"))
+                                 ls_max_seconds=budget * sp("ls_time_share"), ls_sample=sp("ls_sample"))
                 return run_grasp(sk, inst, rng)
             if skeleton == "LOCAL_BRANCH":
                 sk = build_local_branching(P, constructor, MaxTimeStop(budget), k=sp("k"), k_step=sp("k_step"),

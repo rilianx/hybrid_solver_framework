@@ -56,6 +56,44 @@ class Constructor(Protocol):
     def build(self, inst: Instance, rng: Random) -> Solution: ...
 
 
+Partial = Any  # estado parcial de una construcción
+Action = Any  # acción constructiva
+
+
+@runtime_checkable
+class ConstructionView(Protocol):
+    """Vista constructiva del problema: la parte del `ProblemModel` que un constructor
+    greedy necesita (`problem.construction_view(inst)`). El bucle y la regla de selección
+    son del framework (`core.construction`); lo único que se enchufa es el puntaje.
+
+    `candidates` debe devolver solo acciones que no cierran la puerta a completar una
+    solución factible, hasta donde el problema permita verificarlo barato. Cuando no
+    quedan candidatos sin haber terminado (callejón sin salida), `complete` cierra la
+    construcción con un respaldo propio del problema.
+    """
+
+    def empty(self) -> Partial: ...
+
+    def candidates(self, partial: Partial) -> Iterable[Action]: ...
+
+    def apply(self, partial: Partial, action: Action) -> Partial: ...
+
+    def is_complete(self, partial: Partial) -> bool: ...
+
+    def to_solution(self, partial: Partial) -> Solution: ...
+
+    def complete(self, partial: Partial, rng: Random) -> Solution: ...
+
+
+@runtime_checkable
+class GreedyScore(Protocol):
+    """Slot `greedy_score`: puntúa una acción constructiva; MENOR es mejor. Debe ser
+    barato (se llama para cada candidato en cada paso), determinista y no modificar
+    `partial`. No decide factibilidad: los candidatos ya vienen filtrados."""
+
+    def score(self, partial: Partial, action: Action) -> float: ...
+
+
 @runtime_checkable
 class Neighborhood(Protocol):
     """Slot `neighborhood`: movimientos locales con delta incremental.

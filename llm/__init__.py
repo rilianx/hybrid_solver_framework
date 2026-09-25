@@ -3,7 +3,8 @@ slot, parser de respuestas y ciclo generar → validar → corregir."""
 
 from .client import AnthropicClient, LLMClient, OpenAIClient, ScriptedClient, TokenUsage, TranscriptClient, price_per_mtok
 from .generator import GeneratedComponent, GenerationStats, generate_slot, register_generated, validate_generated_module
-from .prompts import ProblemSpec, correction_prompt, generation_prompt
+from .planner import generate_slot_planned
+from .prompts import Idea, ProblemSpec, correction_prompt, generation_prompt, planning_prompt
 
 __all__ = [
     "AnthropicClient",
@@ -16,6 +17,9 @@ __all__ = [
     "GeneratedComponent",
     "GenerationStats",
     "generate_slot",
+    "generate_slot_planned",
+    "Idea",
+    "planning_prompt",
     "register_generated",
     "validate_generated_module",
     "ProblemSpec",

@@ -24,6 +24,7 @@ from core.contracts import (
     ProblemModel,
     StopCriterion,
 )
+from core.neighborhood import sample_moves
 from core.skeleton import SearchState, TrajectorySkeleton
 
 LocalSearch = Callable[["object", Random], "object"]
@@ -35,6 +36,7 @@ def hill_climb(
     strategy: str = "best",
     max_iters: int | None = None,
     max_seconds: float | None = None,
+    sample_size: int | None = None,
 ) -> LocalSearch:
     """Búsqueda local simple sobre `neighborhood`, usable como slot "LS interno" de ILS.
 
@@ -44,6 +46,12 @@ def hill_climb(
     cuando cada `delta` cuesta un LP, un barrido completo puede tardar
     segundos y sin este chequeo la LS interna se come el presupuesto del
     esqueleto que la contiene).
+
+    `sample_size`: si se da, cada paso evalúa solo una muestra al azar de hasta ese
+    número de movimientos (`core.neighborhood.sample_moves`) y la búsqueda termina
+    cuando una muestra no trae mejora. Con `None` recorre el vecindario completo en el
+    orden de `moves`; cortado por tiempo, ese recorrido evalúa siempre los mismos
+    primeros movimientos.
     """
 
     def _local_search(sol, rng: Random):
@@ -52,7 +60,7 @@ def hill_climb(
         iters = 0
         while max_iters is None or iters < max_iters:
             best_move, best_delta = None, 0.0
-            for m in neighborhood.moves(current):
+            for m in sample_moves(neighborhood, current, sample_size, rng):
                 if deadline is not None and time.monotonic() >= deadline:
                     break
                 delta = neighborhood.delta(current, m)
@@ -82,6 +90,12 @@ def build_ils(
     record_history: bool = False,
 ) -> TrajectorySkeleton:
     def candidate_generator(sol, state: SearchState, rng: Random):
+        # ILS estándar: s* = LS(s0) antes de la primera perturbación. Sin esto la solución
+        # inicial nunca pasa por la búsqueda local y, partiendo de un buen constructor, el
+        # ILS puede no mejorarla nunca (validación por combinación, partida greedy).
+        if not state.extra.get("_ils_started"):
+            state.extra["_ils_started"] = True
+            return local_search(sol, rng)
         perturbed = perturbation.perturb(sol, strength, rng)
         return local_search(perturbed, rng)
 

@@ -100,7 +100,34 @@ def check_neighborhood(impl, ctx: ValidationContext) -> list[CheckResult]:
                 return out or [ok(LAYER, "neighborhood.undo_apply_identity"), ok(LAYER, "neighborhood.delta_consistent")]
 
             results += guard(LAYER, "neighborhood", _props)
+            if callable(getattr(impl, "sample", None)):
+                results += guard(LAYER, "neighborhood.sample", lambda k=k, sol=sol: _check_sample(impl, sol, k))
     return _collapse(results)
+
+
+def _check_sample(impl, sol, k: int) -> CheckResult:
+    """`sample(sol, n, rng)` opcional (`core.neighborhood.SampledNeighborhood`): hasta n
+    movimientos distintos de `moves(sol)`, deterministas dada la semilla."""
+    moves = list(impl.moves(sol))
+    try:
+        universe = set(moves)
+    except TypeError:
+        universe = None
+    for n in (1, 5):
+        got = list(impl.sample(sol, n, Random(3)))
+        if len(got) > n:
+            return fail(LAYER, "neighborhood.sample", f"sample(sol, {n}, rng) devolvió {len(got)} movimientos en inst_{k}")
+        if len(got) < min(n, len(moves)):
+            return fail(LAYER, "neighborhood.sample", f"sample(sol, {n}, rng) devolvió {len(got)} movimientos y moves(sol) tiene {len(moves)} en inst_{k}")
+        if got != list(impl.sample(sol, n, Random(3))):
+            return fail(LAYER, "neighborhood.sample", f"dos llamadas a sample(sol, {n}, rng) con la misma semilla difieren en inst_{k}")
+        if universe is not None:
+            if len(set(got)) != len(got):
+                return fail(LAYER, "neighborhood.sample", f"sample(sol, {n}, rng) repite movimientos en inst_{k}")
+            extra = [m for m in got if m not in universe]
+            if extra:
+                return fail(LAYER, "neighborhood.sample", f"sample devolvió {extra[0]!r}, que no está en moves(sol) (inst_{k})")
+    return ok(LAYER, "neighborhood.sample")
 
 
 def check_evaluator(impl, ctx: ValidationContext) -> list[CheckResult]:
@@ -276,8 +303,52 @@ def check_stop(impl, ctx: ValidationContext) -> list[CheckResult]:
     return guard(LAYER, "stop.eventually_true", _eventually) + guard(LAYER, "stop.not_immediately_true", _not_immediately)
 
 
+def check_greedy_score(impl, ctx: ValidationContext) -> list[CheckResult]:
+    """Slot `greedy_score`. Sobre estados parciales reales (una construcción con elección al
+    azar entre los candidatos): el puntaje es finito, determinista y no modifica el parcial.
+    Después, el constructor greedy que arma cumple lo mismo que cualquier constructor
+    (factible y determinista), con la regla greedy y con la RCL."""
+    import pickle
+
+    from core.construction import GreedyConstructor
+
+    if not callable(getattr(ctx.problem, "construction_view", None)):
+        return [fail(LAYER, "greedy_score.view", "el ProblemModel no expone `construction_view(inst)`: no hay dónde usar un puntaje")]
+    results: list[CheckResult] = []
+    for k, inst in enumerate(ctx.instances):
+        def _props(k=k, inst=inst):
+            view = ctx.problem.construction_view(inst)
+            partial, rng = view.empty(), Random(k)
+            for _ in range(60):
+                if view.is_complete(partial):
+                    break
+                cands = list(view.candidates(partial))
+                if not cands:
+                    break
+                for c in cands[:15]:
+                    before = pickle.dumps(partial)
+                    a, b = impl.score(partial, c), impl.score(partial, c)
+                    if not isinstance(a, (int, float)) or math.isnan(a) or math.isinf(a):
+                        return fail(LAYER, "greedy_score.finite", f"score devolvió {a!r} para la acción {c!r} en inst_{k}: debe ser un número finito")
+                    if a != b:
+                        return fail(LAYER, "greedy_score.deterministic", f"dos llamadas a score con el mismo parcial y la acción {c!r} dan {a} y {b} (inst_{k})")
+                    if pickle.dumps(partial) != before:
+                        return fail(LAYER, "greedy_score.pure", f"score modificó el estado parcial al puntuar {c!r} (inst_{k}): debe solo leerlo")
+                partial = view.apply(partial, cands[rng.randrange(len(cands))])
+            return ok(LAYER, "greedy_score.finite")
+
+        results += guard(LAYER, "greedy_score.finite", _props)
+    if any(not r.passed for r in results):
+        return _collapse(results)
+    for rule in ("greedy", "rcl"):
+        for r in check_constructor(GreedyConstructor(ctx.problem, impl, rule=rule, alpha=0.3), ctx):
+            results.append(CheckResult(r.layer, r.name, r.passed, (f"[constructor greedy, regla {rule}] " + r.message) if r.message else r.message))
+    return _collapse(results)
+
+
 CHECKERS = {
     "constructor": check_constructor,
+    "greedy_score": check_greedy_score,
     "neighborhood": check_neighborhood,
     "evaluator": check_evaluator,
     "acceptance": check_acceptance,

@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import os
+import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -88,6 +89,27 @@ class TokenUsage:
         return ", ".join(parts)
 
 
+_TLS = threading.local()
+_USAGE_LOCK = threading.Lock()
+
+
+class _ThreadLocalUsage:
+    """`last_usage` por hilo y `usage` acumulado con lock: el generador con planificador
+    comparte un cliente entre hilos, y un `last_usage` compartido le asignaría a una
+    llamada los tokens de otra."""
+
+    @property
+    def last_usage(self) -> "TokenUsage | None":
+        return getattr(_TLS, "usage", {}).get(id(self))
+
+    def _record(self, used: "TokenUsage") -> None:
+        if not hasattr(_TLS, "usage"):
+            _TLS.usage = {}
+        _TLS.usage[id(self)] = used
+        with _USAGE_LOCK:
+            self.usage.add(used)
+
+
 def price_per_mtok(model: str | None = None) -> tuple[float, float] | None:
     """(precio entrada, precio salida) en USD por millón de tokens, desde el entorno."""
     try:
@@ -136,13 +158,12 @@ def usage_from_anthropic(resp) -> TokenUsage:
 
 
 @dataclass
-class AnthropicClient:
+class AnthropicClient(_ThreadLocalUsage):
     model: str = "claude-sonnet-4-5"
     max_tokens: int = 8000
     temperature: float = 0.7
     api_key: str | None = None
-    usage: TokenUsage = field(default_factory=TokenUsage)  # acumulado
-    last_usage: TokenUsage | None = None  # de la última llamada
+    usage: TokenUsage = field(default_factory=TokenUsage)  # acumulado; last_usage: la última llamada de este hilo
 
     def __post_init__(self) -> None:
         import anthropic  # import perezoso: el resto del framework no depende del SDK
@@ -157,13 +178,12 @@ class AnthropicClient:
             system=system,
             messages=[{"role": "user", "content": user}],
         )
-        self.last_usage = usage_from_anthropic(resp)
-        self.usage.add(self.last_usage)
+        self._record(usage_from_anthropic(resp))
         return "".join(block.text for block in resp.content if getattr(block, "type", "") == "text")
 
 
 @dataclass
-class OpenAIClient:
+class OpenAIClient(_ThreadLocalUsage):
     """Cliente OpenAI (Responses API). Default: gpt-5.4-mini. Requiere OPENAI_API_KEY."""
 
     model: str = "gpt-5.4-mini"
@@ -171,8 +191,7 @@ class OpenAIClient:
     temperature: float | None = None  # los modelos de razonamiento no aceptan temperature
     reasoning_effort: str | None = "low"
     api_key: str | None = None
-    usage: TokenUsage = field(default_factory=TokenUsage)  # acumulado
-    last_usage: TokenUsage | None = None  # de la última llamada
+    usage: TokenUsage = field(default_factory=TokenUsage)  # acumulado; last_usage: la última llamada de este hilo
 
     def __post_init__(self) -> None:
         import openai  # import perezoso
@@ -191,13 +210,12 @@ class OpenAIClient:
         if self.reasoning_effort is not None:
             kwargs["reasoning"] = {"effort": self.reasoning_effort}
         resp = self._client.responses.create(**kwargs)
-        self.last_usage = usage_from_openai(resp)
-        self.usage.add(self.last_usage)
+        self._record(usage_from_openai(resp))
         return resp.output_text
 
 
 @dataclass
-class ScriptedClient:
+class ScriptedClient(_ThreadLocalUsage):
     """Devuelve `responses` en orden; registra los prompts recibidos."""
 
     responses: list[str]
@@ -205,7 +223,6 @@ class ScriptedClient:
     # Uso simulado por llamada: permite probar la contabilidad de tokens sin API.
     usage_per_call: TokenUsage | None = None
     usage: TokenUsage = field(default_factory=TokenUsage)
-    last_usage: TokenUsage | None = None
 
     def complete(self, system: str, user: str) -> str:
         self.calls.append((system, user))
@@ -213,8 +230,7 @@ class ScriptedClient:
             raise RuntimeError("ScriptedClient sin respuestas restantes")
         if self.usage_per_call is not None:
             u = self.usage_per_call
-            self.last_usage = TokenUsage(u.input_tokens, u.output_tokens, u.cached_input_tokens, u.reasoning_tokens, 1)
-            self.usage.add(self.last_usage)
+            self._record(TokenUsage(u.input_tokens, u.output_tokens, u.cached_input_tokens, u.reasoning_tokens, 1))
         return self.responses.pop(0)
 
 
@@ -229,6 +245,7 @@ class TranscriptClient:
         self.directory = Path(self.directory)
         self.directory.mkdir(parents=True, exist_ok=True)
         self._n = 0
+        self._lock = threading.Lock()
 
     @property
     def last_usage(self) -> TokenUsage | None:
@@ -241,12 +258,14 @@ class TranscriptClient:
     def complete(self, system: str, user: str) -> str:
         t0 = time.time()
         text = self.inner.complete(system, user)
-        self._n += 1
+        with self._lock:
+            self._n += 1
+            n = self._n
         used = self.last_usage
         record = {"system": system, "user": user, "response": text, "seconds": time.time() - t0}
         if used is not None:
             record["usage"] = used.as_dict(getattr(self.inner, "model", None))
-        (self.directory / f"call_{self._n:03d}.json").write_text(
+        (self.directory / f"call_{n:03d}.json").write_text(
             json.dumps(record, ensure_ascii=False, indent=2)
         )
         return text

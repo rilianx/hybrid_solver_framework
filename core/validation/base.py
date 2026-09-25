@@ -129,6 +129,7 @@ class ValidationContext:
     # gate de 0,80) y 0,93 en 10×15, donde ya es un duplicado. La firma se mide
     # reconstruyendo el componente sobre `diversity_probe.problem`.
     diversity_probe: Any = None  # DiversityProbe
+    combination: Any = None  # CombinationProbe: corridas cortas del componente en cada esqueleto que declara
     # Opcional: enumerador de todas las soluciones de una micro-instancia
     # (para comparar el óptimo del MIP contra fuerza bruta).
     enumerate_solutions: Callable[[Any], Sequence[Any]] | None = None

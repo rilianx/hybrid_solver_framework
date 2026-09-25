@@ -16,6 +16,7 @@ import math
 from random import Random
 
 from core.contracts import Acceptance, Constructor, Neighborhood, ProblemModel, StopCriterion
+from core.neighborhood import random_move
 from core.skeleton import SearchState, TrajectorySkeleton
 
 
@@ -61,11 +62,8 @@ def build_sa(
     acceptance = acceptance or MetropolisAcceptance()
 
     def candidate_generator(sol, state: SearchState, rng: Random):
-        moves = list(neighborhood.moves(sol))
-        if not moves:
-            return None
-        m = rng.choice(moves)
-        return neighborhood.apply(sol, m)
+        m = random_move(neighborhood, sol, rng)
+        return None if m is None else neighborhood.apply(sol, m)
 
     skeleton = TrajectorySkeleton(
         problem=problem,

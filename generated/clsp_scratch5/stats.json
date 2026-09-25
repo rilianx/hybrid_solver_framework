@@ -1,0 +1,171 @@
+{
+  "greedy_score": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 1,
+    "llm_seconds": 15.0,
+    "rejections_by_layer": {},
+    "rounds_per_accepted": {
+      "setup_and_holding_tradeoff": 1,
+      "urgency_first_lookahead": 1,
+      "capacity_congestion_aware": 1
+    },
+    "abandoned": [],
+    "accepted_files": [
+      "generated/clsp_scratch5/greedy_score/setup_and_holding_tradeoff_r1.py",
+      "generated/clsp_scratch5/greedy_score/urgency_first_lookahead_r1.py",
+      "generated/clsp_scratch5/greedy_score/capacity_congestion_aware_r1.py"
+    ],
+    "tokens": {
+      "calls": 1,
+      "input_tokens": 5483,
+      "output_tokens": 2147,
+      "total_tokens": 7630,
+      "reasoning_tokens": 79
+    }
+  },
+  "constructor": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 1,
+    "llm_seconds": 41.3,
+    "rejections_by_layer": {},
+    "rounds_per_accepted": {
+      "backward_capacity_balancer": 1,
+      "period_first_slack_packer": 1,
+      "randomized_rcl_repair_constructor": 1
+    },
+    "abandoned": [],
+    "accepted_files": [
+      "generated/clsp_scratch5/constructor/backward_capacity_balancer_r1.py",
+      "generated/clsp_scratch5/constructor/period_first_slack_packer_r1.py",
+      "generated/clsp_scratch5/constructor/randomized_rcl_repair_constructor_r1.py"
+    ],
+    "tokens": {
+      "calls": 1,
+      "input_tokens": 4893,
+      "output_tokens": 6028,
+      "total_tokens": 10921,
+      "reasoning_tokens": 2304
+    }
+  },
+  "neighborhood": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 1,
+    "llm_calls": 6,
+    "llm_seconds": 57.7,
+    "rejections_by_layer": {
+      "contractual": 5,
+      "quality": 2
+    },
+    "rounds_per_accepted": {
+      "compress_setup_triple": 2
+    },
+    "abandoned": [
+      "drop_redundant_late_setup",
+      "compress_setup_pair"
+    ],
+    "accepted_files": [
+      "generated/clsp_scratch5/neighborhood/compress_setup_triple_r2.py"
+    ],
+    "tokens": {
+      "calls": 6,
+      "input_tokens": 12309,
+      "output_tokens": 7526,
+      "total_tokens": 19835,
+      "reasoning_tokens": 4157
+    },
+    "combinations": {
+      "compress_setup_triple": {
+        "compatible_skeletons": [
+          "SA",
+          "ILS",
+          "TS",
+          "VNS",
+          "GRASP"
+        ],
+        "gains": {
+          "SA/lot_for_lot": 0.1394,
+          "SA/greedy_unit_marginal_cost": 0.022,
+          "VNS/lot_for_lot": 0.0493,
+          "VNS/greedy_unit_marginal_cost": 0.0141,
+          "TS/lot_for_lot": 0.0124,
+          "TS/greedy_unit_marginal_cost": 0.0174,
+          "GRASP/lot_for_lot": 0.0491,
+          "GRASP/greedy_unit_marginal_cost": 0.0185
+        }
+      }
+    }
+  },
+  "destruction": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 1,
+    "llm_seconds": 14.3,
+    "rejections_by_layer": {},
+    "rounds_per_accepted": {
+      "congested_period_destruction": 1,
+      "low_utility_setup_destruction": 1,
+      "item_chain_destruction": 1
+    },
+    "abandoned": [],
+    "accepted_files": [
+      "generated/clsp_scratch5/destruction/congested_period_destruction_r1.py",
+      "generated/clsp_scratch5/destruction/low_utility_setup_destruction_r1.py",
+      "generated/clsp_scratch5/destruction/item_chain_destruction_r1.py"
+    ],
+    "tokens": {
+      "calls": 1,
+      "input_tokens": 4879,
+      "output_tokens": 2255,
+      "total_tokens": 7134,
+      "reasoning_tokens": 94
+    }
+  },
+  "perturbation": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 1,
+    "llm_seconds": 13.9,
+    "rejections_by_layer": {},
+    "rounds_per_accepted": {
+      "destroy_repair_window_perturbation": 1,
+      "forward_shift_setup_perturbation": 1,
+      "bottleneck_swap_perturbation": 1
+    },
+    "abandoned": [],
+    "accepted_files": [
+      "generated/clsp_scratch5/perturbation/destroy_repair_window_perturbation_r1.py",
+      "generated/clsp_scratch5/perturbation/forward_shift_setup_perturbation_r1.py",
+      "generated/clsp_scratch5/perturbation/bottleneck_swap_perturbation_r1.py"
+    ],
+    "tokens": {
+      "calls": 1,
+      "input_tokens": 4955,
+      "output_tokens": 2319,
+      "total_tokens": 7274,
+      "reasoning_tokens": 141
+    }
+  },
+  "_run": {
+    "model": "gpt-5.4-mini",
+    "provider": "openai",
+    "from_scratch": true,
+    "catalog_diversity": "annotate",
+    "planner": false,
+    "wall_seconds": 170.3,
+    "tokens": {
+      "calls": 10,
+      "input_tokens": 32519,
+      "output_tokens": 20275,
+      "total_tokens": 52794,
+      "reasoning_tokens": 6775
+    },
+    "note": "define LLM_PRICE_IN y LLM_PRICE_OUT (USD por millón de tokens) para estimar el costo"
+  }
+}

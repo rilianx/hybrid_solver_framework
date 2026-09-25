@@ -19,6 +19,7 @@ LAYER = "syntactic"
 
 PROTOCOL_FOR_SLOT = {
     "constructor": contracts.Constructor,
+    "greedy_score": contracts.GreedyScore,
     "neighborhood": contracts.Neighborhood,
     "evaluator": contracts.Evaluator,
     "acceptance": contracts.Acceptance,

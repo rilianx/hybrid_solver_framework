@@ -17,6 +17,7 @@ from random import Random
 
 from core.common_components import AlwaysAccept
 from core.contracts import Constructor, Memory, Neighborhood, ProblemModel, StopCriterion
+from core.neighborhood import sample_moves
 from core.skeleton import SearchState, TrajectorySkeleton
 
 
@@ -70,11 +71,9 @@ def build_ts(
     memory = memory or TabuMemory(tenure=tenure, neighborhood=neighborhood)
 
     def candidate_generator(sol, state: SearchState, rng: Random):
-        moves = list(neighborhood.moves(sol))
+        moves = sample_moves(neighborhood, sol, candidate_size, rng)
         if not moves:
             return None
-        if len(moves) > candidate_size:
-            moves = rng.sample(moves, candidate_size)
         f_sol = state.current_objective if state.current_objective is not None else problem.objective(sol)
         if hasattr(memory, "best_seen"):
             memory.best_seen = min(memory.best_seen, state.best_objective if state.best_objective is not None else f_sol)

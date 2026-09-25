@@ -497,3 +497,247 @@ def test_probe_checks_constructor_feasibility_on_realistic_instance(tmp_path):
     res = probe_checks("constructor", LotForLotConstructor(), probe)
     assert res and res[0].passed
     assert probe_checks("neighborhood", object(), probe) == []
+
+
+def test_from_scratch_hides_the_handwritten_components(spec_and_ctx):
+    """Desde cero: el prompt no nombra `setup_flip` ni otros componentes de mano, y el
+    feedback no puede mostrar sus movimientos (no hay vecindario de referencia)."""
+    spec, _ = spec_and_ctx
+    for slot in ("neighborhood", "perturbation", "destruction", "constructor"):
+        prompt = generation_prompt(spec, slot, 3, avoid_names=None)
+        for name in ("setup_flip", "lot_for_lot", "period_window", "random_setups"):
+            assert name not in prompt, (slot, name)
+    with_catalog = generation_prompt(spec, "neighborhood", 3, avoid_names=["setup_flip"])
+    assert "setup_flip" in with_catalog and "ya existe" in with_catalog
+    scratch = make_contexts(n_contexts=1, reference_free=True)
+    assert all(c.reference_neighborhood is None for c in scratch)
+    assert all(c.trivial_solutions for c in scratch)  # la partida del esqueleto se mantiene
+
+
+class RoutedClient:
+    """Cliente falso para el planificador: responde según el prompt (las llamadas llegan
+    en paralelo, así que un guion en orden no sirve)."""
+
+    def __init__(self, plans, modules, fixes):
+        import threading
+
+        self.plans, self.modules, self.fixes = list(plans), modules, fixes
+        self.calls, self._lock = [], threading.Lock()
+
+    def complete(self, system, user):
+        with self._lock:
+            self.calls.append(user)
+        if "Propón" in user:
+            with self._lock:
+                return self.plans.pop(0)
+        name = next(n for n in self.modules if f"**{n}**" in user)
+        if "RECHAZADO" in user:
+            return fence(self.fixes.get(name, self.modules[name]))
+        return fence(self.modules[name])
+
+
+def _ideas_json(*names):
+    import json
+
+    return "```json\n" + json.dumps([{"name": n, "idea": f"idea {n} en dos frases. Distinta."} for n in names]) + "\n```"
+
+
+def test_planner_plans_implements_in_parallel_dedupes_and_replans(spec_and_ctx, tmp_path):
+    from llm import generate_slot_planned
+
+    import dataclasses
+
+    from examples.lotsizing.llm_spec import make_diversity_probe
+
+    spec, contexts = spec_and_ctx
+    probe = make_diversity_probe()  # la generación real siempre la tiene: es donde la unión mide duplicados
+    contexts = [dataclasses.replace(c, diversity_probe=probe) for c in contexts]
+    shift_copy = GOOD_SHIFT.replace('"name": "shift_setup_earlier"', '"name": "shift_copy"')
+    client = RoutedClient(
+        plans=[_ideas_json("shift_setup_earlier", "toggle_setup", "shift_copy"), _ideas_json("no_factory")],
+        modules={"shift_setup_earlier": GOOD_SHIFT, "toggle_setup": BAD_TOGGLE, "shift_copy": shift_copy,
+                 "no_factory": NO_FACTORY},
+        fixes={"toggle_setup": FIXED_TOGGLE},
+    )
+    accepted, stats = generate_slot_planned(client, spec, "neighborhood", 3, contexts, tmp_path,
+                                            max_rounds=2, max_workers=3, max_replans=1, verbose=False)
+
+    assert sorted(c.name for c in accepted) == ["shift_setup_earlier", "toggle_setup"]
+    assert stats.planned == ["shift_setup_earlier", "toggle_setup", "shift_copy", "no_factory"]
+    assert list(stats.duplicates) == ["shift_copy"]  # mismo operador que shift_setup_earlier: fuera en la unión
+    assert stats.abandoned == ["no_factory"] and stats.replans == 1
+    assert stats.rounds_per_accepted == {"shift_setup_earlier": 1, "toggle_setup": 2}
+    # la idea va fija en la corrección, y el replaneo ve lo aceptado y lo descartado con su motivo
+    fix = next(c for c in client.calls if "RECHAZADO" in c)
+    assert "**toggle_setup**" in fix and "NO debes cambiar" in fix
+    replan = [c for c in client.calls if "Propón" in c][1]
+    assert "Ideas ya aceptadas" in replan and "shift_copy" in replan and "duplicado" in replan
+    # un archivo por idea y ronda
+    assert (tmp_path / "neighborhood" / "toggle_setup_r2.py").exists()
+    assert (tmp_path / "neighborhood" / "shift_copy_r1.py").exists()
+
+
+def test_parse_ideas_tolerates_noise_and_repeats():
+    from llm.prompts import parse_ideas
+
+    text = 'Aquí van:\n```json\n[{"name": "Move Earlier", "idea": "a"}, {"name": "move earlier", "idea": "b"},' \
+           ' {"name": "x", "idea": ""}, {"name": "swap-pair", "description": "c"}]\n```\nlisto'
+    assert [(i.name, i.text) for i in parse_ideas(text)] == [("move_earlier", "a"), ("swap_pair", "c")]
+    assert parse_ideas("sin json") == []
+
+
+def test_clients_keep_last_usage_per_thread():
+    import threading
+
+    from llm import TokenUsage
+
+    client = ScriptedClient(responses=["a"] * 8, usage_per_call=TokenUsage(10, 5))
+    seen = []
+
+    def call():
+        client.complete("s", "u")
+        seen.append(client.last_usage.total_tokens)
+
+    threads = [threading.Thread(target=call) for _ in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert seen == [15] * 8 and client.usage.total_tokens == 8 * 15
+
+
+DISGUISED_FLIP = textwrap.dedent('''
+    COMPONENT = {"name": "toggle_disguised", "slot": "neighborhood", "compatible_skeletons": ["SA"], "params": {}}
+
+    class ToggleDisguised:
+        def __init__(self, problem): self.problem = problem
+        def moves(self, sol):
+            return [(t, i, "flip") for i in range(len(sol)) for t in range(len(sol[i]))]
+        def apply(self, sol, m):
+            t, i, _ = m; row = sol[i][:t] + (not sol[i][t],) + sol[i][t + 1:]
+            return sol[:i] + (row,) + sol[i + 1:]
+        def undo(self, sol, m): return self.apply(sol, m)
+        def delta(self, sol, m):
+            return self.problem.objective(self.apply(sol, m)) - self.problem.objective(sol)
+
+    def build_component(problem):
+        return ToggleDisguised(problem)
+''')
+
+
+def test_annotate_policy_keeps_catalog_lookalikes_and_records_the_overlap(tmp_path):
+    """Política `annotate` (runs 5 y 6: rechazar lo parecido al catálogo dejaba fuera un
+    `setup_flip` reinventado que rinde mejor): el flip disfrazado se ACEPTA y queda anotado
+    que se parece a `setup_flip`; la diversidad sigue exigiéndose dentro de la corrida."""
+    from examples.lotsizing.components import SetupFlipNeighborhood
+
+    spec = make_spec()
+    contexts = make_contexts(n_contexts=1, n_items=2, n_periods=4, strict=False)
+    probe = contexts[0].diversity_probe
+    peers = [("setup_flip", SetupFlipNeighborhood(probe.problem))]
+    client = ScriptedClient(responses=[fence(DISGUISED_FLIP)])
+    accepted, stats = generate_slot(client, spec, "neighborhood", 1, contexts, tmp_path, verbose=False,
+                                    annotate_peers=peers, avoid_names=["setup_flip"], avoid_ideas=False)
+    assert [c.name for c in accepted] == ["toggle_disguised"]
+    overlap = stats.catalog_overlap["toggle_disguised"]
+    assert overlap["most_similar"] == "setup_flip" and overlap["similarity"] == 1.0
+    prompt = client.calls[0][1]
+    assert "usa nombres distintos" in prompt and "ideas y nombres distintos" not in prompt
+
+
+def test_parse_ideas_tolerates_trailing_commas():
+    """Corrida 12: el plan de constructores traía JSON con comas finales y el slot quedó vacío."""
+    from llm.prompts import parse_ideas
+
+    text = '```json\n[\n  {"name": "a", "idea": "uno",},\n  {"name": "b", "idea": "dos",},\n]\n```'
+    assert [i.name for i in parse_ideas(text)] == ["a", "b"]
+
+
+def test_planner_retries_once_when_the_plan_has_no_ideas(spec_and_ctx, tmp_path):
+    from llm import generate_slot_planned
+
+    spec, contexts = spec_and_ctx
+    client = RoutedClient(plans=["sin json", _ideas_json("toggle_setup")],
+                          modules={"toggle_setup": FIXED_TOGGLE}, fixes={})
+    accepted, stats = generate_slot_planned(client, spec, "neighborhood", 1, contexts, tmp_path,
+                                            max_rounds=1, max_replans=0, verbose=False)
+    assert [c.name for c in accepted] == ["toggle_setup"] and stats.llm_calls == 3
+
+
+def _combo_contexts(budget=0.3, starts=None):
+    import dataclasses
+
+    from examples.lotsizing.llm_spec import make_combination_probe
+
+    ctxs = make_contexts(n_contexts=1, n_items=2, n_periods=4, strict=False)
+    combo = make_combination_probe(ctxs[0].diversity_probe, budget=budget)
+    if starts is not None:
+        combo.starts = starts
+    return [dataclasses.replace(c, combination=combo) for c in ctxs]
+
+
+def test_combination_check_rejects_a_neighborhood_inert_in_every_skeleton(tmp_path):
+    """Un operador que solo ENCIENDE setups pasa las capas aisladas en modo leniente, pero
+    partiendo de lot-for-lot (setup donde hay demanda) encender otro solo agrega costo: no
+    aporta nada sobre el vecindario nulo y se rechaza con la matriz de aportes. (Desde el
+    greedy, que consolida lotes, encender un setup sí puede bajar inventario: por eso aquí
+    la sonda usa una sola partida.)"""
+    from llm.generator import validate_generated_module
+
+    path = tmp_path / "add_only_r1.py"
+    path.write_text(ADD_ONLY)
+    report, _, _ = validate_generated_module(path, _combo_contexts(starts=["lot_for_lot"]))
+    assert not report.passed and report.failed_layer == "quality"
+    msg = report.feedback()
+    assert "useful_in_some_skeleton" in msg and "SA/lot_for_lot" in msg and "componente nulo" in msg
+
+
+def test_combination_check_keeps_useful_skeletons_and_records_the_gains(tmp_path):
+    from llm.generator import validate_generated_module
+
+    path = tmp_path / "toggle_setup_r1.py"
+    path.write_text(FIXED_TOGGLE.replace('"compatible_skeletons": ["SA"]', '"compatible_skeletons": ["SA", "ILS", "VNS"]'))
+    report, _, component = validate_generated_module(path, _combo_contexts())
+    assert report.passed, report.feedback()
+    assert "SA" in component["compatible_skeletons"] and "ILS" in component["compatible_skeletons"]
+    gains = component["combination_gains"]
+    assert gains["SA/lot_for_lot"] > 0.005
+    assert gains["ILS/lot_for_lot"] > 0.005  # en ILS: mejora de su búsqueda local
+
+
+def _pert_module(name, body):
+    head = (f'COMPONENT = {{"name": "{name}", "slot": "perturbation", "compatible_skeletons": ["ILS"], '
+            '"requires": [], "params": {}}\n\n\nclass P:\n    def __init__(self, problem):\n        self.problem = problem\n\n'
+            '    def perturb(self, sol, strength, rng):\n')
+    return head + textwrap.indent(textwrap.dedent(body).strip("\n"), " " * 8) + "\n\n\ndef build_component(problem):\n    return P(problem)\n"
+
+
+def test_combination_check_judges_perturbations_by_escaping_the_local_optimum(tmp_path):
+    """La perturbación se juzga en ILS por capacidad: desde un óptimo local de cada partida,
+    ¿alguna patada seguida de búsqueda local termina en otra solución factible, más allá de lo
+    que logran patadas nulas? (Sonda 5×8: la búsqueda local converge en ~1 s.)"""
+    from core.validation.combination import check_combinations
+    from core.validation.syntactic import load_module
+    from examples.lotsizing.llm_spec import make_combination_probe, make_diversity_probe
+
+    combo = make_combination_probe(make_diversity_probe(5, 8))
+    combo.ils_budget = 2.0
+    shaker = _pert_module("block_flip", '''
+        rows = [list(r) for r in sol]
+        n, T = len(rows), len(rows[0])
+        i, t0 = rng.randrange(n), rng.randrange(1, T - 3)
+        for t in range(t0, t0 + 3):
+            rows[i][t] = not rows[i][t]
+        return tuple(tuple(r) for r in rows)
+    ''')
+    still = _pert_module("stand_still", "return sol")
+    out = {}
+    for name, src in (("block_flip", shaker), ("stand_still", still)):
+        path = tmp_path / f"{name}_r1.py"
+        path.write_text(src)
+        module, _ = load_module(path)
+        out[name] = check_combinations(module.COMPONENT, module.build_component, combo)
+    results, keep, gains = out["block_flip"]
+    assert results[0].passed and keep == ["ILS"] and max(gains.values()) > 0, results[0].message
+    results, keep, gains = out["stand_still"]
+    assert not results[0].passed and keep == [] and "óptimo local" in results[0].message

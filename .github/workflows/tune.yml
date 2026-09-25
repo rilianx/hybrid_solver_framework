@@ -26,7 +26,11 @@ on:
         description: "Catálogo"
         default: both
         type: choice
-        options: [both, handwritten, all]
+        options: [both, three, handwritten, generated, all]
+      generated_dir:
+        description: "Directorio de los componentes generados (p.ej. generated/clsp_scratch)"
+        default: "generated/clsp"
+        type: string
       skeletons:
         description: "Esqueletos (separados por espacio; vacío = todos). Ej.: SA ILS VNS"
         default: ""
@@ -84,6 +88,7 @@ jobs:
           SKELETONS: ${{ inputs.skeletons }}
           SIZE: ${{ inputs.size }}
           REF_TIME: ${{ inputs.ref_time }}
+          GEN_DIR: ${{ inputs.generated_dir }}
         run: |
           set -o pipefail
           ITEMS="${SIZE%%x*}"; PERIODS="${SIZE##*x}"
@@ -91,7 +96,7 @@ jobs:
           if [ -n "$SKELETONS" ]; then read -ra SK <<< "$SKELETONS"; SK_ARGS=(--skeletons "${SK[@]}"); fi
           python -W ignore -m examples.lotsizing.tune --trials "$TRIALS" --budget "$BUDGET" \
             --train "$TRAIN" --test "$TEST" --catalog "$CATALOG" --items "$ITEMS" --periods "$PERIODS" \
-            --ref-time "$REF_TIME" "${SK_ARGS[@]}" --out tuning_out --irace tuning_out/irace 2>&1 | tee tune.log
+            --ref-time "$REF_TIME" --generated "$GEN_DIR" "${SK_ARGS[@]}" --out tuning_out --irace tuning_out/irace 2>&1 | tee tune.log
 
       - name: Resumen
         if: always()
