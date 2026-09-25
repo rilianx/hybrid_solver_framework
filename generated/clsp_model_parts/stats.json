@@ -9,27 +9,30 @@
   },
   "heuristic": {
     "accepted": true,
-    "rounds": 1,
-    "rejections": []
+    "rounds": 2,
+    "rejections": [
+      "vista heurística: rechazado en la capa 'None'. Propiedades violadas:\n  - feasibility_matches_cases: se esperaba INFACTIBLE (viola ['demanda']) y violations no reporta nada en caso visible 'clsp_0_2x3', solución 4 (respuesta [[0, 1, 1], [1, 1, 0]])\n  - cost_matches_cases: se esperaba costo 11877.6 y la suma de cost_terms da 11832 en un caso oculto ('clsp_1_2x4'), solución 0\n  - cost_matches_cases: se esperaba costo 10734.8 y la suma de cost_terms da 10674 en un caso oculto ('clsp_1_2x4'), solución 1\n  - cost_matches_cases: se esperaba costo 8077.6 y la suma de cost_terms da 7846 en un caso oculto ('clsp_1_2x4'), solución 2\n  - feasibility_matches_cases: se esperaba INFACTIBLE (viola ['demanda']) y violations no reporta nada en un caso oculto ('clsp_2_3x3'), solución 3\n  - cost_matches_cases: se esperaba costo 12386.9 y la suma de cost_terms da 12356 en un caso oculto ('clsp_3_3x4'), solución 0\n  - cost_matches_cases: se esperaba costo 10738.9 y la suma de cost_terms da 10708 en un caso oculto ('clsp_3_3x4'), solución 1\n  - cost_matches_cases: se esperaba costo 16107.4 y la suma de cost_terms da 16084 en un caso oculto ('clsp_4_3x4'), solución 0\n  - cost_matches_cases: se esperaba costo 12907.4 y la suma de cost_terms da 12884 en un caso oculto ('clsp_4_3x4'), solución 1\n  - feasibility_matches_cases: se esperaba INFACTIBLE (viola ['demanda']) y violations no reporta nada en un caso oculto ('clsp_5_4x3'), solución 3"
+    ]
   },
   "mip": {
     "accepted": false,
     "rounds": 4,
     "rejections": [
-      "vista MIP: rechazado en la capa 'semantic_mip'. Propiedades violadas:\n  - families_agree: violations reporta la familia ['demanda'] pero ninguna restricción del MIP con ese nombre está violada en el punto de sol=((True, False, True), (True, False, False))",
-      "model_r2.py: rechazado en la capa 'syntactic'. Propiedades violadas:\n  - no_redefinition: la vista MIP vuelve a definir ['_solve_plan', 'canonical'], que ya están en la vista heurística aprobada (tu código se concatena después y los reemplaza): usa los de la vista heurística tal cual y ponle otro nombre a tus funciones auxiliares",
-      "vista MIP: rechazado en la capa 'semantic_mip'. Propiedades violadas:\n  - families_agree: violations reporta ['demanda'] pero el punto cumple todas las restricciones del MIP (sol=((True, False, True), (True, False, False))): al MIP le falta una restricción de esa familia",
-      "model_r4.py: rechazado en la capa 'syntactic'. Propiedades violadas:\n  - no_redefinition: la vista MIP vuelve a definir ['canonical'], que ya están en la vista heurística aprobada (tu código se concatena después y los reemplaza): usa los de la vista heurística tal cual y ponle otro nombre a tus funciones auxiliares"
+      "vista MIP: rechazado en la capa 'semantic_mip'. Propiedades violadas:\n  - full_mip_runs: armar o resolver el MIP completo lanzó PulpError: The upper bound of a variable must be finite, got inf en caso visible 'clsp_0_2x3'\n  - full_mip_runs: armar o resolver el MIP completo lanzó PulpError: The upper bound of a variable must be finite, got inf en un caso oculto ('clsp_1_2x4')\n  - full_mip_runs: armar o resolver el MIP completo lanzó PulpError: The upper bound of a variable must be finite, got inf en un caso oculto ('clsp_2_3x3')\n  - full_mip_runs: armar o resolver el MIP completo lanzó PulpError: The upper bound of a variable must be finite, got inf en un caso oculto ('clsp_3_3x4')\n  - full_mip_runs: armar o resolver el MIP completo lanzó PulpError: The upper bound of a variable must be finite, got inf en un caso oculto ('clsp_4_3x4')\n  - full_mip_runs: armar o resolver el MIP completo lanzó PulpError: The upper bound of a variable must be finite, got inf en un caso oculto ('clsp_5_4x3')",
+      "vista MIP: rechazado en la capa 'semantic_mip'. Propiedades violadas:\n  - families_agree: la familia 'demanda' del MIP rechaza una solución que violations considera factible: restricción 5 (1·inv[1,1] + 1·x[1,1] + -1·inv[1,0] == 95) vale 79.8 en el punto de sol=((True, True, True, True), (True, True, True, True))",
+      "vista MIP: rechazado en la capa 'semantic_mip'. Propiedades violadas:\n  - families_agree: la familia 'demanda' del MIP rechaza una solución que violations considera factible: restricción 0 (1·inv[0,0] + 1·x[0,0] == 0) vale 30.4 en el punto de sol=((True, True, True, True), (True, True, True, True))",
+      "vista MIP: rechazado en la capa 'semantic_mip'. Propiedades violadas:\n  - families_agree: violations reporta ['demanda'] pero el punto cumple todas las restricciones del MIP (sol=((False, True, True), (False, False, True))): al MIP le falta una restricción de esa familia. Variables auxiliares que no están en el objetivo y valen distinto de 0 en ese punto: short[1,0] = 95, x[1,2] = 79, short[1,1] = 43, x[0,1] = 31. Si alguna representa la violación (faltante, exceso…), el MIP la está permitiendo gratis: en el MIP la solución tiene que ser factible, así que esa variable sobra o debe valer 0."
     ]
   },
-  "llm_calls": 5,
-  "seconds": 63.1,
+  "llm_calls": 6,
+  "seconds": 90.9,
   "tokens": {
-    "calls": 5,
-    "input_tokens": 18515,
-    "output_tokens": 14139,
-    "total_tokens": 32654,
-    "reasoning_tokens": 5683
+    "calls": 6,
+    "input_tokens": 23224,
+    "output_tokens": 16123,
+    "total_tokens": 39347,
+    "cached_input_tokens": 4096,
+    "reasoning_tokens": 5923
   },
   "accepted_file": null
 }
