@@ -10,6 +10,11 @@ on:
         default: clsp
         type: choice
         options: [clsp, cvrp]
+      target:
+        description: "Qué generar: componentes (slots) o el ProblemModel completo (§6.1)"
+        default: components
+        type: choice
+        options: [components, problem_model]
       slots:
         description: "Slots a generar (separados por espacio)"
         default: "neighborhood destruction constructor perturbation"
@@ -69,7 +74,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      WS: ${{ inputs.workspace || format('generated/{0}{1}{2}', inputs.problem, inputs.from_scratch && '_scratch' || '', inputs.planner && '_planner' || '') }}
+      WS: ${{ inputs.workspace || (inputs.target == 'problem_model' && format('generated/{0}_model', inputs.problem)) || format('generated/{0}{1}{2}', inputs.problem, inputs.from_scratch && '_scratch' || '', inputs.planner && '_planner' || '') }}
+      TARGET: ${{ inputs.target }}
       PKG: ${{ inputs.problem == 'cvrp' && 'cvrp' || 'lotsizing' }}
       SCRATCH: ${{ inputs.from_scratch && 'true' || 'false' }}
       PLANNER: ${{ inputs.planner && 'true' || 'false' }}
@@ -131,6 +137,13 @@ jobs:
         working-directory: ${{ env.ROOT }}
         run: |
           set -o pipefail
+          if [ "$TARGET" = "problem_model" ]; then
+            ARGS="--rounds $ROUNDS --provider $PROVIDER --workspace $WS"
+            if [ -n "$MODEL" ]; then ARGS="$ARGS --model $MODEL"; fi
+            echo "python -m examples.$PKG.generate_model $ARGS"
+            python -W ignore -m "examples.$PKG.generate_model" $ARGS 2>&1 | tee generate.log
+            exit 0
+          fi
           ARGS="--slots $SLOTS --n $N --rounds $ROUNDS --provider $PROVIDER --workspace $WS"
           if [ -n "$MODEL" ]; then ARGS="$ARGS --model $MODEL"; fi
           if [ "$SCRATCH" = "true" ]; then ARGS="$ARGS --from-scratch"; fi
@@ -154,7 +167,7 @@ jobs:
             echo "Proveedor \`$PROVIDER\` · modelo \`$MODEL\` · \`$N\` variantes por slot · hasta \`$ROUNDS\` rondas"
             if [ "$SCRATCH" = "true" ]; then echo ""; echo "**Desde cero**: sin componentes de referencia, en \`$WS\`."; fi
             echo ""
-            python -m scripts.stats_summary "$WS/stats.json"
+            if [ "$TARGET" = "problem_model" ]; then echo '```json'; cat "$WS/stats.json" 2>/dev/null; echo '```'; else python -m scripts.stats_summary "$WS/stats.json"; fi
             echo ""
             if [ -f generate.log ]; then
               echo "<details><summary>Log completo de la generación</summary>"
@@ -224,6 +237,7 @@ jobs:
           BRANCH="llm-generated/$PFX-run$RUN"
           [ "$SCRATCH" = "true" ] && BRANCH="llm-generated/$PFX-scratch-run$RUN"
           [ "$PLANNER" = "true" ] && BRANCH="$BRANCH-planner"
+          [ "$TARGET" = "problem_model" ] && BRANCH="llm-generated/$PROBLEM-$PROVIDER-model-run$RUN"
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
@@ -233,6 +247,7 @@ jobs:
           TAG=""; [ "$SCRATCH" = "true" ] && TAG=", desde cero"
           [ "$PLANNER" = "true" ] && TAG="$TAG, con planificador"
           [ "$PROBLEM" != "clsp" ] && TAG="$TAG, $PROBLEM"
+          [ "$TARGET" = "problem_model" ] && TAG="$TAG, ProblemModel"
           git commit -m "Componentes generados por $PROVIDER (corrida $RUN$TAG)" || { echo "Sin cambios."; exit 0; }
           git push -u origin "$BRANCH"
           {
@@ -242,7 +257,7 @@ jobs:
             echo "- Slots: \`$SLOTS\`, \`$N\` variantes, hasta \`$ROUNDS\` rondas"
             if [ "$SCRATCH" = "true" ]; then echo "- **Desde cero**: sin componentes de referencia, en \`$WS\`"; fi
             echo ""
-            python -m scripts.stats_summary "$WS/stats.json"
+            if [ "$TARGET" = "problem_model" ]; then echo '```json'; cat "$WS/stats.json"; echo '```'; else python -m scripts.stats_summary "$WS/stats.json"; fi
             echo ""
             echo "Antes de mezclar: corre \`benchmark_components\` para ver si estos componentes"
             echo "además de válidos son útiles y distintos entre sí."

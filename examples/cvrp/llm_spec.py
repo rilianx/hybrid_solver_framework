@@ -61,6 +61,30 @@ def make_spec() -> ProblemSpec:
     )
 
 
+def make_model_spec():
+    """Para generar el `ProblemModel` completo con LLM (§6.1): la descripción y la instancia, sin
+    el modelo de referencia."""
+    from llm.model_generator import ModelSpec
+
+    from . import instance
+
+    return ModelSpec(
+        name="CVRP (ruteo de vehículos con capacidad, flota libre)",
+        description=(
+            "Hay un depósito (nodo 0) y clientes 1..n con coordenadas y demanda d[c] (`inst.demand[0] = 0`). Cada vehículo "
+            "sale del depósito, visita una secuencia de clientes y vuelve al depósito; la suma de demandas de una ruta no "
+            "puede superar `inst.capacity`. Cada cliente se visita exactamente una vez. La cantidad de vehículos es libre "
+            "(no hay límite ni costo fijo por vehículo). Objetivo: minimizar la distancia euclidiana total recorrida "
+            "(`inst.dist(i, j)`), incluidos los tramos desde y hacia el depósito. Una solución infactible debe tener un "
+            "objetivo finito pero peor que cualquier factible (penalización)."
+        ),
+        instance_source=inspect.getsource(instance.CVRPInstance),
+        instance_import="examples.cvrp.instance",
+        notes=["Elige tú la representación de la solución para las heurísticas (debe ser hashable y comparable con ==)."],
+        forbidden_modules=["examples.cvrp.problem_model", "examples.cvrp.components", "examples.cvrp.construction"],
+    )
+
+
 def _construction_source() -> str:
     from . import construction as c
 
