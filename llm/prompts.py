@@ -29,6 +29,8 @@ class ProblemSpec:
     notes: list[str] = field(default_factory=list)  # avisos (minimización, penalización, costo de objective...)
     starting_solution: str | None = None  # micro-instancia + solución de partida, para slots que operan sobre ella
     construction_source: str | None = None  # vista constructiva (estado parcial y acción), para el slot greedy_score
+    # pistas propias del problema por slot, que se agregan a las genéricas de `SLOT_HINTS`
+    slot_hints: dict[str, str] = field(default_factory=dict)
 
 
 SYSTEM_PROMPT = """Eres un experto en metaheurísticas y matheurísticas que escribe componentes algorítmicos en Python.
@@ -52,6 +54,11 @@ Formato de salida: cada componente en su propio bloque ```python ... ``` con el 
 salvo una línea breve antes de cada bloque. Nada más."""
 
 
+def slot_hint(spec: "ProblemSpec", slot: str) -> str:
+    """Pista genérica del slot más la propia del problema, si la hay."""
+    return " ".join(h for h in (SLOT_HINTS.get(slot, ""), spec.slot_hints.get(slot, "")) if h)
+
+
 def protocol_source(slot: str) -> str:
     return inspect.getsource(PROTOCOL_FOR_SLOT[slot])
 
@@ -70,12 +77,9 @@ SLOT_HINTS = {
         "(se verifica); si no, no hace falta."
     ),
     "constructor": (
-        "Se verificará: `build(inst, rng)` devuelve una solución FACTIBLE y es determinista dada la semilla del rng. "
-        "Factible significa cubrir TODA la demanda respetando la capacidad de cada período. Con utilización alta esto NO es "
-        "trivial: lot-for-lot (setup justo donde hay demanda) puede exceder la capacidad de un período pico y dejar faltante, "
-        "y entonces hay que producir ANTES y almacenar. Regla práctica: recorre los períodos en orden; si la demanda acumulada "
-        "hasta t (más tiempos de setup) supera la capacidad acumulada disponible, adelanta producción a períodos anteriores con "
-        "holgura. Comprueba la factibilidad con `problem.is_feasible(sol)` dentro de `build` y repara antes de devolver."
+        "Se verificará: `build(inst, rng)` devuelve una solución FACTIBLE y es determinista dada la semilla del rng, "
+        "también en una instancia de tamaño realista. Comprueba la factibilidad con `problem.is_feasible(sol)` dentro de "
+        "`build` y repara antes de devolver."
     ),
     "perturbation": "Se verificará: `perturb(sol, strength, rng)` devuelve una solución distinta de `sol` (para strength >= 1).",
     "greedy_score": (
@@ -86,7 +90,7 @@ SLOT_HINTS = {
         "instancia y los atributos del parcial, nunca `problem.objective` ni `problem.is_feasible`. Se verificará: devuelve "
         "un número finito, es determinista, NO modifica `partial` (solo lo lee), y el constructor greedy que arma produce "
         "soluciones factibles y no mucho peores que la de referencia. Distintos puntajes = distintas ideas sobre qué conviene "
-        "cubrir primero y desde dónde (costo, urgencia, holgura de capacidad, balance entre ítems...)."
+        "elegir primero (costo, urgencia, holgura, balance...)."
     ),
     "destruction": (
         "`destroy(sol, ratio, rng)` devuelve `(partial, free_vars)`: `free_vars` es un set de NOMBRES de variables de la vista MIP "
@@ -133,8 +137,8 @@ def generation_prompt(spec: ProblemSpec, slot: str, n_variants: int, avoid_names
             "Distintos significa ideas algorítmicas diferentes (no el mismo operador con otro parámetro). Nombra cada uno de forma descriptiva.",
         ]
     parts = task + [f"\n# Contrato del slot `{slot}` (Protocol exacto)\n```python\n{protocol_source(slot)}```"]
-    if slot in SLOT_HINTS:
-        parts.append(f"\n# Propiedades que verificará el validador\n{SLOT_HINTS[slot]}")
+    if slot in SLOT_HINTS or slot in spec.slot_hints:
+        parts.append("\n# Propiedades que verificará el validador\n" + slot_hint(spec, slot))
     if slot in SKELETONS_FOR_SLOT:
         parts.append(
             f"\nDeclara `\"compatible_skeletons\": {SKELETONS_FOR_SLOT[slot]}` salvo que el componente dependa de un "
@@ -198,8 +202,8 @@ def planning_prompt(spec: ProblemSpec, slot: str, n_ideas: int, avoid_names: lis
         "no el mismo operador con otro parámetro ni uno contenido en otro.",
         f"\n# Contrato del slot `{slot}` (lo que tendrá que implementar cada idea)\n```python\n{protocol_source(slot)}```",
     ]
-    if slot in SLOT_HINTS:
-        parts.append(f"\n# Propiedades que verificará el validador\n{SLOT_HINTS[slot]}")
+    if slot in SLOT_HINTS or slot in spec.slot_hints:
+        parts.append("\n# Propiedades que verificará el validador\n" + slot_hint(spec, slot))
     parts.append(f"\n# Problema: {spec.name}\n{spec.description}")
     parts.append(f"\n## Representación de la solución\n{spec.solution_representation}")
     if spec.notes:
@@ -267,7 +271,7 @@ def correction_prompt(spec: ProblemSpec, slot: str, module_source: str, feedback
             "en un único bloque ```python```.",
             *pinned,
             "Importante: arregla SOLO lo que el reporte señala y no rompas lo que ya pasaba. Si el problema es que el operador no "
-            "mejora, NO agregues movimientos compuestos (dos setups a la vez, mover+quitar): mantén movimientos elementales con "
+            "mejora, NO agregues movimientos compuestos (dos cambios a la vez, mover+quitar): mantén movimientos elementales con "
             "`undo` exacto y usa las pistas del reporte sobre qué movimientos concretos sí mejoran.",
             f"\n# Reporte del validador\n{feedback}",
             f"\n# Contrato del slot (Protocol exacto)\n```python\n{protocol_source(slot)}```",

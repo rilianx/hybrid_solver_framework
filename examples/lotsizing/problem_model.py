@@ -254,6 +254,18 @@ class CLSPMip:
 class LotSizingModel:
     """Implementa `core.contracts.ProblemModel` para una instancia fija."""
 
+    # Sugerencias propias del CLSP para los mensajes del validador (`core.validation.quality.hint`).
+    validation_hints = {
+        "novelty": ("P.ej. apagar un setup y ADELANTAR su producción a un período anterior con holgura, fusionar dos "
+                    "lotes consecutivos del mismo ítem, o vaciar un período saturado moviendo varios ítems a la vez."),
+        "distinct": ("En el CLSP: si mueve producción entre períodos en vez de encender/apagar, si opera sobre un ítem o "
+                     "sobre un período completo, si usa capacidad saturada, demanda cero o inventario acumulado."),
+        "constructor_probe": ("Con más ítems compitiendo por la capacidad, el greedy deja demanda sin cubrir: hay que "
+                              "verificar la capacidad ACUMULADA hasta cada período y adelantar producción a períodos "
+                              "anteriores con holgura cuando no alcance."),
+        "constructor_quality": "Evita encender setups que no cubren demanda.",
+    }
+
     def __init__(self, inst: CLSPInstance):
         self.inst = inst
         self.mip = CLSPMip(inst)

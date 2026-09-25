@@ -52,6 +52,16 @@ def make_spec() -> ProblemSpec:
         ],
         starting_solution=starting_solution_example(),
         construction_source=_construction_source(),
+        slot_hints={
+            "constructor": (
+                "Factible significa cubrir TODA la demanda respetando la capacidad de cada período. Con utilización alta "
+                "esto NO es trivial: lot-for-lot (setup justo donde hay demanda) puede exceder la capacidad de un período pico "
+                "y dejar faltante, y entonces hay que producir ANTES y almacenar. Regla práctica: recorre los períodos en "
+                "orden; si la demanda acumulada hasta t (más tiempos de setup) supera la capacidad acumulada disponible, "
+                "adelanta producción a períodos anteriores con holgura."
+            ),
+            "greedy_score": "En el CLSP: qué cubrir primero y desde dónde (costo, urgencia, holgura de capacidad, balance entre ítems).",
+        },
     )
 
 
