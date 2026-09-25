@@ -16,7 +16,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from .base import ValidationContext, ValidationReport
+from .base import ValidationContext, ValidationReport, guard
 from .contractual import check_slot
 from .operational import VariantRunner, check_repair_mip_time_limit, check_variant_runs
 from .quality import check_component_quality, check_min_quality
@@ -42,8 +42,15 @@ def validate_component(component: dict[str, Any], impl: Any, ctx: ValidationCont
         report.extend(check_repair_mip_time_limit(impl, ctx, time_limit=1.0))
         if stop_at_first_failed_layer and not report.passed:
             return report
-    report.extend(check_component_quality(spec.slot, impl, ctx))
+    report.extend(_quality(spec.slot, impl, ctx))
     return report
+
+
+def _quality(slot: str, impl: Any, ctx: ValidationContext):
+    """La capa de calidad llama al componente (moves, delta, build...) y una excepción suya es
+    un rechazo, no un error del validador: sin esto un vecindario generado que lanzaba
+    `ValueError` en `delta` tumbaba la generación completa (CVRP, corrida 17)."""
+    return guard("quality", f"{slot}.quality", lambda: check_component_quality(slot, impl, ctx))
 
 
 def validate_component_file(path: str | Path, ctx: ValidationContext) -> ValidationReport:
@@ -65,7 +72,7 @@ def validate_component_file(path: str | Path, ctx: ValidationContext) -> Validat
         report.extend(check_repair_mip_time_limit(impl, ctx, time_limit=1.0))
         if not report.passed:
             return report
-    report.extend(check_component_quality(spec.slot, impl, ctx))
+    report.extend(_quality(spec.slot, impl, ctx))
     return report
 
 

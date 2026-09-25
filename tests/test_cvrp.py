@@ -119,3 +119,16 @@ def test_mip_perturbation_forces_a_change_and_repairs_with_the_mip():
     assert seen[0] == initial and len(seen) >= 4
     assert all(s != initial for s in seen[1:2]) and all(P.is_feasible(s) for s in seen[1:])
     assert result.best_objective <= P.objective(initial)
+
+
+def test_a_component_exception_in_the_quality_layer_is_a_rejection(contexts):
+    """CVRP, corrida 17: un vecindario generado lanzaba ValueError en `delta` sobre movimientos
+    que la capa contractual no había muestreado, y la excepción tumbaba la generación."""
+    from core.validation.pipeline import _quality
+
+    class Flaky(RelocateNeighborhood):
+        def delta(self, sol, m):
+            raise ValueError("move does not match solution")
+
+    results = _quality("neighborhood", Flaky(contexts[0].problem), contexts[0])
+    assert results and not results[0].passed and "ValueError" in results[0].message
