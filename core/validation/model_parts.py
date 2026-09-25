@@ -28,6 +28,10 @@ from core.model_parts import HEURISTIC_PARTS, MIP_PARTS, TOL, LinearMIP, TestCas
 from .base import CheckResult, ValidationReport, fail, ok
 
 
+MIN_GROUPS = 4
+MAX_GROUP_SHARE = 1 / 3
+
+
 def _close(a: float, b: float, tol: float = 1e-5) -> bool:
     return math.isclose(a, b, rel_tol=tol, abs_tol=tol * 100)
 
@@ -164,13 +168,16 @@ def _names(dom, struct, fams, obj, groups, where) -> list[CheckResult]:
         out.append(fail(L, "groups_partition_structural",
                         f"variable_groups debe ser una partición de structural_variables ({where}): "
                         f"faltan {sorted(set(struct) - set(grouped))[:5]}, repetidas o ajenas {sorted({v for v in grouped if grouped.count(v) > 1 or v not in struct})[:5]}"))
-    # una partición en un solo grupo es válida pero inútil: Fix-and-Optimize y Relax-and-Fix
-    # resuelven el MIP entero (corrida 21: un grupo con los 420 arcos, FIX_OPT no mejoraba nada)
-    if len(struct) >= 8 and (len(groups) < 2 or max((len(vs) for vs in groups.values()), default=0) > 0.6 * len(struct)):
+    # una partición en pocos grupos es válida pero inútil: Fix-and-Optimize libera bloques de 1 a 4
+    # grupos (2 por defecto), así que con 1 o 2 grupos un bloque es el MIP entero (corrida 21: un
+    # grupo con los 420 arcos; corrida 22: la lista partida en 2 mitades; FIX_OPT no mejoraba nada)
+    biggest = max((len(vs) for vs in groups.values()), default=0)
+    if len(struct) >= 12 and (len(groups) < MIN_GROUPS or biggest > MAX_GROUP_SHARE * len(struct)):
         out.append(fail(L, "groups_split_the_problem",
-                        f"variable_groups debe dividir el problema en bloques ({where}): hay {len(groups)} grupo(s) y el mayor "
-                        f"tiene {max((len(vs) for vs in groups.values()), default=0)} de {len(struct)} variables (máximo el 60 %). "
-                        f"Agrupa por estructura del problema (sector, período, ítem…)."))
+                        f"variable_groups debe dividir el problema en bloques chicos ({where}): hay {len(groups)} grupo(s) y el "
+                        f"mayor tiene {biggest} de {len(struct)} variables; se piden al menos {MIN_GROUPS} grupos y ninguno con "
+                        f"más de un tercio. Fix-and-Optimize libera de a 1 a 4 grupos por subproblema, y con pocos grupos cada "
+                        f"subproblema es casi el MIP completo. Agrupa por estructura del problema (sector, período, ítem…)."))
     used = {v for cons in fams.values() for coefs, _, _ in cons for v in coefs} | {v for coefs, _ in obj.values() for v in coefs}
     undeclared = sorted(used - set(dom))
     if undeclared:

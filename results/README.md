@@ -75,6 +75,36 @@ tuner sobreajusta los parámetros continuos; más instancias, o racing (irace), 
 que más trials. La referencia del MIP (CBC, 60 s) también varía entre runs (2.ª instancia:
 69 668–70 193), lo que mueve el gap medio ~0,15 puntos.
 
+### Segundo problema (CVRP): el validador tenía suposiciones del CLSP
+
+Corridas de generación 18 y 20 (`generated/cvrp_scratch`, `…2`), desde cero: 11 y 10 de 15
+componentes aceptados, pero solo 1 de 3 vecindarios en cada una. Los rechazos venían del
+framework: soluciones "al azar" leídas de asignaciones 0/1 (en el CVRP no forman rutas; ahora
+el modelo puede dar `random_solution`), feedback sin el movimiento ni la solución, exigir
+movimientos o cambios en CADA solución de prueba (2-opt no tiene movimientos en una ruta de un
+cliente), la monotonía de la destrucción medida en la micro-instancia y una partida de
+validación degenerada (una ruta por cliente). Corregido eso, cada idea de vecindario,
+destrucción y perturbación de la corrida 20 tiene al menos una versión que pasa.
+
+### ProblemModel generado: por piezas y con casos de prueba, el error llega localizado
+
+| Corrida | Modo | Rondas | Llamadas | Tiempo | Tokens | Óptimo vs referencia |
+|---|---|---|---|---|---|---|
+| 19 | de una pieza | 2 | 2 | 40 s | 11 mil | igual en 3 micro-instancias |
+| 21 | por piezas, 6 casos (1 visible) | heurística 1, MIP 2 | 3 | 43 s | 15 mil | igual |
+| 22 | por piezas, 6 casos (1 visible) | heurística 1, MIP 2 | 3 | 70 s | 17 mil | igual |
+
+El rechazo de la corrida 19 decía que el MIP declaraba infactible la solución trivial, sin
+decir qué restricción; el de la 21 nombra familia, restricción y valor ("la familia
+'capacidad' rechaza una solución factible: restricción 8 (u_2 − u_1 + 23·x_1_2 ≥ 9) vale −1").
+Los esqueletos corren sobre los modelos generados con los mismos costos que sobre el de
+referencia, salvo FIX_OPT: en la 21 `variable_groups` devolvía un grupo con todos los arcos, y
+en la 22, ya exigidos 2 grupos con a lo sumo el 60 %, la lista partida en dos mitades. FIX_OPT
+libera de a 2 grupos por defecto, así que cada subproblema era el MIP completo (15 clientes,
+4 s: 1235 contra 682 con los sectores de referencia). Ahora se piden al menos 4 grupos y
+ninguno con más de un tercio de las variables estructurales. Las dos corridas pasaron la
+vista heurística a la primera contra 5 casos ocultos.
+
 ### Generación: sin ver los componentes de mano, el LLM los iguala y los supera
 
 | Catálogo afinado (run 5) | Gap | Configuración elegida |

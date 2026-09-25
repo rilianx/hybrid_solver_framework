@@ -57,8 +57,9 @@ def constraint_families(inst) -> dict[str, list[tuple[dict[str, float], str, flo
     # usa `violations`: se verificará que la familia del MIP se viola exactamente cuando violations la reporta.
 def objective_terms(inst) -> dict[str, tuple[dict[str, float], float]]: ...
     # {término: (coeficientes, constante)} con los MISMOS nombres de término que cost_terms
-def variable_groups(inst) -> dict[str, list[str]]: ...   # partición de structural_variables en VARIOS bloques
-    # (ninguno con más del 60 %): Fix-and-Optimize y Relax-and-Fix resuelven un bloque por vez
+def variable_groups(inst) -> dict[str, list[str]]: ...   # partición de structural_variables en bloques CHICOS
+    # (al menos 4, ninguno con más de un tercio), según la estructura del problema: Fix-and-Optimize
+    # libera de a 1 a 4 grupos por subproblema, y Relax-and-Fix fija un grupo por vez
 '''
 
 
@@ -97,7 +98,8 @@ def mip_prompt(spec: ModelSpec, cases: list[TestCase], heuristic_source: str) ->
     return "\n".join([
         f"# Tarea\nEscribe la vista MIP del modelo del problema **{spec.name}**, como DATOS (sin llamar a ningún solver). "
         "La vista heurística ya está escrita y aprobada contra los casos de prueba: NO la cambies ni la redefinas; tu "
-        "módulo se concatena DESPUÉS de ella, así que puedes usar sus funciones (canonical, cost_terms…) directamente.",
+        "módulo se concatena DESPUÉS de ella, así que puedes usar sus funciones (canonical, cost_terms…) directamente; "
+        "no la importes (no es un módulo aparte).",
         f"\n# El problema\n{spec.description}",
         f"\n# La instancia\n```python\n{spec.instance_source}\n```",
         f"\n# Vista heurística aprobada (ya definida antes de tu código)\n```python\n{heuristic_source}\n```",

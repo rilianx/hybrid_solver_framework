@@ -166,3 +166,14 @@ def test_a_single_variable_group_is_rejected(cases):
     """Corrida 21: variable_groups con un solo grupo (partición válida) dejaba inútil a FIX_OPT."""
     report = check_mip_view(mutant(variable_groups=lambda inst: {"todo": ref.structural_variables(inst)}), cases)
     assert not report.passed and "groups_split_the_problem" in report.feedback()
+
+
+def test_two_halves_of_the_variable_list_are_rejected(cases):
+    """Corrida 22: la lista partida en 2 mitades pasaba el umbral del 60 %, pero FIX_OPT libera de a
+    2 grupos por defecto y cada subproblema era el MIP completo."""
+    def variable_groups(inst):
+        xs = ref.structural_variables(inst)
+        return {"g1": xs[: len(xs) // 2], "g2": xs[len(xs) // 2:]}
+
+    report = check_mip_view(mutant(variable_groups=variable_groups), cases)
+    assert not report.passed and "groups_split_the_problem" in report.feedback()
