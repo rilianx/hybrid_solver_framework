@@ -223,10 +223,13 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-      - name: Abrir PR con los componentes generados
-        if: ${{ inputs.open_pr && success() }}
+      # La rama se empuja siempre (el artefacto expira y no siempre se puede descargar); el PR,
+      # solo con open_pr.
+      - name: Guardar en la rama llm-generated/… y abrir PR
+        if: ${{ success() }}
         env:
           GH_TOKEN: ${{ github.token }}
+          OPEN_PR: ${{ inputs.open_pr }}
           PROVIDER: ${{ inputs.provider }}
           MODEL: ${{ inputs.model }}
           SLOTS: ${{ inputs.slots }}
@@ -257,6 +260,8 @@ jobs:
           [ "$TARGET" = "problem_model" ] && TAG="$TAG, ProblemModel"
           git commit -m "Componentes generados por $PROVIDER (corrida $RUN$TAG)" || { echo "Sin cambios."; exit 0; }
           git push -u origin "$BRANCH"
+          echo "Resultados en la rama \`$BRANCH\`." >> "$GITHUB_STEP_SUMMARY"
+          if [ "$OPEN_PR" != "true" ]; then exit 0; fi
           {
             echo "Corrida manual del workflow \`generar componentes con LLM\`."
             echo ""
