@@ -75,6 +75,42 @@ tuner sobreajusta los parámetros continuos; más instancias, o racing (irace), 
 que más trials. La referencia del MIP (CBC, 60 s) también varía entre runs (2.ª instancia:
 69 668–70 193), lo que mueve el gap medio ~0,15 puntos.
 
+### ProblemModel del CLSP por piezas: de 4 rechazos a aceptado a la primera, por arreglos del framework
+
+El CLSP pone a prueba otra cosa que el CVRP: la solución es el plan de setups y el costo sale de
+un LP (producción e inventario), así que la vista MIP tiene variables auxiliares continuas.
+Referencia en `examples/lotsizing/model_parts.py`; 6 casos de 2×3 a 4×3 con el óptimo por fuerza
+bruta, igual al del MIP escrito a mano en los 6.
+
+| Corrida | Heurística | MIP | Llamadas | Tokens | Qué lo frenó | Arreglo en el framework |
+|---|---|---|---|---|---|---|
+| 25 | ronda 1 | — | — | — | la vista MIP redefinió un auxiliar de la heurística; la excepción tumbó el validador | rechazar redefiniciones; excepción = rechazo |
+| 27 | ronda 4 | ✘ 4 rondas | 8 | 63 mil | redefinía `COMPONENT`/`build_component`: se usaba el prompt de sistema de los componentes | prompt de sistema propio del modelo |
+| 28 | ronda 1 | ✘ 4 rondas | 5 | 33 mil | faltante `short_i_t` en el balance, fuera del objetivo ("le falta una restricción") | nombrar las auxiliares que absorben la violación |
+| 29 | ronda 2 | ✘ 4 rondas | 6 | 39 mil | cotas `inf` (PuLP las rechaza); signos del balance; el faltante gratis otra vez | cotas infinitas aceptadas |
+| 30 | **ronda 1** | **ronda 1** | 2 | 12 mil | — | — |
+
+La corrida 30 coincide con el modelo escrito a mano en las 3 micro-instancias del chequeo
+cruzado. Sobre una instancia 10×15, 5 s, evaluando todo con el modelo escrito a mano:
+
+| Esqueleto | Modelo a mano | Piezas de referencia | Piezas generadas (30) |
+|---|---|---|---|
+| SA | 84 779 | 84 480 | 88 093 |
+| ILS | 88 828 | 86 685 | 89 829 |
+| VNS | 91 469 | 91 562 | 89 433 |
+| LNS_MIP | 77 924 | 77 924 | **74 814** |
+| FIX_OPT | 77 805 | 77 805 | 77 270 |
+
+Todas las soluciones son factibles. Los esqueletos heurísticos varían en ±4 % entre modelos (la
+penalización y la velocidad de evaluación cambian la trayectoria); las matheurísticas quedan
+iguales o mejores con el MIP generado. Su `variable_groups` agrupa los períodos de a 4 intercalados
+(t mod 4): cumple la regla y FIX_OPT funciona, aunque la referencia usa un grupo por período.
+
+Lo que dice del framework: los rechazos de las corridas 25–29 fueron casi todos del framework,
+no del problema (un prompt de sistema equivocado, una excepción sin atrapar, cotas infinitas, un
+reporte que no decía dónde mirar). Con las piezas y los casos, cada falla quedó localizada en una
+función y una familia, y por eso se pudo arreglar en una tarde.
+
 ### Segundo problema (CVRP): el validador tenía suposiciones del CLSP
 
 Corridas de generación 18 y 20 (`generated/cvrp_scratch`, `…2`), desde cero: 11 y 10 de 15
@@ -93,6 +129,7 @@ destrucción y perturbación de la corrida 20 tiene al menos una versión que pa
 | 19 | de una pieza | 2 | 2 | 40 s | 11 mil | igual en 3 micro-instancias |
 | 21 | por piezas, 6 casos (1 visible) | heurística 1, MIP 2 | 3 | 43 s | 15 mil | igual |
 | 22 | por piezas, 6 casos (1 visible) | heurística 1, MIP 2 | 3 | 70 s | 17 mil | igual |
+| 26 | por piezas, grupos ≥ 4 en tamaño real | heurística 1, MIP 1 | 2 | 26 s | 9 mil | igual |
 
 El rechazo de la corrida 19 decía que el MIP declaraba infactible la solución trivial, sin
 decir qué restricción; el de la 21 nombra familia, restricción y valor ("la familia
