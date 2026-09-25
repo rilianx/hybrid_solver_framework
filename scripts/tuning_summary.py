@@ -44,6 +44,18 @@ def render_catalog(payload: dict) -> str:
     out += ["", f"Ganancia del afinado sobre el mejor default: **{test['gain_vs_best_baseline']:+.2%}**; "
             f"gana en {test['wins_per_instance']} instancias de test. Esqueletos explorados: "
             + ", ".join(f"{k} × {v}" for k, v in tun["skeleton_usage"].items()) + "."]
+    pc = test.get("tuned_vs_best_baseline")
+    if pc:
+        out += ["", f"Afinado vs `{pc['b']}` (mejor default por gap): {pc['mean_diff']:+.2%} de gap a favor del afinado, "
+                f"IC95 [{pc['ci95'][0]:+.2%}, {pc['ci95'][1]:+.2%}]"
+                + ("." if pc["significant"] else " — **no se distingue del ruido** con estas instancias.")]
+    if tun.get("reevaluated"):
+        out += ["", "Selección final por re-evaluación en train (media sobre semillas):", "",
+                "| trial | media | costos | configuración |", "|---|---|---|---|"]
+        for r in sorted(tun["reevaluated"], key=lambda r: r["mean"]):
+            mark = " ✔" if r["number"] == tun.get("best_trial_number") else ""
+            out.append(f"| {r['number']}{'*' if r['enqueued'] else ''}{mark} | {r['mean']:.4f} | "
+                       + ", ".join(f"{c:.4f}" for c in r["costs"]) + f" | `{r['summary']}` |")
     return "\n".join(out)
 
 

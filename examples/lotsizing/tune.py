@@ -85,8 +85,12 @@ def run_experiment(catalog: str, args, train, test, out_dir: Path):
         print(f"  trial {t.number:>3}{mark} {t.cost:>12.4f}  {t.summary}")
 
     normalizers = [lot_for_lot_cost(i) for i in train] if args.objective == "ratio" else None
-    result = tune_with_optuna(assembler, train, args.budget, args.trials, seed=args.seed, space=space,
-                              on_trial=on_trial, normalizers=normalizers)
+    result = tune_with_optuna(assembler, train, args.budget, args.trials, seed=args.tuner_seed, space=space,
+                              on_trial=on_trial, normalizers=normalizers,
+                              reeval_top=args.reeval_top, reeval_seeds=args.reeval_seeds)
+    for r in result.reevaluated:
+        print(f"  re-evaluado #{r['number']:>3}{'*' if r['enqueued'] else ' '} media {r['mean']:.4f} "
+              f"({', '.join(f'{c:.4f}' for c in r['costs'])})  {r['summary']}")
     print(f"  mejor en train: {result.best_cost:.4f}  {describe(result.best_config)}  ({result.seconds:.0f}s, {result.n_failed} fallidas)")
 
     reference = mean(lot_for_lot_cost(i) for i in test)
@@ -96,8 +100,9 @@ def run_experiment(catalog: str, args, train, test, out_dir: Path):
     payload = {
         "catalog": catalog, "generated_components": gen_names,
         "settings": {"trials": args.trials, "budget": args.budget, "train": len(train), "test": len(test),
-                     "items": args.items, "periods": args.periods, "seed": args.seed, "seeds_test": args.seeds,
-                     "objective": args.objective, "skeletons": args.skeletons or "all", "ref_time": args.ref_time},
+                     "items": args.items, "periods": args.periods, "seed": args.seed, "tuner_seed": args.tuner_seed, "seeds_test": args.seeds,
+                     "objective": args.objective, "skeletons": args.skeletons or "all", "ref_time": args.ref_time,
+                     "reeval_top": args.reeval_top, "reeval_seeds": args.reeval_seeds},
         "tuning": result.to_dict(),
     }
     return payload, report, assembler.penalty_cost
@@ -112,6 +117,9 @@ def print_test(catalog: str, report, reference: float, n_test: int) -> None:
               f"({(reference - sc.mean) / reference:+.1%} vs lfl)   {describe(sc.config)}")
     print(f"  ganancia del afinado vs mejor default: {report.gain_vs_best_baseline():+.2%}; "
           f"gana en {report.wins_per_instance()}/{n_test} instancias")
+    pc = report.to_dict()["tuned_vs_best_baseline"]
+    print(f"  afinado vs {pc['b']}: gap {pc['mean_diff']:+.2%} a favor del afinado, IC95 [{pc['ci95'][0]:+.2%}, {pc['ci95'][1]:+.2%}]"
+          f"{'' if pc['significant'] else ' (no se distingue del ruido)'}")
 
 
 def main() -> None:
@@ -123,7 +131,9 @@ def main() -> None:
     ap.add_argument("--seeds", type=int, default=3, help="semillas por instancia en test")
     ap.add_argument("--items", type=int, default=10)
     ap.add_argument("--periods", type=int, default=15)
-    ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--seed", type=int, default=0, help="semilla de las instancias (y del tuner si no se da --tuner-seed)")
+    ap.add_argument("--tuner-seed", type=int, default=None,
+                    help="semilla del tuner y de las corridas de train, sin cambiar las instancias (réplicas del tuning)")
     ap.add_argument("--catalog", choices=["handwritten", "all", "generated", "both", "three"], default="both")
     ap.add_argument("--skeletons", nargs="*", choices=sorted(SKELETONS), default=None,
                     help="restringe el espacio a estos esqueletos (baselines de test: uno por componente)")
@@ -131,10 +141,15 @@ def main() -> None:
                     help="costo de un trial: media de costo/lot-for-lot por instancia (ratio) o costo medio (raw)")
     ap.add_argument("--ref-time", type=float, default=0.0,
                     help="segundos del MIP completo por instancia de test como referencia del gap (0 = sin MIP)")
+    ap.add_argument("--reeval-top", type=int, default=0,
+                    help="selección final: re-evaluar en train los k mejores trials (y el mejor default) con más semillas")
+    ap.add_argument("--reeval-seeds", type=int, default=2, help="semillas extra por configuración re-evaluada")
     ap.add_argument("--generated", default="generated/clsp")
     ap.add_argument("--out", default="tuning_out")
     ap.add_argument("--irace", default=None, help="directorio donde escribir un escenario irace (opcional)")
     args = ap.parse_args()
+    if args.tuner_seed is None:
+        args.tuner_seed = args.seed
 
     train = make_instances(args.train, args.items, args.periods, 100 + args.seed * 1000)
     test = make_instances(args.test, args.items, args.periods, 500 + args.seed * 1000)

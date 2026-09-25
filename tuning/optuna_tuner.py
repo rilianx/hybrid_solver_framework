@@ -15,6 +15,10 @@ Decisiones:
   queda, es un hallazgo.
 - Una configuración que falla devuelve `assembler.penalty_cost`, que Optuna
   ve como un valor muy malo y aprende a evitar.
+- Selección final (`reeval_top`): el mínimo de muchos trials evaluados con una sola
+  semilla es optimista, y en las runs 13 y 14 el elegido quedó en test hasta 6 puntos
+  por encima de su mejor default. Con `reeval_top=k`, los k mejores trials y el mejor
+  default se re-evalúan en train con `reeval_seeds` semillas más y se elige por la media.
 """
 
 from __future__ import annotations
@@ -47,6 +51,9 @@ class TuningResult:
     trials: list[Trial] = field(default_factory=list)
     seconds: float = 0.0
     penalty_cost: float = 1e12
+    # selección final: [{"number", "summary", "costs", "mean"}] de los re-evaluados (vacío si no hubo)
+    reevaluated: list[dict[str, Any]] = field(default_factory=list)
+    best_trial_number: int | None = None
 
     @property
     def n_failed(self) -> int:
@@ -82,6 +89,8 @@ class TuningResult:
             "n_failed": self.n_failed,
             "seconds": round(self.seconds, 1),
             "skeleton_usage": self.skeleton_usage(),
+            "best_trial_number": self.best_trial_number,
+            "reevaluated": self.reevaluated,
             "incumbent_curve": self.incumbent_curve(),
             "trials": [
                 {"number": t.number, "cost": t.cost, "seconds": round(t.seconds, 2), "enqueued": t.enqueued,
@@ -108,11 +117,14 @@ def tune_with_optuna(
     timeout: float | None = None,
     on_trial: Callable[[Trial], None] | None = None,
     normalizers: list[float] | None = None,
+    reeval_top: int = 0,
+    reeval_seeds: int = 2,
 ) -> TuningResult:
     """Corre `n_trials` evaluaciones (incluidos los defaults encolados) y devuelve el resultado.
 
     Con `normalizers` el costo de cada trial es la media de `costo / referencia` por
-    instancia (ver `Assembler.evaluate`)."""
+    instancia (ver `Assembler.evaluate`). Con `reeval_top > 0`, selección final por
+    re-evaluación (ver el docstring del módulo); `best_cost` es entonces la media re-evaluada."""
     import optuna
 
     optuna.logging.set_verbosity(optuna.logging.WARNING)
@@ -141,7 +153,41 @@ def tune_with_optuna(
     t0 = time.perf_counter()
     study.optimize(objective, n_trials=n_trials, timeout=timeout)
     best = min(trials, key=lambda t: t.cost)
+    best_cost, reevaluated = best.cost, []
+    if reeval_top > 0:
+        best, best_cost, reevaluated = _reevaluate(assembler, trials, train_instances, budget, seed,
+                                                   reeval_top, reeval_seeds, normalizers)
     return TuningResult(
-        best_config=best.config, best_cost=best.cost, trials=trials,
+        best_config=best.config, best_cost=best_cost, trials=trials,
         seconds=time.perf_counter() - t0, penalty_cost=assembler.penalty_cost,
+        reevaluated=reevaluated, best_trial_number=best.number,
     )
+
+
+def _reevaluate(assembler: Assembler, trials: list[Trial], instances: list[Any], budget: float, seed: int,
+                top: int, n_seeds: int, normalizers: list[float] | None) -> tuple[Trial, float, list[dict[str, Any]]]:
+    """Los `top` mejores trials distintos (más el mejor default) con `n_seeds` semillas más."""
+    ok = sorted((t for t in trials if t.cost < assembler.penalty_cost), key=lambda t: t.cost)
+    cands: list[Trial] = []
+    seen: set[str] = set()
+    for t in ok:
+        key = repr(sorted(t.config.items()))
+        if key not in seen:
+            seen.add(key)
+            cands.append(t)
+        if len(cands) >= top:
+            break
+    defaults = [t for t in ok if t.enqueued]
+    if defaults and repr(sorted(defaults[0].config.items())) not in seen:
+        cands.append(defaults[0])
+    rows = []
+    for t in cands:
+        costs = [t.cost] + [assembler.evaluate(t.config, instances, budget, seed=seed + 1000 * (j + 1), normalizers=normalizers)
+                            for j in range(n_seeds)]
+        rows.append({"number": t.number, "enqueued": t.enqueued, "summary": t.summary, "costs": costs,
+                     "mean": sum(costs) / len(costs)})
+    pick = min(range(len(cands)), key=lambda i: rows[i]["mean"]) if cands else None
+    if pick is None:
+        best = min(trials, key=lambda t: t.cost)
+        return best, best.cost, rows
+    return cands[pick], rows[pick]["mean"], rows

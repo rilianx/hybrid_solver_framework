@@ -16,6 +16,7 @@ promedian los gaps: cada instancia pesa lo mismo.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from random import Random
 from statistics import mean, pstdev
 from typing import Any, Iterable
 
@@ -79,6 +80,9 @@ class TestReport:
     def scores(self) -> list[ConfigScore]:
         return [self.tuned, *self.baselines]
 
+    def best_baseline_by_gap(self) -> ConfigScore:
+        return min(self.baselines, key=lambda s: s.mean_gap(self.best_known))
+
     def to_dict(self) -> dict[str, Any]:
         bk = self.best_known
         key = (lambda s: s.mean_gap(bk)) if bk is not None else (lambda s: s.mean)
@@ -93,7 +97,22 @@ class TestReport:
         if bk is not None:
             d["best_known"] = bk
             d["best_baseline_by_gap"] = min(self.baselines, key=key).label
+            d["tuned_vs_best_baseline"] = paired_comparison(self.tuned, self.best_baseline_by_gap(), bk)
         return d
+
+
+def paired_comparison(a: ConfigScore, b: ConfigScore, best_known: list[float],
+                      n_boot: int = 4000, seed: int = 0) -> dict[str, Any]:
+    """Diferencia de gap `b − a` por instancia (positiva: `a` es mejor), con intervalo de
+    confianza del 95 % por bootstrap sobre las instancias. Si el intervalo cruza el 0, la
+    diferencia no se distingue del ruido con estas instancias."""
+    diffs = [gb - ga for ga, gb in zip(a.gaps(best_known), b.gaps(best_known))]
+    rng = Random(seed)
+    boots = sorted(mean(rng.choice(diffs) for _ in diffs) for _ in range(n_boot))
+    lo, hi = boots[int(0.025 * n_boot)], boots[int(0.975 * n_boot) - 1]
+    return {"a": a.label, "b": b.label, "mean_diff": mean(diffs), "ci95": [lo, hi],
+            "wins_a": sum(1 for d in diffs if d > 0), "n": len(diffs),
+            "significant": lo > 0 or hi < 0}
 
 
 def best_known_costs(scores: Iterable[ConfigScore], external: list[float | None] | None = None,

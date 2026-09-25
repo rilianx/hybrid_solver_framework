@@ -47,6 +47,14 @@ on:
         description: "Rama/tag con generated/clsp (vacío = la rama actual)"
         default: ""
         type: string
+      reeval_top:
+        description: "Selección final: re-evaluar en train los k mejores trials y el mejor default (0 = no)"
+        default: "0"
+        type: string
+      seed:
+        description: "Semilla del tuner (las instancias no cambian con ella si se fija instance_seed)"
+        default: "0"
+        type: string
 
 permissions:
   contents: write  # para commitear los resultados en la rama tuning/runN
@@ -89,6 +97,8 @@ jobs:
           SIZE: ${{ inputs.size }}
           REF_TIME: ${{ inputs.ref_time }}
           GEN_DIR: ${{ inputs.generated_dir }}
+          REEVAL: ${{ inputs.reeval_top }}
+          SEED: ${{ inputs.seed }}
         run: |
           set -o pipefail
           ITEMS="${SIZE%%x*}"; PERIODS="${SIZE##*x}"
@@ -96,7 +106,8 @@ jobs:
           if [ -n "$SKELETONS" ]; then read -ra SK <<< "$SKELETONS"; SK_ARGS=(--skeletons "${SK[@]}"); fi
           python -W ignore -m examples.lotsizing.tune --trials "$TRIALS" --budget "$BUDGET" \
             --train "$TRAIN" --test "$TEST" --catalog "$CATALOG" --items "$ITEMS" --periods "$PERIODS" \
-            --ref-time "$REF_TIME" --generated "$GEN_DIR" "${SK_ARGS[@]}" --out tuning_out --irace tuning_out/irace 2>&1 | tee tune.log
+            --ref-time "$REF_TIME" --generated "$GEN_DIR" --reeval-top "$REEVAL" --tuner-seed "$SEED" \
+            "${SK_ARGS[@]}" --out tuning_out --irace tuning_out/irace 2>&1 | tee tune.log
 
       - name: Resumen
         if: always()

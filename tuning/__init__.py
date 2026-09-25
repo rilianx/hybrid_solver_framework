@@ -11,7 +11,8 @@ runner*; este paquete conecta ambos con un tuner real:
   `scenario.txt` y el target-runner para correr irace afuera (R).
 """
 
-from .evaluation import TestReport, best_known_costs, evaluate_on_test, one_slot_baselines
+from .evaluation import TestReport, best_known_costs, evaluate_on_test, one_slot_baselines, paired_comparison
 from .optuna_tuner import TuningResult, tune_with_optuna
 
-__all__ = ["TestReport", "TuningResult", "best_known_costs", "evaluate_on_test", "one_slot_baselines", "tune_with_optuna"]
+__all__ = ["TestReport", "TuningResult", "best_known_costs", "evaluate_on_test", "one_slot_baselines", "paired_comparison",
+           "tune_with_optuna"]

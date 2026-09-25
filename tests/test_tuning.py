@@ -194,3 +194,32 @@ def test_catalog_admission_checks_constructor_feasibility_at_realistic_size():
     assert all(c.diversity_probe is not None for c in make_contexts(n_contexts=1, strict=False))
     names = {c.name for c in load_generated("generated/clsp_scratch", verbose=False, combination=False)}
     assert "batch_covering_merge" not in names and "prefix_capacity_earliest_feasible" in names
+
+
+def test_final_selection_reevaluates_top_trials_with_more_seeds(assembler, tiny):
+    """Con reeval_top, el elegido es el de mejor media re-evaluada (no el mínimo de una semilla)."""
+    result = tune_with_optuna(assembler, tiny, budget=0.1, n_trials=len(assembler.available_skeletons()) + 2,
+                              seed=3, reeval_top=2, reeval_seeds=1)
+    rows = result.reevaluated
+    assert 2 <= len(rows) <= 3  # los 2 mejores (+ el mejor default si no estaba)
+    assert all(len(r["costs"]) == 2 for r in rows)
+    chosen = min(rows, key=lambda r: r["mean"])
+    assert result.best_trial_number == chosen["number"] and result.best_cost == chosen["mean"]
+    assert result.best_config == next(t.config for t in result.trials if t.number == chosen["number"])
+    assert any(r["enqueued"] for r in rows)
+    assert result.to_dict()["reevaluated"] == rows
+
+
+def test_paired_comparison_separates_real_differences_from_noise():
+    from tuning import paired_comparison
+    from tuning.evaluation import ConfigScore
+
+    bk = [100.0] * 6
+    mk = lambda label, costs: ConfigScore(label, {}, costs, costs, [[c] for c in costs])  # noqa: E731
+    better = mk("a", [101, 102, 101, 103, 102, 101])
+    worse = mk("b", [110, 111, 109, 112, 110, 111])
+    mixed = mk("c", [95, 110, 99, 107, 96, 108])
+    clear = paired_comparison(better, worse, bk)
+    assert clear["significant"] and clear["ci95"][0] > 0 and clear["wins_a"] == 6
+    noisy = paired_comparison(better, mixed, bk)
+    assert not noisy["significant"] and noisy["ci95"][0] < 0 < noisy["ci95"][1]
