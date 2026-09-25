@@ -156,27 +156,30 @@ def _concat(heuristic: str, mip: str) -> str:
     return (head + "\n\n" if head else "") + bodies[0] + "\n\n\n# ---- vista MIP ----\n" + bodies[1] + "\n"
 
 
-def _top_level_names(src: str) -> set[str]:
+def _top_level_defs(src: str) -> dict[str, str]:
+    """Nombre de nivel superior -> su definición normalizada (ast.dump)."""
     import ast
 
     try:
         tree = ast.parse(src)
     except SyntaxError:
-        return set()
-    names = set()
+        return {}
+    defs: dict[str, str] = {}
     for node in tree.body:
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            names.add(node.name)
+            defs[node.name] = ast.dump(node)
         elif isinstance(node, (ast.Assign, ast.AnnAssign)):
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-            names |= {t.id for t in targets if isinstance(t, ast.Name)}
-    return names
+            defs.update({t.id: ast.dump(node) for t in targets if isinstance(t, ast.Name)})
+    return defs
 
 
 def redefined_names(heuristic: str, mip: str) -> list[str]:
-    """Nombres de la vista heurística aprobada que la vista MIP vuelve a definir. Corrida 25: la
-    vista MIP redefinió `_min_cost_max_flow` con otro valor de retorno y rompió `violations`."""
-    return sorted(_top_level_names(heuristic) & _top_level_names(mip))
+    """Nombres de la vista heurística aprobada que la vista MIP vuelve a definir DISTINTO. Corrida
+    25: la vista MIP redefinió `_min_cost_max_flow` con otro valor de retorno y rompió `violations`.
+    Una copia idéntica (corrida 28: `canonical`) no cambia nada y se deja pasar."""
+    h, m = _top_level_defs(heuristic), _top_level_defs(mip)
+    return sorted(n for n in h.keys() & m.keys() if h[n] != m[n])
 
 
 def _run_checks(checks) -> ValidationReport:

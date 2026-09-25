@@ -109,3 +109,30 @@ def test_model_spec_forbids_the_handwritten_model():
     spec = PACK.make_model_spec()
     assert "examples.lotsizing.problem_model" in spec.forbidden_modules
     assert spec.instance_import == "examples.lotsizing.instance" and "demanda" in spec.families
+
+
+def test_a_free_shortage_variable_is_named_in_the_report(cases, scale):
+    """Corrida 28: la vista MIP tenía variables de faltante en el balance, fuera del objetivo."""
+    def variables(inst):
+        out = ref.variables(inst)
+        out.update({f"u_{i}_{t}": (0.0, 1e6, "continuous") for i in range(inst.n_items) for t in range(inst.n_periods)})
+        return out
+
+    def aux_values(inst, sol):
+        x, s, _ = ref._plan(inst, ref.canonical(sol))
+        out = ref.aux_values(inst, sol)
+        for i in range(inst.n_items):
+            for t in range(inst.n_periods):
+                prev = s[i, t - 1] if t else 0.0
+                out[f"u_{i}_{t}"] = max(0.0, inst.demand[i][t] + s[i, t] - prev - x[i, t])
+        return out
+
+    def constraint_families(inst):
+        fams = ref.constraint_families(inst)
+        fams["demanda.balance"] = [({**coefs, f"u_{k // inst.n_periods}_{k % inst.n_periods}": 1.0}, sense, rhs)
+                                   for k, (coefs, sense, rhs) in enumerate(fams["demanda.balance"])]
+        return fams
+
+    m = mutant(variables=variables, aux_values=aux_values, constraint_families=constraint_families)
+    msg = check_mip_view(m, cases, scale_instances=scale).feedback()
+    assert "families_agree" in msg and "no están en el objetivo" in msg and "u_" in msg

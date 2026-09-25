@@ -240,8 +240,19 @@ def _point(parts, inst, sol, point, dom, fams, obj) -> list[CheckResult]:
                 return [fail(L, "objective_terms_agree", f"el término '{t}' vale {val:.6g} en el MIP y {costs[t]:.6g} en cost_terms para {tag}")]
         return []
     if not mip and not bounds:
+        # corrida 28: variables de faltante en el balance, sin costo: el MIP permitía el faltante gratis
+        in_obj = {v for coefs, _ in obj.values() for v in coefs}
+        struct = set(parts.structural_variables(inst))
+        absorb = sorted(((v, val) for v, val in point.items() if v not in struct and v not in in_obj and abs(val) > 1e-6),
+                        key=lambda kv: -abs(kv[1]))
+        hint = ""
+        if absorb:
+            hint = (" Variables auxiliares que no están en el objetivo y valen distinto de 0 en ese punto: "
+                    + ", ".join(f"{v} = {val:g}" for v, val in absorb[:5])
+                    + ". Si alguna representa la violación (faltante, exceso…), el MIP la está permitiendo gratis: en el MIP "
+                      "la solución tiene que ser factible, así que esa variable sobra o debe valer 0.")
         return [fail(L, "families_agree", f"violations reporta {sorted(heur)} pero el punto cumple todas las restricciones del MIP ({tag}): "
-                                          f"al MIP le falta una restricción de esa familia")]
+                                          f"al MIP le falta una restricción de esa familia.{hint}")]
     # Con una solución infactible no se exige que el MIP no viole otras familias: una violación
     # puede aparecer también bajo otro nombre (un cliente repetido rompe además las MTZ, que
     # también eliminan ciclos). Sí, que cada familia que reporta violations esté violada en el MIP.

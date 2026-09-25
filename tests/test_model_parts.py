@@ -195,3 +195,11 @@ def test_an_exception_in_the_generated_parts_is_a_rejection_not_a_crash(cases):
 
     report = check_mip_view(mutant(violations=violations), cases)
     assert not report.passed and "ValueError" in report.feedback()
+
+
+def test_identical_copies_are_not_redefinitions():
+    from llm.parts_generator import redefined_names
+
+    heur = "def canonical(sol):\n    return tuple(sol)\n"
+    assert redefined_names(heur, "def canonical(sol):\n    return tuple(sol)\n") == []
+    assert redefined_names(heur, "def canonical(sol):\n    return sorted(sol)\n") == ["canonical"]
