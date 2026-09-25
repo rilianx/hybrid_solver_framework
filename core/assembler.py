@@ -28,6 +28,7 @@ from skeletons.grasp import build_grasp, run_grasp
 from skeletons.ils import build_ils, hill_climb
 from skeletons.lns_mip import build_lns_mip, run_lns_mip
 from skeletons.local_branching import build_local_branching, run_local_branching
+from skeletons.mip_perturbation import build_mip_perturbation, run_mip_perturbation
 from skeletons.sa import MetropolisAcceptance, build_sa, make_run
 from skeletons.ts import build_ts
 from skeletons.vns import build_vns
@@ -114,6 +115,18 @@ SKELETONS: dict[str, SkeletonDef] = {
             "k": {"type": "int", "range": [2, 20]},
             "k_step": {"type": "int", "range": [1, 10]},
             "mip_time_share": {"type": "float", "range": [0.04, 1.0], "log": True},
+        },
+    ),
+    "MIP_PERTURB": SkeletonDef(
+        # ILS con perturbación resuelta por el MIP: la destrucción elige la zona, se fuerzan
+        # `flips` cambios y el sub-MIP acomoda el resto; el vecindario hace la búsqueda local.
+        "MIP_PERTURB", ("constructor", "destruction", "neighborhood"),
+        params={
+            "destroy_ratio": {"type": "float", "range": [0.05, 0.6]},
+            "flips": {"type": "int", "range": [1, 3], "default": 1},
+            "mip_time_share": {"type": "float", "range": [0.04, 1.0], "log": True},
+            "ls_time_share": {"type": "float", "range": [0.02, 0.3]},
+            "ls_sample": {"type": "int", "range": [4, 256], "log": True, "default": 32},
         },
     ),
 }
@@ -255,6 +268,13 @@ class Assembler:
                 sk = build_local_branching(P, constructor, MaxTimeStop(budget), k=sp("k"), k_step=sp("k_step"),
                                            time_limit=max(MIN_MIP_SECONDS, budget * sp("mip_time_share")))
                 return run_local_branching(sk, inst, rng)
+            if skeleton == "MIP_PERTURB":
+                destr = self._component(config, "destruction", skeleton, P)
+                nbh = self._component(config, "neighborhood", skeleton, P)
+                ls = hill_climb(P, nbh, strategy="first", max_seconds=budget * sp("ls_time_share"), sample_size=sp("ls_sample"))
+                sk = build_mip_perturbation(P, constructor, destr, ls, MaxTimeStop(budget), destroy_ratio=sp("destroy_ratio"),
+                                            flips=sp("flips"), mip_time_limit=max(MIN_MIP_SECONDS, budget * sp("mip_time_share")))
+                return run_mip_perturbation(sk, inst, rng)
             raise AssemblyError(f"esqueleto {skeleton} declarado pero sin constructor de variante")
 
         return run

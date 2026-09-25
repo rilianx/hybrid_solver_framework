@@ -21,11 +21,11 @@ from .components import (
     SetupFlipPerturbation,
 )
 
-CONSTRUCTOR_SKELETONS = ["SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH"]
+CONSTRUCTOR_SKELETONS = ["SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH", "MIP_PERTURB"]
 
 HANDWRITTEN = [
     (
-        {"name": "lot_for_lot", "slot": "constructor", "compatible_skeletons": ["SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH"], "params": {}},
+        {"name": "lot_for_lot", "slot": "constructor", "compatible_skeletons": CONSTRUCTOR_SKELETONS, "params": {}},
         lambda problem: LotForLotConstructor(),
     ),
     (
@@ -37,7 +37,7 @@ HANDWRITTEN = [
         lambda problem: LatestSource(problem),
     ),
     (
-        {"name": "setup_flip", "slot": "neighborhood", "compatible_skeletons": ["SA", "ILS", "TS", "VNS", "GRASP"], "params": {}},
+        {"name": "setup_flip", "slot": "neighborhood", "compatible_skeletons": ["SA", "ILS", "TS", "VNS", "GRASP", "MIP_PERTURB"], "params": {}},
         lambda problem: SetupFlipNeighborhood(problem),
     ),
     (
@@ -45,11 +45,11 @@ HANDWRITTEN = [
         lambda problem: SetupFlipPerturbation(),
     ),
     (
-        {"name": "period_window", "slot": "destruction", "compatible_skeletons": ["LNS_MIP"], "params": {}},
+        {"name": "period_window", "slot": "destruction", "compatible_skeletons": ["LNS_MIP", "MIP_PERTURB"], "params": {}},
         lambda problem: PeriodWindowDestruction(problem.inst),
     ),
     (
-        {"name": "random_setups", "slot": "destruction", "compatible_skeletons": ["LNS_MIP"], "params": {}},
+        {"name": "random_setups", "slot": "destruction", "compatible_skeletons": ["LNS_MIP", "MIP_PERTURB"], "params": {}},
         lambda problem: RandomSetupDestruction(problem.inst),
     ),
     (

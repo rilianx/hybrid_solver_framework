@@ -40,7 +40,7 @@ class ProblemPack:
     load_instance: Callable[[str], Any]
     # esqueletos que puede usar un constructor (los greedy_<puntaje> se registran con estos)
     constructor_skeletons: list[str] = field(
-        default_factory=lambda: ["SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH"])
+        default_factory=lambda: ["SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH", "MIP_PERTURB"])
 
     @property
     def default_workspace(self) -> str:

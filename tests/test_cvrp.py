@@ -81,7 +81,7 @@ def test_every_skeleton_runs_on_the_cvrp():
     inst = PACK.make_instances(1, 5, {"customers": 10})[0]
     P = CVRPModel(inst)
     start = P.objective(SingletonRoutes().build(inst, Random(0)))
-    assert set(A.available_skeletons()) == {"SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH"}
+    assert set(A.available_skeletons()) == {"SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH", "MIP_PERTURB"}
     for sk in A.available_skeletons():
         r = A.assemble(A.default_config(sk))(inst, Random(0), 0.5)
         assert P.is_feasible(r.best_solution) and r.best_objective < start, sk
@@ -95,3 +95,27 @@ def test_generic_tuning_cli_runs_on_the_cvrp(tmp_path):
     out = json.loads((tmp_path / "handwritten.json").read_text())
     assert out["settings"]["problem"] == "cvrp" and out["settings"]["size"] == "8"
     assert out["test"]["tuned"]["mean"] < 1e9
+
+
+def test_mip_perturbation_forces_a_change_and_repairs_with_the_mip():
+    """Cada patada fija al valor contrario una variable liberada que estaba en 1: el candidato
+    nunca es la incumbente, y el sub-MIP lo deja factible."""
+    from core.common_components import MaxIterationsStop
+    from examples.cvrp.components import RandomRemoval
+    from skeletons.mip_perturbation import build_mip_perturbation, run_mip_perturbation
+
+    inst = CVRPInstance.random(9, Random(4))
+    P = CVRPModel(inst)
+    seen = []
+
+    def no_ls(sol, rng):
+        seen.append(sol)
+        return sol
+
+    start = GreedyConstructor(P, CheapestInsertion(P))
+    sk = build_mip_perturbation(P, start, RandomRemoval(P), no_ls, MaxIterationsStop(6), destroy_ratio=0.4)
+    result = run_mip_perturbation(sk, inst, Random(0))
+    initial = start.build(inst, Random(0))
+    assert seen[0] == initial and len(seen) >= 4
+    assert all(s != initial for s in seen[1:2]) and all(P.is_feasible(s) for s in seen[1:])
+    assert result.best_objective <= P.objective(initial)

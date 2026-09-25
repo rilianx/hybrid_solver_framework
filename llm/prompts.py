@@ -107,11 +107,11 @@ SLOT_HINTS = {
 # COMPONENT["compatible_skeletons"] para que el componente entre al espacio de diseño
 # de todos los esqueletos donde tiene sentido (no solo a los del ejemplo few-shot).
 SKELETONS_FOR_SLOT = {
-    "constructor": ["SA", "ILS", "TS", "VNS", "GRASP", "LNS_MIP", "FIX_OPT", "LOCAL_BRANCH"],
-    "greedy_score": ["SA", "ILS", "TS", "VNS", "GRASP", "LNS_MIP", "FIX_OPT", "LOCAL_BRANCH"],
-    "neighborhood": ["SA", "ILS", "TS", "VNS", "GRASP"],
+    "constructor": ["SA", "ILS", "TS", "VNS", "GRASP", "LNS_MIP", "FIX_OPT", "LOCAL_BRANCH", "MIP_PERTURB"],
+    "greedy_score": ["SA", "ILS", "TS", "VNS", "GRASP", "LNS_MIP", "FIX_OPT", "LOCAL_BRANCH", "MIP_PERTURB"],
+    "neighborhood": ["SA", "ILS", "TS", "VNS", "GRASP", "MIP_PERTURB"],
     "perturbation": ["ILS"],
-    "destruction": ["LNS_MIP"],
+    "destruction": ["LNS_MIP", "MIP_PERTURB"],
     "repair_mip": ["LNS_MIP"],
     "fixing_policy": ["FIX_OPT"],
     "acceptance": ["SA", "ILS", "LNS_MIP"],

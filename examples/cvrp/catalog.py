@@ -20,8 +20,8 @@ from .components import (
 )
 from .construction import CheapestInsertion, NearestFromDepot
 
-CONSTRUCTOR_SKELETONS = ["SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH"]
-LOCAL_SEARCH_SKELETONS = ["SA", "ILS", "TS", "VNS", "GRASP"]
+CONSTRUCTOR_SKELETONS = ["SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH", "MIP_PERTURB"]
+LOCAL_SEARCH_SKELETONS = ["SA", "ILS", "TS", "VNS", "GRASP", "MIP_PERTURB"]
 
 HANDWRITTEN = [
     ({"name": "singleton_routes", "slot": "constructor", "compatible_skeletons": CONSTRUCTOR_SKELETONS, "params": {}},
@@ -36,9 +36,9 @@ HANDWRITTEN = [
      lambda problem: TwoOptNeighborhood(problem)),
     ({"name": "relocate_kick", "slot": "perturbation", "compatible_skeletons": ["ILS"], "params": {}},
      lambda problem: RelocateKick(problem)),
-    ({"name": "random_removal", "slot": "destruction", "compatible_skeletons": ["LNS_MIP"], "params": {}},
+    ({"name": "random_removal", "slot": "destruction", "compatible_skeletons": ["LNS_MIP", "MIP_PERTURB"], "params": {}},
      lambda problem: RandomRemoval(problem)),
-    ({"name": "radial_removal", "slot": "destruction", "compatible_skeletons": ["LNS_MIP"], "params": {}},
+    ({"name": "radial_removal", "slot": "destruction", "compatible_skeletons": ["LNS_MIP", "MIP_PERTURB"], "params": {}},
      lambda problem: RadialRemoval(problem)),
     ({"name": "sliding_window", "slot": "fixing_policy", "compatible_skeletons": ["FIX_OPT"],
       "params": {"window_size": {"type": "int", "range": [1, 4]}, "overlap": {"type": "int", "range": [0, 2]}}},
