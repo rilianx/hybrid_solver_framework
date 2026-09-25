@@ -179,6 +179,36 @@ def probe_checks(slot: str, impl, probe) -> list[CheckResult]:
     return [ok(LAYER, "constructor.feasible_on_probe", "factible en la instancia grande con 3 semillas")]
 
 
+def random_solutions(P, inst, seeds, variables) -> list:
+    """Soluciones "al azar" para probar un vecindario lejos de la partida. Si el ProblemModel
+    define `random_solution(rng)`, se usa. Si no, una asignación 0/1 al azar leída con
+    `from_assignment`: vale cuando toda asignación es una solución (matriz de setups del CLSP)
+    y no cuando la estructura tiene reglas (en el CVRP, arcos al azar no forman rutas y los
+    componentes fallaban con razón sobre esas "soluciones")."""
+    gen = getattr(P, "random_solution", None)
+    out = []
+    for s in seeds:
+        rng = Random(1000 + s)  # un rng por solución, no por variable
+        if callable(gen):
+            out.append(gen(rng))
+        else:
+            out.append(P.from_assignment({v: float(rng.random() < 0.5) for v in variables()}))
+    return out
+
+
+def _raises(fn, *args) -> bool:
+    try:
+        fn(*args)
+        return False
+    except Exception:  # noqa: BLE001
+        return True
+
+
+def _short(obj, n: int = 300) -> str:
+    text = repr(obj)
+    return text if len(text) <= n else text[:n] + "…"
+
+
 def check_component_quality(slot: str, impl, ctx: ValidationContext) -> list[CheckResult]:
     P = ctx.problem
     if slot == "greedy_score":
@@ -224,16 +254,19 @@ def check_component_quality(slot: str, impl, ctx: ValidationContext) -> list[Che
             start = [ctx.trivial_solutions[k]]
             if ctx.baseline_constructor is not None:
                 start += [ctx.baseline_constructor.build(ctx.instances[k], Random(s)) for s in ctx.seeds[:2]]
-            names = sorted(ctx.variables(ctx.instances[k]))
-            rand = []
-            for s in ctx.seeds[:3]:
-                rng = Random(1000 + s)  # un rng por solución, no por variable
-                rand.append(P.from_assignment({v: float(rng.random() < 0.5) for v in names}))
+            rand = random_solutions(P, ctx.instances[k], ctx.seeds[:3], lambda: sorted(ctx.variables(ctx.instances[k])))
             for group, sols in (("start", start), ("rand", rand)):
                 for sol in sols:
                     moves = list(impl.moves(sol))
                     sample = moves if len(moves) <= ctx.max_moves_checked else Random(0).sample(moves, ctx.max_moves_checked)
-                    imp = sum(1 for m in sample if impl.delta(sol, m) < -ctx.tolerance)
+                    try:
+                        imp = sum(1 for m in sample if impl.delta(sol, m) < -ctx.tolerance)
+                    except Exception as exc:  # noqa: BLE001 — con el movimiento y la solución, el LLM puede corregirlo
+                        bad = next(m for m in sample if _raises(impl.delta, sol, m))
+                        results.append(fail(LAYER, "neighborhood.delta_runs",
+                            f"delta(sol, m={bad!r}) lanzó {type(exc).__name__}: {exc}. m salió de moves(sol) con "
+                            f"sol={_short(sol)} ({'solución de partida' if group == 'start' else 'solución al azar'})."))
+                        return results
                     if group == "start":
                         tot_start += len(moves); imp_start += imp
                     else:

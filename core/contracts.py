@@ -48,6 +48,12 @@ class ProblemModel(Protocol):
 
     def variable_groups(self, inst: Instance) -> dict[str, list[str]]: ...
 
+    # Opcionales (no forman parte del Protocol; el núcleo los usa si existen):
+    #   construction_view(inst)   vista constructiva para el constructor modular (`core.construction`)
+    #   random_solution(rng)      solución al azar con estructura válida, para validar vecindarios lejos de
+    #                             la partida cuando una asignación 0/1 al azar no es una solución (CVRP)
+    #   explain_infeasibility(sol), validation_hints   texto para el feedback del validador
+
 
 @runtime_checkable
 class Constructor(Protocol):

@@ -25,6 +25,7 @@ formulación de dos índices con cargas MTZ.
 from __future__ import annotations
 
 import math
+from random import Random
 
 import pulp
 
@@ -95,6 +96,22 @@ class CVRPModel:
                 seen[c] = seen.get(c, 0) + 1
         bad = sum(1 for c in inst.customers if seen.get(c, 0) != 1) + sum(1 for c in seen if c not in inst.customers)
         return excess, bad
+
+    def random_solution(self, rng: Random) -> Solution:
+        """Solución al azar con estructura válida (la usa el validador para probar vecindarios lejos
+        de la partida): clientes barajados, cortados en rutas al azar sin exceder la capacidad."""
+        inst = self.inst
+        custs = list(inst.customers)
+        rng.shuffle(custs)
+        routes, cur, load = [], [], 0.0
+        for c in custs:
+            if cur and (load + inst.demand[c] > inst.capacity or rng.random() < 0.25):
+                routes.append(cur)
+                cur, load = [], 0.0
+            cur.append(c)
+            load += inst.demand[c]
+        routes.append(cur)
+        return canonical(routes)
 
     def distance(self, sol: Solution) -> float:
         return sum(route_length(self.inst, r) for r in sol)

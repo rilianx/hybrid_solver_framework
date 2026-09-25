@@ -132,3 +132,25 @@ def test_a_component_exception_in_the_quality_layer_is_a_rejection(contexts):
 
     results = _quality("neighborhood", Flaky(contexts[0].problem), contexts[0])
     assert results and not results[0].passed and "ValueError" in results[0].message
+
+
+def test_validator_uses_random_solution_when_the_model_defines_it(contexts):
+    """Arcos al azar no forman rutas: el validador usa `random_solution` del modelo."""
+    from core.validation.quality import random_solutions
+
+    ctx = contexts[0]
+    sols = random_solutions(ctx.problem, ctx.instances[0], (0, 1, 2), lambda: [])
+    for sol in sols:
+        assert sol == canonical(sol) and sorted(c for r in sol for c in r) == list(ctx.instances[0].customers)
+        assert ctx.problem.is_feasible(sol)
+
+
+def test_undo_feedback_shows_the_solutions_involved(contexts):
+    class LosesTheRoute(RelocateNeighborhood):
+        def undo(self, sol, m):
+            return sol  # no deshace nada
+
+    report = validate_component({"name": "x", "slot": "neighborhood", "compatible_skeletons": ["SA"], "params": {}},
+                                LosesTheRoute(contexts[0].problem), contexts[0])
+    msg = report.feedback()
+    assert "undo_apply_identity" in msg and "apply(sol, m)=" in msg and "undo(...)=" in msg

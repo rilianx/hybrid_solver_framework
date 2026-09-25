@@ -72,6 +72,11 @@ def check_constructor(impl, ctx: ValidationContext) -> list[CheckResult]:
     return _collapse(results)
 
 
+def _short(obj, n: int = 300) -> str:
+    text = repr(obj)
+    return text if len(text) <= n else text[:n] + "…"
+
+
 def check_neighborhood(impl, ctx: ValidationContext) -> list[CheckResult]:
     results: list[CheckResult] = []
     f = ctx.problem.objective
@@ -86,11 +91,23 @@ def check_neighborhood(impl, ctx: ValidationContext) -> list[CheckResult]:
                 sample = moves if len(moves) <= ctx.max_moves_checked else rng.sample(moves, ctx.max_moves_checked)
                 f_sol = f(sol)
                 for m in sample:
-                    applied = impl.apply(sol, m)
-                    if impl.undo(applied, m) != sol:
-                        out.append(fail(LAYER, "neighborhood.undo_apply_identity", f"undo(apply(sol, m)) != sol para m={m!r} en inst_{k}"))
+                    step = "apply"
+                    try:
+                        applied = impl.apply(sol, m)
+                        step = "undo"
+                        back = impl.undo(applied, m)
+                        step = "delta"
+                        d = impl.delta(sol, m)
+                    except Exception as exc:  # noqa: BLE001 — con el movimiento y la solución, el LLM puede corregirlo
+                        out.append(fail(LAYER, f"neighborhood.{step}_runs",
+                                        f"{step}(…, m={m!r}) lanzó {type(exc).__name__}: {exc}. m salió de moves(sol) con "
+                                        f"sol={_short(sol)} en inst_{k}"))
                         break
-                    d = impl.delta(sol, m)
+                    if back != sol:
+                        out.append(fail(LAYER, "neighborhood.undo_apply_identity",
+                                        f"undo(apply(sol, m)) != sol para m={m!r} en inst_{k}: sol={_short(sol)}, "
+                                        f"apply(sol, m)={_short(applied)}, undo(...)={_short(back)}"))
+                        break
                     if not _close(d, f(applied) - f_sol, ctx.tolerance):
                         out.append(fail(LAYER, "neighborhood.delta_consistent", f"delta={d:.6g} pero f(apply)-f(sol)={f(applied) - f_sol:.6g} para m={m!r} en inst_{k}"))
                         break
