@@ -85,8 +85,8 @@ def build_cases(sizes=(4, 5, 5, 6, 6, 6), seed: int = 2026) -> list[dict]:
 
 def load_cases(path: str | Path = CASES_PATH) -> list[TestCase]:
     data = json.loads(Path(path).read_text())
-    return [TestCase(c["name"], CVRPInstance.parse(c["instance"]), c["solutions"], c.get("optimum"), c.get("visible", False))
-            for c in data]
+    return [TestCase(c["name"], CVRPInstance.parse(c["instance"]), c["solutions"], c.get("optimum"), c.get("visible", False),
+                     c["instance"]) for c in data]
 
 
 def main() -> None:

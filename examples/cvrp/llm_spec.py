@@ -81,7 +81,12 @@ def make_model_spec():
         instance_source=inspect.getsource(instance.CVRPInstance),
         instance_import="examples.cvrp.instance",
         notes=["Elige tú la representación de la solución para las heurísticas (debe ser hashable y comparable con ==)."],
-        forbidden_modules=["examples.cvrp.problem_model", "examples.cvrp.components", "examples.cvrp.construction"],
+        forbidden_modules=["examples.cvrp.problem_model", "examples.cvrp.components", "examples.cvrp.construction",
+                           "examples.cvrp.model_parts", "examples.cvrp.cases"],
+        answer_format=("Lista de rutas; cada ruta, una lista de clientes (enteros 1..n) en orden de visita, sin el depósito. "
+                       "Ejemplo: [[3, 1], [2, 4]]. Dos respuestas con las mismas rutas en otro orden de rutas son la misma solución."),
+        families=("Familias de restricciones: `visita` (cada cliente exactamente una vez; magnitud = cuántas visitas sobran o "
+                  "faltan) y `capacidad` (magnitud = exceso de carga total). Término del objetivo: `distancia`."),
     )
 
 

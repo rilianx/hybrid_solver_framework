@@ -122,3 +122,41 @@ def test_linear_mip_supports_fixing_relaxing_and_local_branching(cases):
     assert ref.from_assignment(inst, x) == triv and model.last_objective == pytest.approx(ref.cost_terms(inst, triv)["distancia"])
     x = model.solve(fixed={}, integer=set(model.variables()), relaxed=set(), time_limit=10, near=(x_bar, 4))
     assert sum(abs(x[v] - x_bar[v]) for v in x_bar) <= 4 + 1e-6
+
+
+def _ref_sources():
+    from pathlib import Path
+
+    src = Path(ref.__file__).read_text().replace("from .instance import", "from examples.cvrp.instance import")
+    marker = "# ---------------------------------------------------------------- vista MIP"
+    head, mip = src.split(marker)
+    header = "from __future__ import annotations\n\nimport math\nfrom random import Random\n\n"
+    return head, header + mip
+
+
+def test_parts_generation_runs_both_stages_with_localized_feedback(tmp_path):
+    from examples.cvrp.pack import PACK
+    from llm import ScriptedClient
+    from llm.parts_generator import generate_problem_model_parts
+
+    heur, mip = _ref_sources()
+    broken = heur.replace('return {"visita": float(visit), "capacidad": float(cap)}', 'return {"visita": float(visit)}')
+    client = ScriptedClient(responses=[f"```python\n{broken}\n```", f"```python\n{heur}\n```", f"```python\n{mip}\n```"])
+    res = generate_problem_model_parts(client, PACK.make_model_spec(), load_cases(), tmp_path, verbose=False)
+    assert res.path is not None and res.heuristic.rounds == 2 and res.mip.rounds == 1 and res.llm_calls == 3
+    assert "capacidad" in res.heuristic.reports[0]
+    # el prompt de la etapa MIP trae la vista heurística aprobada, no la rota
+    assert heur.strip()[:200] in client.calls[2][1] and "Casos de ejemplo" in client.calls[2][1]
+    # el prompt de corrección de la etapa 1 trae el reporte con la familia esperada
+    assert "RECHAZADA" in client.calls[1][1] and "capacidad" in client.calls[1][1]
+
+
+def test_parts_generation_forbids_importing_the_reference_parts(tmp_path):
+    from examples.cvrp.pack import PACK
+    from llm import ScriptedClient
+    from llm.parts_generator import generate_problem_model_parts
+
+    cheat = "from examples.cvrp.model_parts import *\n"
+    client = ScriptedClient(responses=[f"```python\n{cheat}\n```"] * 2)
+    res = generate_problem_model_parts(client, PACK.make_model_spec(), load_cases(), tmp_path, max_rounds=2, verbose=False)
+    assert res.path is None and "no_forbidden_imports" in res.heuristic.reports[0]

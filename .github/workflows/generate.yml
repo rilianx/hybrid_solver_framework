@@ -15,6 +15,11 @@ on:
         default: components
         type: choice
         options: [components, problem_model]
+      model_mode:
+        description: "Con target=problem_model: por piezas validadas con casos de prueba, o en un solo módulo"
+        default: parts
+        type: choice
+        options: [parts, monolithic]
       slots:
         description: "Slots a generar (separados por espacio)"
         default: "neighborhood destruction constructor perturbation"
@@ -74,8 +79,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      WS: ${{ inputs.workspace || (inputs.target == 'problem_model' && format('generated/{0}_model', inputs.problem)) || format('generated/{0}{1}{2}', inputs.problem, inputs.from_scratch && '_scratch' || '', inputs.planner && '_planner' || '') }}
+      WS: ${{ inputs.workspace || (inputs.target == 'problem_model' && format('generated/{0}_model{1}', inputs.problem, inputs.model_mode == 'parts' && '_parts' || '')) || format('generated/{0}{1}{2}', inputs.problem, inputs.from_scratch && '_scratch' || '', inputs.planner && '_planner' || '') }}
       TARGET: ${{ inputs.target }}
+      MODEL_MODE: ${{ inputs.model_mode }}
       PKG: ${{ inputs.problem == 'cvrp' && 'cvrp' || 'lotsizing' }}
       SCRATCH: ${{ inputs.from_scratch && 'true' || 'false' }}
       PLANNER: ${{ inputs.planner && 'true' || 'false' }}
@@ -140,6 +146,7 @@ jobs:
           if [ "$TARGET" = "problem_model" ]; then
             ARGS="--rounds $ROUNDS --provider $PROVIDER --workspace $WS"
             if [ -n "$MODEL" ]; then ARGS="$ARGS --model $MODEL"; fi
+            if [ "$MODEL_MODE" = "monolithic" ]; then ARGS="$ARGS --monolithic"; fi
             echo "python -m examples.$PKG.generate_model $ARGS"
             python -W ignore -m "examples.$PKG.generate_model" $ARGS 2>&1 | tee generate.log
             exit 0

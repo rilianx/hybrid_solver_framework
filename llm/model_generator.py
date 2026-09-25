@@ -77,6 +77,10 @@ class ModelSpec:
     notes: list[str] = field(default_factory=list)
     # módulos que el generado no puede importar (p.ej. el modelo de referencia: sería copiarlo)
     forbidden_modules: list[str] = field(default_factory=list)
+    # generación por piezas (`llm.parts_generator`): formato neutral de las respuestas de los casos y
+    # nombres de las familias de restricciones y de los términos del objetivo
+    answer_format: str = ""
+    families: str = ""
 
 
 def model_prompt(spec: ModelSpec) -> str:

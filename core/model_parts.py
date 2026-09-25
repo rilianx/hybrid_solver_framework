@@ -77,6 +77,7 @@ class TestCase:
     solutions: list[dict]
     optimum: float | None = None
     visible: bool = False
+    text: str = ""  # la instancia en el formato de entrada (para mostrar los casos visibles)
 
 
 class LinearMIP:

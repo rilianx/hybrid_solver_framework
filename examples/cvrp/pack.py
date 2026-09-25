@@ -18,6 +18,12 @@ def make_instances(n: int, seed0: int, size: dict):
     return [CVRPInstance.random(size["customers"], Random(seed0 + k), route_size=route, clustered=k % 2 == 1) for k in range(n)]
 
 
+def _load_cases():
+    from .cases import load_cases
+
+    return load_cases()
+
+
 def parse_size(text: str) -> dict:
     return {"customers": int(text)}
 
@@ -37,4 +43,5 @@ PACK = ProblemPack(
     constructor_skeletons=CONSTRUCTOR_SKELETONS,
     make_model_spec=make_model_spec,
     micro_size="6",
+    load_cases=_load_cases,
 )

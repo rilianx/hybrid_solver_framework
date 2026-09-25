@@ -41,6 +41,7 @@ class ProblemPack:
     # generación del ProblemModel con LLM (§6.1): descripción para el LLM y tamaño de las micro-instancias
     make_model_spec: Callable[[], Any] | None = None
     micro_size: str = ""
+    load_cases: Callable[[], list] | None = None  # casos de prueba al estilo Codeforces (core.model_parts.TestCase)
     # esqueletos que puede usar un constructor (los greedy_<puntaje> se registran con estos)
     constructor_skeletons: list[str] = field(
         default_factory=lambda: ["SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH", "MIP_PERTURB"])
