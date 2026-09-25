@@ -59,7 +59,9 @@ def objective_terms(inst) -> dict[str, tuple[dict[str, float], float]]: ...
     # {término: (coeficientes, constante)} con los MISMOS nombres de término que cost_terms
 def variable_groups(inst) -> dict[str, list[str]]: ...   # partición de structural_variables en bloques CHICOS
     # (al menos 4, ninguno con más de un tercio), según la estructura del problema: Fix-and-Optimize
-    # libera de a 1 a 4 grupos por subproblema, y Relax-and-Fix fija un grupo por vez
+    # libera de a 1 a 4 grupos por subproblema, y Relax-and-Fix fija un grupo por vez. Agrupa variables que
+    # interactúan (elementos cercanos, el mismo período…): con todo lo demás fijo, liberar un grupo tiene que
+    # dejar espacio para cambiar la solución
 '''
 
 
@@ -154,6 +156,44 @@ def _concat(heuristic: str, mip: str) -> str:
     return (head + "\n\n" if head else "") + bodies[0] + "\n\n\n# ---- vista MIP ----\n" + bodies[1] + "\n"
 
 
+def _top_level_names(src: str) -> set[str]:
+    import ast
+
+    try:
+        tree = ast.parse(src)
+    except SyntaxError:
+        return set()
+    names = set()
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            names.add(node.name)
+        elif isinstance(node, (ast.Assign, ast.AnnAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            names |= {t.id for t in targets if isinstance(t, ast.Name)}
+    return names
+
+
+def redefined_names(heuristic: str, mip: str) -> list[str]:
+    """Nombres de la vista heurística aprobada que la vista MIP vuelve a definir. Corrida 25: la
+    vista MIP redefinió `_min_cost_max_flow` con otro valor de retorno y rompió `violations`."""
+    return sorted(_top_level_names(heuristic) & _top_level_names(mip))
+
+
+def _run_checks(checks) -> ValidationReport:
+    """Los validadores en orden; una excepción del código generado es un rechazo, no una caída."""
+    report = ValidationReport(subject="vista MIP")
+    for check in checks:
+        try:
+            r = check()
+        except Exception as exc:  # noqa: BLE001
+            report.add(fail("semantic_mip", "runs", f"el módulo lanzó {type(exc).__name__}: {exc} durante la validación"))
+            return report
+        report.extend(r.results)
+        if not r.passed:
+            break
+    return report
+
+
 def _load(path: Path, forbidden: list[str]):
     bad = sorted(m for m in _imports(path.read_text()) if any(m == f or m.startswith(f + ".") for f in forbidden))
     if bad:
@@ -223,11 +263,18 @@ def generate_problem_model_parts(client: LLMClient, spec: ModelSpec, cases: list
             continue
         path = ws / f"model_r{rnd}.py"
         path.write_text(_concat(res.heuristic.source, src))
-        module, report = _load(path, spec.forbidden_modules)
+        clash = redefined_names(res.heuristic.source, src)
+        if clash:
+            module, report = None, ValidationReport(subject=path.name)
+            report.add(fail("syntactic", "no_redefinition",
+                            f"la vista MIP vuelve a definir {clash}, que ya están en la vista heurística aprobada (tu código se "
+                            f"concatena después y los reemplaza): usa los de la vista heurística tal cual y ponle otro nombre "
+                            f"a tus funciones auxiliares"))
+        else:
+            module, report = _load(path, spec.forbidden_modules)
         if module is not None:
-            report = check_mip_view(module, cases, scale_instances=scale_instances)
-            if report.passed:
-                report = check_mip_optimum(module, cases, mip_time_limit)
+            report = _run_checks([lambda: check_mip_view(module, cases, scale_instances=scale_instances),
+                                  lambda: check_mip_optimum(module, cases, mip_time_limit)])
         if report.passed:
             res.mip.accepted, res.mip.source, res.path = True, src, path
             if verbose:
@@ -241,4 +288,4 @@ def generate_problem_model_parts(client: LLMClient, spec: ModelSpec, cases: list
     return res
 
 
-__all__ = ["PartsGenerationResult", "generate_problem_model_parts", "heuristic_prompt", "mip_prompt"]
+__all__ = ["PartsGenerationResult", "generate_problem_model_parts", "heuristic_prompt", "mip_prompt", "redefined_names"]

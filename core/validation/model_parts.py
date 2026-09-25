@@ -162,7 +162,10 @@ def check_mip_view(parts, cases: list[TestCase], n_random: int = 4, scale_instan
                                 f"to_assignment ∪ aux_values debe dar valor a todas las variables: faltan "
                                 f"{sorted(set(dom) - set(x) - set(aux))[:5]}, sobran {sorted((set(x) | set(aux)) - set(dom))[:5]}"))
                 return report
-            report.extend(_point(parts, inst, sol, {**x, **aux}, dom, fams, obj))
+            try:
+                report.extend(_point(parts, inst, sol, {**x, **aux}, dom, fams, obj))
+            except Exception as exc:  # noqa: BLE001
+                report.add(fail(L, "runs", f"violations/cost_terms lanzó {type(exc).__name__}: {exc} con sol={_short(sol)}"))
             if not report.passed:
                 return report
     if report.passed:
@@ -260,8 +263,12 @@ def check_mip_optimum(parts, cases: list[TestCase], time_limit: float = 20.0) ->
     L = "semantic_mip"
     for case in cases:
         inst, where = case.instance, _where(case)
-        model = LinearMIP(parts, inst)
-        x = model.solve(fixed={}, integer=set(model.variables()), relaxed=set(), time_limit=time_limit)
+        try:
+            model = LinearMIP(parts, inst)
+            x = model.solve(fixed={}, integer=set(model.variables()), relaxed=set(), time_limit=time_limit)
+        except Exception as exc:  # noqa: BLE001
+            report.add(fail(L, "full_mip_runs", f"armar o resolver el MIP completo lanzó {type(exc).__name__}: {exc} en {where}"))
+            continue
         if x is None:
             report.add(fail(L, "full_mip_solvable", f"el MIP completo no encontró solución en {time_limit:g} s en {where}"))
             continue

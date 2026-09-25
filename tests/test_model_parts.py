@@ -177,3 +177,21 @@ def test_two_halves_of_the_variable_list_are_rejected(cases):
 
     report = check_mip_view(mutant(variable_groups=variable_groups), cases)
     assert not report.passed and "groups_split_the_problem" in report.feedback()
+
+
+def test_mip_stage_may_not_redefine_heuristic_names():
+    """Corrida 25: la vista MIP redefinió un auxiliar de la heurística y rompió violations."""
+    from llm.parts_generator import redefined_names
+
+    heur = "def _flow(g):\n    return 1, 2\n\ndef violations(inst, sol):\n    return {}\n"
+    mip = "import math\n\ndef _flow(g):\n    return 1, 2, 3\n\ndef variables(inst):\n    return {}\n"
+    assert redefined_names(heur, mip) == ["_flow"]
+    assert redefined_names(heur, "def _flow2(g):\n    return 0\n") == []
+
+
+def test_an_exception_in_the_generated_parts_is_a_rejection_not_a_crash(cases):
+    def violations(inst, sol):
+        raise ValueError("too many values to unpack (expected 2)")
+
+    report = check_mip_view(mutant(violations=violations), cases)
+    assert not report.passed and "ValueError" in report.feedback()
