@@ -164,6 +164,13 @@ def _names(dom, struct, fams, obj, groups, where) -> list[CheckResult]:
         out.append(fail(L, "groups_partition_structural",
                         f"variable_groups debe ser una partición de structural_variables ({where}): "
                         f"faltan {sorted(set(struct) - set(grouped))[:5]}, repetidas o ajenas {sorted({v for v in grouped if grouped.count(v) > 1 or v not in struct})[:5]}"))
+    # una partición en un solo grupo es válida pero inútil: Fix-and-Optimize y Relax-and-Fix
+    # resuelven el MIP entero (corrida 21: un grupo con los 420 arcos, FIX_OPT no mejoraba nada)
+    if len(struct) >= 8 and (len(groups) < 2 or max((len(vs) for vs in groups.values()), default=0) > 0.6 * len(struct)):
+        out.append(fail(L, "groups_split_the_problem",
+                        f"variable_groups debe dividir el problema en bloques ({where}): hay {len(groups)} grupo(s) y el mayor "
+                        f"tiene {max((len(vs) for vs in groups.values()), default=0)} de {len(struct)} variables (máximo el 60 %). "
+                        f"Agrupa por estructura del problema (sector, período, ítem…)."))
     used = {v for cons in fams.values() for coefs, _, _ in cons for v in coefs} | {v for coefs, _ in obj.values() for v in coefs}
     undeclared = sorted(used - set(dom))
     if undeclared:

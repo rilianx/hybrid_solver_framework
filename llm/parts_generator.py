@@ -57,7 +57,8 @@ def constraint_families(inst) -> dict[str, list[tuple[dict[str, float], str, flo
     # usa `violations`: se verificará que la familia del MIP se viola exactamente cuando violations la reporta.
 def objective_terms(inst) -> dict[str, tuple[dict[str, float], float]]: ...
     # {término: (coeficientes, constante)} con los MISMOS nombres de término que cost_terms
-def variable_groups(inst) -> dict[str, list[str]]: ...   # partición de structural_variables (p.ej. por sector o período)
+def variable_groups(inst) -> dict[str, list[str]]: ...   # partición de structural_variables en VARIOS bloques
+    # (ninguno con más del 60 %): Fix-and-Optimize y Relax-and-Fix resuelven un bloque por vez
 '''
 
 

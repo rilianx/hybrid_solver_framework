@@ -160,3 +160,9 @@ def test_parts_generation_forbids_importing_the_reference_parts(tmp_path):
     client = ScriptedClient(responses=[f"```python\n{cheat}\n```"] * 2)
     res = generate_problem_model_parts(client, PACK.make_model_spec(), load_cases(), tmp_path, max_rounds=2, verbose=False)
     assert res.path is None and "no_forbidden_imports" in res.heuristic.reports[0]
+
+
+def test_a_single_variable_group_is_rejected(cases):
+    """Corrida 21: variable_groups con un solo grupo (partición válida) dejaba inútil a FIX_OPT."""
+    report = check_mip_view(mutant(variable_groups=lambda inst: {"todo": ref.structural_variables(inst)}), cases)
+    assert not report.passed and "groups_split_the_problem" in report.feedback()

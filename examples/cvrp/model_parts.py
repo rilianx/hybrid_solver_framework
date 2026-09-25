@@ -146,7 +146,8 @@ def objective_terms(inst: CVRPInstance):
 def variable_groups(inst: CVRPInstance):
     order = sorted(inst.customers, key=lambda c: math.atan2(inst.coords[c][1] - inst.coords[0][1],
                                                               inst.coords[c][0] - inst.coords[0][0]))
-    sector = {c: k // 4 for k, c in enumerate(order)}
+    size = max(1, min(4, math.ceil(len(order) / 3)))  # de a 4 clientes, y al menos 3 sectores en instancias chicas
+    sector = {c: k // size for k, c in enumerate(order)}
     groups = {f"s{k}": [] for k in range(max(sector.values()) + 1)}
     for v in structural_variables(inst):
         _, a, b = v.split("_")
