@@ -285,3 +285,20 @@ __all__ = ["Idea", "ProblemSpec", "SYSTEM_PROMPT", "correction_prompt", "generat
            "planning_prompt", "protocol_source"]
 
 _ = contracts  # el import explícito documenta de dónde salen los Protocols
+
+
+# Para generar el ProblemModel (`llm.model_generator`, `llm.parts_generator`). El de arriba es el de
+# los componentes: pedía `COMPONENT`/`build_component` y solo la librería estándar, y en la corrida 27
+# la vista MIP del CLSP redefinió esos nombres de la vista heurística en 2 de 4 rondas.
+MODEL_SYSTEM_PROMPT = """Eres un experto en optimización combinatoria y programación entera que escribe el MODELO de un problema en
+Python para un framework de solvers híbridos: funciones puras que evalúan soluciones y la formulación MIP como datos.
+
+Reglas:
+1. Escribe exactamente lo que pide el contrato que se te da (funciones o clases), con esas firmas. No escribas
+   componentes: nada de `COMPONENT` ni `build_component`.
+2. Imports: la librería estándar, la clase de instancia del módulo que se indica y lo que el enunciado autorice
+   explícitamente (p.ej. PuLP para un LP auxiliar). Nada de I/O ni prints.
+3. Las funciones no modifican sus argumentos y dan siempre el mismo resultado para la misma entrada.
+4. El objetivo se MINIMIZA.
+
+Formato de salida: un único bloque ```python ... ``` con el módulo completo. Sin texto fuera del bloque salvo una línea breve."""

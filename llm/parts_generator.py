@@ -30,7 +30,7 @@ from core.validation.syntactic import load_module
 from .client import LLMClient, TokenUsage
 from .model_generator import ModelSpec, _imports
 from .parser import extract_code_blocks
-from .prompts import SYSTEM_PROMPT
+from .prompts import MODEL_SYSTEM_PROMPT
 
 HEURISTIC_CONTRACT = '''
 # Funciones a escribir (a nivel de módulo; `inst` es la instancia)
@@ -216,7 +216,7 @@ def generate_problem_model_parts(client: LLMClient, spec: ModelSpec, cases: list
     res = PartsGenerationResult(path=None, heuristic=StageResult(), mip=StageResult())
 
     def ask(prompt: str) -> str | None:
-        text = client.complete(SYSTEM_PROMPT, prompt)
+        text = client.complete(MODEL_SYSTEM_PROMPT, prompt)
         res.llm_calls += 1
         used = getattr(client, "last_usage", None)
         if isinstance(used, TokenUsage):

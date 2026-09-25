@@ -275,7 +275,12 @@ def check_mip_optimum(parts, cases: list[TestCase], time_limit: float = 20.0) ->
         sol = parts.from_assignment(inst, x)
         cost = sum(parts.cost_terms(inst, sol).values())
         if _viol(parts, inst, sol):
-            report.add(fail(L, "mip_solution_feasible", f"la solución del MIP completo viola {_viol(parts, inst, sol)} según violations en {where}"))
+            plan = f" (solución {_short(sol, 160)})" if case.visible else ""
+            report.add(fail(L, "mip_solution_feasible",
+                            f"la solución del MIP completo viola {_viol(parts, inst, sol)} según violations en {where}{plan}: el MIP "
+                            f"encuentra valores de sus variables que cumplen todas sus restricciones con esa solución, y la vista "
+                            f"heurística dice que no se puede. Al MIP le falta (o tiene demasiado laxa) una restricción que la "
+                            f"vista heurística sí impone; revisa cada regla del enunciado contra constraint_families."))
         elif case.optimum is not None and not _close(cost, case.optimum, 1e-4):
             report.add(fail(L, "optimum_matches_cases",
                             f"el óptimo del MIP cuesta {cost:.6g} y el esperado es {case.optimum:.6g} en {where}: "

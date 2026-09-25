@@ -32,7 +32,7 @@ from core.validation.syntactic import load_module
 
 from .client import LLMClient, TokenUsage
 from .parser import extract_code_blocks
-from .prompts import SYSTEM_PROMPT
+from .prompts import MODEL_SYSTEM_PROMPT
 
 LAYER = "semantic_mip"
 
@@ -208,7 +208,7 @@ def generate_problem_model(client: LLMClient, spec: ModelSpec, instances: list[A
     prompt = model_prompt(spec)
     for round_no in range(1, max_rounds + 1):
         res.rounds = round_no
-        text = client.complete(SYSTEM_PROMPT, prompt)
+        text = client.complete(MODEL_SYSTEM_PROMPT, prompt)
         res.llm_calls += 1
         used = getattr(client, "last_usage", None)
         if isinstance(used, TokenUsage):
