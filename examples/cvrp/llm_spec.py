@@ -100,11 +100,22 @@ def _construction_source() -> str:
     )
 
 
+def greedy_start(problem):
+    """Partida de validación con estructura (inserción más barata). Una ruta por cliente es
+    degenerada como partida: desde ahí solo mejora juntar clientes, y operadores legítimos
+    (intercambio, or-opt, 2-opt) no tienen ninguna mejora (corrida 20)."""
+    from core.construction import GreedyConstructor
+
+    from .construction import CheapestInsertion
+
+    return GreedyConstructor(problem, CheapestInsertion(problem))
+
+
 def make_diversity_probe(n_customers: int = 30, seed: int = 100) -> DiversityProbe:
-    """Sonda de tamaño realista, con la partida trivial (una ruta por cliente)."""
+    """Sonda de tamaño realista, desde la partida greedy (ver `greedy_start`)."""
     inst = pm.CVRPInstance.random(n_customers, Random(seed))
     problem = pm.CVRPModel(inst)
-    return DiversityProbe(problem=problem, solution=SingletonRoutes().build(inst, Random(0)), max_similarity=0.8)
+    return DiversityProbe(problem=problem, solution=greedy_start(problem).build(inst, Random(0)), max_similarity=0.8)
 
 
 def make_combination_probe(probe: DiversityProbe | None, budget: float = 1.0):
@@ -150,7 +161,7 @@ def make_contexts(n_contexts: int = 2, n_customers: int = 6, seed: int = 7, stri
             problem=problem,
             instances=[inst],
             trivial_solutions=[SingletonRoutes().build(inst, Random(0))],
-            baseline_constructor=SingletonRoutes(),
+            baseline_constructor=greedy_start(problem),  # partidas de prueba: la trivial y la greedy
             reference_destruction=RandomRemoval(problem),
             reference_neighborhood=None if reference_free else RelocateNeighborhood(problem),
             mip_time_limit=10.0,

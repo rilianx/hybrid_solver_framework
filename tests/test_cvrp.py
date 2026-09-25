@@ -58,8 +58,10 @@ def test_reference_components_pass_the_validator(contexts):
     ctx = contexts[0]
     for comp, factory in HANDWRITTEN:
         report = validate_component(comp, factory(ctx.problem), ctx)
-        if comp["name"] == "two_opt":  # desde una ruta por cliente no tiene movimientos: correcto que no pase como vecindario de partida
-            assert report.failed_layer == "contractual"
+        if comp["name"] == "two_opt":
+            # en micro-instancias (rutas de <= 3 clientes armadas por inserción más barata) invertir un tramo
+            # no mejora nunca desde la partida: el modo estricto (generación) lo rechaza, y es correcto
+            assert report.failed_layer == "quality" and "improves_from_start" in report.feedback()
         else:
             assert report.passed, (comp["name"], report.feedback())
 

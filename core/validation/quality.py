@@ -154,6 +154,13 @@ def probe_checks(slot: str, impl, probe) -> list[CheckResult]:
     """
     P = probe.problem
     inst = getattr(P, "inst", None)
+    if slot == "destruction":
+        n_lo = [len(impl.destroy(probe.solution, 0.1, Random(s))[1]) for s in (0, 1, 2)]
+        n_hi = [len(impl.destroy(probe.solution, 0.5, Random(s))[1]) for s in (0, 1, 2)]
+        if mean(n_hi) <= mean(n_lo):
+            return [fail(LAYER, "destruction.ratio_monotone",
+                         f"en la instancia de tamaño realista, |free_vars| con ratio=0.5 ({mean(n_hi):.1f}) no supera a ratio=0.1 ({mean(n_lo):.1f})")]
+        return [ok(LAYER, "destruction.ratio_monotone", f"|free_vars|: ratio 0.1 → {mean(n_lo):.1f}, ratio 0.5 → {mean(n_hi):.1f}")]
     if slot == "greedy_score":  # un puntaje se juzga por el constructor greedy que arma
         from core.construction import GreedyConstructor
 
@@ -301,6 +308,10 @@ def check_component_quality(slot: str, impl, ctx: ValidationContext) -> list[Che
 
     elif slot == "destruction":
         # `ratio` debe significar algo: más ratio, más variables liberadas.
+        # Con sonda, este chequeo se hace allí (`probe_checks`, en tamaño realista): en una
+        # micro-instancia (6 clientes) el redondeo y los tamaños mínimos legítimos empatan 0.1 y 0.5.
+        if ctx.diversity_probe is not None:
+            return results
         n_lo, n_hi = [], []
         for k in range(len(ctx.instances)):
             sol = ctx.trivial_solutions[k]

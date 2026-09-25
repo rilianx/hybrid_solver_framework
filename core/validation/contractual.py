@@ -80,13 +80,17 @@ def _short(obj, n: int = 300) -> str:
 def check_neighborhood(impl, ctx: ValidationContext) -> list[CheckResult]:
     results: list[CheckResult] = []
     f = ctx.problem.objective
+    empty: list[int] = []
     for k in range(len(ctx.instances)):
-        for sol in _sample_solutions(ctx, k):
+        sols = _sample_solutions(ctx, k)
+        empty.clear()
+        for sol in sols:
             def _props(k=k, sol=sol):
                 out = []
                 moves = list(impl.moves(sol))
                 if not moves:
-                    return [fail(LAYER, "neighborhood.nonempty", f"moves(sol) vacío en inst_{k}")]
+                    empty.append(k)  # puede ser legítimo en una solución concreta (2-opt sobre rutas de un cliente)
+                    return []
                 rng = Random(0)
                 sample = moves if len(moves) <= ctx.max_moves_checked else rng.sample(moves, ctx.max_moves_checked)
                 f_sol = f(sol)
@@ -119,6 +123,10 @@ def check_neighborhood(impl, ctx: ValidationContext) -> list[CheckResult]:
             results += guard(LAYER, "neighborhood", _props)
             if callable(getattr(impl, "sample", None)):
                 results += guard(LAYER, "neighborhood.sample", lambda k=k, sol=sol: _check_sample(impl, sol, k))
+        # vacío en UNA solución puede ser correcto (CVRP: 2-opt u or-opt sobre rutas de un cliente);
+        # vacío en todas las de prueba de la instancia, no
+        if len(empty) == len(sols):
+            results.append(fail(LAYER, "neighborhood.nonempty", f"moves(sol) vacío en todas las soluciones de prueba de inst_{k}"))
     return _collapse(results)
 
 
@@ -193,10 +201,14 @@ def check_perturbation(impl, ctx: ValidationContext) -> list[CheckResult]:
     for k in range(len(ctx.instances)):
         sol = ctx.trivial_solutions[k]
 
-        def _changes(k=k, sol=sol):
-            changed = sum(impl.perturb(sol, 1.0, Random(s)) != sol for s in ctx.seeds)
+        def _changes(k=k):
+            # sin cambios en UNA solución puede ser correcto (intercambiar clientes entre rutas de un
+            # cliente no cambia nada); sin cambios en todas las de prueba, no
+            sols = _sample_solutions(ctx, k)
+            changed = sum(impl.perturb(x, 1.0, Random(s)) != x for x in sols for s in ctx.seeds)
             if changed == 0:
-                return fail(LAYER, "perturbation.changes_solution", f"perturb(sol, strength=1) devolvió la misma solución con todas las semillas en inst_{k}")
+                return fail(LAYER, "perturbation.changes_solution",
+                            f"perturb(sol, strength=1) devolvió la misma solución con todas las semillas y todas las soluciones de prueba en inst_{k}")
             return ok(LAYER, "perturbation.changes_solution")
 
         def _feasible(k=k, sol=sol):
