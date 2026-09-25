@@ -218,7 +218,9 @@ def _point(parts, inst, sol, point, dom, fams, obj) -> list[CheckResult]:
             if amount > 0:
                 mip.setdefault(family_of(fam), (fam, k, c, amount))
                 break
-    bounds = [(v, point[v], lo, hi) for v, (lo, hi, _) in dom.items()
+    inf = float("inf")
+    bounds = [(v, point[v], lo, hi) for v, (lo, hi, _) in ((v, (-inf if lo is None else lo, inf if hi is None else hi, k))
+                                                            for v, (lo, hi, k) in dom.items())
               if point[v] < lo - TOL * max(1, abs(lo)) or point[v] > hi + TOL * max(1, abs(hi))]
     tag = f"sol={_short(sol)}"
     if not heur:

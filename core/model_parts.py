@@ -33,6 +33,7 @@ una penalización por las violaciones, e `is_feasible` es "no hay violaciones" (
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Any
 
@@ -102,6 +103,8 @@ class LinearMIP:
         x = {}
         struct = set(self._struct)
         for name, (lo, hi, kind) in self._vars.items():
+            lo = None if lo is None or math.isinf(lo) else lo  # PuLP pide None para "sin cota"
+            hi = None if hi is None or math.isinf(hi) else hi
             if name in fixed:
                 v = float(fixed[name])
                 x[name] = pulp.LpVariable(_safe(name), lowBound=v, upBound=v, cat="Continuous")

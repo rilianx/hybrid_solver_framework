@@ -136,3 +136,16 @@ def test_a_free_shortage_variable_is_named_in_the_report(cases, scale):
     m = mutant(variables=variables, aux_values=aux_values, constraint_families=constraint_families)
     msg = check_mip_view(m, cases, scale_instances=scale).feedback()
     assert "families_agree" in msg and "no están en el objetivo" in msg and "u_" in msg
+
+
+def test_infinite_bounds_are_accepted_by_the_generic_mip(cases):
+    """Corrida 29: variables con cota superior float('inf') hacían fallar a PuLP."""
+    from core.model_parts import LinearMIP
+
+    def variables(inst):
+        return {v: (lo, float("inf") if kind == "continuous" else hi, kind) for v, (lo, hi, kind) in ref.variables(inst).items()}
+
+    inst = cases[0].instance
+    model = LinearMIP(mutant(variables=variables), inst)
+    model.solve(fixed={}, integer=set(model.variables()), relaxed=set(), time_limit=10)
+    assert model.last_objective == pytest.approx(cases[0].optimum, abs=1e-4)
