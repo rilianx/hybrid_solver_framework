@@ -88,6 +88,7 @@ def test_every_skeleton_runs_on_the_cvrp():
 
 
 def test_generic_tuning_cli_runs_on_the_cvrp(tmp_path):
+    pytest.importorskip("optuna")
     from examples.cvrp.tune import main
 
     main(["--catalog", "handwritten", "--size", "8", "--trials", "9", "--budget", "0.2", "--train", "1", "--test", "1",
