@@ -59,7 +59,8 @@ def run_experiment(pack: ProblemPack, catalog: str, args, train, test, out_dir: 
                               on_trial=on_trial, normalizers=normalizers,
                               reeval_top=args.reeval_top, reeval_seeds=args.reeval_seeds)
     for r in result.reevaluated:
-        print(f"  re-evaluado #{r['number']:>3}{'*' if r['enqueued'] else ' '} media {r['mean']:.4f} "
+        mark = "d" if r.get("twin") else "*" if r["enqueued"] else " "
+        print(f"  re-evaluado #{r['number']:>3}{mark} media {r['mean']:.4f} "
               f"({', '.join(f'{c:.4f}' for c in r['costs'])})  {r['summary']}")
     print(f"  mejor en train: {result.best_cost:.4f}  {describe(result.best_config)}  ({result.seconds:.0f}s, {result.n_failed} fallidas)")
 

@@ -150,7 +150,12 @@ jobs:
           BRANCH="tuning/run$RUN"
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$BRANCH"
+          # La rama sale de main y solo trae los resultados: si saliera de la rama del framework
+          # y esta toca .github/workflows, GITHUB_TOKEN no puede crearla (corridas 15-22).
+          TMP="$(mktemp -d)"; cp -r "$DEST" "$TMP/"
+          git fetch --depth 1 origin main
+          git checkout -f -B "$BRANCH" FETCH_HEAD
+          mkdir -p results && rm -rf "$DEST" && cp -r "$TMP/tune_run$RUN" "$DEST"
           git add -f "$DEST"
           git commit -m "Resultados de tuning (corrida $RUN)" || { echo "Sin cambios."; exit 0; }
           git push -u origin "$BRANCH"

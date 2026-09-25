@@ -19,6 +19,10 @@ Decisiones:
   semilla es optimista, y en las runs 13 y 14 el elegido quedó en test hasta 6 puntos
   por encima de su mejor default. Con `reeval_top=k`, los k mejores trials y el mejor
   default se re-evalúan en train con `reeval_seeds` semillas más y se elige por la media.
+  Cada elección de componentes entre esos k entra además con los parámetros numéricos por
+  defecto ("gemelo"): en las runs 19 y 22 el tuner eligió los componentes correctos, pero sus
+  numéricos afinados en 5 instancias quedaron en test 0.7 y 2.3 puntos peor que los defaults
+  de esa misma elección.
 """
 
 from __future__ import annotations
@@ -38,6 +42,7 @@ class Trial:
     cost: float
     seconds: float
     enqueued: bool = False  # default de un esqueleto, no muestreado
+    defaults_of: int | None = None  # gemelo de la selección final: los componentes de ese trial, numéricos por defecto
 
     @property
     def summary(self) -> str:
@@ -54,6 +59,7 @@ class TuningResult:
     # selección final: [{"number", "summary", "costs", "mean"}] de los re-evaluados (vacío si no hubo)
     reevaluated: list[dict[str, Any]] = field(default_factory=list)
     best_trial_number: int | None = None
+    best_is_twin: bool = False  # el elegido es el gemelo con numéricos por defecto de best_trial_number
 
     @property
     def n_failed(self) -> int:
@@ -91,6 +97,7 @@ class TuningResult:
             "skeleton_usage": self.skeleton_usage(),
             "best_trial_number": self.best_trial_number,
             "reevaluated": self.reevaluated,
+            "best_is_twin": self.best_is_twin,
             "incumbent_curve": self.incumbent_curve(),
             "trials": [
                 {"number": t.number, "cost": t.cost, "seconds": round(t.seconds, 2), "enqueued": t.enqueued,
@@ -160,8 +167,22 @@ def tune_with_optuna(
     return TuningResult(
         best_config=best.config, best_cost=best_cost, trials=trials,
         seconds=time.perf_counter() - t0, penalty_cost=assembler.penalty_cost,
-        reevaluated=reevaluated, best_trial_number=best.number,
+        reevaluated=reevaluated, best_trial_number=best.defaults_of if best.defaults_of is not None else best.number,
+        best_is_twin=best.defaults_of is not None,
     )
+
+
+SLOT_KEYS = ("constructor", "neighborhood", "perturbation", "destruction", "repair_mip", "fixing_policy")
+
+
+def defaults_twin(assembler: Assembler, t: Trial) -> Trial | None:
+    """Los componentes que eligió el trial, con los parámetros numéricos por defecto."""
+    choices = {k: v for k, v in t.config.items() if k in SLOT_KEYS}
+    try:
+        config = assembler.default_config(t.config["skeleton"], choices)
+    except (KeyError, ValueError):
+        return None
+    return Trial(t.number, config, float("nan"), 0.0, defaults_of=t.number)
 
 
 def _reevaluate(assembler: Assembler, trials: list[Trial], instances: list[Any], budget: float, seed: int,
@@ -177,15 +198,23 @@ def _reevaluate(assembler: Assembler, trials: list[Trial], instances: list[Any],
             cands.append(t)
         if len(cands) >= top:
             break
+    for t in [c for c in cands if not c.enqueued]:
+        twin = defaults_twin(assembler, t)
+        if twin is not None and repr(sorted(twin.config.items())) not in seen:
+            seen.add(repr(sorted(twin.config.items())))
+            cands.append(twin)
     defaults = [t for t in ok if t.enqueued]
     if defaults and repr(sorted(defaults[0].config.items())) not in seen:
         cands.append(defaults[0])
     rows = []
     for t in cands:
-        costs = [t.cost] + [assembler.evaluate(t.config, instances, budget, seed=seed + 1000 * (j + 1), normalizers=normalizers)
-                            for j in range(n_seeds)]
-        rows.append({"number": t.number, "enqueued": t.enqueued, "summary": t.summary, "costs": costs,
-                     "mean": sum(costs) / len(costs)})
+        seeds = [seed + 1000 * j for j in range(n_seeds + 1)]
+        if t.defaults_of is None:  # el costo con la semilla base ya se conoce
+            seeds = seeds[1:]
+        costs = ([] if t.defaults_of is not None else [t.cost]) + [
+            assembler.evaluate(t.config, instances, budget, seed=s, normalizers=normalizers) for s in seeds]
+        rows.append({"number": t.number, "enqueued": t.enqueued, "twin": t.defaults_of is not None,
+                     "summary": t.summary, "costs": costs, "mean": sum(costs) / len(costs)})
     pick = min(range(len(cands)), key=lambda i: rows[i]["mean"]) if cands else None
     if pick is None:
         best = min(trials, key=lambda t: t.cost)

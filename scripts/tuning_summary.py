@@ -50,11 +50,14 @@ def render_catalog(payload: dict) -> str:
                 f"IC95 [{pc['ci95'][0]:+.2%}, {pc['ci95'][1]:+.2%}]"
                 + ("." if pc["significant"] else " — **no se distingue del ruido** con estas instancias.")]
     if tun.get("reevaluated"):
-        out += ["", "Selección final por re-evaluación en train (media sobre semillas):", "",
+        out += ["", "Selección final por re-evaluación en train (media sobre semillas; * = default del esqueleto, "
+                "\"numéricos por defecto\" = los componentes de ese trial sin afinar sus parámetros):", "",
                 "| trial | media | costos | configuración |", "|---|---|---|---|"]
         for r in sorted(tun["reevaluated"], key=lambda r: r["mean"]):
-            mark = " ✔" if r["number"] == tun.get("best_trial_number") else ""
-            out.append(f"| {r['number']}{'*' if r['enqueued'] else ''}{mark} | {r['mean']:.4f} | "
+            chosen = r["number"] == tun.get("best_trial_number") and bool(r.get("twin")) == bool(tun.get("best_is_twin"))
+            mark = " ✔" if chosen else ""
+            tag = " (numéricos por defecto)" if r.get("twin") else "*" if r["enqueued"] else ""
+            out.append(f"| {r['number']}{tag}{mark} | {r['mean']:.4f} | "
                        + ", ".join(f"{c:.4f}" for c in r["costs"]) + f" | `{r['summary']}` |")
     return "\n".join(out)
 

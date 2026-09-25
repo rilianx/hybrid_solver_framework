@@ -201,13 +201,32 @@ def test_final_selection_reevaluates_top_trials_with_more_seeds(assembler, tiny)
     result = tune_with_optuna(assembler, tiny, budget=0.1, n_trials=len(assembler.available_skeletons()) + 2,
                               seed=3, reeval_top=2, reeval_seeds=1)
     rows = result.reevaluated
-    assert 2 <= len(rows) <= 3  # los 2 mejores (+ el mejor default si no estaba)
+    tuned = [r for r in rows if not r["twin"]]
+    assert 2 <= len(tuned) <= 3  # los 2 mejores (+ el mejor default si no estaba)
+    assert len(rows) <= 5  # + a lo sumo un gemelo con numéricos por defecto por cada uno de los 2
     assert all(len(r["costs"]) == 2 for r in rows)
     chosen = min(rows, key=lambda r: r["mean"])
     assert result.best_trial_number == chosen["number"] and result.best_cost == chosen["mean"]
-    assert result.best_config == next(t.config for t in result.trials if t.number == chosen["number"])
+    assert result.best_is_twin == chosen["twin"]
+    if not chosen["twin"]:
+        assert result.best_config == next(t.config for t in result.trials if t.number == chosen["number"])
     assert any(r["enqueued"] for r in rows)
     assert result.to_dict()["reevaluated"] == rows
+
+
+def test_defaults_twin_keeps_the_components_and_resets_the_numeric_parameters(assembler):
+    """Runs 19 y 22: los componentes correctos con numéricos afinados peores que sus defaults."""
+    from tuning.optuna_tuner import Trial, defaults_twin
+
+    sk = assembler.available_skeletons()[0]
+    base = assembler.default_config(sk)
+    tuned = dict(base)
+    numeric = [k for k, v in base.items() if isinstance(v, (int, float)) and not isinstance(v, bool)]
+    assert numeric
+    for k in numeric:
+        tuned[k] = base[k] * 2 + 1
+    twin = defaults_twin(assembler, Trial(7, tuned, 0.5, 1.0))
+    assert twin.defaults_of == 7 and twin.config == base
 
 
 def test_paired_comparison_separates_real_differences_from_noise():
