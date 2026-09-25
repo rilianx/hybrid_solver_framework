@@ -64,7 +64,8 @@ def _parts(pack: ProblemPack, spec, client, inner, args) -> None:
     from .parts_generator import generate_problem_model_parts
 
     cases = pack.load_cases()
-    res = generate_problem_model_parts(client, spec, cases, args.workspace, max_rounds=args.rounds)
+    scale = pack.make_instances(1, 777, pack.parse_size(pack.default_size))  # granularidad de variable_groups
+    res = generate_problem_model_parts(client, spec, cases, args.workspace, max_rounds=args.rounds, scale_instances=scale)
     stats = {"problem": pack.name, "mode": "parts", "model": inner.model, "accepted": res.path is not None,
              "cases": {"visible": sum(c.visible for c in cases), "hidden": sum(not c.visible for c in cases)},
              "heuristic": {"accepted": res.heuristic.accepted, "rounds": res.heuristic.rounds, "rejections": res.heuristic.reports},

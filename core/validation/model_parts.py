@@ -109,12 +109,25 @@ def check_heuristic_view(parts, cases: list[TestCase], n_random: int = 4) -> Val
     return report
 
 
-def check_mip_view(parts, cases: list[TestCase], n_random: int = 4) -> ValidationReport:
+def check_mip_view(parts, cases: list[TestCase], n_random: int = 4, scale_instances: list | None = None) -> ValidationReport:
+    """`scale_instances`: instancias de tamaño realista donde se mide la granularidad de
+    `variable_groups` (en una micro-instancia de 3 períodos, 3 grupos por período es lo correcto).
+    Sin ellas se mide en los casos."""
     report = ValidationReport(subject="vista MIP")
     report.extend(_missing(parts, MIP_PARTS))
     if not report.passed:
         return report
     L = "semantic_mip"
+    for k, inst in enumerate(scale_instances or []):
+        try:
+            struct = list(parts.structural_variables(inst))
+            groups = parts.variable_groups(inst)
+        except Exception as exc:  # noqa: BLE001
+            report.add(fail(L, "runs", f"structural_variables/variable_groups lanzó {type(exc).__name__}: {exc} en la instancia de tamaño realista"))
+            return report
+        report.extend(_groups(struct, groups, f"instancia de tamaño realista {k}", granularity=True))
+        if not report.passed:
+            return report
     for case in cases:
         inst, where = case.instance, _where(case)
         try:
@@ -126,7 +139,7 @@ def check_mip_view(parts, cases: list[TestCase], n_random: int = 4) -> Validatio
         except Exception as exc:  # noqa: BLE001
             report.add(fail(L, "runs", f"la vista MIP lanzó {type(exc).__name__}: {exc} en {where}"))
             return report
-        report.extend(_names(dom, struct, fams, obj, groups, where))
+        report.extend(_names(dom, struct, fams, obj, groups, where, granularity=not scale_instances))
         if not report.passed:
             return report
         sols = [parts.trivial_solution(inst)] + [parts.random_solution(inst, Random(s)) for s in range(n_random)]
@@ -157,12 +170,9 @@ def check_mip_view(parts, cases: list[TestCase], n_random: int = 4) -> Validatio
     return report
 
 
-def _names(dom, struct, fams, obj, groups, where) -> list[CheckResult]:
+def _groups(struct, groups, where, granularity: bool) -> list[CheckResult]:
     L = "semantic_mip"
     out = []
-    bad_struct = [v for v in struct if v not in dom or dom[v][2] != "binary"]
-    if bad_struct:
-        out.append(fail(L, "structural_are_binary", f"structural_variables debe ser un subconjunto binario de variables(): {bad_struct[:5]}"))
     grouped = [v for vs in groups.values() for v in vs]
     if sorted(grouped) != sorted(struct):
         out.append(fail(L, "groups_partition_structural",
@@ -172,12 +182,22 @@ def _names(dom, struct, fams, obj, groups, where) -> list[CheckResult]:
     # grupos (2 por defecto), así que con 1 o 2 grupos un bloque es el MIP entero (corrida 21: un
     # grupo con los 420 arcos; corrida 22: la lista partida en 2 mitades; FIX_OPT no mejoraba nada)
     biggest = max((len(vs) for vs in groups.values()), default=0)
-    if len(struct) >= 12 and (len(groups) < MIN_GROUPS or biggest > MAX_GROUP_SHARE * len(struct)):
+    if granularity and len(struct) >= 12 and (len(groups) < MIN_GROUPS or biggest > MAX_GROUP_SHARE * len(struct)):
         out.append(fail(L, "groups_split_the_problem",
                         f"variable_groups debe dividir el problema en bloques chicos ({where}): hay {len(groups)} grupo(s) y el "
                         f"mayor tiene {biggest} de {len(struct)} variables; se piden al menos {MIN_GROUPS} grupos y ninguno con "
                         f"más de un tercio. Fix-and-Optimize libera de a 1 a 4 grupos por subproblema, y con pocos grupos cada "
                         f"subproblema es casi el MIP completo. Agrupa por estructura del problema (sector, período, ítem…)."))
+    return out
+
+
+def _names(dom, struct, fams, obj, groups, where, granularity: bool = True) -> list[CheckResult]:
+    L = "semantic_mip"
+    out = []
+    bad_struct = [v for v in struct if v not in dom or dom[v][2] != "binary"]
+    if bad_struct:
+        out.append(fail(L, "structural_are_binary", f"structural_variables debe ser un subconjunto binario de variables(): {bad_struct[:5]}"))
+    out += _groups(struct, groups, where, granularity)
     used = {v for cons in fams.values() for coefs, _, _ in cons for v in coefs} | {v for coefs, _ in obj.values() for v in coefs}
     undeclared = sorted(used - set(dom))
     if undeclared:
@@ -262,10 +282,10 @@ def check_mip_optimum(parts, cases: list[TestCase], time_limit: float = 20.0) ->
     return report
 
 
-def validate_parts(parts, cases: list[TestCase], mip_time_limit: float = 20.0) -> ValidationReport:
+def validate_parts(parts, cases: list[TestCase], mip_time_limit: float = 20.0, scale_instances: list | None = None) -> ValidationReport:
     """Las tres etapas en orden; se detiene en la primera que falla."""
     report = ValidationReport(subject="ProblemModel por piezas")
-    for step in (lambda: check_heuristic_view(parts, cases), lambda: check_mip_view(parts, cases),
+    for step in (lambda: check_heuristic_view(parts, cases), lambda: check_mip_view(parts, cases, scale_instances=scale_instances),
                  lambda: check_mip_optimum(parts, cases, mip_time_limit)):
         r = step()
         report.extend(r.results)

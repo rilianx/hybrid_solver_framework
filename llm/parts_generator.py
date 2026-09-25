@@ -167,7 +167,9 @@ def _load(path: Path, forbidden: list[str]):
 
 
 def generate_problem_model_parts(client: LLMClient, spec: ModelSpec, cases: list[TestCase], workspace: str | Path,
-                                 max_rounds: int = 4, mip_time_limit: float = 20.0, verbose: bool = True) -> PartsGenerationResult:
+                                 max_rounds: int = 4, mip_time_limit: float = 20.0, verbose: bool = True,
+                                 scale_instances: list | None = None) -> PartsGenerationResult:
+    """`scale_instances`: instancias de tamaño realista para medir la granularidad de `variable_groups`."""
     ws = Path(workspace) / "problem_model"
     ws.mkdir(parents=True, exist_ok=True)
     t0 = time.perf_counter()
@@ -223,7 +225,7 @@ def generate_problem_model_parts(client: LLMClient, spec: ModelSpec, cases: list
         path.write_text(_concat(res.heuristic.source, src))
         module, report = _load(path, spec.forbidden_modules)
         if module is not None:
-            report = check_mip_view(module, cases)
+            report = check_mip_view(module, cases, scale_instances=scale_instances)
             if report.passed:
                 report = check_mip_optimum(module, cases, mip_time_limit)
         if report.passed:

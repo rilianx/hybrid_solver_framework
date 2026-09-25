@@ -40,6 +40,7 @@ HEURISTIC_PARTS = ("canonical", "trivial_solution", "random_solution", "from_ans
 MIP_PARTS = ("variables", "structural_variables", "to_assignment", "aux_values", "from_assignment",
              "constraint_families", "objective_terms", "variable_groups")
 TOL = 1e-6
+CACHE_SIZE = 50_000
 
 
 def family_of(name: str) -> str:
@@ -146,12 +147,23 @@ class PartsModel:
             penalty = 10.0 * (abs(triv) + 1.0)
         self.penalty = penalty
         self.validation_hints = getattr(parts, "VALIDATION_HINTS", {})
+        # en el CLSP cada evaluación es un LP: las heurísticas reevalúan las mismas soluciones
+        self._viol: dict[Any, dict[str, float]] = {}
+        self._cost: dict[Any, float] = {}
 
     def violations(self, sol) -> dict[str, float]:
-        return {k: v for k, v in self.parts.violations(self.inst, sol).items() if v > TOL}
+        if sol not in self._viol:
+            if len(self._viol) > CACHE_SIZE:
+                self._viol.clear()
+            self._viol[sol] = {k: v for k, v in self.parts.violations(self.inst, sol).items() if v > TOL}
+        return self._viol[sol]
 
     def objective(self, sol) -> float:
-        return sum(self.parts.cost_terms(self.inst, sol).values()) + self.penalty * sum(self.violations(sol).values())
+        if sol not in self._cost:
+            if len(self._cost) > CACHE_SIZE:
+                self._cost.clear()
+            self._cost[sol] = sum(self.parts.cost_terms(self.inst, sol).values())
+        return self._cost[sol] + self.penalty * sum(self.violations(sol).values())
 
     def is_feasible(self, sol) -> bool:
         return not self.violations(sol)
