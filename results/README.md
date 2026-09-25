@@ -23,6 +23,7 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run8/`](tune_run8/) | 24 sep | corrida 12 (desde cero, **con** planificador) | SA, ILS, VNS | 5+5, 10×15 | 5 s | 40 | calidad con planificador (solo generados) |
 | [`tune_run9/`](tune_run9/)–[`tune_run14/`](tune_run14/) | 24 sep | corridas 11–16 (desde cero; 3 sin y 3 con planificador) | SA, ILS, VNS | 5+5, 10×15 | 5 s | 40 | réplicas de la comparación del planificador, con muestreo de vecindarios |
 | runs 15–22 (solo en el log de Actions) | 25 sep | corridas 15 y 16 | SA, ILS, VNS | 5+5, 10×15 | 5 s | 40 | ruido del tuning: 2 semillas del tuner × con/sin re-evaluación final |
+| [`tune_run23/`](tune_run23/) | 25 sep | corrida 16 | SA, ILS, VNS | 5+5, 10×15 | 5 s | 40 × 3 réplicas | réplicas en paralelo; gemelo con numéricos por defecto |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -74,6 +75,17 @@ configuración de 4,25 %. Queda abierto el problema de fondo: con 5 instancias d
 tuner sobreajusta los parámetros continuos; más instancias, o racing (irace), lo atacan mejor
 que más trials. La referencia del MIP (CBC, 60 s) también varía entre runs (2.ª instancia:
 69 668–70 193), lo que mueve el gap medio ~0,15 puntos.
+
+**Run 23** (catálogo 16, 5+5, re-evaluación de 5, 3 réplicas en paralelo, `results/tune_run23/`):
+gap del afinado 10,35 / 11,30 / **4,34 %** (media 8,66 %, desvío 3,1). En la réplica 2 el elegido
+fue el gemelo con numéricos por defecto, que es exactamente la mejor configuración no afinada
+(4,34 %): el mecanismo funciona cuando la búsqueda llegó a esos componentes. En las réplicas 0 y
+1 los 5 mejores trials usaban otros constructores (`clustered_item_windowing`,
+`greedy_capacity_pressure_balance`, `critical_period_seeding`): TPE se quedó en ellos desde los
+primeros trials y nunca evaluó bien `greedy_forward_cover_cost`. El problema no es solo la
+selección final sino la exploración de los componentes. Cambio: **sondeo inicial** (`--screen`,
+por defecto un tercio de los trials): después de los defaults se encolan variantes de un solo
+componente, intercaladas entre esqueletos y slots, las mismas que se usan como referencia en test.
 
 ### ProblemModel del CLSP por piezas: de 4 rechazos a aceptado a la primera, por arreglos del framework
 

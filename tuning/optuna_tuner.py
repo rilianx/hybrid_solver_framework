@@ -23,6 +23,11 @@ Decisiones:
   defecto ("gemelo"): en las runs 19 y 22 el tuner eligió los componentes correctos, pero sus
   numéricos afinados en 5 instancias quedaron en test 0.7 y 2.3 puntos peor que los defaults
   de esa misma elección.
+- Sondeo inicial (`screen`): después de los defaults se encolan variantes de un solo componente
+  (cada constructor, vecindario… alternativo con lo demás en su default), repartidas entre
+  esqueletos y slots. En la run 23 dos de tres réplicas no llegaron a probar bien el constructor
+  que, con todo lo demás por defecto, era el mejor en test (4,3 % contra 10-11 %): TPE se había
+  quedado en otro constructor desde los primeros trials.
 """
 
 from __future__ import annotations
@@ -126,6 +131,7 @@ def tune_with_optuna(
     normalizers: list[float] | None = None,
     reeval_top: int = 0,
     reeval_seeds: int = 2,
+    screen: int = 0,
 ) -> TuningResult:
     """Corre `n_trials` evaluaciones (incluidos los defaults encolados) y devuelve el resultado.
 
@@ -144,6 +150,8 @@ def tune_with_optuna(
         for k, sk in enumerate(assembler.available_skeletons()):
             study.enqueue_trial(_enqueueable(assembler.default_config(sk), space))
             enqueued.add(k)
+    for config in screening_configs(assembler)[:max(0, screen)]:
+        study.enqueue_trial(_enqueueable(config, space))
 
     trials: list[Trial] = []
 
@@ -170,6 +178,28 @@ def tune_with_optuna(
         reevaluated=reevaluated, best_trial_number=best.defaults_of if best.defaults_of is not None else best.number,
         best_is_twin=best.defaults_of is not None,
     )
+
+
+def screening_configs(assembler: Assembler) -> list[dict[str, Any]]:
+    """Variantes de un solo componente de los defaults, intercaladas: un esqueleto por vez y, dentro
+    de cada uno, un slot por vez, para que un sondeo corto cubra todos los slots y esqueletos."""
+    per_sk = []
+    for sk in assembler.available_skeletons():
+        base = assembler.default_config(sk)
+        sdef = assembler.skeletons[sk]
+        by_slot = [[assembler.default_config(sk, {slot: spec.name}) for spec in assembler.registry.compatible(slot, sk)
+                    if spec.name != base[slot]]
+                   for slot in sdef.slots + tuple(s for s in sdef.optional_slots if assembler.registry.compatible(s, sk))]
+        per_sk.append(_interleave(by_slot))
+    return _interleave(per_sk)
+
+
+def _interleave(lists: list[list]) -> list:
+    out, k = [], 0
+    while any(k < len(li) for li in lists):
+        out += [li[k] for li in lists if k < len(li)]
+        k += 1
+    return out
 
 
 SLOT_KEYS = ("constructor", "neighborhood", "perturbation", "destruction", "repair_mip", "fixing_policy")

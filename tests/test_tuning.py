@@ -269,3 +269,19 @@ def test_replica_summary_uses_a_common_best_known_and_averages_the_untuned_basel
                                                                 round((30 / 100 + 2 / 98 + 0) / 3, 4)]
     assert a["best_untuned"] == "default:SA" and "Réplicas del tuning (2)" in md
     assert a["tuned_vs_best_untuned"]["replicas_ahead"] == 2  # 12,6 y 10,7 % contra 19,1 %
+
+
+def test_screening_enqueues_one_slot_variants_interleaved_across_skeletons(assembler, tiny):
+    """Run 23: dos réplicas nunca probaron bien el mejor constructor; el sondeo lo prueba al inicio."""
+    from tuning.evaluation import one_slot_baselines
+    from tuning.optuna_tuner import screening_configs
+
+    cfgs = screening_configs(assembler)
+    variants = [c for k, c in one_slot_baselines(assembler).items() if not k.startswith("default:")]
+    assert sorted(map(repr, cfgs)) == sorted(map(repr, variants))
+    n_sk = len(assembler.available_skeletons())
+    assert len({c["skeleton"] for c in cfgs[:n_sk]}) == min(n_sk, len({c["skeleton"] for c in cfgs}))
+    k = min(3, len(cfgs))
+    result = tune_with_optuna(assembler, tiny, budget=0.05, n_trials=n_sk + k, seed=0, screen=k)
+    for c in cfgs[:k]:
+        assert any(all((kk, vv) in t.config.items() for kk, vv in c.items() if kk in t.config) for t in result.trials[n_sk:])
