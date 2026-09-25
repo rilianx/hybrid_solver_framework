@@ -50,10 +50,22 @@ class CVRPInstance:
             for (x, y), d in zip(self.coords, self.demand):
                 f.write(f"{x} {y} {d}\n")
 
+    def to_text(self) -> str:
+        """Formato de entrada (como un problema de Codeforces): `n Q`, luego n+1 líneas `x y d`
+        (la primera es el depósito, con d = 0)."""
+        lines = [f"{self.n_customers} {self.capacity:g}"]
+        lines += [f"{x:g} {y:g} {d:g}" for (x, y), d in zip(self.coords, self.demand)]
+        return "\n".join(lines) + "\n"
+
+    @staticmethod
+    def parse(text: str) -> "CVRPInstance":
+        lines = [ln for ln in text.splitlines() if ln.strip()]
+        n, cap = lines[0].split()
+        rows = [tuple(map(float, ln.split())) for ln in lines[1:]]
+        assert len(rows) == int(n) + 1, "se esperaban n+1 filas (depósito + clientes)"
+        return CVRPInstance(tuple((x, y) for x, y, _ in rows), tuple(d for _, _, d in rows), float(cap))
+
     @staticmethod
     def load(path: str) -> "CVRPInstance":
         with open(path) as f:
-            n, cap = f.readline().split()
-            rows = [tuple(map(float, line.split())) for line in f if line.strip()]
-        assert len(rows) == int(n) + 1
-        return CVRPInstance(tuple((x, y) for x, y, _ in rows), tuple(d for _, _, d in rows), float(cap))
+            return CVRPInstance.parse(f.read())
