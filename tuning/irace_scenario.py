@@ -66,6 +66,7 @@ def write_irace_scenario(
     max_experiments: int = 300,
     target_runner_module: str = "scripts.irace_target_runner",
     generated_dir: str | None = None,
+    problem_module: str = "examples.lotsizing",
 ) -> Path:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -79,7 +80,8 @@ def write_irace_scenario(
         inst_dir_entry, lines = "", [str(p) for p in paths]
     (out / "instances.txt").write_text("\n".join(lines) + "\n")
     runner = out / "target-runner"
-    env = f"export HSF_BUDGET={budget}\n" + (f"export HSF_GENERATED={shlex.quote(generated_dir)}\n" if generated_dir else "")
+    env = (f"export HSF_BUDGET={budget}\nexport HSF_PROBLEM={shlex.quote(problem_module)}\n"
+           + (f"export HSF_GENERATED={shlex.quote(generated_dir)}\n" if generated_dir else ""))
     root = Path(os.path.relpath(Path.cwd().resolve(), out.resolve())).as_posix()
     runner.write_text(
         "#!/usr/bin/env bash\n"

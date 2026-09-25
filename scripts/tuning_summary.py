@@ -18,7 +18,7 @@ def render_catalog(payload: dict) -> str:
     gap = lambda row: f"{row['mean_gap']:.2%}" if "mean_gap" in row else "—"  # noqa: E731
     out = [f"### Catálogo `{payload['catalog']}`",
            "",
-           f"{s['trials']} trials · {s['budget']} s/corrida · {s['train']} train / {s['test']} test ({s['items']}×{s['periods']}) · "
+           f"{s['trials']} trials · {s['budget']} s/corrida · {s['train']} train / {s['test']} test ({s.get('problem', 'clsp')} {s['size'] if 'size' in s else str(s['items']) + '×' + str(s['periods'])}) · "
            f"{tun['n_failed']} configuraciones fallidas · {tun['seconds']:.0f} s de tuning",
            ""]
     extras = []

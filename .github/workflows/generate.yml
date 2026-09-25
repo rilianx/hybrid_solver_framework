@@ -5,6 +5,11 @@ name: generar componentes con LLM
 on:
   workflow_dispatch:
     inputs:
+      problem:
+        description: "Problema"
+        default: clsp
+        type: choice
+        options: [clsp, cvrp]
       slots:
         description: "Slots a generar (separados por espacio)"
         default: "neighborhood destruction constructor perturbation"
@@ -43,7 +48,7 @@ on:
         default: true
         type: boolean
       from_scratch:
-        description: "Desde cero: sin componentes de referencia (escribe en generated/clsp_scratch)"
+        description: "Desde cero: sin componentes de referencia (escribe en generated/<problema>_scratch)"
         default: false
         type: boolean
       planner:
@@ -64,7 +69,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      WS: ${{ inputs.workspace || format('{0}{1}', inputs.from_scratch && 'generated/clsp_scratch' || 'generated/clsp', inputs.planner && '_planner' || '') }}
+      WS: ${{ inputs.workspace || format('generated/{0}{1}{2}', inputs.problem, inputs.from_scratch && '_scratch' || '', inputs.planner && '_planner' || '') }}
+      PKG: ${{ inputs.problem == 'cvrp' && 'cvrp' || 'lotsizing' }}
       SCRATCH: ${{ inputs.from_scratch && 'true' || 'false' }}
       PLANNER: ${{ inputs.planner && 'true' || 'false' }}
     steps:
@@ -129,8 +135,8 @@ jobs:
           if [ -n "$MODEL" ]; then ARGS="$ARGS --model $MODEL"; fi
           if [ "$SCRATCH" = "true" ]; then ARGS="$ARGS --from-scratch"; fi
           if [ "$PLANNER" = "true" ]; then ARGS="$ARGS --planner"; fi
-          echo "python -m examples.lotsizing.generate $ARGS"
-          python -W ignore -m examples.lotsizing.generate $ARGS 2>&1 | tee generate.log
+          echo "python -m examples.$PKG.generate $ARGS"
+          python -W ignore -m "examples.$PKG.generate" $ARGS 2>&1 | tee generate.log
 
       - name: Resumen de la corrida
         if: always()
@@ -208,13 +214,15 @@ jobs:
           ROUNDS: ${{ inputs.rounds }}
           RUN: ${{ github.run_number }}
           BASE: ${{ github.ref_name }}
+          PROBLEM: ${{ inputs.problem }}
         working-directory: ${{ env.ROOT }}
         run: |
           if [ -z "$(ls -A "$WS" 2>/dev/null)" ]; then
             echo "Nada que commitear."; exit 0
           fi
-          BRANCH="llm-generated/$PROVIDER-run$RUN"
-          [ "$SCRATCH" = "true" ] && BRANCH="llm-generated/$PROVIDER-scratch-run$RUN"
+          PFX="$PROVIDER"; [ "$PROBLEM" != "clsp" ] && PFX="$PROBLEM-$PROVIDER"
+          BRANCH="llm-generated/$PFX-run$RUN"
+          [ "$SCRATCH" = "true" ] && BRANCH="llm-generated/$PFX-scratch-run$RUN"
           [ "$PLANNER" = "true" ] && BRANCH="$BRANCH-planner"
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -224,6 +232,7 @@ jobs:
           git add -f "$WS"
           TAG=""; [ "$SCRATCH" = "true" ] && TAG=", desde cero"
           [ "$PLANNER" = "true" ] && TAG="$TAG, con planificador"
+          [ "$PROBLEM" != "clsp" ] && TAG="$TAG, $PROBLEM"
           git commit -m "Componentes generados por $PROVIDER (corrida $RUN$TAG)" || { echo "Sin cambios."; exit 0; }
           git push -u origin "$BRANCH"
           {
