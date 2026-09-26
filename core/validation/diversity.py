@@ -204,13 +204,19 @@ SIGNATURE = {
 
 
 def greedy_score_signature(impl, sol=None, problem=None) -> set:
-    """Acciones que elige el constructor greedy con este puntaje al construir desde cero la
-    instancia del `problem` (regla greedy, sin azar). Calibrado en la sonda 10×15: ideas
-    distintas quedan en Jaccard 0,28–0,38; "producir lo más tarde posible" y "minimizar
-    solo inventario", que eligen lo mismo, en 0,97."""
+    """Transiciones (acción anterior, acción) que elige el constructor greedy con este puntaje al
+    construir desde cero la instancia del `problem` (regla greedy, sin azar). Dos puntajes que
+    eligen lo mismo en el mismo orden dan 1.
+
+    Antes era el conjunto de acciones, calibrado en la sonda 10×15 del CLSP (ideas distintas en
+    Jaccard 0,28–0,38; "producir lo más tarde posible" y "minimizar solo inventario", 0,97). En una
+    vista donde la acción es solo el próximo elemento (el cliente que sigue, en el ciclo completo
+    del CVRP) todo puntaje elige el mismo conjunto, todos los clientes, y tres ideas distintas
+    daban 1,00 (corrida 36): el orden es lo que las distingue."""
     from core.construction import GreedyConstructor
 
-    return set(GreedyConstructor(problem, impl).trace(problem.inst, Random(0))[1])
+    actions = GreedyConstructor(problem, impl).trace(problem.inst, Random(0))[1]
+    return set(zip([None, *actions], actions))
 
 
 SIGNATURE["greedy_score"] = greedy_score_signature

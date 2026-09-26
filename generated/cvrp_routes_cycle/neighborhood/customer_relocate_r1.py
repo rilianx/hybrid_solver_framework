@@ -1,0 +1,63 @@
+from __future__ import annotations
+
+from random import Random
+from typing import Iterable
+
+from generated.cvrp_routes_cycle.model.parts import canonical
+
+COMPONENT = {
+    "name": "customer_relocate",
+    "slot": "neighborhood",
+    "compatible_skeletons": ["SA", "ILS", "TS", "VNS", "GRASP", "MIP_PERTURB"],
+    "requires": ["ProblemModel.objective"],
+    "params": {
+        "max_samples_per_route": {"type": "int", "range": [1, 20]},
+    },
+}
+
+
+class CustomerRelocateNeighborhood:
+    """Mueve un cliente a otra posición (misma ruta o distinta ruta). Movimiento = (ri, pi, rj, pj)."""
+
+    def __init__(self, problem, max_samples_per_route: int = 6):
+        self.problem = problem
+        self.max_samples_per_route = int(max_samples_per_route)
+
+    def moves(self, sol) -> Iterable[tuple]:
+        sol = canonical(sol)
+        for ri, route in enumerate(sol):
+            for pi, c in enumerate(route):
+                for rj, route2 in enumerate(sol):
+                    limit = len(route2) + 1
+                    if ri == rj:
+                        limit = len(route2)
+                    for pj in range(limit):
+                        if ri == rj and (pj == pi or pj == pi + 1):
+                            continue
+                        yield (ri, pi, rj, pj)
+
+    def apply(self, sol, m):
+        ri, pi, rj, pj = m
+        sol = canonical(sol)
+        routes = [list(r) for r in sol]
+        c = routes[ri].pop(pi)
+        if ri == rj and pj > pi:
+            pj -= 1
+        if not routes[ri]:
+            del routes[ri]
+            if rj > ri:
+                rj -= 1
+        routes[rj].insert(pj, c)
+        return canonical(tuple(tuple(r) for r in routes))
+
+    def undo(self, sol, m):
+        ri, pi, rj, pj = m
+        inv = (rj, pj, ri, pi)
+        return self.apply(sol, inv)
+
+    def delta(self, sol, m):
+        return self.problem.objective(self.apply(sol, m)) - self.problem.objective(sol)
+
+
+def build_component(problem, max_samples_per_route: int = 6):
+    return CustomerRelocateNeighborhood(problem, max_samples_per_route=max_samples_per_route)

@@ -165,3 +165,24 @@ def test_a_greedy_score_is_validated_on_the_generated_construction_view(tmp_path
     P = pack.problem_factory(inst)
     greedy = GreedyConstructor(P, module.build_component(P)).build(inst, Random(0))
     assert P.is_feasible(greedy) and P.objective(greedy) < P.objective(P.parts.trivial_solution(inst))
+
+
+def test_greedy_scores_that_pick_the_same_elements_in_another_order_are_distinct():
+    """Corrida 36: con acciones = próximo cliente, todo puntaje elige el mismo conjunto; la firma
+    por conjunto daba similitud 1,00 entre ideas distintas."""
+    from core.validation.diversity import greedy_score_signature, similarity
+
+    pack = load_variant("cvrp", "tour", None, reference=True)
+    inst = pack.make_instances(1, 5, pack.parse_size("30"))[0]
+    P = pack.problem_factory(inst)
+
+    class Nearest:
+        def score(self, partial, a):
+            return inst.dist(partial[-1] if partial else 0, a)
+
+    class FarFromDepot:
+        def score(self, partial, a):
+            return -inst.dist(0, a)
+
+    near, far = greedy_score_signature(Nearest(), None, P), greedy_score_signature(FarFromDepot(), None, P)
+    assert similarity(near, near) == 1.0 and similarity(near, far) < 0.5
