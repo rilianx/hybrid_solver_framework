@@ -1,0 +1,45 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("SA", "ILS", "VNS")
+constructor "--constructor=" c ("clustered_item_windowing", "critical_period_seeding", "greedy_capacity_pressure_balance", "greedy_forward_cover_cost", "greedy_setup_consolidation_urgency") | skeleton %in% c("SA", "ILS", "VNS")
+clustered_item_windowing.window_frac "--clustered_item_windowing.window_frac=" r (0.15, 0.6) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "clustered_item_windowing"
+clustered_item_windowing.holding_bias "--clustered_item_windowing.holding_bias=" r (0.5, 3.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "clustered_item_windowing"
+clustered_item_windowing.split_bias "--clustered_item_windowing.split_bias=" r (0.0, 2.5) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "clustered_item_windowing"
+critical_period_seeding.priority_mode "--critical_period_seeding.priority_mode=" c ("criticality", "holding", "demand") | skeleton %in% c("SA", "ILS", "VNS") & constructor == "critical_period_seeding"
+critical_period_seeding.use_rng_shuffle "--critical_period_seeding.use_rng_shuffle=" c ("TRUE", "FALSE") | skeleton %in% c("SA", "ILS", "VNS") & constructor == "critical_period_seeding"
+greedy_capacity_pressure_balance.rule "--greedy_capacity_pressure_balance.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_capacity_pressure_balance"
+greedy_capacity_pressure_balance.alpha "--greedy_capacity_pressure_balance.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_capacity_pressure_balance"
+greedy_capacity_pressure_balance.source_pressure_weight "--greedy_capacity_pressure_balance.source_pressure_weight=" r (0.0, 5.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_capacity_pressure_balance"
+greedy_capacity_pressure_balance.target_pressure_weight "--greedy_capacity_pressure_balance.target_pressure_weight=" r (0.0, 3.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_capacity_pressure_balance"
+greedy_capacity_pressure_balance.slack_weight "--greedy_capacity_pressure_balance.slack_weight=" r (0.0, 5.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_capacity_pressure_balance"
+greedy_capacity_pressure_balance.setup_penalty_weight "--greedy_capacity_pressure_balance.setup_penalty_weight=" r (0.0, 5.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_capacity_pressure_balance"
+greedy_capacity_pressure_balance.gap_weight "--greedy_capacity_pressure_balance.gap_weight=" r (0.0, 2.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_capacity_pressure_balance"
+greedy_forward_cover_cost.rule "--greedy_forward_cover_cost.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_forward_cover_cost"
+greedy_forward_cover_cost.alpha "--greedy_forward_cover_cost.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_forward_cover_cost"
+greedy_forward_cover_cost.holding_weight "--greedy_forward_cover_cost.holding_weight=" r (0.0, 5.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_forward_cover_cost"
+greedy_setup_consolidation_urgency.rule "--greedy_setup_consolidation_urgency.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_setup_consolidation_urgency"
+greedy_setup_consolidation_urgency.alpha "--greedy_setup_consolidation_urgency.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_setup_consolidation_urgency"
+greedy_setup_consolidation_urgency.future_window "--greedy_setup_consolidation_urgency.future_window=" i (1, 12) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_setup_consolidation_urgency"
+greedy_setup_consolidation_urgency.setup_bias "--greedy_setup_consolidation_urgency.setup_bias=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_setup_consolidation_urgency"
+greedy_setup_consolidation_urgency.consolidation_weight "--greedy_setup_consolidation_urgency.consolidation_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_setup_consolidation_urgency"
+greedy_setup_consolidation_urgency.holding_weight "--greedy_setup_consolidation_urgency.holding_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_setup_consolidation_urgency"
+greedy_setup_consolidation_urgency.same_setup_bonus "--greedy_setup_consolidation_urgency.same_setup_bonus=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS") & constructor == "greedy_setup_consolidation_urgency"
+neighborhood__SA "--neighborhood__SA=" c ("remove_redundant_setup", "shift_setup_in_time", "swap_capacity_pressure") | skeleton %in% c("SA")
+swap_capacity_pressure.window__SA "--swap_capacity_pressure.window__SA=" i (1, 2) | skeleton %in% c("SA") & neighborhood__SA == "swap_capacity_pressure"
+swap_capacity_pressure.max_moves__SA "--swap_capacity_pressure.max_moves__SA=" i (1, 5000) | skeleton %in% c("SA") & neighborhood__SA == "swap_capacity_pressure"
+neighborhood__ILS_VNS "--neighborhood__ILS_VNS=" c ("remove_redundant_setup", "swap_capacity_pressure") | skeleton %in% c("ILS", "VNS")
+swap_capacity_pressure.window__ILS_VNS "--swap_capacity_pressure.window__ILS_VNS=" i (1, 2) | skeleton %in% c("ILS", "VNS") & neighborhood__ILS_VNS == "swap_capacity_pressure"
+swap_capacity_pressure.max_moves__ILS_VNS "--swap_capacity_pressure.max_moves__ILS_VNS=" i (1, 5000) | skeleton %in% c("ILS", "VNS") & neighborhood__ILS_VNS == "swap_capacity_pressure"
+perturbation "--perturbation=" c ("backward_lot_shift", "remove_low_value_setup_and_recover") | skeleton %in% c("ILS")
+backward_lot_shift.strength "--backward_lot_shift.strength=" i (1, 5) | skeleton %in% c("ILS") & perturbation == "backward_lot_shift"
+remove_low_value_setup_and_recover.strength "--remove_low_value_setup_and_recover.strength=" r (1.0, 5.0) | skeleton %in% c("ILS") & perturbation == "remove_low_value_setup_and_recover"
+SA.T0 "--SA.T0=" r (1.0, 1000.0) | skeleton == "SA"  # log-scale
+SA.alpha "--SA.alpha=" r (0.8, 0.999) | skeleton == "SA"
+SA.iters_per_T "--SA.iters_per_T=" i (1, 50) | skeleton == "SA"
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+ILS.ls_sample "--ILS.ls_sample=" i (4, 256) | skeleton == "ILS"  # log-scale
+VNS.shake_strength "--VNS.shake_strength=" i (1, 4) | skeleton == "VNS"
+VNS.ls_time_share "--VNS.ls_time_share=" r (0.02, 0.3) | skeleton == "VNS"
+VNS.ls_sample "--VNS.ls_sample=" i (4, 256) | skeleton == "VNS"  # log-scale

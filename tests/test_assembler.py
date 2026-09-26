@@ -28,14 +28,14 @@ def assembler():
 
 
 def test_all_skeletons_available_and_space_exports(assembler):
-    assert set(assembler.available_skeletons()) == {"SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH"}
+    assert set(assembler.available_skeletons()) == {"SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH", "MIP_PERTURB"}
     space = assembler.config_space()
     txt = to_irace_parameters(space)
     assert 'skeleton "--skeleton=" c (' in txt and '"LOCAL_BRANCH"' in txt
     assert "sliding_window.window_size" in txt and 'fixing_policy == "sliding_window"' in txt
 
 
-@pytest.mark.parametrize("skeleton", ["SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH"])
+@pytest.mark.parametrize("skeleton", ["SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH", "MIP_PERTURB"])
 def test_default_config_of_each_skeleton_runs(assembler, inst, skeleton):
     config = assembler.default_config(skeleton)
     runner = assembler.assemble(config)

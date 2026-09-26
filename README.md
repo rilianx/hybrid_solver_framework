@@ -56,7 +56,17 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   Branching (el `MIPModel` acepta `near=(x̄, k)`: Σ|x−x̄| ≤ k; k crece con
   `k_step` si no hay mejora y vuelve a k0 si la hay). Todos son
   configuraciones del mismo `TrajectorySkeleton`, registrados en
-  `Assembler.SKELETONS`: 8 esqueletos en el espacio de diseño.
+  `Assembler.SKELETONS`.
+- **`skeletons/mip_perturbation.py`** — MIP-guided Perturbation (§5.2): ILS cuya
+  perturbación resuelve el MIP. La destrucción elige la zona, se fijan al valor
+  contrario `flips` variables de la zona que estaban en 1 (obliga a moverse), el
+  sub-MIP acomoda el resto y después hace búsqueda local el vecindario. Con él son
+  9 esqueletos en el espacio de diseño.
+- **`core/problem_pack.py`** — `ProblemPack`: lo que el framework recibe de un
+  problema (ProblemModel, catálogo de referencia, spec para el LLM, contextos de
+  validación, generador de instancias, partida trivial). `llm.catalog`, `llm.cli`,
+  `llm.model_cli` y `tuning.cli` son genéricos sobre el pack; hay dos:
+  `examples/lotsizing/pack.py` (CLSP) y `examples/cvrp/pack.py` (CVRP).
 - **`core/validation/`** — Las cinco capas de validación autónoma de §7:
   *sintáctica* (import, esquema `COMPONENT`, métodos del Protocol del
   slot), *contractual* (propiedades de la tabla §4 por slot, muestreadas
@@ -161,7 +171,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   Fix-and-Optimize y el MIP completo.
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 140 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 190 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -182,10 +192,15 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 140 passed (~95 s)
+python -m pytest -q                 # 190 passed (~110 s)
+
+# segundo problema: CVRP con flota libre (mismos CLI, otro pack)
+python -m examples.cvrp.tune --catalog handwritten --size 30 --trials 30 --ref-time 60
 
 export OPENAI_API_KEY=...
 python -m examples.lotsizing.generate --slots neighborhood destruction --n 3   # generación real
+python -m examples.cvrp.generate --from-scratch --slots greedy_score neighborhood destruction perturbation
+python -m examples.cvrp.generate_model    # el ProblemModel completo (§6.1), con chequeo cruzado contra el de mano
 # desde cero: sin ver los componentes escritos a mano (ni diversidad contra el catálogo, ni pistas de setup_flip)
 python -m examples.lotsizing.generate --from-scratch --workspace generated/clsp_scratch --slots neighborhood destruction constructor perturbation
 # con planificador: ideas en texto, implementación y corrección en paralelo, diversidad al unir
@@ -366,13 +381,17 @@ devolver la penalización por infactibilidad.
 
 ## Qué falta (siguientes pasos del plan, §9)
 
-1. ~~Correr la generación real~~ — hecho: 8 corridas analizadas (ver
-   `claude/resultados_generacion_llm.md` en el proyecto); los aceptados entran
-   solos al catálogo vía `load_generated`.
-2. ~~Tuning real~~ — hecho con Optuna (`tuning/`, `examples.lotsizing.tune`,
-   workflow `tune.yml`); irace queda preparado (escenario + target-runner) para
-   correr afuera. Pendiente: más instancias y presupuesto para que la comparación
-   "a mano vs con LLM" tenga potencia estadística.
-3. MIP-guided Perturbation (§5.2), el único esqueleto de la tabla que
-   falta; y generación LLM del `ProblemModel` completo (§6.1), donde la
-   capa semántica tiene algo real que rechazar.
+1. ~~Correr la generación real~~ — hecho, en el CLSP (corridas 1–16) y en el CVRP
+   (18 y 20); los aceptados entran solos al catálogo vía `load_generated`.
+2. ~~Tuning real~~ — hecho con Optuna (`tuning/`, workflow `tune.yml`), con selección
+   final por re-evaluación (`--reeval-top`) y comparación pareada con IC95 en test;
+   irace queda preparado (escenario + target-runner) para correr afuera.
+3. ~~Segundo problema~~ — CVRP (`examples/cvrp`). Destapó suposiciones del CLSP en el
+   framework (texto de los prompts y del validador, "soluciones al azar" leídas desde
+   una asignación 0/1), ya separadas: ver `results/README.md`.
+4. ~~MIP-guided Perturbation~~ (`MIP_PERTURB`) y ~~generación LLM del `ProblemModel`
+   completo~~ (§6.1, `llm/model_generator.py`): en el CVRP, aceptado en la ronda 2 y
+   con el mismo óptimo MIP que el modelo escrito a mano en las micro-instancias.
+5. Pendiente: generar los componentes para un `ProblemModel` generado (hoy los
+   componentes se generan contra el modelo de referencia del pack), y más instancias o
+   presupuesto para que las comparaciones entre catálogos tengan potencia estadística.

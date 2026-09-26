@@ -72,25 +72,46 @@ def check_constructor(impl, ctx: ValidationContext) -> list[CheckResult]:
     return _collapse(results)
 
 
+def _short(obj, n: int = 300) -> str:
+    text = repr(obj)
+    return text if len(text) <= n else text[:n] + "…"
+
+
 def check_neighborhood(impl, ctx: ValidationContext) -> list[CheckResult]:
     results: list[CheckResult] = []
     f = ctx.problem.objective
+    empty: list[int] = []
     for k in range(len(ctx.instances)):
-        for sol in _sample_solutions(ctx, k):
+        sols = _sample_solutions(ctx, k)
+        empty.clear()
+        for sol in sols:
             def _props(k=k, sol=sol):
                 out = []
                 moves = list(impl.moves(sol))
                 if not moves:
-                    return [fail(LAYER, "neighborhood.nonempty", f"moves(sol) vacío en inst_{k}")]
+                    empty.append(k)  # puede ser legítimo en una solución concreta (2-opt sobre rutas de un cliente)
+                    return []
                 rng = Random(0)
                 sample = moves if len(moves) <= ctx.max_moves_checked else rng.sample(moves, ctx.max_moves_checked)
                 f_sol = f(sol)
                 for m in sample:
-                    applied = impl.apply(sol, m)
-                    if impl.undo(applied, m) != sol:
-                        out.append(fail(LAYER, "neighborhood.undo_apply_identity", f"undo(apply(sol, m)) != sol para m={m!r} en inst_{k}"))
+                    step = "apply"
+                    try:
+                        applied = impl.apply(sol, m)
+                        step = "undo"
+                        back = impl.undo(applied, m)
+                        step = "delta"
+                        d = impl.delta(sol, m)
+                    except Exception as exc:  # noqa: BLE001 — con el movimiento y la solución, el LLM puede corregirlo
+                        out.append(fail(LAYER, f"neighborhood.{step}_runs",
+                                        f"{step}(…, m={m!r}) lanzó {type(exc).__name__}: {exc}. m salió de moves(sol) con "
+                                        f"sol={_short(sol)} en inst_{k}"))
                         break
-                    d = impl.delta(sol, m)
+                    if back != sol:
+                        out.append(fail(LAYER, "neighborhood.undo_apply_identity",
+                                        f"undo(apply(sol, m)) != sol para m={m!r} en inst_{k}: sol={_short(sol)}, "
+                                        f"apply(sol, m)={_short(applied)}, undo(...)={_short(back)}"))
+                        break
                     if not _close(d, f(applied) - f_sol, ctx.tolerance):
                         out.append(fail(LAYER, "neighborhood.delta_consistent", f"delta={d:.6g} pero f(apply)-f(sol)={f(applied) - f_sol:.6g} para m={m!r} en inst_{k}"))
                         break
@@ -102,6 +123,10 @@ def check_neighborhood(impl, ctx: ValidationContext) -> list[CheckResult]:
             results += guard(LAYER, "neighborhood", _props)
             if callable(getattr(impl, "sample", None)):
                 results += guard(LAYER, "neighborhood.sample", lambda k=k, sol=sol: _check_sample(impl, sol, k))
+        # vacío en UNA solución puede ser correcto (CVRP: 2-opt u or-opt sobre rutas de un cliente);
+        # vacío en todas las de prueba de la instancia, no
+        if len(empty) == len(sols):
+            results.append(fail(LAYER, "neighborhood.nonempty", f"moves(sol) vacío en todas las soluciones de prueba de inst_{k}"))
     return _collapse(results)
 
 
@@ -176,10 +201,14 @@ def check_perturbation(impl, ctx: ValidationContext) -> list[CheckResult]:
     for k in range(len(ctx.instances)):
         sol = ctx.trivial_solutions[k]
 
-        def _changes(k=k, sol=sol):
-            changed = sum(impl.perturb(sol, 1.0, Random(s)) != sol for s in ctx.seeds)
+        def _changes(k=k):
+            # sin cambios en UNA solución puede ser correcto (intercambiar clientes entre rutas de un
+            # cliente no cambia nada); sin cambios en todas las de prueba, no
+            sols = _sample_solutions(ctx, k)
+            changed = sum(impl.perturb(x, 1.0, Random(s)) != x for x in sols for s in ctx.seeds)
             if changed == 0:
-                return fail(LAYER, "perturbation.changes_solution", f"perturb(sol, strength=1) devolvió la misma solución con todas las semillas en inst_{k}")
+                return fail(LAYER, "perturbation.changes_solution",
+                            f"perturb(sol, strength=1) devolvió la misma solución con todas las semillas y todas las soluciones de prueba en inst_{k}")
             return ok(LAYER, "perturbation.changes_solution")
 
         def _feasible(k=k, sol=sol):

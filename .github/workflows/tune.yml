@@ -6,6 +6,11 @@ name: tuning (Optuna) sobre el catálogo
 on:
   workflow_dispatch:
     inputs:
+      problem:
+        description: "Problema"
+        default: clsp
+        type: choice
+        options: [clsp, cvrp]
       trials:
         description: "Trials de Optuna por catálogo (los 8 defaults van incluidos)"
         default: "40"
@@ -28,16 +33,16 @@ on:
         type: choice
         options: [both, three, handwritten, generated, all]
       generated_dir:
-        description: "Directorio de los componentes generados (p.ej. generated/clsp_scratch)"
-        default: "generated/clsp"
+        description: "Directorio de los componentes generados (vacío = generated/<problema>; p.ej. generated/clsp_scratch)"
+        default: ""
         type: string
       skeletons:
         description: "Esqueletos (separados por espacio; vacío = todos). Ej.: SA ILS VNS"
         default: ""
         type: string
       size:
-        description: "Tamaño de las instancias, ítems×períodos"
-        default: "10x15"
+        description: "Tamaño de las instancias (vacío = default del problema; CLSP ítems×períodos, p.ej. 10x15; CVRP clientes, p.ej. 30)"
+        default: ""
         type: string
       ref_time:
         description: "Segundos del MIP completo por instancia de test como referencia del gap (0 = sin MIP)"
@@ -47,14 +52,45 @@ on:
         description: "Rama/tag con generated/clsp (vacío = la rama actual)"
         default: ""
         type: string
+      reeval_top:
+        description: "Selección final: re-evaluar en train los k mejores trials y el mejor default (0 = no)"
+        default: "0"
+        type: string
+      screen:
+        description: "Sondeo inicial: variantes de un solo componente encoladas tras los defaults (-1 = un tercio de los trials; 0 = no)"
+        default: "-1"
+        type: string
+      replicas:
+        description: "Réplicas del tuning: semillas del tuner seed, seed+1, ... en paralelo, mismas instancias (el ruido entre semillas es de 3-4.5 puntos de gap)"
+        default: "1"
+        type: string
+      seed:
+        description: "Semilla del tuner (las instancias no cambian con ella si se fija instance_seed)"
+        default: "0"
+        type: string
 
 permissions:
   contents: write  # para commitear los resultados en la rama tuning/runN
 
 jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      replicas: ${{ steps.r.outputs.replicas }}
+    steps:
+      - id: r
+        env:
+          N: ${{ inputs.replicas }}
+        run: echo "replicas=$(python3 -c "import json,os; print(json.dumps(list(range(max(1, int(os.environ['N'] or 1))))))")" >> "$GITHUB_OUTPUT"
+
   tune:
+    needs: plan
     runs-on: ubuntu-latest
     timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        replica: ${{ fromJSON(needs.plan.outputs.replicas) }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -87,16 +123,23 @@ jobs:
           CATALOG: ${{ inputs.catalog }}
           SKELETONS: ${{ inputs.skeletons }}
           SIZE: ${{ inputs.size }}
+          PKG: ${{ inputs.problem == 'cvrp' && 'cvrp' || 'lotsizing' }}
           REF_TIME: ${{ inputs.ref_time }}
           GEN_DIR: ${{ inputs.generated_dir }}
+          REEVAL: ${{ inputs.reeval_top }}
+          SEED: ${{ inputs.seed }}
+          REPLICA: ${{ matrix.replica }}
+          SCREEN: ${{ inputs.screen }}
         run: |
           set -o pipefail
-          ITEMS="${SIZE%%x*}"; PERIODS="${SIZE##*x}"
           SK_ARGS=()
           if [ -n "$SKELETONS" ]; then read -ra SK <<< "$SKELETONS"; SK_ARGS=(--skeletons "${SK[@]}"); fi
-          python -W ignore -m examples.lotsizing.tune --trials "$TRIALS" --budget "$BUDGET" \
-            --train "$TRAIN" --test "$TEST" --catalog "$CATALOG" --items "$ITEMS" --periods "$PERIODS" \
-            --ref-time "$REF_TIME" --generated "$GEN_DIR" "${SK_ARGS[@]}" --out tuning_out --irace tuning_out/irace 2>&1 | tee tune.log
+          SIZE_ARGS=(); if [ -n "$SIZE" ]; then SIZE_ARGS=(--size "$SIZE"); fi
+          GEN_ARGS=(); if [ -n "$GEN_DIR" ]; then GEN_ARGS=(--generated "$GEN_DIR"); fi
+          python -W ignore -m "examples.$PKG.tune" --trials "$TRIALS" --budget "$BUDGET" \
+            --train "$TRAIN" --test "$TEST" --catalog "$CATALOG" "${SIZE_ARGS[@]}" \
+            --ref-time "$REF_TIME" "${GEN_ARGS[@]}" --reeval-top "$REEVAL" --tuner-seed "$((SEED + REPLICA))" --screen "${SCREEN:--1}" \
+            "${SK_ARGS[@]}" --out tuning_out --irace tuning_out/irace 2>&1 | tee tune.log
 
       - name: Resumen
         if: always()
@@ -115,36 +158,66 @@ jobs:
             echo "</details>"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # El artefacto de abajo expira a los 30 días; la rama queda. Los resultados van a
-      # results/tune_runN/ para que fusionarla a main los deje junto a los anteriores.
-      - name: Guardar resultados en la rama tuning/run${{ github.run_number }}
-        if: always()
-        working-directory: ${{ env.ROOT }}
-        env:
-          RUN: ${{ github.run_number }}
-        run: |
-          if [ -z "$(ls -A tuning_out 2>/dev/null)" ]; then echo "Sin resultados que guardar."; exit 0; fi
-          DEST="results/tune_run$RUN"
-          mkdir -p "$DEST"
-          cp -r tuning_out/. "$DEST/"
-          cp tune.log "$DEST/" 2>/dev/null || true
-          python -m scripts.tuning_summary tuning_out > "$DEST/README.md"
-          BRANCH="tuning/run$RUN"
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$BRANCH"
-          git add -f "$DEST"
-          git commit -m "Resultados de tuning (corrida $RUN)" || { echo "Sin cambios."; exit 0; }
-          git push -u origin "$BRANCH"
-          echo "Resultados en la rama \`$BRANCH\`, carpeta \`$DEST\`." >> "$GITHUB_STEP_SUMMARY"
-
       - name: Subir resultados
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tuning-${{ github.run_number }}
+          name: tuning-${{ github.run_number }}-r${{ matrix.replica }}
           path: |
             ${{ env.ROOT }}/tuning_out/
             ${{ env.ROOT }}/tune.log
           if-no-files-found: warn
           retention-days: 30
+
+  # Junta las réplicas en results/tune_runN/r<k>/ con un README que las agrega
+  # (scripts.tuning_replicas) y lo deja en la rama tuning/runN. Los artefactos expiran a los
+  # 30 días; la rama queda.
+  save:
+    needs: tune
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: tuning-${{ github.run_number }}-r*
+          path: reps
+
+      - name: Guardar resultados en la rama tuning/run${{ github.run_number }}
+        env:
+          RUN: ${{ github.run_number }}
+        run: |
+          DEST="results/tune_run$RUN"
+          mkdir -p "$DEST"
+          for d in reps/tuning-"$RUN"-r*; do
+            [ -d "$d/tuning_out" ] || continue
+            R="r${d##*-r}"
+            mkdir -p "$DEST/$R"
+            cp -r "$d/tuning_out/." "$DEST/$R/"
+            cp "$d/tune.log" "$DEST/$R/" 2>/dev/null || true
+          done
+          if [ -z "$(ls -A "$DEST" 2>/dev/null)" ]; then echo "Sin resultados que guardar."; exit 0; fi
+          {
+            python -m scripts.tuning_replicas "$DEST"
+            for r in $(ls "$DEST" | grep -E '^r[0-9]+$' | sort -V); do
+              echo ""; echo "## Réplica $r"; echo ""
+              python -m scripts.tuning_summary "$DEST/$r"
+            done
+          } > "$DEST/README.md"
+          cat "$DEST/README.md" >> "$GITHUB_STEP_SUMMARY"
+          BRANCH="tuning/run$RUN"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # La rama sale de main y solo trae los resultados: si saliera de la rama del framework
+          # y esta toca .github/workflows, GITHUB_TOKEN no puede crearla (corridas 15-22).
+          TMP="$(mktemp -d)"; cp -r "$DEST" "$TMP/"
+          git fetch --depth 1 origin main
+          git checkout -f -B "$BRANCH" FETCH_HEAD
+          mkdir -p results && rm -rf "$DEST" && cp -r "$TMP/tune_run$RUN" "$DEST"
+          git add -f "$DEST"
+          git commit -m "Resultados de tuning (corrida $RUN)" || { echo "Sin cambios."; exit 0; }
+          git push -u origin "$BRANCH"
+          echo "Resultados en la rama \`$BRANCH\`, carpeta \`$DEST\`." >> "$GITHUB_STEP_SUMMARY"

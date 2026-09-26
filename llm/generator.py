@@ -160,7 +160,12 @@ def validate_generated_module(
         from core.validation.combination import SLOT_SKELETONS, check_combinations
 
         if slot_name in SLOT_SKELETONS:
-            results, keep, gains = check_combinations(component, factory, combo)
+            try:
+                results, keep, gains = check_combinations(component, factory, combo)
+            except Exception as exc:  # noqa: BLE001 — una excepción del componente es un rechazo
+                report.add(fail("quality", f"{slot_name}.useful_in_some_skeleton",
+                                f"el componente lanzó {type(exc).__name__} dentro de un esqueleto: {exc}"))
+                return report, module, component
             report.extend(results)
             if not report.passed:
                 return report, module, component

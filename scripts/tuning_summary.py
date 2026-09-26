@@ -18,7 +18,7 @@ def render_catalog(payload: dict) -> str:
     gap = lambda row: f"{row['mean_gap']:.2%}" if "mean_gap" in row else "—"  # noqa: E731
     out = [f"### Catálogo `{payload['catalog']}`",
            "",
-           f"{s['trials']} trials · {s['budget']} s/corrida · {s['train']} train / {s['test']} test ({s['items']}×{s['periods']}) · "
+           f"{s['trials']} trials · {s['budget']} s/corrida · {s['train']} train / {s['test']} test ({s.get('problem', 'clsp')} {s['size'] if 'size' in s else str(s['items']) + '×' + str(s['periods'])}) · "
            f"{tun['n_failed']} configuraciones fallidas · {tun['seconds']:.0f} s de tuning",
            ""]
     extras = []
@@ -44,6 +44,23 @@ def render_catalog(payload: dict) -> str:
     out += ["", f"Ganancia del afinado sobre el mejor default: **{test['gain_vs_best_baseline']:+.2%}**; "
             f"gana en {test['wins_per_instance']} instancias de test. Esqueletos explorados: "
             + ", ".join(f"{k} × {v}" for k, v in tun["skeleton_usage"].items()) + "."]
+    pc = test.get("tuned_vs_best_baseline")
+    if pc:
+        out += ["", f"Afinado vs `{pc['b']}` (mejor default por gap): {pc['mean_diff']:+.2%} de gap a favor del afinado, "
+                f"IC95 [{pc['ci95'][0]:+.2%}, {pc['ci95'][1]:+.2%}]"
+                + ("." if pc["significant"] else " — **no se distingue del ruido** con estas instancias.")]
+    if tun.get("reevaluated"):
+        out += ["", "Selección final por re-evaluación en train (media sobre semillas; * = default del esqueleto, "
+                "\"numéricos por defecto\" = los componentes de ese trial sin afinar sus parámetros):", "",
+                "| trial | media | costos | configuración |", "|---|---|---|---|"]
+        for r in sorted(tun["reevaluated"], key=lambda r: r["mean"]):
+            chosen = r["number"] == tun.get("best_trial_number") and bool(r.get("twin")) == bool(tun.get("best_is_twin"))
+            mark = " ✔" if chosen else ""
+            tag = " (numéricos por defecto)" if r.get("twin") else "*" if r["enqueued"] else ""
+            if r.get("preferred_defaults"):
+                tag += ", preferido: el afinado no le gana por más que el ruido"
+            out.append(f"| {r['number']}{tag}{mark} | {r['mean']:.4f} | "
+                       + ", ".join(f"{c:.4f}" for c in r["costs"]) + f" | `{r['summary']}` |")
     return "\n".join(out)
 
 
