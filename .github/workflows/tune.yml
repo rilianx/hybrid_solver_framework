@@ -56,6 +56,14 @@ on:
         description: "Selección final: re-evaluar en train los k mejores trials y el mejor default (0 = no)"
         default: "0"
         type: string
+      variant:
+        description: "Ciclo completo (llm.cycle): representación (cvrp: routes | tour; clsp: setups); generated_dir es el workspace del ciclo"
+        default: ""
+        type: string
+      reference:
+        description: "Ciclo completo: modelo de referencia de la variante en vez del generado"
+        default: false
+        type: boolean
       screen:
         description: "Sondeo inicial: variantes de un solo componente encoladas tras los defaults (-1 = un tercio de los trials; 0 = no)"
         default: "-1"
@@ -130,13 +138,23 @@ jobs:
           SEED: ${{ inputs.seed }}
           REPLICA: ${{ matrix.replica }}
           SCREEN: ${{ inputs.screen }}
+          VARIANT: ${{ inputs.variant }}
+          REFERENCE: ${{ inputs.reference && 'true' || 'false' }}
+          PROBLEM: ${{ inputs.problem }}
         run: |
           set -o pipefail
           SK_ARGS=()
           if [ -n "$SKELETONS" ]; then read -ra SK <<< "$SKELETONS"; SK_ARGS=(--skeletons "${SK[@]}"); fi
           SIZE_ARGS=(); if [ -n "$SIZE" ]; then SIZE_ARGS=(--size "$SIZE"); fi
           GEN_ARGS=(); if [ -n "$GEN_DIR" ]; then GEN_ARGS=(--generated "$GEN_DIR"); fi
-          python -W ignore -m "examples.$PKG.tune" --trials "$TRIALS" --budget "$BUDGET" \
+          CMD=(-m "examples.$PKG.tune")
+          if [ -n "$VARIANT" ]; then
+            CARGS=(--problem "$PROBLEM" --variant "$VARIANT" --workspace "$GEN_DIR")
+            [ "$REFERENCE" = "true" ] && CARGS+=(--reference)
+            CMD=(-m llm.cycle tune "${CARGS[@]}" --)
+            GEN_ARGS=()
+          fi
+          python -W ignore "${CMD[@]}" --trials "$TRIALS" --budget "$BUDGET" \
             --train "$TRAIN" --test "$TEST" --catalog "$CATALOG" "${SIZE_ARGS[@]}" \
             --ref-time "$REF_TIME" "${GEN_ARGS[@]}" --reeval-top "$REEVAL" --tuner-seed "$((SEED + REPLICA))" --screen "${SCREEN:--1}" \
             "${SK_ARGS[@]}" --out tuning_out --irace tuning_out/irace 2>&1 | tee tune.log

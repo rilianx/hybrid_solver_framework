@@ -178,9 +178,17 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   representación con decodificador (`ModelSpec.decoder`): el validador exige
   que la decodificación no sea peor que la respuesta del caso y acepta que
   una respuesta infactible no sea representable.
+- **Ciclo completo** (`llm/cycle.py`) — de la descripción y los casos a un
+  solver afinado, por representación: `model` genera el ProblemModel por
+  piezas, `components` genera desde cero constructores, vecindarios,
+  perturbaciones y destrucciones sobre ese modelo (el LLM ve el código de las
+  piezas), `tune` afina con el tuner de siempre. El pack de cada variante se
+  arma sobre las piezas (`parts_pack`) con las instancias y casos del pack base
+  (`ProblemPack.variants`); `--reference` usa las piezas de referencia. En
+  Actions: input `variant` de `generate.yml` y `tune.yml`.
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 195 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 199 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -201,7 +209,7 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 195 passed (~110 s)
+python -m pytest -q                 # 199 passed (~110 s)
 
 # segundo problema: CVRP con flota libre (mismos CLI, otro pack)
 python -m examples.cvrp.tune --catalog handwritten --size 30 --trials 30 --ref-time 60

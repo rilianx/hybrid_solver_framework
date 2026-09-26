@@ -69,6 +69,8 @@ def load_generated(pack: ProblemPack, workspace: str | Path | None = None, reval
     latest: dict[tuple[str, str], Path] = {}
     for path in sorted(workspace.glob("*/*.py")):
         slot = path.parent.name
+        if slot in ("model", "problem_model"):  # el ProblemModel del ciclo completo (`llm.cycle`), no un componente
+            continue
         base, _, rnd = path.stem.rpartition("_r")
         key = (slot, base)
         if key not in latest or int(rnd or 0) > int(latest[key].stem.rpartition("_r")[2] or 0):
