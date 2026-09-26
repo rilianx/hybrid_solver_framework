@@ -53,7 +53,11 @@ def _viol(parts, inst, sol) -> dict[str, float]:
     return {k: float(v) for k, v in parts.violations(inst, sol).items() if float(v) > TOL}
 
 
-def check_heuristic_view(parts, cases: list[TestCase], n_random: int = 4) -> ValidationReport:
+def check_heuristic_view(parts, cases: list[TestCase], n_random: int = 4, decoder: bool = False) -> ValidationReport:
+    """`decoder`: la representación es una codificación (p.ej. gran tour + Split). from_answer puede
+    dar una codificación cuya decodificación es MEJOR que la respuesta del caso, así que el costo se
+    exige no peor que el esperado; y una respuesta infactible puede no ser representable (Split nunca
+    arma una ruta que exceda la capacidad): si la decodificación es factible, no se exige la violación."""
     report = ValidationReport(subject="vista heurística")
     report.extend(_missing(parts, HEURISTIC_PARTS))
     if not report.passed:
@@ -94,6 +98,8 @@ def check_heuristic_view(parts, cases: list[TestCase], n_random: int = 4) -> Val
                 continue
             if sc["feasible"] and v:
                 report.add(fail(L, "feasibility_matches_cases", f"se esperaba FACTIBLE y violations reporta {v} en {label}"))
+            elif not sc["feasible"] and not v and decoder:
+                pass  # la codificación no puede expresar esa infactibilidad
             elif not sc["feasible"] and not v:
                 why = f" (viola {sc['violates']})" if sc.get("violates") else ""
                 report.add(fail(L, "feasibility_matches_cases", f"se esperaba INFACTIBLE{why} y violations no reporta nada en {label}"))
@@ -102,14 +108,19 @@ def check_heuristic_view(parts, cases: list[TestCase], n_random: int = 4) -> Val
                 if missing:
                     report.add(fail(L, "violated_family_matches_cases",
                                     f"se esperaba que se violara la familia {missing} y violations reporta {sorted(v)} en {label}"))
-            if sc.get("cost") is not None and not _close(cost, sc["cost"]):
+            if sc.get("cost") is not None and decoder:
+                if cost > sc["cost"] and not _close(cost, sc["cost"]):
+                    report.add(fail(L, "cost_matches_cases", f"se esperaba costo a lo sumo {sc['cost']:.6g} (la decodificación puede "
+                                                            f"mejorar la respuesta, no empeorarla) y la suma de cost_terms da {cost:.6g} en {label}"))
+            elif sc.get("cost") is not None and not _close(cost, sc["cost"]):
                 report.add(fail(L, "cost_matches_cases", f"se esperaba costo {sc['cost']:.6g} y la suma de cost_terms da {cost:.6g} en {label}"))
     if report.passed:
         report.add(ok(L, "matches_cases", f"{sum(len(c.solutions) for c in cases)} respuestas de {len(cases)} casos"))
     return report
 
 
-def check_mip_view(parts, cases: list[TestCase], n_random: int = 4, scale_instances: list | None = None) -> ValidationReport:
+def check_mip_view(parts, cases: list[TestCase], n_random: int = 4, scale_instances: list | None = None,
+                   decoder: bool = False) -> ValidationReport:
     """`scale_instances`: instancias de tamaño realista donde se mide la granularidad de
     `variable_groups` (en una micro-instancia de 3 períodos, 3 grupos por período es lo correcto).
     Sin ellas se mide en los casos."""
@@ -154,7 +165,15 @@ def check_mip_view(parts, cases: list[TestCase], n_random: int = 4, scale_instan
                 return report
             # la ida y vuelta se exige a las factibles: una infactible puede no ser representable en
             # la vista MIP (un cliente repetido no tiene arcos propios)
-            if back != sol and not _viol(parts, inst, sol):
+            if decoder and not _viol(parts, inst, sol):
+                # varias codificaciones dan la misma solución: se exige que la vuelta sea factible y no peor
+                c_sol, c_back = sum(parts.cost_terms(inst, sol).values()), sum(parts.cost_terms(inst, back).values())
+                if _viol(parts, inst, back) or (c_back > c_sol and not _close(c_back, c_sol)):
+                    report.add(fail(L, "assignment_round_trip",
+                                    f"from_assignment(to_assignment(sol)) debe ser factible y no peor que sol: sol={_short(sol)} "
+                                    f"(costo {c_sol:.6g}), vuelta={_short(back)} (costo {c_back:.6g}, viola {_viol(parts, inst, back)})"))
+                    return report
+            elif back != sol and not _viol(parts, inst, sol):
                 report.add(fail(L, "assignment_round_trip", f"from_assignment(to_assignment(sol)) != sol: sol={_short(sol)}, vuelta={_short(back)}"))
                 return report
             if set(x) != set(struct) or set(aux) != set(dom) - set(struct):
@@ -162,7 +181,11 @@ def check_mip_view(parts, cases: list[TestCase], n_random: int = 4, scale_instan
                                 f"to_assignment ∪ aux_values debe dar valor a todas las variables: faltan "
                                 f"{sorted(set(dom) - set(x) - set(aux))[:5]}, sobran {sorted((set(x) | set(aux)) - set(dom))[:5]}"))
                 return report
+            # una solución infactible que la vista MIP no puede expresar (dos rutas idénticas se funden en
+            # los mismos arcos; la vuelta es factible) no dice nada sobre las familias del MIP
             try:
+                if _viol(parts, inst, sol) and not _viol(parts, inst, back):
+                    continue
                 report.extend(_point(parts, inst, sol, {**x, **aux}, dom, fams, obj))
             except Exception as exc:  # noqa: BLE001
                 report.add(fail(L, "runs", f"violations/cost_terms lanzó {type(exc).__name__}: {exc} con sol={_short(sol)}"))
@@ -307,10 +330,12 @@ def check_mip_optimum(parts, cases: list[TestCase], time_limit: float = 20.0) ->
     return report
 
 
-def validate_parts(parts, cases: list[TestCase], mip_time_limit: float = 20.0, scale_instances: list | None = None) -> ValidationReport:
+def validate_parts(parts, cases: list[TestCase], mip_time_limit: float = 20.0, scale_instances: list | None = None,
+                   decoder: bool = False) -> ValidationReport:
     """Las tres etapas en orden; se detiene en la primera que falla."""
     report = ValidationReport(subject="ProblemModel por piezas")
-    for step in (lambda: check_heuristic_view(parts, cases), lambda: check_mip_view(parts, cases, scale_instances=scale_instances),
+    for step in (lambda: check_heuristic_view(parts, cases, decoder=decoder),
+                 lambda: check_mip_view(parts, cases, scale_instances=scale_instances, decoder=decoder),
                  lambda: check_mip_optimum(parts, cases, mip_time_limit)):
         r = step()
         report.extend(r.results)

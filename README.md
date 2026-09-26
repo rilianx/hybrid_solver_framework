@@ -169,9 +169,18 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   presupuesto de tiempo de pared por variante, lot-for-lot, Relax-and-Fix,
   SA, ILS, LNS-MIP (destrucción aleatoria vs por ventana), Relax-and-Fix →
   Fix-and-Optimize y el MIP completo.
+- **Representaciones alternativas** — cada representación de la solución es
+  un problema distinto para el framework (su pack, sus componentes, su
+  tuning), descrita en `ModelSpec.representation`; las variantes de un
+  problema comparten instancia y casos de prueba, así que sus costos se
+  comparan directamente (`scripts/compare_packs.py`). Primera variante:
+  `examples/cvrp/tour_parts.py`, el CVRP como gran tour + Split (Prins), una
+  representación con decodificador (`ModelSpec.decoder`): el validador exige
+  que la decodificación no sea peor que la respuesta del caso y acepta que
+  una respuesta infactible no sea representable.
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 190 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 195 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -192,7 +201,7 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 190 passed (~110 s)
+python -m pytest -q                 # 195 passed (~110 s)
 
 # segundo problema: CVRP con flota libre (mismos CLI, otro pack)
 python -m examples.cvrp.tune --catalog handwritten --size 30 --trials 30 --ref-time 60

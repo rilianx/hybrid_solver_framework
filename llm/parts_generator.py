@@ -81,6 +81,16 @@ def _cases_block(spec: ModelSpec, cases: list[TestCase], with_optimum: bool = Fa
     return "\n".join(parts)
 
 
+def _representation_block(spec: ModelSpec) -> str:
+    if not spec.representation:
+        return "\n# Representación de la solución\nElígela tú: hashable y comparable con ==."
+    text = f"\n# Representación de la solución (obligatoria)\n{spec.representation}"
+    if spec.decoder:
+        text += ("\nEs una codificación: from_answer debe devolver una codificación cuya decodificación sea la respuesta del "
+                 "caso o una igual de buena o mejor; se verificará que el costo no sea peor que el esperado.")
+    return text
+
+
 def heuristic_prompt(spec: ModelSpec, cases: list[TestCase]) -> str:
     return "\n".join([
         f"# Tarea\nEscribe la vista heurística del modelo del problema **{spec.name}**: la representación de una solución "
@@ -88,6 +98,7 @@ def heuristic_prompt(spec: ModelSpec, cases: list[TestCase]) -> str:
         f"\n# El problema\n{spec.description}",
         f"\n# La instancia (importa con `from {spec.instance_import} import ...`)\n```python\n{spec.instance_source}\n```",
         f"\n# Formato neutral de respuesta (el de los casos)\n{spec.answer_format}",
+        _representation_block(spec),
         f"\n# Familias de restricciones y términos del objetivo\n{spec.families}",
         HEURISTIC_CONTRACT,
         _cases_block(spec, cases),
@@ -228,7 +239,8 @@ def generate_problem_model_parts(client: LLMClient, spec: ModelSpec, cases: list
         return blocks[0] if blocks else None
 
     # etapa 1: vista heurística
-    context1 = f"\n# El problema\n{spec.description}\n\n# Formato de respuesta\n{spec.answer_format}\n{HEURISTIC_CONTRACT}"
+    context1 = (f"\n# El problema\n{spec.description}\n\n# Formato de respuesta\n{spec.answer_format}\n"
+                f"{_representation_block(spec)}\n{HEURISTIC_CONTRACT}")
     prompt = heuristic_prompt(spec, cases)
     for rnd in range(1, max_rounds + 1):
         res.heuristic.rounds = rnd
@@ -240,7 +252,7 @@ def generate_problem_model_parts(client: LLMClient, spec: ModelSpec, cases: list
         path.write_text(src)
         module, report = _load(path, spec.forbidden_modules)
         if module is not None:
-            report = check_heuristic_view(module, cases)
+            report = check_heuristic_view(module, cases, decoder=spec.decoder)
         if report.passed:
             res.heuristic.accepted, res.heuristic.source = True, src
             if verbose:
@@ -276,7 +288,7 @@ def generate_problem_model_parts(client: LLMClient, spec: ModelSpec, cases: list
         else:
             module, report = _load(path, spec.forbidden_modules)
         if module is not None:
-            report = _run_checks([lambda: check_mip_view(module, cases, scale_instances=scale_instances),
+            report = _run_checks([lambda: check_mip_view(module, cases, scale_instances=scale_instances, decoder=spec.decoder),
                                   lambda: check_mip_optimum(module, cases, mip_time_limit)])
         if report.passed:
             res.mip.accepted, res.mip.source, res.path = True, src, path

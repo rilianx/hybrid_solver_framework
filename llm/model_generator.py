@@ -80,6 +80,12 @@ class ModelSpec:
     # generación por piezas (`llm.parts_generator`): formato neutral de las respuestas de los casos y
     # nombres de las familias de restricciones y de los términos del objetivo
     answer_format: str = ""
+    # cómo es `sol` en la vista heurística. Cada representación es un problema distinto para el framework
+    # (su pack, sus componentes, su tuning); vacío = la elige el LLM. `decoder`: la representación es una
+    # codificación que se decodifica a una solución (p.ej. gran tour + Split) y from_answer puede devolver
+    # una codificación cuya decodificación sea igual o MEJOR que la respuesta del caso
+    representation: str = ""
+    decoder: bool = False
     families: str = ""
 
 
