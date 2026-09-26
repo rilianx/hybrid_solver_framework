@@ -26,6 +26,7 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run23/`](tune_run23/) | 25 sep | corrida 16 | SA, ILS, VNS | 5+5, 10×15 | 5 s | 40 × 3 réplicas | réplicas en paralelo; gemelo con numéricos por defecto |
 | [`tune_run24/`](tune_run24/) | 25 sep | corrida 16 | SA, ILS, VNS | 10+10, 10×15 | 5 s | 40 × 3 réplicas | ¿más instancias bajan el ruido? |
 | [`tune_run25/`](tune_run25/) | 25 sep | corrida 16 | SA, ILS, VNS | 5+5, 10×15 | 5 s | 40 × 3 réplicas | sondeo inicial de un solo componente |
+| [`tune_run26/`](tune_run26/) | 26 sep | corrida 16 | SA, ILS, VNS | 10+10, 10×15 | 5 s | 40 × 3 réplicas | sondeo + re-evaluación por elección distinta |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -96,6 +97,7 @@ componente, intercaladas entre esqueletos y slots, las mismas que se usan como r
 | 23 | 5+5 | no | 10,35 / 11,30 / 4,34 % | 8,66 % | 3,08 | 4,34 % |
 | 25 | 5+5 | sí (13) | 11,10 / 5,68 / 6,85 % | 7,88 % | 2,33 | 4,31 % |
 | 24 | 10+10 | no | 8,62 / 4,82 / 5,33 % | 6,26 % | 1,68 | 4,82 % |
+| 26 | 10+10 | sí (13) + re-evaluación por elección | **4,84 / 6,10 / 4,84 %** | **5,26 %** | **0,59** | 4,84 % |
 
 - **Duplicar las instancias corta el desvío a la mitad** (3,1 → 1,7) y baja la media 2,4 puntos:
   en 2 de 3 réplicas el tuner eligió los componentes buenos.
@@ -108,6 +110,17 @@ componente, intercaladas entre esqueletos y slots, las mismas que se usan como r
   componentes distintas** (antes, los k mejores trials, que suelen ser la misma elección con otros
   numéricos). Con k = 5, la elección buena habría entrado en 7 de las 9 réplicas de las runs
   23–25 (antes, en 5).
+
+**Run 26** (10+10, sondeo y re-evaluación por elección distinta): las 3 réplicas eligen los mismos
+componentes, `SA[greedy_forward_cover_cost, remove_redundant_setup]`, y el desvío baja a 0,6
+(3,1 en la run 23). En dos réplicas el elegido es la variante del sondeo con los numéricos por
+defecto, que es exactamente la mejor configuración no afinada (4,84 %). En la tercera, los
+numéricos afinados le ganaron a su gemelo en train por 0,0008 (0,6845 contra 0,6853) y en test
+quedaron 1,3 puntos peor. Lo que queda abierto: en ninguna de las 12 réplicas de las runs 23–26 los
+numéricos afinados le ganaron en test a los defaults de los mismos componentes. Con este
+presupuesto el tuning sirve para **elegir componentes**, no para afinar parámetros continuos; una
+regla que prefiera los defaults cuando la diferencia en train está dentro del ruido de la
+re-evaluación cerraría ese último punto.
 
 ### ProblemModel del CLSP por piezas: de 4 rechazos a aceptado a la primera, por arreglos del framework
 
