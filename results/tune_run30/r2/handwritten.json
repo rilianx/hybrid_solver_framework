@@ -1,0 +1,1629 @@
+{
+  "catalog": "handwritten",
+  "generated_components": [],
+  "settings": {
+    "trials": 40,
+    "budget": 5.0,
+    "train": 10,
+    "test": 10,
+    "problem": "cvrp",
+    "size": "30",
+    "seed": 0,
+    "tuner_seed": 2,
+    "seeds_test": 3,
+    "objective": "ratio",
+    "skeletons": [
+      "SA",
+      "ILS",
+      "VNS",
+      "LNS_MIP"
+    ],
+    "ref_time": 60.0,
+    "reeval_top": 5,
+    "reeval_seeds": 2,
+    "screen": -1,
+    "defaults_margin": 0.005
+  },
+  "tuning": {
+    "best_config": {
+      "skeleton": "ILS",
+      "constructor": "singleton_routes",
+      "neighborhood": "relocate",
+      "perturbation": "relocate_kick",
+      "ILS.strength": 5,
+      "ILS.ls_strategy": "best",
+      "ILS.ls_time_share": 0.20046970634475314,
+      "ILS.ls_sample": 52
+    },
+    "best_cost": 0.3218584327024771,
+    "best_summary": "ILS[constructor=singleton_routes, neighborhood=relocate, perturbation=relocate_kick]",
+    "best_default_cost": 0.3245843831099907,
+    "best_default_summary": "VNS[constructor=singleton_routes, neighborhood=relocate]",
+    "n_trials": 40,
+    "n_failed": 1,
+    "seconds": 2951.6,
+    "skeleton_usage": {
+      "ILS": 23,
+      "SA": 6,
+      "VNS": 6,
+      "LNS_MIP": 5
+    },
+    "best_trial_number": 33,
+    "reevaluated": [
+      {
+        "number": 30,
+        "enqueued": false,
+        "twin": false,
+        "summary": "ILS[constructor=greedy_nearest_from_depot, neighborhood=relocate, perturbation=relocate_kick]",
+        "costs": [
+          0.3203103150593755,
+          0.32422527424562664,
+          0.32223988477021687
+        ],
+        "mean": 0.32225849135840634
+      },
+      {
+        "number": 36,
+        "enqueued": false,
+        "twin": false,
+        "summary": "ILS[constructor=greedy_cheapest_insertion, neighborhood=relocate, perturbation=relocate_kick]",
+        "costs": [
+          0.3212251615610577,
+          0.3241928091782191,
+          0.323394759375985
+        ],
+        "mean": 0.32293757670508727
+      },
+      {
+        "number": 33,
+        "enqueued": false,
+        "twin": false,
+        "summary": "ILS[constructor=singleton_routes, neighborhood=relocate, perturbation=relocate_kick]",
+        "costs": [
+          0.32138356307506405,
+          0.3216627830772451,
+          0.3225289519551222
+        ],
+        "mean": 0.3218584327024771
+      },
+      {
+        "number": 2,
+        "enqueued": true,
+        "twin": false,
+        "summary": "VNS[constructor=singleton_routes, neighborhood=relocate]",
+        "costs": [
+          0.3245843831099907,
+          0.3259493685875374,
+          0.3268391801835522
+        ],
+        "mean": 0.32579097729369344
+      },
+      {
+        "number": 14,
+        "enqueued": false,
+        "twin": false,
+        "summary": "VNS[constructor=greedy_nearest_from_depot, neighborhood=relocate]",
+        "costs": [
+          0.3259944893675033,
+          0.32776476508491725,
+          0.3244720754006714
+        ],
+        "mean": 0.3260771099510307
+      },
+      {
+        "number": 30,
+        "enqueued": false,
+        "twin": true,
+        "summary": "ILS[constructor=greedy_nearest_from_depot, neighborhood=relocate, perturbation=relocate_kick]",
+        "costs": [
+          0.3231396669363531,
+          0.3253081242279982,
+          0.3297357252405821
+        ],
+        "mean": 0.3260611721349778
+      },
+      {
+        "number": 36,
+        "enqueued": false,
+        "twin": true,
+        "summary": "ILS[constructor=greedy_cheapest_insertion, neighborhood=relocate, perturbation=relocate_kick]",
+        "costs": [
+          0.325749931434959,
+          0.3264943784979583,
+          0.32426288399223363
+        ],
+        "mean": 0.3255023979750503
+      },
+      {
+        "number": 33,
+        "enqueued": false,
+        "twin": true,
+        "summary": "ILS[constructor=singleton_routes, neighborhood=relocate, perturbation=relocate_kick]",
+        "costs": [
+          0.32603900122929985,
+          0.32401619314827945,
+          0.32524201965286115
+        ],
+        "mean": 0.32509907134348015
+      }
+    ],
+    "best_is_twin": false,
+    "incumbent_curve": [
+      0.3492395746954975,
+      0.32603900122929985,
+      0.3245843831099907,
+      0.3245843831099907,
+      0.3245843831099907,
+      0.3245843831099907,
+      0.3245843831099907,
+      0.3245843831099907,
+      0.3245843831099907,
+      0.3245843831099907,
+      0.3245843831099907,
+      0.3245843831099907,
+      0.3245843831099907,
+      0.3231396669363531,
+      0.3231396669363531,
+      0.3231396669363531,
+      0.3231396669363531,
+      0.3211959037412126,
+      0.3211959037412126,
+      0.3211959037412126,
+      0.3211959037412126,
+      0.32105268109816903,
+      0.32105268109816903,
+      0.3204839357166955,
+      0.3204839357166955,
+      0.3204839357166955,
+      0.3204839357166955,
+      0.3204839357166955,
+      0.3204839357166955,
+      0.3204839357166955,
+      0.3203103150593755,
+      0.3203103150593755,
+      0.3203103150593755,
+      0.3203103150593755,
+      0.3203103150593755,
+      0.3203103150593755,
+      0.3203103150593755,
+      0.3203103150593755,
+      0.3203103150593755,
+      0.3203103150593755
+    ],
+    "trials": [
+      {
+        "number": 0,
+        "cost": 0.3492395746954975,
+        "seconds": 50.01,
+        "enqueued": true,
+        "summary": "SA[constructor=singleton_routes, neighborhood=relocate]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "singleton_routes",
+          "neighborhood": "relocate",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 1,
+        "cost": 0.32603900122929985,
+        "seconds": 50.03,
+        "enqueued": true,
+        "summary": "ILS[constructor=singleton_routes, neighborhood=relocate, perturbation=relocate_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "singleton_routes",
+          "neighborhood": "relocate",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 2,
+        "cost": 0.3245843831099907,
+        "seconds": 50.02,
+        "enqueued": true,
+        "summary": "VNS[constructor=singleton_routes, neighborhood=relocate]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "singleton_routes",
+          "neighborhood": "relocate",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 3,
+        "cost": 0.6020453045265267,
+        "seconds": 50.96,
+        "enqueued": true,
+        "summary": "LNS_MIP[constructor=singleton_routes, destruction=random_removal]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "singleton_routes",
+          "destruction": "random_removal",
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        }
+      },
+      {
+        "number": 4,
+        "cost": 0.3455512967615001,
+        "seconds": 50.04,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_cheapest_insertion, neighborhood=relocate]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_cheapest_insertion",
+          "greedy_cheapest_insertion.rule": "greedy",
+          "greedy_cheapest_insertion.alpha": 0.5,
+          "neighborhood": "relocate",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 5,
+        "cost": 0.325749931434959,
+        "seconds": 50.06,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_cheapest_insertion, neighborhood=relocate, perturbation=relocate_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_cheapest_insertion",
+          "greedy_cheapest_insertion.rule": "greedy",
+          "greedy_cheapest_insertion.alpha": 0.5,
+          "neighborhood": "relocate",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 6,
+        "cost": 0.3283989545248105,
+        "seconds": 50.05,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_cheapest_insertion, neighborhood=relocate]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_cheapest_insertion",
+          "greedy_cheapest_insertion.rule": "greedy",
+          "greedy_cheapest_insertion.alpha": 0.5,
+          "neighborhood": "relocate",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 7,
+        "cost": 0.40637601379282073,
+        "seconds": 57.38,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_cheapest_insertion, destruction=random_removal]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_cheapest_insertion",
+          "greedy_cheapest_insertion.rule": "greedy",
+          "greedy_cheapest_insertion.alpha": 0.5,
+          "destruction": "random_removal",
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        }
+      },
+      {
+        "number": 8,
+        "cost": 1.0,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "SA[constructor=singleton_routes, neighborhood=two_opt]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "singleton_routes",
+          "neighborhood": "two_opt",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 9,
+        "cost": 0.776282296241735,
+        "seconds": 56.28,
+        "enqueued": false,
+        "summary": "ILS[constructor=singleton_routes, neighborhood=two_opt, perturbation=relocate_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "singleton_routes",
+          "neighborhood": "two_opt",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 10,
+        "cost": 0.863175539660744,
+        "seconds": 56.14,
+        "enqueued": false,
+        "summary": "VNS[constructor=singleton_routes, neighborhood=two_opt]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "singleton_routes",
+          "neighborhood": "two_opt",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 11,
+        "cost": 0.4991928282944791,
+        "seconds": 52.18,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=singleton_routes, destruction=radial_removal]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "singleton_routes",
+          "destruction": "radial_removal",
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        }
+      },
+      {
+        "number": 12,
+        "cost": 0.35502449500951033,
+        "seconds": 50.06,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_nearest_from_depot, neighborhood=relocate]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "greedy",
+          "greedy_nearest_from_depot.alpha": 0.5,
+          "neighborhood": "relocate",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 13,
+        "cost": 0.3231396669363531,
+        "seconds": 50.08,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_from_depot, neighborhood=relocate, perturbation=relocate_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "greedy",
+          "greedy_nearest_from_depot.alpha": 0.5,
+          "neighborhood": "relocate",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 14,
+        "cost": 0.3259944893675033,
+        "seconds": 50.07,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_nearest_from_depot, neighborhood=relocate]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "greedy",
+          "greedy_nearest_from_depot.alpha": 0.5,
+          "neighborhood": "relocate",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 15,
+        "cost": 0.5068993270570202,
+        "seconds": 57.81,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_nearest_from_depot, destruction=random_removal]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "greedy",
+          "greedy_nearest_from_depot.alpha": 0.5,
+          "destruction": "random_removal",
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        }
+      },
+      {
+        "number": 16,
+        "cost": 0.3542089230415256,
+        "seconds": 50.08,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_from_depot, neighborhood=relocate, perturbation=relocate_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "rcl",
+          "greedy_nearest_from_depot.alpha": 0.033003005560422405,
+          "neighborhood": "relocate",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.020977128904620307,
+          "ILS.ls_sample": 4
+        }
+      },
+      {
+        "number": 17,
+        "cost": 0.3211959037412126,
+        "seconds": 50.2,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_from_depot, neighborhood=relocate, perturbation=relocate_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "roulette",
+          "greedy_nearest_from_depot.alpha": 0.9975788191619617,
+          "neighborhood": "relocate",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 6,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.29676141692077,
+          "ILS.ls_sample": 157
+        }
+      },
+      {
+        "number": 18,
+        "cost": 0.4920069634656584,
+        "seconds": 57.45,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_from_depot, neighborhood=two_opt, perturbation=relocate_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "roulette",
+          "greedy_nearest_from_depot.alpha": 0.9876088406160203,
+          "neighborhood": "two_opt",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 6,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.28671743614467926,
+          "ILS.ls_sample": 240
+        }
+      },
+      {
+        "number": 19,
+        "cost": 0.3233805597927569,
+        "seconds": 50.18,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_from_depot, neighborhood=relocate, perturbation=relocate_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "roulette",
+          "greedy_nearest_from_depot.alpha": 0.9712276645451978,
+          "neighborhood": "relocate",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 6,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.2944503189732056,
+          "ILS.ls_sample": 228
+        }
+      },
+      {
+        "number": 20,
+        "cost": 0.3240112352000467,
+        "seconds": 50.1,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_from_depot, neighborhood=relocate, perturbation=relocate_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "roulette",
+          "greedy_nearest_from_depot.alpha": 0.7560679511449294,
+          "neighborhood": "relocate",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 2,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.22955943781631788,
+          "ILS.ls_sample": 82
+        }
+      },
+      {
+        "number": 21,
+        "cost": 0.32105268109816903,
+        "seconds": 50.21,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_from_depot, neighborhood=relocate, perturbation=relocate_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "roulette",
+          "greedy_nearest_from_depot.alpha": 0.9924705041640228,
+          "neighborhood": "relocate",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 6,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.2982488563422256,
+          "ILS.ls_sample": 230
+        }
+      },
+      {
+        "number": 22,
+        "cost": 0.3222009113119888,
+        "seconds": 50.18,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_from_depot, neighborhood=relocate, perturbation=relocate_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "roulette",
+          "greedy_nearest_from_depot.alpha": 0.8019056716130257,
+          "neighborhood": "relocate",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 6,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.22829553296730512,
+          "ILS.ls_sample": 100
+        }
+      },
+      {
+        "number": 23,
+        "cost": 0.3204839357166955,
+        "seconds": 50.21,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_from_depot, neighborhood=relocate, perturbation=relocate_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "roulette",
+          "greedy_nearest_from_depot.alpha": 0.7941221573550843,
+          "neighborhood": "relocate",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 6,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.24052125136002034,
+          "ILS.ls_sample": 113
+        }
+      },
+      {
+        "number": 24,
+        "cost": 0.32088412135842415,
+        "seconds": 50.14,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_from_depot, neighborhood=relocate, perturbation=relocate_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "roulette",
+          "greedy_nearest_from_depot.alpha": 0.8161579427875432,
+          "neighborhood": "relocate",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 5,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.25104584746176917,
+          "ILS.ls_sample": 108
+        }
+      },
+      {
+        "number": 25,
+        "cost": 1000000000000.0,
+        "seconds": 0.43,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_nearest_from_depot, destruction=radial_removal]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "roulette",
+          "greedy_nearest_from_depot.alpha": 0.7677280679730204,
+          "destruction": "radial_removal",
+          "LNS_MIP.destroy_ratio": 0.5956678987900226,
+          "LNS_MIP.mip_time_share": 0.04307286822223608
+        }
+      },
+      {
+        "number": 26,
+        "cost": 0.3252037042745288,
+        "seconds": 50.14,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_cheapest_insertion, neighborhood=relocate, perturbation=relocate_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_cheapest_insertion",
+          "greedy_cheapest_insertion.rule": "rcl",
+          "greedy_cheapest_insertion.alpha": 0.9705131886355445,
+          "neighborhood": "relocate",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 5,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.23563348305259357,
+          "ILS.ls_sample": 82
+        }
+      },
+      {
+        "number": 27,
+        "cost": 0.3999663099961187,
+        "seconds": 50.06,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_nearest_from_depot, neighborhood=two_opt]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "roulette",
+          "greedy_nearest_from_depot.alpha": 0.8278719155473371,
+          "neighborhood": "two_opt",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.03753382888123068,
+          "VNS.ls_sample": 4
+        }
+      },
+      {
+        "number": 28,
+        "cost": 0.37657630352128146,
+        "seconds": 50.07,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_nearest_from_depot, neighborhood=relocate]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "rcl",
+          "greedy_nearest_from_depot.alpha": 0.6838691249917552,
+          "neighborhood": "relocate",
+          "SA.T0": 821.5184442683226,
+          "SA.alpha": 0.8076544820023415,
+          "SA.iters_per_T": 2
+        }
+      },
+      {
+        "number": 29,
+        "cost": 0.32110314333926554,
+        "seconds": 50.17,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_from_depot, neighborhood=relocate, perturbation=relocate_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "roulette",
+          "greedy_nearest_from_depot.alpha": 0.6550694070393581,
+          "neighborhood": "relocate",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 5,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.2529526288769249,
+          "ILS.ls_sample": 120
+        }
+      },
+      {
+        "number": 30,
+        "cost": 0.3203103150593755,
+        "seconds": 50.11,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_from_depot, neighborhood=relocate, perturbation=relocate_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "roulette",
+          "greedy_nearest_from_depot.alpha": 0.8556587572496915,
+          "neighborhood": "relocate",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 5,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.20403517314487085,
+          "ILS.ls_sample": 74
+        }
+      },
+      {
+        "number": 31,
+        "cost": 0.32490538786763096,
+        "seconds": 50.11,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_from_depot, neighborhood=relocate, perturbation=relocate_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "roulette",
+          "greedy_nearest_from_depot.alpha": 0.849138601285883,
+          "neighborhood": "relocate",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 5,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.20062221567755492,
+          "ILS.ls_sample": 67
+        }
+      },
+      {
+        "number": 32,
+        "cost": 0.32210307653223225,
+        "seconds": 50.18,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_from_depot, neighborhood=relocate, perturbation=relocate_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "roulette",
+          "greedy_nearest_from_depot.alpha": 0.8968879246000159,
+          "neighborhood": "relocate",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 5,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.26116210314551247,
+          "ILS.ls_sample": 158
+        }
+      },
+      {
+        "number": 33,
+        "cost": 0.32138356307506405,
+        "seconds": 50.05,
+        "enqueued": false,
+        "summary": "ILS[constructor=singleton_routes, neighborhood=relocate, perturbation=relocate_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "singleton_routes",
+          "neighborhood": "relocate",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 5,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.20046970634475314,
+          "ILS.ls_sample": 52
+        }
+      },
+      {
+        "number": 34,
+        "cost": 0.32216541781874763,
+        "seconds": 50.19,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_from_depot, neighborhood=relocate, perturbation=relocate_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "roulette",
+          "greedy_nearest_from_depot.alpha": 0.6413387960500477,
+          "neighborhood": "relocate",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 6,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.20422912784844072,
+          "ILS.ls_sample": 138
+        }
+      },
+      {
+        "number": 35,
+        "cost": 0.32279014034342424,
+        "seconds": 50.11,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_from_depot, neighborhood=relocate, perturbation=relocate_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "roulette",
+          "greedy_nearest_from_depot.alpha": 0.9063846688283959,
+          "neighborhood": "relocate",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 5,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.2648746852870663,
+          "ILS.ls_sample": 48
+        }
+      },
+      {
+        "number": 36,
+        "cost": 0.3212251615610577,
+        "seconds": 50.23,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_cheapest_insertion, neighborhood=relocate, perturbation=relocate_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_cheapest_insertion",
+          "greedy_cheapest_insertion.rule": "roulette",
+          "greedy_cheapest_insertion.alpha": 0.0006003127888747906,
+          "neighborhood": "relocate",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 6,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.27327392618561075,
+          "ILS.ls_sample": 256
+        }
+      },
+      {
+        "number": 37,
+        "cost": 0.3228174199207428,
+        "seconds": 50.18,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_from_depot, neighborhood=relocate, perturbation=relocate_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "rcl",
+          "greedy_nearest_from_depot.alpha": 0.7354293674470184,
+          "neighborhood": "relocate",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 5,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.23985395878444246,
+          "ILS.ls_sample": 146
+        }
+      },
+      {
+        "number": 38,
+        "cost": 0.36287054823777337,
+        "seconds": 50.04,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_cheapest_insertion, neighborhood=relocate]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_cheapest_insertion",
+          "greedy_cheapest_insertion.rule": "rcl",
+          "greedy_cheapest_insertion.alpha": 0.04405711228066367,
+          "neighborhood": "relocate",
+          "SA.T0": 1.1161014731885397,
+          "SA.alpha": 0.9835713655709284,
+          "SA.iters_per_T": 48
+        }
+      },
+      {
+        "number": 39,
+        "cost": 0.4930066184201029,
+        "seconds": 57.89,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_nearest_from_depot, neighborhood=two_opt]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "roulette",
+          "greedy_nearest_from_depot.alpha": 0.8860666381188944,
+          "neighborhood": "two_opt",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.2890297210289542,
+          "VNS.ls_sample": 229
+        }
+      }
+    ]
+  },
+  "test": {
+    "tuned": {
+      "label": "tuned",
+      "summary": "ILS[constructor=singleton_routes, neighborhood=relocate, perturbation=relocate_kick]",
+      "mean": 682.804549627946,
+      "std": 156.8535365000151,
+      "per_instance": [
+        843.3958532322941,
+        493.01979333264546,
+        852.9614712996242,
+        619.1380716575503,
+        804.5720946967903,
+        383.5526339696286,
+        794.0083361720108,
+        621.0381275855125,
+        827.1740413060737,
+        589.1850730273301
+      ],
+      "config": {
+        "skeleton": "ILS",
+        "constructor": "singleton_routes",
+        "neighborhood": "relocate",
+        "perturbation": "relocate_kick",
+        "ILS.strength": 5,
+        "ILS.ls_strategy": "best",
+        "ILS.ls_time_share": 0.20046970634475314,
+        "ILS.ls_sample": 52
+      },
+      "gap_per_instance": [
+        0.022351120354796153,
+        0.01813092324524295,
+        0.03440053211154426,
+        0.003985448262677045,
+        0.033324794064143085,
+        0.019872577574257946,
+        0.019671413095352155,
+        0.03372887894553686,
+        0.01307591906511965,
+        0.011764215956852071
+      ],
+      "mean_gap": 0.02103058226755222
+    },
+    "baselines": [
+      {
+        "label": "default:ILS",
+        "summary": "ILS[constructor=singleton_routes, neighborhood=relocate, perturbation=relocate_kick]",
+        "mean": 682.9922442367324,
+        "std": 154.30392187424675,
+        "per_instance": [
+          832.1934398815998,
+          504.4119264637039,
+          846.9083925803603,
+          624.5493389338396,
+          798.3214083855801,
+          387.17673207606765,
+          795.9495867801988,
+          608.9044037524073,
+          841.9221556139846,
+          589.5850578995821
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "singleton_routes",
+          "neighborhood": "relocate",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.008771731985897634,
+          0.04165671912466209,
+          0.027059863090961717,
+          0.01276028193993705,
+          0.02529693778145042,
+          0.029509112302080164,
+          0.022164381570174956,
+          0.013532082358835445,
+          0.031138574214903018,
+          0.012451080575789766
+        ],
+        "mean_gap": 0.022434076494469227
+      },
+      {
+        "label": "ILS:constructor=greedy_nearest_from_depot",
+        "summary": "ILS[constructor=greedy_nearest_from_depot, neighborhood=relocate, perturbation=relocate_kick]",
+        "mean": 685.9800796460006,
+        "std": 156.41170969909817,
+        "per_instance": [
+          834.8557412934844,
+          497.5479342279609,
+          853.0116705791187,
+          628.3609766866546,
+          804.7450628043755,
+          389.42550398391415,
+          786.4658057690984,
+          617.9078211983483,
+          855.0425458752873,
+          592.4377340417642
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "greedy",
+          "greedy_nearest_from_depot.alpha": 0.5,
+          "neighborhood": "relocate",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.011998931670044816,
+          0.027481947955971947,
+          0.034461409610901356,
+          0.018941179243877178,
+          0.03354693976783858,
+          0.03548863270921574,
+          0.00998523943207444,
+          0.028518428944761785,
+          0.0472076851380103,
+          0.01734977161957964
+        ],
+        "mean_gap": 0.026498016609227577
+      },
+      {
+        "label": "ILS:constructor=greedy_cheapest_insertion",
+        "summary": "ILS[constructor=greedy_cheapest_insertion, neighborhood=relocate, perturbation=relocate_kick]",
+        "mean": 687.1207203890874,
+        "std": 152.93750880724758,
+        "per_instance": [
+          834.059247914037,
+          497.8562079598526,
+          839.3621560571719,
+          620.7656733128397,
+          813.7064544433762,
+          392.157949737753,
+          786.6994787760574,
+          629.9317898127664,
+          847.1822879432948,
+          609.485957933725
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_cheapest_insertion",
+          "greedy_cheapest_insertion.rule": "greedy",
+          "greedy_cheapest_insertion.alpha": 0.5,
+          "neighborhood": "relocate",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.011033434986948212,
+          0.028118561381046698,
+          0.017908416820906575,
+          0.006624743845169665,
+          0.045056198205876044,
+          0.0427542495952416,
+          0.010285324046244607,
+          0.048532536040863196,
+          0.037580886385998144,
+          0.04662543332444852
+        ],
+        "mean_gap": 0.029451978463274325
+      },
+      {
+        "label": "default:VNS",
+        "summary": "VNS[constructor=singleton_routes, neighborhood=relocate]",
+        "mean": 689.5803255768707,
+        "std": 155.72838753743983,
+        "per_instance": [
+          855.5360776560984,
+          519.0258542171978,
+          834.494253759421,
+          635.3949949733338,
+          798.6288784284868,
+          380.8849647885769,
+          795.8633237528321,
+          632.6693317214468,
+          855.0777154671431,
+          588.2278610041698
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "singleton_routes",
+          "neighborhood": "relocate",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.037067308481009864,
+          0.07183581529304874,
+          0.012005030916044592,
+          0.030347442767186445,
+          0.02569182646931529,
+          0.012779202629503893,
+          0.022053601948594438,
+          0.0530892226638387,
+          0.047250758862297196,
+          0.01012046611244225
+        ],
+        "mean_gap": 0.03222406761432814
+      },
+      {
+        "label": "VNS:constructor=greedy_cheapest_insertion",
+        "summary": "VNS[constructor=greedy_cheapest_insertion, neighborhood=relocate]",
+        "mean": 690.6985322852765,
+        "std": 158.5314972636898,
+        "per_instance": [
+          866.2859004024979,
+          496.16059732164814,
+          859.5846591522546,
+          622.8888895419631,
+          801.6222962785412,
+          388.73099118803583,
+          792.0185838447056,
+          645.2871168565129,
+          840.9861089301947,
+          593.4201793364116
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_cheapest_insertion",
+          "greedy_cheapest_insertion.rule": "greedy",
+          "greedy_cheapest_insertion.alpha": 0.5,
+          "neighborhood": "relocate",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.05009807367421977,
+          0.024616970475598434,
+          0.042432581939770314,
+          0.010067720937255322,
+          0.02953632083326789,
+          0.033641912096297674,
+          0.01711615835196432,
+          0.0740917477956817,
+          0.029992157249289622,
+          0.019036852706261057
+        ],
+        "mean_gap": 0.03306304960596061
+      },
+      {
+        "label": "VNS:constructor=greedy_nearest_from_depot",
+        "summary": "VNS[constructor=greedy_nearest_from_depot, neighborhood=relocate]",
+        "mean": 692.5137400485926,
+        "std": 160.20846260483378,
+        "per_instance": [
+          854.3413686973417,
+          506.88692171133374,
+          867.7463394614291,
+          625.0816264558313,
+          810.5526229424962,
+          386.78103059011534,
+          800.5314910028945,
+          631.7310865538167,
+          852.6396720375836,
+          588.8452410330834
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "greedy",
+          "greedy_nearest_from_depot.alpha": 0.5,
+          "neighborhood": "relocate",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.03561910116791748,
+          0.0467678104653637,
+          0.05233038710308087,
+          0.013623431778131762,
+          0.041005682027598765,
+          0.02845693573311386,
+          0.02804849706441273,
+          0.051527497091398956,
+          0.04426478134755106,
+          0.011180647453581338
+        ],
+        "mean_gap": 0.03528247712321505
+      },
+      {
+        "label": "default:SA",
+        "summary": "SA[constructor=singleton_routes, neighborhood=relocate]",
+        "mean": 730.1680244501007,
+        "std": 173.77065636844148,
+        "per_instance": [
+          902.7404930157952,
+          531.81430655094,
+          903.1801202909853,
+          655.8627522173347,
+          874.737222604466,
+          405.2463977835046,
+          848.4159355280264,
+          664.8962007203993,
+          896.6648835187796,
+          618.1219322707763
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "singleton_routes",
+          "neighborhood": "relocate",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.09428775454287493,
+          0.09824513791561099,
+          0.09530152117900866,
+          0.06353766538834649,
+          0.12343898870695723,
+          0.07755664192068315,
+          0.08954205700563934,
+          0.10673141254311422,
+          0.09818436701651846,
+          0.061455357238262384
+        ],
+        "mean_gap": 0.09082809034570158
+      },
+      {
+        "label": "SA:constructor=greedy_cheapest_insertion",
+        "summary": "SA[constructor=greedy_cheapest_insertion, neighborhood=relocate]",
+        "mean": 732.2803987860789,
+        "std": 171.24068993741184,
+        "per_instance": [
+          919.1511389695238,
+          530.1371011149175,
+          903.0348480160221,
+          665.3513096474215,
+          863.761193237036,
+          412.66139455645214,
+          855.0551709258629,
+          664.4599954198678,
+          884.3404350108781,
+          624.8514009628066
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_cheapest_insertion",
+          "greedy_cheapest_insertion.rule": "greedy",
+          "greedy_cheapest_insertion.alpha": 0.5,
+          "neighborhood": "relocate",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.11418048013814694,
+          0.09478155543445611,
+          0.09512534708020204,
+          0.0789241745062691,
+          0.10934229885094646,
+          0.0972732367287105,
+          0.09806821250247286,
+          0.1060053411534854,
+          0.0830900804750806,
+          0.07301137915174083
+        ],
+        "mean_gap": 0.09498021060215109
+      },
+      {
+        "label": "SA:constructor=greedy_nearest_from_depot",
+        "summary": "SA[constructor=greedy_nearest_from_depot, neighborhood=relocate]",
+        "mean": 735.8633912215232,
+        "std": 172.32933042957703,
+        "per_instance": [
+          906.7288850604289,
+          515.4734076042819,
+          915.2616236869806,
+          662.6118754660587,
+          848.9983748618372,
+          410.87536175282565,
+          874.472910691094,
+          676.7006473451462,
+          904.721912284562,
+          642.7889134620171
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "greedy",
+          "greedy_nearest_from_depot.alpha": 0.5,
+          "neighborhood": "relocate",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.09912242032836381,
+          0.0644996884301924,
+          0.10995296085363257,
+          0.07448194718983468,
+          0.09038217537921765,
+          0.09252414698784599,
+          0.1230046183858006,
+          0.12638012142901403,
+          0.10805215954170588,
+          0.10381415081180662
+        ],
+        "mean_gap": 0.09922143893374143
+      },
+      {
+        "label": "LNS_MIP:constructor=greedy_cheapest_insertion",
+        "summary": "LNS_MIP[constructor=greedy_cheapest_insertion, destruction=random_removal]",
+        "mean": 862.3302356018855,
+        "std": 200.1732832792493,
+        "per_instance": [
+          1108.0707748642085,
+          654.8436237319402,
+          1043.3625887390112,
+          752.2678970527713,
+          1023.8569657394942,
+          495.5381448876214,
+          1024.5767690002394,
+          805.4563176324815,
+          1031.1084419294816,
+          684.2208324416059
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_cheapest_insertion",
+          "greedy_cheapest_insertion.rule": "greedy",
+          "greedy_cheapest_insertion.alpha": 0.5,
+          "destruction": "random_removal",
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.34318587620896973,
+          0.35231191978051135,
+          0.2653031271535547,
+          0.21986687042868694,
+          0.3149558569671853,
+          0.3176438390797839,
+          0.31576911006740094,
+          0.340696197676171,
+          0.26284322319175635,
+          0.17496213968834587
+        ],
+        "mean_gap": 0.2907538160242366
+      },
+      {
+        "label": "LNS_MIP:constructor=greedy_nearest_from_depot",
+        "summary": "LNS_MIP[constructor=greedy_nearest_from_depot, destruction=random_removal]",
+        "mean": 1040.5086316645527,
+        "std": 299.81719159461545,
+        "per_instance": [
+          1218.508349814247,
+          724.5483831611416,
+          1464.0697957723264,
+          905.6027418238955,
+          1291.8243693343206,
+          494.6550103277712,
+          1224.7253767027964,
+          905.3443914737287,
+          1352.4721952249986,
+          823.3357030103009
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_nearest_from_depot",
+          "greedy_nearest_from_depot.rule": "greedy",
+          "greedy_nearest_from_depot.alpha": 0.5,
+          "destruction": "random_removal",
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.47705655869659297,
+          0.4962586173208212,
+          0.775501739237822,
+          0.46851246324400597,
+          0.6591106741186281,
+          0.3152955701849061,
+          0.5728014412757237,
+          0.5069616522520235,
+          0.6564313478988822,
+          0.41385388082779884
+        ],
+        "mean_gap": 0.5341783945057205
+      },
+      {
+        "label": "LNS_MIP:destruction=radial_removal",
+        "summary": "LNS_MIP[constructor=singleton_routes, destruction=radial_removal]",
+        "mean": 1081.344825513292,
+        "std": 292.74439492658234,
+        "per_instance": [
+          1319.113965379352,
+          790.8901559990495,
+          1234.7064206983262,
+          974.2364558007425,
+          1224.4596444226784,
+          632.5214194083759,
+          1383.0914151013935,
+          1001.9891633795154,
+          1322.723635423419,
+          929.7159795200687
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "singleton_routes",
+          "destruction": "radial_removal",
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.5990090954476129,
+          0.6332604402549612,
+          0.4973489677393022,
+          0.57980791291406,
+          0.5725930817793818,
+          0.6818845531224531,
+          0.7761762861025766,
+          0.667828573750913,
+          0.619996996653692,
+          0.5965329098519875
+        ],
+        "mean_gap": 0.6224438817616941
+      },
+      {
+        "label": "default:LNS_MIP",
+        "summary": "LNS_MIP[constructor=singleton_routes, destruction=random_removal]",
+        "mean": 1200.3658351272984,
+        "std": 261.6082836345095,
+        "per_instance": [
+          1518.6188324584798,
+          850.5842834339006,
+          1429.360948213136,
+          1180.6683487891337,
+          1240.2147289503007,
+          684.0793491144602,
+          1364.2027416922979,
+          1252.9617913659852,
+          1409.2266719675047,
+          1073.7406552877853
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "singleton_routes",
+          "destruction": "random_removal",
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.8408457414222092,
+          0.7565342679987445,
+          0.7334097437699595,
+          0.9145549202541237,
+          0.5928275885218804,
+          0.8189779113912439,
+          0.7519193111702923,
+          1.0855769242155082,
+          0.7259410167422004,
+          0.8438558985486212
+        ],
+        "mean_gap": 0.8064443324034783
+      },
+      {
+        "label": "ILS:neighborhood=two_opt",
+        "summary": "ILS[constructor=singleton_routes, neighborhood=two_opt, perturbation=relocate_kick]",
+        "mean": 1493.9915271789287,
+        "std": 411.82023741616285,
+        "per_instance": [
+          1834.481597597985,
+          1060.8796585689502,
+          2026.1378835117375,
+          1183.685868495409,
+          1716.7482812617272,
+          755.3250045080067,
+          1722.8698828478748,
+          1378.571382128302,
+          1855.3275003318013,
+          1405.888212537493
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "singleton_routes",
+          "neighborhood": "two_opt",
+          "perturbation": "relocate_kick",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          1.2237295919665814,
+          1.1908134335331628,
+          1.4571310373990896,
+          0.9194480870833507,
+          1.2048472422639478,
+          1.0084212465996711,
+          1.2125223224889903,
+          1.2946562957966976,
+          1.2723000465508314,
+          1.4142284830338798
+        ],
+        "mean_gap": 1.2198097786716202
+      },
+      {
+        "label": "VNS:neighborhood=two_opt",
+        "summary": "VNS[constructor=singleton_routes, neighborhood=two_opt]",
+        "mean": 1689.712076409651,
+        "std": 435.36828615777904,
+        "per_instance": [
+          1699.540699959527,
+          1100.8558359769918,
+          2152.6128373909387,
+          1832.8197416144967,
+          1804.0737936780554,
+          842.333070644647,
+          1952.5129245014966,
+          1748.8983332710263,
+          2133.5432710707914,
+          1629.9302559885393
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "singleton_routes",
+          "neighborhood": "two_opt",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          1.06015636908003,
+          1.2733678927307142,
+          1.6105093129642152,
+          1.9720742982952923,
+          1.3170007928642258,
+          1.2397770836385937,
+          1.5074316252292776,
+          1.9110720149674596,
+          1.6130429658943564,
+          1.7989594153178756
+        ],
+        "mean_gap": 1.530339177098204
+      },
+      {
+        "label": "SA:neighborhood=two_opt",
+        "summary": "SA[constructor=singleton_routes, neighborhood=two_opt]",
+        "mean": 2013.6181654122936,
+        "std": 442.46850412899755,
+        "per_instance": [
+          2410.086259688992,
+          1420.5238080083886,
+          2479.8551463555436,
+          2186.428317170531,
+          2174.3328308347964,
+          1033.0543556369166,
+          2162.1325513117845,
+          2086.9510474890017,
+          2386.979376067547,
+          1795.837961559434
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "singleton_routes",
+          "neighborhood": "two_opt",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          1.9214684638318955,
+          1.9335114648502756,
+          2.007361492004189,
+          2.5454809106341227,
+          1.7925303890833968,
+          1.7469080255127745,
+          1.7766267096444395,
+          2.4737666995139027,
+          1.9234371540249156,
+          2.0838605225126776
+        ],
+        "mean_gap": 2.020495183161259
+      }
+    ],
+    "best_baseline": "default:ILS",
+    "gain_vs_best_baseline": 0.00027481221107589936,
+    "wins_per_instance": "6/10",
+    "reference": 2013.6181654122936,
+    "best_known": [
+      824.9571369761912,
+      484.24007372369044,
+      824.5949657029424,
+      616.6803241311148,
+      778.6245905630005,
+      376.0789753577836,
+      778.6903957243342,
+      600.7746714196543,
+      816.4975849681643,
+      582.3343657890907
+    ],
+    "best_baseline_by_gap": "default:ILS",
+    "tuned_vs_best_baseline": {
+      "a": "tuned",
+      "b": "default:ILS",
+      "mean_diff": 0.0014034942269170085,
+      "ci95": [
+        -0.00629008483642633,
+        0.009636863071851985
+      ],
+      "wins_a": 6,
+      "n": 10,
+      "significant": false
+    },
+    "mip_reference": [
+      1305.1272324923425,
+      707.5776753873015,
+      974.9038825813648,
+      769.8710388285051,
+      1194.2346400505828,
+      535.9624746006402,
+      1252.0354370795612,
+      830.6247785514546,
+      974.3661784708482,
+      960.9344765118251
+    ]
+  }
+}
