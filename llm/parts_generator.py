@@ -159,6 +159,10 @@ def mip_prompt(spec: ModelSpec, cases: list[TestCase], heuristic_source: str) ->
         f"\n# El problema\n{spec.description}",
         f"\n# La instancia\n```python\n{spec.instance_source}\n```",
         f"\n# Vista heurística aprobada (ya definida antes de tu código)\n```python\n{heuristic_source}\n```",
+        _representation_block(spec),
+        *(["La representación es una codificación: la ida y vuelta from_assignment(to_assignment(sol)) NO tiene que "
+           "devolver la misma codificación; se exige que sea factible y no peor que sol. to_assignment y aux_values describen "
+           "la solución DECODIFICADA."] if spec.decoder else []),
         MIP_CONTRACT,
         _cases_block(spec, cases, with_optimum=True),
         "\n# Lo que se verificará\n- En soluciones factibles, infactibles y al azar: cada familia del MIP se evalúa en "
