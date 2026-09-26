@@ -133,3 +133,36 @@ def objective_terms(inst: CLSPInstance):
 
 def variable_groups(inst: CLSPInstance):
     return {f"t{t}": [_y(i, t) for i in range(inst.n_items)] for t in range(inst.n_periods)}
+
+
+# ---------------------------------------------------------------- vista constructiva
+# La de `construction.py` (cubrir la demanda del deadline más temprano desde un período anterior
+# con capacidad). En un callejón sin salida se encienden todos los setups (el plan trivial, factible).
+def _view(inst: CLSPInstance):
+    from .construction import CLSPConstructionView
+
+    return CLSPConstructionView(None, inst)
+
+
+def empty_partial(inst: CLSPInstance):
+    return _view(inst).empty()
+
+
+def candidates(inst: CLSPInstance, partial):
+    return _view(inst).candidates(partial)
+
+
+def apply_action(inst: CLSPInstance, partial, action):
+    return _view(inst).apply(partial, action)
+
+
+def is_complete(inst: CLSPInstance, partial) -> bool:
+    return _view(inst).is_complete(partial)
+
+
+def to_solution(inst: CLSPInstance, partial):
+    return canonical(partial.setup)
+
+
+def complete_partial(inst: CLSPInstance, partial, rng):
+    return trivial_solution(inst)

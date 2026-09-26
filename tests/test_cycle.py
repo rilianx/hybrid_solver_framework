@@ -45,6 +45,59 @@ def build_component(problem):
 '''
 
 
+ROUTES_CONSTRUCTION = '''
+def empty_partial(inst):
+    return ((), frozenset(inst.customers))
+
+
+def candidates(inst, partial):
+    routes, pending = partial
+    out = []
+    for c in sorted(pending):
+        for k, r in enumerate(routes):
+            if sum(inst.demand[x] for x in r) + inst.demand[c] <= inst.capacity:
+                out.append((c, k))
+        out.append((c, len(routes)))
+    return out
+
+
+def apply_action(inst, partial, action):
+    routes, pending = partial
+    c, k = action
+    routes = tuple(r + (c,) if i == k else r for i, r in enumerate(routes)) + (((c,),) if k == len(routes) else ())
+    return routes, pending - {c}
+
+
+def is_complete(inst, partial):
+    return not partial[1]
+
+
+def to_solution(inst, partial):
+    return canonical(partial[0])
+
+
+def complete_partial(inst, partial, rng):
+    return canonical(partial[0] + tuple((c,) for c in sorted(partial[1])))
+'''
+
+NEAREST_NEXT = '''
+COMPONENT = {"name": "nearest_next", "slot": "greedy_score", "compatible_skeletons": [], "requires": [], "params": {}}
+
+
+class NearestNext:
+    def __init__(self, problem):
+        self.inst = problem.inst
+
+    def score(self, partial, action):
+        last = partial[-1] if partial else 0
+        return self.inst.dist(last, action)
+
+
+def build_component(problem):
+    return NearestNext(problem)
+'''
+
+
 @pytest.mark.parametrize("variant", ["routes", "tour"])
 def test_a_reference_variant_builds_a_pack_that_the_skeletons_can_use(variant):
     from core.assembler import Assembler
@@ -83,13 +136,32 @@ def test_the_model_stage_leaves_an_importable_model_that_the_next_stages_load():
     heur, mip = _ref_sources()
     ws = Path("generated") / f"test_cycle_{uuid.uuid4().hex[:8]}"
     try:
-        client = ScriptedClient(responses=[f"```python\n{heur}\n```", f"```python\n{mip}\n```"])
+        client = ScriptedClient(responses=[f"```python\n{heur}\n```", f"```python\n{mip}\n```",
+                                           f"```python\n{ROUTES_CONSTRUCTION}\n```"])
         stats = run_model_stage("cvrp", "routes", ws, client, rounds=1)
-        assert stats["accepted"] and model_path(ws).exists() and (ws / "model_stats.json").exists()
+        assert stats["accepted"] and stats["construction_accepted"] and model_path(ws).exists()
         pack = load_variant("cvrp", "routes", ws, reference=False)
         assert pack.make_spec().problem_model_import == ".".join(model_path(ws).with_suffix("").parts)
         inst = pack.make_instances(1, 3, pack.parse_size("6"))[0]
         P = pack.problem_factory(inst)
         assert P.is_feasible(P.parts.trivial_solution(inst))
+        # con vista constructiva, el ciclo genera puntajes y el prompt de greedy_score trae su código
+        assert "def candidates" in pack.make_spec().construction_source
     finally:
         shutil.rmtree(ws, ignore_errors=True)
+
+
+def test_a_greedy_score_is_validated_on_the_generated_construction_view(tmp_path):
+    from core.construction import GreedyConstructor
+    from llm.generator import validate_generated_module
+
+    pack = load_variant("cvrp", "tour", None, reference=True)
+    path = tmp_path / "greedy_score" / "nearest_next_r1.py"
+    path.parent.mkdir()
+    path.write_text(NEAREST_NEXT)
+    report, module, _ = validate_generated_module(path, pack.make_contexts(strict=False))
+    assert report.passed, report.feedback()
+    inst = pack.make_instances(1, 5, pack.parse_size("20"))[0]
+    P = pack.problem_factory(inst)
+    greedy = GreedyConstructor(P, module.build_component(P)).build(inst, Random(0))
+    assert P.is_feasible(greedy) and P.objective(greedy) < P.objective(P.parts.trivial_solution(inst))

@@ -252,6 +252,10 @@ def make_model_spec():
                "`pulp.PULP_CBC_CMD(msg=False)`); conviene memorizar el resultado por (instancia, plan)."],
         forbidden_modules=["examples.lotsizing.problem_model", "examples.lotsizing.components", "examples.lotsizing.construction",
                            "examples.lotsizing.model_parts", "examples.lotsizing.cases", "examples.lotsizing.catalog"],
+        construction=("Con tiempos de setup, decidir si un plan parcial se puede completar es difícil: filtra candidatos con una "
+                      "condición necesaria barata (p.ej. que la capacidad libre acumulada hasta cada período alcance para la "
+                      "demanda pendiente con deadline hasta ahí más los setups que faltan), y en un callejón sin salida "
+                      "devuelve un plan factible seguro (con todos los setups encendidos lo es)."),
         answer_format=("Matriz de setups: lista de `n_items` listas de `n_periods` enteros 0/1; answer[i][t] = 1 si el ítem i "
                        "tiene setup en el período t. Ejemplo con 2 ítems y 3 períodos: [[1, 0, 1], [1, 1, 0]]."),
         families=("Familia de restricciones: `demanda` (magnitud = unidades de demanda que el plan de setups no alcanza a cubrir "

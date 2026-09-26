@@ -23,7 +23,7 @@ import math
 from random import Random
 from typing import Any
 
-from core.model_parts import HEURISTIC_PARTS, MIP_PARTS, TOL, LinearMIP, TestCase, family_of, lhs, violated
+from core.model_parts import CONSTRUCTION_PARTS, HEURISTIC_PARTS, MIP_PARTS, TOL, LinearMIP, TestCase, family_of, lhs, violated
 
 from .base import CheckResult, ValidationReport, fail, ok
 
@@ -330,6 +330,88 @@ def check_mip_optimum(parts, cases: list[TestCase], time_limit: float = 20.0) ->
     return report
 
 
+def _fingerprint(obj) -> str:
+    """Huella de un parcial para detectar que apply_action lo modificó en su lugar."""
+    text = repr(obj)
+    if " object at 0x" not in text:
+        return text
+    slots = getattr(type(obj), "__slots__", ())
+    state = {k: getattr(obj, k, None) for k in slots} if slots else getattr(obj, "__dict__", {})
+    return repr(sorted((k, repr(v)) for k, v in state.items()))
+
+
+def check_construction_view(parts, cases: list[TestCase], scale_instances: list | None = None, n_random: int = 4,
+                            max_seconds: float = 10.0, max_steps: int = 20_000) -> ValidationReport:
+    """La vista constructiva: completar una parcial eligiendo candidatos AL AZAR tiene que terminar y
+    dar siempre una solución canónica y factible según `violations` (en los casos y en las
+    instancias de tamaño realista), sin modificar las parciales, y en tiempo razonable."""
+    import time
+
+    report = ValidationReport(subject="vista constructiva")
+    report.extend(_missing(parts, CONSTRUCTION_PARTS))
+    if not report.passed:
+        return report
+    L = "construction"
+    targets = [(c.instance, _where(c), c.visible) for c in cases]
+    targets += [(inst, f"instancia de tamaño realista {k}", False) for k, inst in enumerate(scale_instances or [])]
+    for inst, where, visible in targets:
+        sols = set()
+        for s in range(n_random):
+            rng, trail = Random(s), []
+            t0 = time.perf_counter()
+            try:
+                partial = parts.empty_partial(inst)
+                for _step in range(max_steps):
+                    if parts.is_complete(inst, partial):
+                        sol, how = parts.to_solution(inst, partial), "to_solution"
+                        break
+                    cands = list(parts.candidates(inst, partial))
+                    if not cands:
+                        sol, how = parts.complete_partial(inst, partial, rng), "complete_partial (sin candidatos)"
+                        break
+                    action = cands[rng.randrange(len(cands))]
+                    before = _fingerprint(partial)
+                    nxt = parts.apply_action(inst, partial, action)
+                    if _fingerprint(partial) != before:
+                        report.add(fail(L, "apply_is_pure", f"apply_action modificó la parcial en su lugar en {where}: debe "
+                                                            f"devolver una parcial nueva (las heurísticas comparan alternativas)"))
+                        return report
+                    trail.append(action)
+                    partial = nxt
+                    if time.perf_counter() - t0 > max_seconds:
+                        report.add(fail(L, "construction_fast", f"una construcción no terminó en {max_seconds:g} s en {where} "
+                                                               f"({len(trail)} pasos): candidates o apply_action son demasiado caros"))
+                        return report
+                else:
+                    report.add(fail(L, "construction_terminates", f"la construcción no terminó en {max_steps} pasos en {where}: "
+                                                                   f"is_complete nunca da True (¿apply_action no avanza?)"))
+                    return report
+                hash(sol)
+                if parts.canonical(sol) != sol:
+                    report.add(fail(L, "solution_canonical", f"{how} no devuelve la forma canónica en {where}: {_short(sol)}"))
+                    return report
+                v = _viol(parts, inst, sol)
+            except Exception as exc:  # noqa: BLE001
+                report.add(fail(L, "runs", f"la vista constructiva lanzó {type(exc).__name__}: {exc} en {where}"
+                                           + (f" tras las acciones {_short(trail, 200)}" if visible else "")))
+                return report
+            if v:
+                report.add(fail(L, "random_completion_feasible",
+                                f"completar eligiendo candidatos al azar dio una solución que viola {v} en {where} (por "
+                                f"{how}, {len(trail)} pasos"
+                                + (f"; acciones {_short(trail, 200)}; solución {_short(sol, 160)}" if visible else "")
+                                + "): candidates debe ofrecer solo acciones que se puedan completar a una solución factible, y "
+                                  "complete_partial debe terminar en una factible"))
+                return report
+            sols.add(repr(sol))
+        if len(sols) < 2 and n_random > 1 and "realista" in where:
+            report.add(fail(L, "choices_matter", f"las {n_random} construcciones al azar dieron la misma solución en {where}: "
+                                                 f"los candidatos no ofrecen decisiones reales, un puntaje no tendría qué elegir"))
+    if report.passed:
+        report.add(ok(L, "random_completions_feasible", f"{n_random} construcciones al azar por instancia, todas factibles"))
+    return report
+
+
 def validate_parts(parts, cases: list[TestCase], mip_time_limit: float = 20.0, scale_instances: list | None = None,
                    decoder: bool = False) -> ValidationReport:
     """Las tres etapas en orden; se detiene en la primera que falla."""
@@ -344,4 +426,4 @@ def validate_parts(parts, cases: list[TestCase], mip_time_limit: float = 20.0, s
     return report
 
 
-__all__ = ["check_heuristic_view", "check_mip_optimum", "check_mip_view", "validate_parts"]
+__all__ = ["check_construction_view", "check_heuristic_view", "check_mip_optimum", "check_mip_view", "validate_parts"]

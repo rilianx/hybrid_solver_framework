@@ -27,6 +27,15 @@ Piezas (funciones de un módulo; `inst` es la instancia):
     objective_terms(inst) -> {término: ({variable: coeficiente}, constante)}   mismos nombres que cost_terms
     variable_groups(inst) -> {grupo: [estructurales]}    partición, para Relax-and-Fix / Fix-and-Optimize
 
+  Vista constructiva (opcional; la usa el constructor greedy modular `core.construction`, cuyo
+  puntaje escribe el LLM en el slot `greedy_score`)
+    empty_partial(inst) -> parcial            la solución parcial vacía
+    candidates(inst, parcial) -> [acción]     acciones válidas: completar eligiendo cualquiera da una solución factible
+    apply_action(inst, parcial, acción) -> parcial     parcial NUEVA (sin modificar la anterior)
+    is_complete(inst, parcial) -> bool
+    to_solution(inst, parcial) -> sol         en forma canónica
+    complete_partial(inst, parcial, rng) -> sol        callejón sin salida (no quedan candidatos): terminar como se pueda
+
 Por construcción desaparece una clase de errores: `objective` es la suma de `cost_terms` más
 una penalización por las violaciones, e `is_feasible` es "no hay violaciones" (`PartsModel`).
 """
@@ -37,6 +46,7 @@ import math
 from dataclasses import dataclass
 from typing import Any
 
+CONSTRUCTION_PARTS = ("empty_partial", "candidates", "apply_action", "is_complete", "to_solution", "complete_partial")
 HEURISTIC_PARTS = ("canonical", "trivial_solution", "random_solution", "from_answer", "violations", "cost_terms")
 MIP_PARTS = ("variables", "structural_variables", "to_assignment", "aux_values", "from_assignment",
              "constraint_families", "objective_terms", "variable_groups")
@@ -140,6 +150,35 @@ def _safe(name: str) -> str:
     return "v_" + "".join(ch if ch.isalnum() or ch == "_" else "_" for ch in name)
 
 
+class PartsConstructionView:
+    """`core.contracts.ConstructionView` a partir de las piezas de la vista constructiva."""
+
+    def __init__(self, parts, inst):
+        self.parts, self.inst = parts, inst
+
+    def empty(self):
+        return self.parts.empty_partial(self.inst)
+
+    def candidates(self, partial):
+        return self.parts.candidates(self.inst, partial)
+
+    def apply(self, partial, action):
+        return self.parts.apply_action(self.inst, partial, action)
+
+    def is_complete(self, partial) -> bool:
+        return self.parts.is_complete(self.inst, partial)
+
+    def to_solution(self, partial):
+        return self.parts.to_solution(self.inst, partial)
+
+    def complete(self, partial, rng):
+        return self.parts.complete_partial(self.inst, partial, rng)
+
+
+def has_construction(parts) -> bool:
+    return all(callable(getattr(parts, n, None)) for n in CONSTRUCTION_PARTS)
+
+
 class PartsModel:
     """`ProblemModel` ensamblado a partir de las piezas, ligado a una instancia."""
 
@@ -151,6 +190,8 @@ class PartsModel:
         self.penalty = penalty
         self.validation_hints = getattr(parts, "VALIDATION_HINTS", {})
         # en el CLSP cada evaluación es un LP: las heurísticas reevalúan las mismas soluciones
+        if has_construction(parts):  # solo si la hay: el validador de greedy_score mira si el modelo la expone
+            self.construction_view = lambda inst: PartsConstructionView(self.parts, inst)
         self._viol: dict[Any, dict[str, float]] = {}
         self._cost: dict[Any, float] = {}
 
@@ -191,4 +232,4 @@ class PartsModel:
         return self.parts.random_solution(self.inst, rng)
 
 
-__all__ = ["HEURISTIC_PARTS", "MIP_PARTS", "LinearMIP", "PartsModel", "TestCase", "family_of", "lhs", "violated"]
+__all__ = ["CONSTRUCTION_PARTS", "HEURISTIC_PARTS", "MIP_PARTS", "PartsConstructionView", "has_construction", "LinearMIP", "PartsModel", "TestCase", "family_of", "lhs", "violated"]

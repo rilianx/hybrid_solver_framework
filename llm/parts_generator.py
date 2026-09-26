@@ -24,7 +24,7 @@ from typing import Any
 
 from core.model_parts import TestCase
 from core.validation.base import ValidationReport, fail
-from core.validation.model_parts import check_heuristic_view, check_mip_optimum, check_mip_view
+from core.validation.model_parts import check_construction_view, check_heuristic_view, check_mip_optimum, check_mip_view
 from core.validation.syntactic import load_module
 
 from .client import LLMClient, TokenUsage
@@ -63,6 +63,49 @@ def variable_groups(inst) -> dict[str, list[str]]: ...   # partición de structu
     # interactúan (elementos cercanos, el mismo período…): con todo lo demás fijo, liberar un grupo tiene que
     # dejar espacio para cambiar la solución
 '''
+
+
+CONSTRUCTION_CONTRACT = '''
+# Funciones a escribir: la vista constructiva (para un constructor greedy genérico del framework)
+
+def empty_partial(inst): ...                        # la solución parcial vacía (un objeto tuyo: tupla, dataclass...)
+def candidates(inst, partial) -> list: ...           # acciones válidas desde `partial` (lista; vacía si no queda ninguna)
+def apply_action(inst, partial, action): ...        # parcial NUEVA con la acción aplicada; NO modifiques `partial`
+def is_complete(inst, partial) -> bool: ...
+def to_solution(inst, partial): ...                 # la solución (en la representación de la vista heurística, canónica)
+def complete_partial(inst, partial, rng): ...       # callejón sin salida (candidates vacío sin estar completa): termina
+                                                    # como puedas, con una solución FACTIBLE (rng = random.Random)
+
+# El framework construye así (el puntaje que elige entre candidatos lo escribirá después otro modelo):
+#     partial = empty_partial(inst)
+#     while not is_complete(inst, partial):
+#         C = candidates(inst, partial)
+#         if not C: return complete_partial(inst, partial, rng)
+#         partial = apply_action(inst, partial, elegido_por_el_puntaje(C))
+#     return to_solution(inst, partial)
+# Regla de oro: elegir CUALQUIER candidato en cada paso tiene que llevar a una solución factible. La calidad la pone
+# el puntaje; la factibilidad, tus candidatos. Las acciones deben llevar la información que un puntaje necesita para
+# comparar (p.ej. el aumento de costo que producen), porque el puntaje solo ve (partial, acción).
+'''
+
+
+def construction_prompt(spec: ModelSpec, cases: list[TestCase], heuristic_source: str) -> str:
+    return "\n".join([
+        f"# Tarea\nEscribe la vista constructiva del modelo del problema **{spec.name}**: cómo se arma una solución paso a "
+        "paso. La vista heurística ya está escrita y aprobada: NO la cambies ni la redefinas; tu módulo se concatena "
+        "DESPUÉS de ella, así que puedes usar sus funciones (canonical, violations, cost_terms…) directamente; no la importes.",
+        f"\n# El problema\n{spec.description}",
+        f"\n# La instancia\n```python\n{spec.instance_source}\n```",
+        f"\n# Vista heurística aprobada (ya definida antes de tu código)\n```python\n{heuristic_source}\n```",
+        CONSTRUCTION_CONTRACT,
+        *([f"\n# Sobre la construcción en este problema\n{spec.construction}"] if spec.construction else []),
+        _cases_block(spec, cases),
+        "\n# Lo que se verificará\n- En cada caso y en instancias de tamaño realista: varias construcciones eligiendo "
+        "candidatos AL AZAR terminan, sin modificar las parciales, y dan soluciones canónicas y factibles según violations.\n"
+        "- Las construcciones al azar dan soluciones distintas (los candidatos ofrecen decisiones reales).\n"
+        "- Una construcción en una instancia de tamaño realista tarda pocos segundos.",
+        "\nDevuelve UN solo bloque ```python``` solo con las funciones de la vista constructiva (y sus imports).",
+    ])
 
 
 def _cases_block(spec: ModelSpec, cases: list[TestCase], with_optimum: bool = False) -> str:
@@ -150,21 +193,27 @@ class PartsGenerationResult:
     path: Path | None
     heuristic: StageResult
     mip: StageResult
+    construction: StageResult = field(default_factory=StageResult)
     llm_calls: int = 0
     tokens: TokenUsage = field(default_factory=TokenUsage)
     seconds: float = 0.0
 
 
-def _concat(heuristic: str, mip: str) -> str:
-    """Las dos etapas en un módulo. Los `from __future__ import` tienen que ir al principio del
-    archivo: se suben (el LLM los pone en ambas etapas)."""
+def _concat(heuristic: str, mip: str, construction: str | None = None) -> str:
+    """Las etapas en un módulo. Los `from __future__ import` tienen que ir al principio del
+    archivo: se suben (el LLM los pone en todas las etapas)."""
     future, bodies = [], []
-    for src in (heuristic, mip):
+    for src in (heuristic, mip, construction):
+        if src is None:
+            continue
         lines = src.splitlines()
         future += [ln for ln in lines if ln.startswith("from __future__ import")]
         bodies.append("\n".join(ln for ln in lines if not ln.startswith("from __future__ import")).strip("\n"))
     head = "\n".join(dict.fromkeys(future))
-    return (head + "\n\n" if head else "") + bodies[0] + "\n\n\n# ---- vista MIP ----\n" + bodies[1] + "\n"
+    out = (head + "\n\n" if head else "") + bodies[0] + "\n\n\n# ---- vista MIP ----\n" + bodies[1] + "\n"
+    if len(bodies) > 2:
+        out += "\n\n# ---- vista constructiva ----\n" + bodies[2] + "\n"
+    return out
 
 
 def _top_level_defs(src: str) -> dict[str, str]:
@@ -222,7 +271,7 @@ def _load(path: Path, forbidden: list[str]):
 
 def generate_problem_model_parts(client: LLMClient, spec: ModelSpec, cases: list[TestCase], workspace: str | Path,
                                  max_rounds: int = 4, mip_time_limit: float = 20.0, verbose: bool = True,
-                                 scale_instances: list | None = None) -> PartsGenerationResult:
+                                 scale_instances: list | None = None, construction: bool = True) -> PartsGenerationResult:
     """`scale_instances`: instancias de tamaño realista para medir la granularidad de `variable_groups`."""
     ws = Path(workspace) / "problem_model"
     ws.mkdir(parents=True, exist_ok=True)
@@ -299,8 +348,45 @@ def generate_problem_model_parts(client: LLMClient, spec: ModelSpec, cases: list
         if verbose:
             print(f"[modelo/MIP] ✘ ronda {rnd}: {report.failed_layer}")
         prompt = correction_prompt("vista MIP", src, report.feedback(), context2)
+    if construction and res.mip.accepted:
+        _construction_stage(res, spec, cases, ws, ask, max_rounds, scale_instances, verbose)
     res.seconds = time.perf_counter() - t0
     return res
 
 
-__all__ = ["PartsGenerationResult", "generate_problem_model_parts", "heuristic_prompt", "mip_prompt", "redefined_names"]
+def _construction_stage(res, spec, cases, ws, ask, max_rounds, scale_instances, verbose) -> None:
+    """Etapa 3 (opcional): la vista constructiva, concatenada después de la heurística y la MIP. Si no
+    se acepta, el modelo queda sin ella (el ciclo usa entonces constructores completos)."""
+    context3 = (f"\n# El problema\n{spec.description}\n\n# Vista heurística aprobada (no la cambies)\n```python\n"
+                f"{res.heuristic.source}\n```\n{CONSTRUCTION_CONTRACT}")
+    prompt = construction_prompt(spec, cases, res.heuristic.source)
+    for rnd in range(1, max_rounds + 1):
+        res.construction.rounds = rnd
+        src = ask(prompt)
+        if src is None:
+            res.construction.reports.append("sin bloque ```python```")
+            continue
+        path = ws / f"model_c{rnd}.py"
+        path.write_text(_concat(res.heuristic.source, res.mip.source, src))
+        clash = redefined_names(res.heuristic.source + "\n" + res.mip.source, src)
+        if clash:
+            module, report = None, ValidationReport(subject=path.name)
+            report.add(fail("syntactic", "no_redefinition",
+                            f"la vista constructiva vuelve a definir {clash}, que ya están en las vistas aprobadas (tu código se "
+                            f"concatena después y los reemplaza): usa los de ellas tal cual y ponle otro nombre a tus auxiliares"))
+        else:
+            module, report = _load(path, spec.forbidden_modules)
+        if module is not None:
+            report = _run_checks([lambda: check_construction_view(module, cases, scale_instances=scale_instances)])
+        if report.passed:
+            res.construction.accepted, res.construction.source, res.path = True, src, path
+            if verbose:
+                print(f"[modelo/construcción] ✔ ronda {rnd}")
+            return
+        res.construction.reports.append(report.feedback())
+        if verbose:
+            print(f"[modelo/construcción] ✘ ronda {rnd}: {report.failed_layer}")
+        prompt = correction_prompt("vista constructiva", src, report.feedback(), context3)
+
+
+__all__ = ["PartsGenerationResult", "construction_prompt", "generate_problem_model_parts", "heuristic_prompt", "mip_prompt", "redefined_names"]

@@ -130,6 +130,7 @@ def _ref_sources():
     src = Path(ref.__file__).read_text().replace("from .instance import", "from examples.cvrp.instance import")
     marker = "# ---------------------------------------------------------------- vista MIP"
     head, mip = src.split(marker)
+    mip = mip.split("# ---------------------------------------------------------------- vista constructiva")[0]
     header = "from __future__ import annotations\n\nimport math\nfrom random import Random\n\n"
     return head, header + mip
 
@@ -142,7 +143,8 @@ def test_parts_generation_runs_both_stages_with_localized_feedback(tmp_path):
     heur, mip = _ref_sources()
     broken = heur.replace('return {"visita": float(visit), "capacidad": float(cap)}', 'return {"visita": float(visit)}')
     client = ScriptedClient(responses=[f"```python\n{broken}\n```", f"```python\n{heur}\n```", f"```python\n{mip}\n```"])
-    res = generate_problem_model_parts(client, PACK.make_model_spec(), load_cases(), tmp_path, verbose=False)
+    res = generate_problem_model_parts(client, PACK.make_model_spec(), load_cases(), tmp_path, verbose=False,
+                                       construction=False)
     assert res.path is not None and res.heuristic.rounds == 2 and res.mip.rounds == 1 and res.llm_calls == 3
     assert "capacidad" in res.heuristic.reports[0]
     # el prompt de la etapa MIP trae la vista heurística aprobada, no la rota

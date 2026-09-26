@@ -86,6 +86,8 @@ class ModelSpec:
     # una codificación cuya decodificación sea igual o MEJOR que la respuesta del caso
     representation: str = ""
     decoder: bool = False
+    # pista para la vista constructiva (etapa 3 de la generación por piezas), si el problema la necesita
+    construction: str = ""
     families: str = ""
 
 

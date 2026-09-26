@@ -96,3 +96,31 @@ def aux_values(inst: CVRPInstance, sol):
 
 def from_assignment(inst: CVRPInstance, x):
     return tuple(c for r in routes.from_assignment(inst, x) for c in r)
+
+
+# ---------------------------------------------------------------- vista constructiva
+# Parcial: el prefijo del tour. Acción: el cliente que se agrega al final. Toda permutación se
+# decodifica a una solución factible, así que nunca hay callejón sin salida.
+def empty_partial(inst: CVRPInstance):
+    return ()
+
+
+def candidates(inst: CVRPInstance, partial):
+    used = set(partial)
+    return [c for c in inst.customers if c not in used]
+
+
+def apply_action(inst: CVRPInstance, partial, action):
+    return (*partial, action)
+
+
+def is_complete(inst: CVRPInstance, partial) -> bool:
+    return len(partial) == inst.n_customers
+
+
+def to_solution(inst: CVRPInstance, partial):
+    return canonical(partial)
+
+
+def complete_partial(inst: CVRPInstance, partial, rng):
+    return canonical((*partial, *candidates(inst, partial)))

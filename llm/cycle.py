@@ -16,9 +16,10 @@ pack base del problema (instancias, casos) y de las piezas. Con `--reference` se
 de referencia de la variante en vez de las generadas (para separar los errores del modelo de los
 de los componentes).
 
-El slot `greedy_score` necesita una vista constructiva que un modelo por piezas no tiene: el
-ciclo genera constructores completos (`constructor`), vecindarios, perturbaciones y destrucciones.
-Como partidas de referencia quedan la solución trivial y la al azar del propio modelo.
+La vista constructiva es la tercera etapa de la generación del modelo: con ella el ciclo genera
+puntajes (`greedy_score`) para el constructor greedy modular, como en los packs escritos a mano;
+si no se aceptó, genera constructores completos (`constructor`). Como partidas de referencia
+quedan la solución trivial y la al azar del propio modelo.
 """
 
 from __future__ import annotations
@@ -37,7 +38,8 @@ from typing import Any
 from core.model_parts import PartsModel
 from core.problem_pack import ProblemPack
 
-CYCLE_SLOTS = ["constructor", "neighborhood", "perturbation", "destruction"]
+CYCLE_SLOTS = ["greedy_score", "neighborhood", "perturbation", "destruction"]  # si el modelo tiene vista constructiva
+CYCLE_SLOTS_NO_VIEW = ["constructor", "neighborhood", "perturbation", "destruction"]
 LOCAL_SEARCH_SKELETONS = ["SA", "ILS", "TS", "VNS", "GRASP", "MIP_PERTURB"]
 
 
@@ -88,7 +90,21 @@ PARTS_MODEL_API = '''
 '''
 
 
-def parts_problem_spec(model_spec, parts_import: str, parts_source: str):
+def construction_source(parts) -> str | None:
+    """El código de la vista constructiva de las piezas, para el prompt del slot greedy_score."""
+    from core.model_parts import CONSTRUCTION_PARTS, has_construction
+
+    if not has_construction(parts):
+        return None
+    try:
+        body = "\n\n".join(inspect.getsource(getattr(parts, n)) for n in CONSTRUCTION_PARTS)
+    except (OSError, TypeError):
+        return None
+    return body + ("\n\n# El constructor greedy del framework recorre esta vista; el puntaje (slot greedy_score) es "
+                   "score(partial, action) -> float, menor = mejor, y elige entre candidates(inst, partial).")
+
+
+def parts_problem_spec(model_spec, parts_import: str, parts_source: str, parts=None):
     from llm.prompts import ProblemSpec
 
     return ProblemSpec(
@@ -101,6 +117,7 @@ def parts_problem_spec(model_spec, parts_import: str, parts_source: str):
         variable_naming=("Las variables de la vista MIP son las de `structural_variables(inst)` en las piezas; "
                          "`variable_groups(inst)` las agrupa para Fix-and-Optimize."),
         notes=list(model_spec.notes),
+        construction_source=construction_source(parts) if parts is not None else None,
     )
 
 
@@ -171,7 +188,7 @@ def parts_pack(base: ProblemPack, parts, parts_import: str, model_spec, name: st
         module="llm.cycle",
         problem_factory=lambda inst: PartsModel(parts, inst),
         handwritten=_handwritten(parts, list(base.constructor_skeletons)),
-        make_spec=lambda: parts_problem_spec(model_spec, parts_import, source),
+        make_spec=lambda: parts_problem_spec(model_spec, parts_import, source, parts),
         make_contexts=lambda **kw: None,  # se reemplaza abajo (necesita el pack para la sonda de combinación)
         make_instances=base.make_instances,
         parse_size=base.parse_size,
@@ -225,7 +242,7 @@ def load_variant(problem: str, variant: str, workspace: str | Path | None, refer
 
 
 def run_model_stage(problem: str, variant: str, workspace: str | Path, client, rounds: int = 6,
-                    model_name: str | None = None) -> dict:
+                    model_name: str | None = None, construction: bool = True) -> dict:
     """Genera las piezas de la variante; si se aceptan, las deja en `<workspace>/model/parts.py`."""
     from .parts_generator import generate_problem_model_parts
 
@@ -234,11 +251,13 @@ def run_model_stage(problem: str, variant: str, workspace: str | Path, client, r
     ws = Path(workspace)
     scale = base.make_instances(1, 777, base.parse_size(base.default_size))
     res = generate_problem_model_parts(client, make_spec(), base.load_cases(), ws, max_rounds=rounds, scale_instances=scale,
-                                       verbose=False)
+                                       verbose=False, construction=construction)
     stats = {"problem": problem, "variant": variant, "accepted": res.path is not None,
-             "heuristic_rounds": res.heuristic.rounds, "mip_rounds": res.mip.rounds, "llm_calls": res.llm_calls,
+             "heuristic_rounds": res.heuristic.rounds, "mip_rounds": res.mip.rounds,
+             "construction_rounds": res.construction.rounds, "construction_accepted": res.construction.accepted,
+             "llm_calls": res.llm_calls,
              "seconds": round(res.seconds, 1), "tokens": res.tokens.as_dict(model_name),
-             "rejections": res.heuristic.reports + res.mip.reports}
+             "rejections": res.heuristic.reports + res.mip.reports + res.construction.reports}
     if res.path is not None:
         target = model_path(ws)
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -281,7 +300,10 @@ def main(argv: list[str] | None = None) -> None:
     if args.stage == "components":
         from .cli import main as generate
 
-        return generate(pack, ["--from-scratch", "--workspace", args.workspace, "--slots", *CYCLE_SLOTS, *rest])
+        from core.model_parts import has_construction
+
+        slots = CYCLE_SLOTS if has_construction(importlib.import_module(pack.make_spec().problem_model_import)) else CYCLE_SLOTS_NO_VIEW
+        return generate(pack, ["--from-scratch", "--workspace", args.workspace, "--slots", *slots, *rest])
     from tuning.cli import main as tune
 
     tune(pack, ["--generated", args.workspace, *rest])
