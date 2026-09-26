@@ -2,58 +2,58 @@
   "greedy_score": {
     "requested": 3,
     "parsed": 3,
-    "accepted": 1,
-    "llm_calls": 5,
-    "llm_seconds": 48.0,
-    "rejections_by_layer": {
-      "quality": 6
-    },
+    "accepted": 3,
+    "llm_calls": 1,
+    "llm_seconds": 7.4,
+    "rejections_by_layer": {},
     "rounds_per_accepted": {
-      "nearest_neighbor_route_continuation": 1
+      "nearest_extension_score": 1,
+      "high_demand_urgent_score": 1,
+      "route_save_ratio_score": 1
     },
-    "abandoned": [
-      "capacity_fill_and_route_break_penalty",
-      "depot_distance_urgency"
-    ],
+    "abandoned": [],
     "accepted_files": [
-      "generated/cvrp_routes_cycle/greedy_score/nearest_neighbor_route_continuation_r1.py"
+      "generated/cvrp_routes_cycle/greedy_score/nearest_extension_score_r1.py",
+      "generated/cvrp_routes_cycle/greedy_score/high_demand_urgent_score_r1.py",
+      "generated/cvrp_routes_cycle/greedy_score/route_save_ratio_score_r1.py"
     ],
     "tokens": {
-      "calls": 5,
-      "input_tokens": 12155,
-      "output_tokens": 8065,
-      "total_tokens": 20220,
-      "reasoning_tokens": 2249
+      "calls": 1,
+      "input_tokens": 5044,
+      "output_tokens": 1666,
+      "total_tokens": 6710,
+      "reasoning_tokens": 171
     }
   },
   "neighborhood": {
     "requested": 3,
-    "parsed": 2,
+    "parsed": 3,
     "accepted": 1,
-    "llm_calls": 4,
-    "llm_seconds": 50.9,
+    "llm_calls": 7,
+    "llm_seconds": 41.6,
     "rejections_by_layer": {
-      "contractual": 3,
-      "quality": 1
+      "syntactic": 3,
+      "contractual": 5
     },
     "rounds_per_accepted": {
-      "customer_relocate": 2
+      "swap_customers_across_routes": 3
     },
     "abandoned": [
-      "customer_swap"
+      "relocate_customer_between_routes",
+      "two_opt_star_route_exchange"
     ],
     "accepted_files": [
-      "generated/cvrp_routes_cycle/neighborhood/customer_relocate_r2.py"
+      "generated/cvrp_routes_cycle/neighborhood/swap_customers_across_routes_r3.py"
     ],
     "tokens": {
-      "calls": 4,
-      "input_tokens": 9115,
-      "output_tokens": 8023,
-      "total_tokens": 17138,
-      "reasoning_tokens": 4263
+      "calls": 7,
+      "input_tokens": 13482,
+      "output_tokens": 9118,
+      "total_tokens": 22600,
+      "reasoning_tokens": 3544
     },
     "combinations": {
-      "customer_relocate": {
+      "swap_customers_across_routes": {
         "compatible_skeletons": [
           "SA",
           "ILS",
@@ -63,14 +63,14 @@
           "MIP_PERTURB"
         ],
         "gains": {
-          "SA/trivial": 0.6537,
-          "SA/random": 0.4921,
-          "VNS/trivial": 0.5722,
-          "VNS/random": 0.4943,
-          "TS/trivial": 0.648,
-          "TS/random": 0.4984,
-          "GRASP/trivial": 0.5649,
-          "GRASP/random": 0.1301
+          "SA/trivial": 0.0,
+          "SA/random": 0.4373,
+          "VNS/trivial": 0.0,
+          "VNS/random": 0.4043,
+          "TS/trivial": 0.0,
+          "TS/random": 0.4786,
+          "GRASP/trivial": 0.0,
+          "GRASP/random": 0.2068
         }
       }
     }
@@ -79,57 +79,54 @@
     "requested": 3,
     "parsed": 3,
     "accepted": 3,
-    "llm_calls": 3,
-    "llm_seconds": 20.6,
+    "llm_calls": 2,
+    "llm_seconds": 12.5,
     "rejections_by_layer": {
-      "contractual": 1,
       "quality": 1
     },
     "rounds_per_accepted": {
-      "inter_route_relocate_chain": 1,
-      "route_segment_exchange": 1,
-      "intra_route_3opt_kick": 3
+      "customer_relocation_perturbation": 1,
+      "segment_reversal_perturbation": 1,
+      "route_split_merge_perturbation": 2
     },
     "abandoned": [],
     "accepted_files": [
-      "generated/cvrp_routes_cycle/perturbation/inter_route_relocate_chain_r1.py",
-      "generated/cvrp_routes_cycle/perturbation/route_segment_exchange_r1.py",
-      "generated/cvrp_routes_cycle/perturbation/intra_route_3opt_kick_r3.py"
+      "generated/cvrp_routes_cycle/perturbation/customer_relocation_perturbation_r1.py",
+      "generated/cvrp_routes_cycle/perturbation/segment_reversal_perturbation_r1.py",
+      "generated/cvrp_routes_cycle/perturbation/route_split_merge_perturbation_r2.py"
     ],
     "tokens": {
-      "calls": 3,
-      "input_tokens": 7020,
-      "output_tokens": 3736,
-      "total_tokens": 10756,
-      "reasoning_tokens": 580
+      "calls": 2,
+      "input_tokens": 5466,
+      "output_tokens": 2525,
+      "total_tokens": 7991,
+      "reasoning_tokens": 560
     }
   },
   "destruction": {
     "requested": 3,
     "parsed": 3,
     "accepted": 3,
-    "llm_calls": 2,
-    "llm_seconds": 15.9,
-    "rejections_by_layer": {
-      "quality": 1
-    },
+    "llm_calls": 1,
+    "llm_seconds": 8.9,
+    "rejections_by_layer": {},
     "rounds_per_accepted": {
-      "route_block_destruction": 1,
-      "customer_neighborhood_destruction": 1,
-      "arc_cut_destruction": 2
+      "route_removal_destruction": 1,
+      "customer_star_destruction": 1,
+      "expensive_edge_destruction": 1
     },
     "abandoned": [],
     "accepted_files": [
-      "generated/cvrp_routes_cycle/destruction/route_block_destruction_r1.py",
-      "generated/cvrp_routes_cycle/destruction/customer_neighborhood_destruction_r1.py",
-      "generated/cvrp_routes_cycle/destruction/arc_cut_destruction_r2.py"
+      "generated/cvrp_routes_cycle/destruction/route_removal_destruction_r1.py",
+      "generated/cvrp_routes_cycle/destruction/customer_star_destruction_r1.py",
+      "generated/cvrp_routes_cycle/destruction/expensive_edge_destruction_r1.py"
     ],
     "tokens": {
-      "calls": 2,
-      "input_tokens": 5870,
-      "output_tokens": 3013,
-      "total_tokens": 8883,
-      "reasoning_tokens": 628
+      "calls": 1,
+      "input_tokens": 4356,
+      "output_tokens": 2415,
+      "total_tokens": 6771,
+      "reasoning_tokens": 396
     }
   },
   "_run": {
@@ -139,13 +136,13 @@
     "from_scratch": true,
     "catalog_diversity": "annotate",
     "planner": false,
-    "wall_seconds": 168.3,
+    "wall_seconds": 86.7,
     "tokens": {
-      "calls": 14,
-      "input_tokens": 34160,
-      "output_tokens": 22837,
-      "total_tokens": 56997,
-      "reasoning_tokens": 7720
+      "calls": 11,
+      "input_tokens": 28348,
+      "output_tokens": 15724,
+      "total_tokens": 44072,
+      "reasoning_tokens": 4671
     },
     "note": "define LLM_PRICE_IN y LLM_PRICE_OUT (USD por millón de tokens) para estimar el costo"
   }
