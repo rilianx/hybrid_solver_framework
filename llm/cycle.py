@@ -9,7 +9,9 @@ sin nada escrito a mano salvo el generador de instancias y los casos.
    la variante y lo deja en `<workspace>/model/parts.py`.
 2. `components`: genera los componentes DESDE CERO sobre ese modelo (`llm.cli`, `--from-scratch`):
    el LLM ve el código de las piezas, no un modelo escrito a mano.
-3. `tune`: afina sobre el catálogo generado (`tuning.cli`).
+3. `optimize` (opcional): versiones más rápidas del modelo y de los componentes, con las mismas
+   salidas (`llm.optimizer`).
+4. `tune`: afina sobre el catálogo generado (`tuning.cli`).
 
 Cada representación es un problema distinto: su pack se arma aquí (`parts_pack`) a partir del
 pack base del problema (instancias, casos) y de las piezas. Con `--reference` se usan las piezas
@@ -79,7 +81,8 @@ PARTS_MODEL_API = '''
 # El ProblemModel que recibe cada componente (`problem`) es PartsModel(piezas, inst):
 #   problem.inst                     la instancia
 #   problem.parts                    el módulo de piezas de arriba (canonical, violations, cost_terms, ...)
-#   problem.objective(sol)           costo total + penalización por violaciones (se MINIMIZA)
+#   problem.objective(sol)           sum(cost_terms) + problem.penalty × sum(violations) (se MINIMIZA)
+#   problem.penalty                  el factor de penalización por unidad de violación
 #   problem.violations(sol)          {familia: magnitud > 0} de las violadas; {} si es factible
 #   problem.is_feasible(sol)
 #   problem.random_solution(rng)     una solución al azar con estructura válida
@@ -279,6 +282,31 @@ def _stage_model(args) -> None:
         raise SystemExit(1)
 
 
+def _stage_optimize(args) -> None:
+    from .client import OpenAIClient, TokenUsage, TranscriptClient
+    from .optimizer import optimize_components, optimize_model
+
+    inner = OpenAIClient(model=args.model or "gpt-5.4-mini")
+    client = TranscriptClient(inner, Path(args.workspace) / "transcript_opt")
+    tokens = TokenUsage()
+    pack = load_variant(args.problem, args.variant, args.workspace, reference=False)
+    scale = pack.make_instances(1, 777, pack.parse_size(pack.default_size))
+    stats: dict = {"problem": args.problem, "variant": args.variant}
+    m = optimize_model(client, args.workspace, pack.make_model_spec(), pack.load_cases(), scale, rounds=args.rounds, tokens=tokens)
+    stats["model"] = {"accepted": m.accepted, "rounds": m.rounds, "before": round(m.speed_before, 1),
+                      "after": round(m.speed_after, 1), "rejections": m.reports}
+    for mod in [k for k in sys.modules if k.startswith(import_name(model_path(args.workspace)))]:
+        del sys.modules[mod]  # el modelo pudo cambiar: recargarlo antes de optimizar los componentes
+    pack = load_variant(args.problem, args.variant, args.workspace, reference=False)
+    stats["components"] = optimize_components(client, pack, args.workspace, rounds=2, slots=tuple(args.slots), tokens=tokens)
+    stats["tokens"] = tokens.as_dict(inner.model)
+    (Path(args.workspace) / "optimize_stats.json").write_text(json.dumps(stats, indent=2, ensure_ascii=False))
+    brief = {"model": {k: v for k, v in stats["model"].items() if k != "rejections"},
+             "components": {k: {kk: vv for kk, vv in v.items() if kk != "rejections"} for k, v in stats["components"].items()},
+             "tokens": stats["tokens"]}
+    print(json.dumps(brief, indent=2, ensure_ascii=False))
+
+
 def main(argv: list[str] | None = None) -> None:
     argv = list(sys.argv[1:] if argv is None else argv)
     rest: list[str] = []
@@ -286,16 +314,20 @@ def main(argv: list[str] | None = None) -> None:
         k = argv.index("--")
         argv, rest = argv[:k], argv[k + 1:]
     ap = argparse.ArgumentParser(prog="python -m llm.cycle")
-    ap.add_argument("stage", choices=["model", "components", "tune"])
+    ap.add_argument("stage", choices=["model", "components", "optimize", "tune"])
     ap.add_argument("--problem", choices=["clsp", "cvrp"], required=True)
     ap.add_argument("--variant", required=True)
     ap.add_argument("--workspace", required=True)
     ap.add_argument("--reference", action="store_true", help="usar las piezas de referencia de la variante")
     ap.add_argument("--rounds", type=int, default=6)
     ap.add_argument("--model", default=None)
+    ap.add_argument("--slots", nargs="+", default=["neighborhood", "greedy_score"],
+                    help="optimize: slots cuyos componentes se aceleran")
     args = ap.parse_args(argv)
     if args.stage == "model":
         return _stage_model(args)
+    if args.stage == "optimize":
+        return _stage_optimize(args)
     pack = load_variant(args.problem, args.variant, args.workspace, args.reference)
     if args.stage == "components":
         from .cli import main as generate

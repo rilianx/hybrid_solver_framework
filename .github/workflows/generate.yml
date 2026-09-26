@@ -14,7 +14,7 @@ on:
         description: "Qué generar: componentes (slots) o el ProblemModel completo (§6.1)"
         default: components
         type: choice
-        options: [components, problem_model]
+        options: [components, problem_model, optimize]
       model_mode:
         description: "Con target=problem_model: por piezas validadas con casos de prueba, o en un solo módulo"
         default: parts
@@ -139,7 +139,9 @@ jobs:
         working-directory: ${{ env.ROOT }}
         run: |
           # en el ciclo, la etapa de componentes conserva el modelo que generó la etapa anterior
-          if [ -n "$VARIANT" ] && [ "$TARGET" = "components" ] && [ -d "$WS" ]; then
+          if [ -n "$VARIANT" ] && [ "$TARGET" = "optimize" ]; then
+            echo "optimize trabaja sobre el workspace existente: no se limpia"
+          elif [ -n "$VARIANT" ] && [ "$TARGET" = "components" ] && [ -d "$WS" ]; then
             find "$WS" -mindepth 1 -maxdepth 1 ! -name model ! -name model_stats.json -exec rm -rf {} +
           else
             rm -rf "$WS"
@@ -161,10 +163,14 @@ jobs:
         run: |
           set -o pipefail
           if [ -n "$VARIANT" ]; then
-            STAGE=model; [ "$TARGET" = "components" ] && STAGE=components
+            STAGE=model; [ "$TARGET" = "components" ] && STAGE=components; [ "$TARGET" = "optimize" ] && STAGE=optimize
             CARGS="--problem $PROBLEM --variant $VARIANT --workspace $WS"
             [ "$REFERENCE" = "true" ] && CARGS="$CARGS --reference"
-            if [ "$STAGE" = "model" ]; then
+            if [ "$STAGE" = "optimize" ]; then
+              [ -n "$MODEL" ] && CARGS="$CARGS --model $MODEL"
+              echo "python -m llm.cycle optimize $CARGS --rounds $ROUNDS"
+              python -W ignore -m llm.cycle optimize $CARGS --rounds "$ROUNDS" 2>&1 | tee generate.log
+            elif [ "$STAGE" = "model" ]; then
               [ -n "$MODEL" ] && CARGS="$CARGS --model $MODEL"
               echo "python -m llm.cycle model $CARGS --rounds $ROUNDS"
               python -W ignore -m llm.cycle model $CARGS --rounds "$ROUNDS" 2>&1 | tee generate.log

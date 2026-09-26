@@ -189,10 +189,16 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   constructiva es la tercera etapa de la generación del modelo por piezas
   (`empty_partial`, `candidates`, `apply_action`, …; validada con
   construcciones al azar que deben dar siempre soluciones factibles): con ella
-  el ciclo genera puntajes para el constructor greedy modular.
+  el ciclo genera puntajes para el constructor greedy modular. Etapa opcional
+  `optimize` (`llm/optimizer.py`): versiones más rápidas del modelo y de los
+  componentes aceptados, que se aceptan solo si dan las mismas salidas que la
+  versión aceptada (pruebas diferenciales, `core/validation/equivalence.py`) y
+  son al menos 1,5 veces más rápidas. `scripts/throughput.py` mide la velocidad
+  de un catálogo; `scripts/reevaluate_configs.py` reevalúa en test lo que eligió
+  una corrida de tuning con el catálogo actual, sin volver a afinar.
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 202 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 207 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -213,7 +219,7 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 202 passed (~110 s)
+python -m pytest -q                 # 207 passed (~110 s)
 
 # segundo problema: CVRP con flota libre (mismos CLI, otro pack)
 python -m examples.cvrp.tune --catalog handwritten --size 30 --trials 30 --ref-time 60
