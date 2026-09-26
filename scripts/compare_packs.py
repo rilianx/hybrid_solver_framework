@@ -33,8 +33,9 @@ def _instances_key(payload: dict) -> tuple:
     return (s.get("size"), s.get("seed"), s["test"], s["budget"])
 
 
-def compare(a_root: Path, b_root: Path, catalog: str = "generated") -> tuple[str, dict]:
-    a, b = _load(a_root, catalog), _load(b_root, catalog)
+def compare(a_root: Path, b_root: Path, catalog: str = "generated", catalog_b: str | None = None) -> tuple[str, dict]:
+    """`catalog_b`: el catálogo de la corrida B si es otro (p.ej. `handwritten` como referencia)."""
+    a, b = _load(a_root, catalog), _load(b_root, catalog_b or catalog)
     if _instances_key(a[0]) != _instances_key(b[0]):
         raise SystemExit(f"las corridas no usan las mismas instancias de test: {_instances_key(a[0])} vs {_instances_key(b[0])}")
     n = len(a[0]["test"]["tuned"]["per_instance"])
@@ -52,7 +53,8 @@ def compare(a_root: Path, b_root: Path, catalog: str = "generated") -> tuple[str
             "a_gaps": ma, "b_gaps": mb, "mean_diff": mean(diffs), "ci95": [lo, hi], "significant": lo > 0 or hi < 0,
             "a_choices": [r["tuning"]["best_summary"] for r in a], "b_choices": [r["tuning"]["best_summary"] for r in b]}
     sd = lambda xs: pstdev(xs) if len(xs) > 1 else 0.0  # noqa: E731
-    md = [f"## `{a_root.name}` contra `{b_root.name}` (catálogo `{catalog}`, {n} instancias de test)", "",
+    cats = f"`{catalog}`" if not catalog_b or catalog_b == catalog else f"`{catalog}` contra `{catalog_b}`"
+    md = [f"## `{a_root.name}` contra `{b_root.name}` (catálogo {cats}, {n} instancias de test)", "",
           "| variante | réplicas | gap afinado (media) | desvío | por réplica |", "|---|---|---|---|---|",
           f"| A `{a_root.name}` | {len(ma)} | {mean(ma):.2%} | {sd(ma):.2%} | " + " / ".join(f"{g:.2%}" for g in ma) + " |",
           f"| B `{b_root.name}` | {len(mb)} | {mean(mb):.2%} | {sd(mb):.2%} | " + " / ".join(f"{g:.2%}" for g in mb) + " |",
@@ -68,8 +70,9 @@ def main() -> None:
     ap.add_argument("a")
     ap.add_argument("b")
     ap.add_argument("--catalog", default="generated")
+    ap.add_argument("--catalog-b", default=None, help="catálogo de la corrida B si es otro (p.ej. handwritten)")
     args = ap.parse_args()
-    md, _ = compare(Path(args.a), Path(args.b), args.catalog)
+    md, _ = compare(Path(args.a), Path(args.b), args.catalog, args.catalog_b)
     print(md)
 
 
