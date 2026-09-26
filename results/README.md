@@ -28,6 +28,8 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run25/`](tune_run25/) | 25 sep | corrida 16 | SA, ILS, VNS | 5+5, 10×15 | 5 s | 40 × 3 réplicas | sondeo inicial de un solo componente |
 | [`tune_run26/`](tune_run26/) | 26 sep | corrida 16 | SA, ILS, VNS | 10+10, 10×15 | 5 s | 40 × 3 réplicas | sondeo + re-evaluación por elección distinta |
 | [`tune_run27/`](tune_run27/) | 26 sep | corrida 16 | SA, ILS, VNS | 10+10, 10×15 | 5 s | 40 × 3 réplicas | réplicas nuevas con `prefer_defaults` |
+| [`tune_run28/`](tune_run28/) | 26 sep | ciclo CVRP rutas (modelo 34, componentes 37) | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | ciclo completo, representación de rutas |
+| [`tune_run29/`](tune_run29/) | 26 sep | ciclo CVRP gran tour (modelo 33, componentes 38) | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | ciclo completo, gran tour + Split |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -135,6 +137,42 @@ del sondeo, una por el gemelo, que ganó la re-evaluación sin necesitar la regl
 afinada a igualarla. Lo que lo resolvió, en orden de efecto: más instancias de train (10 en vez
 de 5), re-evaluar elecciones de componentes distintas en vez de los mejores trials, y el sondeo
 de variantes de un solo componente al inicio.
+
+### Ciclo completo: modelo generado → componentes → tuning (CVRP, rutas contra gran tour)
+
+Primera corrida de punta a punta sin nada escrito a mano salvo el generador de instancias y
+los casos: el LLM genera el modelo por piezas con la representación pedida (incluida la vista
+constructiva), después genera desde cero puntajes, vecindarios, perturbaciones y destrucciones
+viendo solo el código de ese modelo, y el tuner afina (30 clientes, 10+10 instancias, SA/ILS/
+VNS/LNS_MIP, 3 réplicas, sondeo y re-evaluación por elección distinta).
+
+| Etapa | Rutas | Gran tour |
+|---|---|---|
+| Modelo (corridas 34 / 33) | heurística 1, MIP 3, constructiva 1 ronda; 23 mil tokens | heurística 1, MIP 5, constructiva 1; 43 mil |
+| Componentes (37 / 38) | 10/12: 3 puntajes, 1 vecindario, 3 perturbaciones, 3 destrucciones; 44 mil | 8/12: 2 puntajes, 3 vecindarios, 1 perturbación, 2 destrucciones; 58 mil |
+| Tuning (runs 28 / 29) | 6,21 / 5,59 / 6,26 % (desvío 0,3) | 6,02 / 5,35 / 3,20 % (desvío 1,2) |
+| Elegido | las 3 réplicas: ILS con `swap_customers_across_routes` | SA o VNS con `two_opt_reversal_neighborhood` |
+| Afinado vs mejor no afinado | −0,54 [−2,29, +1,29] (ruido) | +2,03 [+1,03, +2,93] |
+
+Comparación entre variantes (`scripts/compare_packs.py`, mejor conocido común a las 6 réplicas):
+gran tour queda **3,0 puntos de gap por debajo** de rutas, IC95 [1,4, 4,6] sobre las 10
+instancias de test. Los costos se comparan directamente porque los dos modelos generados pasan
+los mismos casos de prueba.
+
+Cómo leerlo: la diferencia es entre dos solvers generados enteros, no solo entre dos
+representaciones. El catálogo de rutas tiene un único vecindario (un intercambio entre rutas; los
+otros dos se abandonaron por `undo` mal implementados), y el de gran tour tiene 2-opt, que es el
+que eligen las tres réplicas. En la representación de gran tour los movimientos son de
+permutación, más fáciles de escribir bien, y eso también es un efecto de la representación. Para
+separarlos harían falta más corridas de componentes por variante. Pendiente: el mismo tuning con
+los componentes escritos a mano del CVRP como referencia.
+
+Arreglos del framework que salieron de esta corrida: el prompt de la vista MIP muestra la
+representación y la regla de ida y vuelta de los decodificadores; el mensaje de cobertura de
+variables nombra lo que sobra en `to_assignment` o `aux_values`; la firma de diversidad de los
+puntajes compara transiciones (con acciones "próximo cliente", el conjunto de acciones elegidas
+era siempre el mismo y tres ideas distintas daban similitud 1,00); y las ramas de los modelos
+rechazados se guardan.
 
 ### ProblemModel del CLSP por piezas: de 4 rechazos a aceptado a la primera, por arreglos del framework
 
