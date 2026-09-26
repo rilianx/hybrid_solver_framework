@@ -1,0 +1,26 @@
+{
+  "problem": "cvrp",
+  "variant": "tour",
+  "accepted": true,
+  "heuristic_rounds": 1,
+  "mip_rounds": 5,
+  "construction_rounds": 1,
+  "construction_accepted": true,
+  "llm_calls": 7,
+  "seconds": 80.7,
+  "tokens": {
+    "calls": 7,
+    "input_tokens": 24387,
+    "output_tokens": 18938,
+    "total_tokens": 43325,
+    "cached_input_tokens": 3584,
+    "reasoning_tokens": 7086
+  },
+  "rejections": [
+    "model_r1.py: rechazado en la capa 'syntactic'. Propiedades violadas:\n  - no_redefinition: la vista MIP vuelve a definir ['_split_dp', 'violations'], que ya están en la vista heurística aprobada (tu código se concatena después y los reemplaza): usa los de la vista heurística tal cual y ponle otro nombre a tus funciones auxiliares",
+    "vista MIP: rechazado en la capa 'semantic_mip'. Propiedades violadas:\n  - groups_split_the_problem: variable_groups debe dividir el problema en bloques chicos (instancia de tamaño realista 0): hay 4 grupo(s) y el mayor tiene 364 de 930 variables; se piden al menos 4 grupos y ninguno con más de un tercio. Fix-and-Optimize libera de a 1 a 4 grupos por subproblema, y con pocos grupos cada subproblema es casi el MIP completo. Agrupa por estructura del problema (sector, período, ítem…).",
+    "vista MIP: rechazado en la capa 'semantic_mip'. Propiedades violadas:\n  - point_covers_variables: to_assignment ∪ aux_values debe dar valor a todas las variables: faltan [], sobran []",
+    "vista MIP: rechazado en la capa 'semantic_mip'. Propiedades violadas:\n  - point_covers_variables: to_assignment ∪ aux_values debe dar valor a todas las variables: faltan [], sobran []"
+  ],
+  "model": "generated/cvrp_tour_cycle/model/parts.py"
+}

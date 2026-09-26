@@ -205,3 +205,11 @@ def test_identical_copies_are_not_redefinitions():
     heur = "def canonical(sol):\n    return tuple(sol)\n"
     assert redefined_names(heur, "def canonical(sol):\n    return tuple(sol)\n") == []
     assert redefined_names(heur, "def canonical(sol):\n    return sorted(sol)\n") == ["canonical"]
+
+
+def test_assignment_that_includes_auxiliaries_is_named_precisely(cases):
+    """Corridas 33 y 34: 'faltan [], sobran []' cuando to_assignment traía también las auxiliares."""
+    m = mutant(to_assignment=lambda inst, sol: {**ref.to_assignment(inst, sol), **ref.aux_values(inst, sol)},
+               from_assignment=lambda inst, x: ref.from_assignment(inst, {k: v for k, v in x.items() if k.startswith("x_")}))
+    msg = check_mip_view(m, cases).feedback()
+    assert "SOLO las estructurales" in msg and "u_" in msg

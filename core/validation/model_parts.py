@@ -177,9 +177,22 @@ def check_mip_view(parts, cases: list[TestCase], n_random: int = 4, scale_instan
                 report.add(fail(L, "assignment_round_trip", f"from_assignment(to_assignment(sol)) != sol: sol={_short(sol)}, vuelta={_short(back)}"))
                 return report
             if set(x) != set(struct) or set(aux) != set(dom) - set(struct):
-                report.add(fail(L, "point_covers_variables",
-                                f"to_assignment ∪ aux_values debe dar valor a todas las variables: faltan "
-                                f"{sorted(set(dom) - set(x) - set(aux))[:5]}, sobran {sorted((set(x) | set(aux)) - set(dom))[:5]}"))
+                # corridas 33 y 34: el mensaje decía "faltan [], sobran []" cuando to_assignment traía auxiliares
+                # o aux_values estructurales, y el modelo gastó dos rondas sin saber qué corregir
+                problems = []
+                if set(struct) - set(x):
+                    problems.append(f"to_assignment no da valor a las estructurales {sorted(set(struct) - set(x))[:5]}")
+                if set(x) - set(struct):
+                    problems.append(f"to_assignment debe devolver SOLO las estructurales y trae además {sorted(set(x) - set(struct))[:5]} "
+                                    f"(esas van en aux_values)")
+                if set(aux) & set(struct):
+                    problems.append(f"aux_values debe devolver SOLO las auxiliares y trae las estructurales {sorted(set(aux) & set(struct))[:5]}")
+                missing = set(dom) - set(struct) - set(aux)
+                if missing:
+                    problems.append(f"aux_values no da valor a las auxiliares {sorted(missing)[:5]}")
+                if (set(x) | set(aux)) - set(dom):
+                    problems.append(f"hay valores para variables que variables(inst) no declara: {sorted((set(x) | set(aux)) - set(dom))[:5]}")
+                report.add(fail(L, "point_covers_variables", "; ".join(problems) + f" (sol={_short(sol)})"))
                 return report
             # una solución infactible que la vista MIP no puede expresar (dos rutas idénticas se funden en
             # los mismos arcos; la vuelta es factible) no dice nada sobre las familias del MIP
