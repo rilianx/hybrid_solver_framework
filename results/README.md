@@ -27,6 +27,7 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run24/`](tune_run24/) | 25 sep | corrida 16 | SA, ILS, VNS | 10+10, 10×15 | 5 s | 40 × 3 réplicas | ¿más instancias bajan el ruido? |
 | [`tune_run25/`](tune_run25/) | 25 sep | corrida 16 | SA, ILS, VNS | 5+5, 10×15 | 5 s | 40 × 3 réplicas | sondeo inicial de un solo componente |
 | [`tune_run26/`](tune_run26/) | 26 sep | corrida 16 | SA, ILS, VNS | 10+10, 10×15 | 5 s | 40 × 3 réplicas | sondeo + re-evaluación por elección distinta |
+| [`tune_run27/`](tune_run27/) | 26 sep | corrida 16 | SA, ILS, VNS | 10+10, 10×15 | 5 s | 40 × 3 réplicas | réplicas nuevas con `prefer_defaults` |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -98,6 +99,7 @@ componente, intercaladas entre esqueletos y slots, las mismas que se usan como r
 | 25 | 5+5 | sí (13) | 11,10 / 5,68 / 6,85 % | 7,88 % | 2,33 | 4,31 % |
 | 24 | 10+10 | no | 8,62 / 4,82 / 5,33 % | 6,26 % | 1,68 | 4,82 % |
 | 26 | 10+10 | sí (13) + re-evaluación por elección | **4,84 / 6,10 / 4,84 %** | **5,26 %** | **0,59** | 4,84 % |
+| 27 | 10+10 | ídem + `prefer_defaults`, semillas 3–5 | **4,82 / 4,85 / 4,84 %** | **4,84 %** | **0,01** | 4,84 % |
 
 - **Duplicar las instancias corta el desvío a la mitad** (3,1 → 1,7) y baja la media 2,4 puntos:
   en 2 de 3 réplicas el tuner eligió los componentes buenos.
@@ -124,6 +126,15 @@ re-evaluación cerraría ese último punto. Implementada (`prefer_defaults`, `--
 si el ganador de la re-evaluación es un trial afinado, se elige su gemelo con numéricos por
 defecto salvo que el afinado gane por más de 0,5 % y de dos errores estándar de la diferencia
 pareada por semilla. En la réplica 1 de la run 26 (0,1 % de diferencia) habría elegido el gemelo.
+
+**Run 27** (lo mismo con 3 réplicas nuevas, semillas del tuner 3–5): 4,82 / 4,85 / 4,84 %, desvío
+0,01. Las tres eligen los componentes buenos con los numéricos por defecto: dos por la variante
+del sondeo, una por el gemelo, que ganó la re-evaluación sin necesitar la regla. Entre las runs
+23 y 27, con el mismo catálogo y las mismas instancias, el desvío entre réplicas pasó de 3,1 a
+0,01 puntos, y el afinado pasó de quedar 4,3 puntos por debajo de la mejor configuración no
+afinada a igualarla. Lo que lo resolvió, en orden de efecto: más instancias de train (10 en vez
+de 5), re-evaluar elecciones de componentes distintas en vez de los mejores trials, y el sondeo
+de variantes de un solo componente al inicio.
 
 ### ProblemModel del CLSP por piezas: de 4 rechazos a aceptado a la primera, por arreglos del framework
 
