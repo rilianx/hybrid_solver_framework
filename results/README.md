@@ -30,6 +30,9 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run27/`](tune_run27/) | 26 sep | corrida 16 | SA, ILS, VNS | 10+10, 10×15 | 5 s | 40 × 3 réplicas | réplicas nuevas con `prefer_defaults` |
 | [`tune_run28/`](tune_run28/) | 26 sep | ciclo CVRP rutas (modelo 34, componentes 37) | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | ciclo completo, representación de rutas |
 | [`tune_run29/`](tune_run29/) | 26 sep | ciclo CVRP gran tour (modelo 33, componentes 38) | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | ciclo completo, gran tour + Split |
+| [`tune_run30/`](tune_run30/) | 26 sep | CVRP escrito a mano | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | referencia para el ciclo completo |
+| [`tune_run31/`](tune_run31/) | 26 sep | ciclo CVRP rutas, 2.ª generación (componentes 39) | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | variación entre generaciones |
+| [`tune_run32/`](tune_run32/) | 26 sep | ciclo CVRP gran tour, 2.ª generación (componentes 40) | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | variación entre generaciones |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -173,6 +176,37 @@ variables nombra lo que sobra en `to_assignment` o `aux_values`; la firma de div
 puntajes compara transiciones (con acciones "próximo cliente", el conjunto de acciones elegidas
 era siempre el mismo y tres ideas distintas daban similitud 1,00); y las ramas de los modelos
 rechazados se guardan.
+
+**Segunda generación de componentes y referencia escrita a mano** (runs 30–32; mismos modelos,
+otro catálogo generado por variante: corridas 39 y 40; referencia: el catálogo escrito a mano del
+CVRP con su modelo, mismas instancias y presupuesto). Gaps contra el mejor conocido común de cada
+par; diferencias pareadas por instancia con IC95:
+
+| Comparación | Resultado |
+|---|---|
+| Gran tour − rutas, 1.ª generación (29 − 28) | −3,0 puntos [−4,6, −1,4] |
+| Gran tour − rutas, 2.ª generación (32 − 31) | −1,3 [−2,2, −0,4] |
+| Rutas, 2.ª − 1.ª generación (31 − 28) | −3,9 [−5,4, −2,4] |
+| Gran tour, 2.ª − 1.ª generación (32 − 29) | −2,2 [−3,1, −1,2] |
+| Ciclo − escrito a mano: rutas 1.ª / 2.ª | +8,6 [+7,0, +10,0] / +4,6 [+4,0, +5,2] |
+| Ciclo − escrito a mano: gran tour 1.ª / 2.ª | +5,5 [+5,0, +5,9] / +3,3 [+2,6, +4,0] |
+
+Por réplica, en su propia corrida: escrito a mano 1,24 / 0,46 / 2,22 % (VNS o ILS con `relocate`);
+rutas 2.ª generación 3,46 / 3,60 / 3,02 % (ILS con 2-opt* entre rutas, que la 1.ª generación no
+tenía); gran tour 2.ª generación 2,67 / 3,44 / 4,08 % (SA con 2-opt sobre el tour).
+
+- **Gran tour queda por delante con los dos catálogos**, pero la ventaja baja de 3,0 a 1,3 puntos
+  cuando rutas consigue un segundo vecindario. La representación importa, menos de lo que parecía.
+- **Qué catálogo salió pesa más que la representación**: con el mismo modelo, otra generación de
+  componentes mejora 2,2 a 3,9 puntos. Para comparar representaciones hacen falta varias
+  generaciones por variante, igual que hicieron falta varias réplicas del tuning.
+- **El ciclo completo queda 3,3 a 8,6 puntos por detrás de los componentes escritos a mano**
+  (1,3 % de gap medio). La brecha se cierra entre generaciones (de 5,5–8,6 a 3,3–4,6), pero sigue
+  siendo grande: los componentes escritos a mano mueven clientes con `delta` en O(1) y el
+  constructor de inserción más barata es fuerte; los generados evalúan con el objetivo completo
+  (en gran tour, un Split por movimiento), y con 5 s por corrida hacen muchos menos movimientos.
+  Pendiente: medir movimientos por segundo, y pedir en el prompt de vecindarios un `delta`
+  incremental cuando la representación lo permite.
 
 ### ProblemModel del CLSP por piezas: de 4 rechazos a aceptado a la primera, por arreglos del framework
 
