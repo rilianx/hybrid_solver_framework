@@ -285,3 +285,16 @@ def test_screening_enqueues_one_slot_variants_interleaved_across_skeletons(assem
     result = tune_with_optuna(assembler, tiny, budget=0.05, n_trials=n_sk + k, seed=0, screen=k)
     for c in cfgs[:k]:
         assert any(all((kk, vv) in t.config.items() for kk, vv in c.items() if kk in t.config) for t in result.trials[n_sk:])
+
+
+def test_final_selection_reevaluates_distinct_component_choices(assembler, tiny):
+    """Run 25: la elección que ganaba en test quedaba 5.ª en train, fuera de los 5 mejores trials."""
+    from tuning.optuna_tuner import SLOT_KEYS
+
+    result = tune_with_optuna(assembler, tiny, budget=0.05, n_trials=len(assembler.available_skeletons()) + 6,
+                              seed=1, reeval_top=3, reeval_seeds=1)
+    by_number = {t.number: t for t in result.trials}
+    tuned = [r for r in result.reevaluated if not r["twin"] and not r["enqueued"]]
+    choices = [repr(sorted((k, v) for k, v in by_number[r["number"]].config.items() if k == "skeleton" or k in SLOT_KEYS))
+               for r in tuned]
+    assert len(choices) == len(set(choices))

@@ -17,8 +17,8 @@ Decisiones:
   ve como un valor muy malo y aprende a evitar.
 - Selección final (`reeval_top`): el mínimo de muchos trials evaluados con una sola
   semilla es optimista, y en las runs 13 y 14 el elegido quedó en test hasta 6 puntos
-  por encima de su mejor default. Con `reeval_top=k`, los k mejores trials y el mejor
-  default se re-evalúan en train con `reeval_seeds` semillas más y se elige por la media.
+  por encima de su mejor default. Con `reeval_top=k`, el mejor trial de cada una de las k
+  mejores elecciones de componentes distintas y el mejor default se re-evalúan en train con `reeval_seeds` semillas más y se elige por la media.
   Cada elección de componentes entre esos k entra además con los parámetros numéricos por
   defecto ("gemelo"): en las runs 19 y 22 el tuner eligió los componentes correctos, pero sus
   numéricos afinados en 5 instancias quedaron en test 0.7 y 2.3 puntos peor que los defaults
@@ -217,15 +217,24 @@ def defaults_twin(assembler: Assembler, t: Trial) -> Trial | None:
 
 def _reevaluate(assembler: Assembler, trials: list[Trial], instances: list[Any], budget: float, seed: int,
                 top: int, n_seeds: int, normalizers: list[float] | None) -> tuple[Trial, float, list[dict[str, Any]]]:
-    """Los `top` mejores trials distintos (más el mejor default) con `n_seeds` semillas más."""
+    """El mejor trial de cada una de las `top` mejores elecciones de componentes distintas (más su
+    gemelo con numéricos por defecto y el mejor default), con `n_seeds` semillas más.
+
+    Por elección y no por trial: los mejores trials suelen ser la misma elección con otros
+    numéricos (run 22: los 5), y el costo de un trial con una semilla es muy ruidoso (run 25: la
+    misma configuración, en las mismas instancias, 0.669 y 0.759 según la semilla), así que la
+    elección que gana en test puede quedar 5.ª en train y fuera de los 5 mejores trials."""
     ok = sorted((t for t in trials if t.cost < assembler.penalty_cost), key=lambda t: t.cost)
     cands: list[Trial] = []
     seen: set[str] = set()
+    choices: set[str] = set()
     for t in ok:
-        key = repr(sorted(t.config.items()))
-        if key not in seen:
-            seen.add(key)
-            cands.append(t)
+        choice = repr(sorted((k, v) for k, v in t.config.items() if k == "skeleton" or k in SLOT_KEYS))
+        if choice in choices:
+            continue
+        choices.add(choice)
+        seen.add(repr(sorted(t.config.items())))
+        cands.append(t)
         if len(cands) >= top:
             break
     for t in [c for c in cands if not c.enqueued]:

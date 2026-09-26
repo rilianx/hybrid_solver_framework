@@ -1,0 +1,1777 @@
+{
+  "catalog": "generated",
+  "generated_components": [
+    "clustered_item_windowing",
+    "critical_period_seeding",
+    "item_line_reset",
+    "low_value_setup_removal",
+    "window_capacity_shock",
+    "capacity_pressure_balance",
+    "forward_cover_cost",
+    "setup_consolidation_urgency",
+    "remove_redundant_setup",
+    "shift_setup_in_time",
+    "swap_capacity_pressure",
+    "backward_lot_shift",
+    "merge_adjacent_lots",
+    "remove_low_value_setup_and_recover"
+  ],
+  "settings": {
+    "trials": 40,
+    "budget": 5.0,
+    "train": 5,
+    "test": 5,
+    "problem": "clsp",
+    "size": "10x15",
+    "seed": 0,
+    "tuner_seed": 2,
+    "seeds_test": 3,
+    "objective": "ratio",
+    "skeletons": [
+      "SA",
+      "ILS",
+      "VNS"
+    ],
+    "ref_time": 60.0,
+    "reeval_top": 5,
+    "reeval_seeds": 2,
+    "screen": -1
+  },
+  "tuning": {
+    "best_config": {
+      "skeleton": "SA",
+      "constructor": "greedy_forward_cover_cost",
+      "greedy_forward_cover_cost.rule": "greedy",
+      "greedy_forward_cover_cost.alpha": 0.20522776160181622,
+      "greedy_forward_cover_cost.holding_weight": 2.8277617403407014,
+      "neighborhood": "remove_redundant_setup",
+      "SA.T0": 65.99985762746721,
+      "SA.alpha": 0.9212909942114548,
+      "SA.iters_per_T": 31
+    },
+    "best_cost": 0.6631821868759796,
+    "best_summary": "SA[constructor=greedy_forward_cover_cost, neighborhood=remove_redundant_setup]",
+    "best_default_cost": 0.7308132903116386,
+    "best_default_summary": "VNS[constructor=clustered_item_windowing, neighborhood=remove_redundant_setup]",
+    "n_trials": 40,
+    "n_failed": 0,
+    "seconds": 1359.8,
+    "skeleton_usage": {
+      "SA": 25,
+      "ILS": 8,
+      "VNS": 7
+    },
+    "best_trial_number": 39,
+    "reevaluated": [
+      {
+        "number": 39,
+        "enqueued": false,
+        "twin": false,
+        "summary": "SA[constructor=greedy_forward_cover_cost, neighborhood=remove_redundant_setup]",
+        "costs": [
+          0.6641413079074082,
+          0.6634579853478723,
+          0.6619472673726584
+        ],
+        "mean": 0.6631821868759796
+      },
+      {
+        "number": 29,
+        "enqueued": false,
+        "twin": false,
+        "summary": "SA[constructor=greedy_forward_cover_cost, neighborhood=remove_redundant_setup]",
+        "costs": [
+          0.6645976913957675,
+          0.6683809227009707,
+          0.6694026555923963
+        ],
+        "mean": 0.6674604232297116
+      },
+      {
+        "number": 15,
+        "enqueued": false,
+        "twin": false,
+        "summary": "SA[constructor=greedy_forward_cover_cost, neighborhood=remove_redundant_setup]",
+        "costs": [
+          0.6705581978485966,
+          0.6771035579971643,
+          0.6679768891580941
+        ],
+        "mean": 0.6718795483346183
+      },
+      {
+        "number": 33,
+        "enqueued": false,
+        "twin": false,
+        "summary": "SA[constructor=greedy_forward_cover_cost, neighborhood=remove_redundant_setup]",
+        "costs": [
+          0.6762870970707058,
+          0.6753677321126547,
+          0.6767608159498207
+        ],
+        "mean": 0.6761385483777271
+      },
+      {
+        "number": 28,
+        "enqueued": false,
+        "twin": false,
+        "summary": "SA[constructor=greedy_forward_cover_cost, neighborhood=remove_redundant_setup]",
+        "costs": [
+          0.6766211985416277,
+          0.6795571621094489,
+          0.6781221539489228
+        ],
+        "mean": 0.6781001715333331
+      },
+      {
+        "number": 2,
+        "enqueued": true,
+        "twin": false,
+        "summary": "VNS[constructor=clustered_item_windowing, neighborhood=remove_redundant_setup]",
+        "costs": [
+          0.7308132903116386,
+          0.764384652833357,
+          0.7479723798833043
+        ],
+        "mean": 0.7477234410094332
+      }
+    ],
+    "best_is_twin": false,
+    "incumbent_curve": [
+      0.7919414243546208,
+      0.7679216862815939,
+      0.7308132903116386,
+      0.7308132903116386,
+      0.7308132903116386,
+      0.7308132903116386,
+      0.7033639071125051,
+      0.7033639071125051,
+      0.7033639071125051,
+      0.7033639071125051,
+      0.7033639071125051,
+      0.7033639071125051,
+      0.7033639071125051,
+      0.7033639071125051,
+      0.7033639071125051,
+      0.6705581978485966,
+      0.6705581978485966,
+      0.6705581978485966,
+      0.6705581978485966,
+      0.6705581978485966,
+      0.6705581978485966,
+      0.6705581978485966,
+      0.6705581978485966,
+      0.6705581978485966,
+      0.6705581978485966,
+      0.6705581978485966,
+      0.6705581978485966,
+      0.6705581978485966,
+      0.6705581978485966,
+      0.6645976913957675,
+      0.6645976913957675,
+      0.6645976913957675,
+      0.6645976913957675,
+      0.6645976913957675,
+      0.6645976913957675,
+      0.6645976913957675,
+      0.6645976913957675,
+      0.6645976913957675,
+      0.6645976913957675,
+      0.6641413079074082
+    ],
+    "trials": [
+      {
+        "number": 0,
+        "cost": 0.7919414243546208,
+        "seconds": 25.4,
+        "enqueued": true,
+        "summary": "SA[constructor=clustered_item_windowing, neighborhood=swap_capacity_pressure]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "clustered_item_windowing",
+          "clustered_item_windowing.window_frac": 0.375,
+          "clustered_item_windowing.holding_bias": 1.75,
+          "clustered_item_windowing.split_bias": 1.25,
+          "neighborhood": "swap_capacity_pressure",
+          "swap_capacity_pressure.window": 1,
+          "swap_capacity_pressure.max_moves": 2102,
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 1,
+        "cost": 0.7679216862815939,
+        "seconds": 28.72,
+        "enqueued": true,
+        "summary": "ILS[constructor=clustered_item_windowing, neighborhood=remove_redundant_setup, perturbation=backward_lot_shift]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "clustered_item_windowing",
+          "clustered_item_windowing.window_frac": 0.375,
+          "clustered_item_windowing.holding_bias": 1.75,
+          "clustered_item_windowing.split_bias": 1.25,
+          "neighborhood": "remove_redundant_setup",
+          "perturbation": "backward_lot_shift",
+          "backward_lot_shift.strength": 3,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 2,
+        "cost": 0.7308132903116386,
+        "seconds": 28.78,
+        "enqueued": true,
+        "summary": "VNS[constructor=clustered_item_windowing, neighborhood=remove_redundant_setup]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "clustered_item_windowing",
+          "clustered_item_windowing.window_frac": 0.375,
+          "clustered_item_windowing.holding_bias": 1.75,
+          "clustered_item_windowing.split_bias": 1.25,
+          "neighborhood": "remove_redundant_setup",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 3,
+        "cost": 1.004717469598826,
+        "seconds": 25.22,
+        "enqueued": false,
+        "summary": "SA[constructor=critical_period_seeding, neighborhood=shift_setup_in_time]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "critical_period_seeding",
+          "critical_period_seeding.priority_mode": "criticality",
+          "critical_period_seeding.use_rng_shuffle": true,
+          "neighborhood": "shift_setup_in_time",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 4,
+        "cost": 0.8142214876327456,
+        "seconds": 28.58,
+        "enqueued": false,
+        "summary": "ILS[constructor=critical_period_seeding, neighborhood=swap_capacity_pressure, perturbation=backward_lot_shift]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "critical_period_seeding",
+          "critical_period_seeding.priority_mode": "criticality",
+          "critical_period_seeding.use_rng_shuffle": true,
+          "neighborhood": "swap_capacity_pressure",
+          "swap_capacity_pressure.window": 1,
+          "swap_capacity_pressure.max_moves": 3927,
+          "perturbation": "backward_lot_shift",
+          "backward_lot_shift.strength": 3,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 5,
+        "cost": 0.7678508697001207,
+        "seconds": 28.61,
+        "enqueued": false,
+        "summary": "VNS[constructor=critical_period_seeding, neighborhood=remove_redundant_setup]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "critical_period_seeding",
+          "critical_period_seeding.priority_mode": "criticality",
+          "critical_period_seeding.use_rng_shuffle": true,
+          "neighborhood": "remove_redundant_setup",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 6,
+        "cost": 0.7033639071125051,
+        "seconds": 25.37,
+        "enqueued": false,
+        "summary": "SA[constructor=clustered_item_windowing, neighborhood=remove_redundant_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "clustered_item_windowing",
+          "clustered_item_windowing.window_frac": 0.375,
+          "clustered_item_windowing.holding_bias": 1.75,
+          "clustered_item_windowing.split_bias": 1.25,
+          "neighborhood": "remove_redundant_setup",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 7,
+        "cost": 0.8335630918834029,
+        "seconds": 27.84,
+        "enqueued": false,
+        "summary": "ILS[constructor=clustered_item_windowing, neighborhood=swap_capacity_pressure, perturbation=backward_lot_shift]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "clustered_item_windowing",
+          "clustered_item_windowing.window_frac": 0.375,
+          "clustered_item_windowing.holding_bias": 1.75,
+          "clustered_item_windowing.split_bias": 1.25,
+          "neighborhood": "swap_capacity_pressure",
+          "swap_capacity_pressure.window": 1,
+          "swap_capacity_pressure.max_moves": 636,
+          "perturbation": "backward_lot_shift",
+          "backward_lot_shift.strength": 3,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 8,
+        "cost": 0.7925207802524422,
+        "seconds": 28.36,
+        "enqueued": false,
+        "summary": "VNS[constructor=clustered_item_windowing, neighborhood=swap_capacity_pressure]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "clustered_item_windowing",
+          "clustered_item_windowing.window_frac": 0.375,
+          "clustered_item_windowing.holding_bias": 1.75,
+          "clustered_item_windowing.split_bias": 1.25,
+          "neighborhood": "swap_capacity_pressure",
+          "swap_capacity_pressure.window": 2,
+          "swap_capacity_pressure.max_moves": 4685,
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 9,
+        "cost": 0.7216479502112824,
+        "seconds": 25.35,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_capacity_pressure_balance, neighborhood=remove_redundant_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_capacity_pressure_balance",
+          "greedy_capacity_pressure_balance.rule": "greedy",
+          "greedy_capacity_pressure_balance.alpha": 0.5,
+          "greedy_capacity_pressure_balance.source_pressure_weight": 2.5,
+          "greedy_capacity_pressure_balance.target_pressure_weight": 1.5,
+          "greedy_capacity_pressure_balance.slack_weight": 2.5,
+          "greedy_capacity_pressure_balance.setup_penalty_weight": 2.5,
+          "greedy_capacity_pressure_balance.gap_weight": 1.0,
+          "neighborhood": "remove_redundant_setup",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 10,
+        "cost": 0.8136416564328782,
+        "seconds": 28.69,
+        "enqueued": false,
+        "summary": "ILS[constructor=clustered_item_windowing, neighborhood=remove_redundant_setup, perturbation=merge_adjacent_lots]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "clustered_item_windowing",
+          "clustered_item_windowing.window_frac": 0.375,
+          "clustered_item_windowing.holding_bias": 1.75,
+          "clustered_item_windowing.split_bias": 1.25,
+          "neighborhood": "remove_redundant_setup",
+          "perturbation": "merge_adjacent_lots",
+          "merge_adjacent_lots.strength": 3.0,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 11,
+        "cost": 0.8558540450924338,
+        "seconds": 27.41,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_capacity_pressure_balance, neighborhood=swap_capacity_pressure]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_capacity_pressure_balance",
+          "greedy_capacity_pressure_balance.rule": "greedy",
+          "greedy_capacity_pressure_balance.alpha": 0.5,
+          "greedy_capacity_pressure_balance.source_pressure_weight": 2.5,
+          "greedy_capacity_pressure_balance.target_pressure_weight": 1.5,
+          "greedy_capacity_pressure_balance.slack_weight": 2.5,
+          "greedy_capacity_pressure_balance.setup_penalty_weight": 2.5,
+          "greedy_capacity_pressure_balance.gap_weight": 1.0,
+          "neighborhood": "swap_capacity_pressure",
+          "swap_capacity_pressure.window": 2,
+          "swap_capacity_pressure.max_moves": 559,
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 12,
+        "cost": 0.7033639071125051,
+        "seconds": 25.36,
+        "enqueued": false,
+        "summary": "SA[constructor=clustered_item_windowing, neighborhood=remove_redundant_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "clustered_item_windowing",
+          "clustered_item_windowing.window_frac": 0.375,
+          "clustered_item_windowing.holding_bias": 1.75,
+          "clustered_item_windowing.split_bias": 1.25,
+          "neighborhood": "remove_redundant_setup",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 13,
+        "cost": 0.8053160511216079,
+        "seconds": 28.7,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_capacity_pressure_balance, neighborhood=swap_capacity_pressure, perturbation=backward_lot_shift]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_capacity_pressure_balance",
+          "greedy_capacity_pressure_balance.rule": "greedy",
+          "greedy_capacity_pressure_balance.alpha": 0.5,
+          "greedy_capacity_pressure_balance.source_pressure_weight": 2.5,
+          "greedy_capacity_pressure_balance.target_pressure_weight": 1.5,
+          "greedy_capacity_pressure_balance.slack_weight": 2.5,
+          "greedy_capacity_pressure_balance.setup_penalty_weight": 2.5,
+          "greedy_capacity_pressure_balance.gap_weight": 1.0,
+          "neighborhood": "swap_capacity_pressure",
+          "swap_capacity_pressure.window": 1,
+          "swap_capacity_pressure.max_moves": 2674,
+          "perturbation": "backward_lot_shift",
+          "backward_lot_shift.strength": 3,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 14,
+        "cost": 0.7039515211242313,
+        "seconds": 28.6,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_forward_cover_cost, neighborhood=remove_redundant_setup]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_forward_cover_cost",
+          "greedy_forward_cover_cost.rule": "greedy",
+          "greedy_forward_cover_cost.alpha": 0.5,
+          "greedy_forward_cover_cost.holding_weight": 2.5,
+          "neighborhood": "remove_redundant_setup",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 15,
+        "cost": 0.6705581978485966,
+        "seconds": 25.32,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_forward_cover_cost, neighborhood=remove_redundant_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_forward_cover_cost",
+          "greedy_forward_cover_cost.rule": "greedy",
+          "greedy_forward_cover_cost.alpha": 0.5,
+          "greedy_forward_cover_cost.holding_weight": 2.5,
+          "neighborhood": "remove_redundant_setup",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 16,
+        "cost": 0.7370278204282746,
+        "seconds": 25.29,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_forward_cover_cost, neighborhood=remove_redundant_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_forward_cover_cost",
+          "greedy_forward_cover_cost.rule": "roulette",
+          "greedy_forward_cover_cost.alpha": 0.1485499091018767,
+          "greedy_forward_cover_cost.holding_weight": 0.7282149290108042,
+          "neighborhood": "remove_redundant_setup",
+          "SA.T0": 1.2496780689028328,
+          "SA.alpha": 0.9934860611581157,
+          "SA.iters_per_T": 46
+        }
+      },
+      {
+        "number": 17,
+        "cost": 0.698002924979973,
+        "seconds": 25.33,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_forward_cover_cost, neighborhood=remove_redundant_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_forward_cover_cost",
+          "greedy_forward_cover_cost.rule": "greedy",
+          "greedy_forward_cover_cost.alpha": 0.9248989967754271,
+          "greedy_forward_cover_cost.holding_weight": 4.85353194026895,
+          "neighborhood": "remove_redundant_setup",
+          "SA.T0": 415.75419502789276,
+          "SA.alpha": 0.8243831498367968,
+          "SA.iters_per_T": 2
+        }
+      },
+      {
+        "number": 18,
+        "cost": 0.7032311339966749,
+        "seconds": 25.32,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_setup_consolidation_urgency, neighborhood=remove_redundant_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_setup_consolidation_urgency",
+          "greedy_setup_consolidation_urgency.rule": "roulette",
+          "greedy_setup_consolidation_urgency.alpha": 0.7305688863257513,
+          "greedy_setup_consolidation_urgency.future_window": 12,
+          "greedy_setup_consolidation_urgency.setup_bias": 5.1131977535882145,
+          "greedy_setup_consolidation_urgency.consolidation_weight": 8.553725484291128,
+          "greedy_setup_consolidation_urgency.holding_weight": 3.3679795410947184,
+          "greedy_setup_consolidation_urgency.same_setup_bonus": 4.821693081344945,
+          "neighborhood": "remove_redundant_setup",
+          "SA.T0": 734.1869875572089,
+          "SA.alpha": 0.802770631460032,
+          "SA.iters_per_T": 4
+        }
+      },
+      {
+        "number": 19,
+        "cost": 0.7410405764743618,
+        "seconds": 25.37,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_forward_cover_cost, neighborhood=swap_capacity_pressure]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_forward_cover_cost",
+          "greedy_forward_cover_cost.rule": "greedy",
+          "greedy_forward_cover_cost.alpha": 0.9409376344184259,
+          "greedy_forward_cover_cost.holding_weight": 4.694817046657103,
+          "neighborhood": "swap_capacity_pressure",
+          "swap_capacity_pressure.window": 2,
+          "swap_capacity_pressure.max_moves": 4519,
+          "SA.T0": 720.6823690214077,
+          "SA.alpha": 0.8147869391886338,
+          "SA.iters_per_T": 1
+        }
+      },
+      {
+        "number": 20,
+        "cost": 0.7390847354451503,
+        "seconds": 25.8,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_forward_cover_cost, neighborhood=remove_redundant_setup, perturbation=remove_low_value_setup_and_recover]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_forward_cover_cost",
+          "greedy_forward_cover_cost.rule": "rcl",
+          "greedy_forward_cover_cost.alpha": 0.9900226208512031,
+          "greedy_forward_cover_cost.holding_weight": 4.960939940586696,
+          "neighborhood": "remove_redundant_setup",
+          "perturbation": "remove_low_value_setup_and_recover",
+          "remove_low_value_setup_and_recover.strength": 2.311347996812323,
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.2965246742057128,
+          "ILS.ls_sample": 4
+        }
+      },
+      {
+        "number": 21,
+        "cost": 0.7144667327525225,
+        "seconds": 25.31,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_setup_consolidation_urgency, neighborhood=remove_redundant_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_setup_consolidation_urgency",
+          "greedy_setup_consolidation_urgency.rule": "roulette",
+          "greedy_setup_consolidation_urgency.alpha": 0.9928522631767467,
+          "greedy_setup_consolidation_urgency.future_window": 12,
+          "greedy_setup_consolidation_urgency.setup_bias": 5.251107032881918,
+          "greedy_setup_consolidation_urgency.consolidation_weight": 9.378603143406597,
+          "greedy_setup_consolidation_urgency.holding_weight": 1.7140362238234057,
+          "greedy_setup_consolidation_urgency.same_setup_bonus": 4.776595722880513,
+          "neighborhood": "remove_redundant_setup",
+          "SA.T0": 666.3810232071805,
+          "SA.alpha": 0.800518379899404,
+          "SA.iters_per_T": 2
+        }
+      },
+      {
+        "number": 22,
+        "cost": 0.8320401802674022,
+        "seconds": 25.49,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_setup_consolidation_urgency, neighborhood=swap_capacity_pressure]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_setup_consolidation_urgency",
+          "greedy_setup_consolidation_urgency.rule": "greedy",
+          "greedy_setup_consolidation_urgency.alpha": 0.39770592382545944,
+          "greedy_setup_consolidation_urgency.future_window": 9,
+          "greedy_setup_consolidation_urgency.setup_bias": 2.8493951047985404,
+          "greedy_setup_consolidation_urgency.consolidation_weight": 4.339607357740587,
+          "greedy_setup_consolidation_urgency.holding_weight": 5.945263324648255,
+          "greedy_setup_consolidation_urgency.same_setup_bonus": 7.095793849339643,
+          "neighborhood": "swap_capacity_pressure",
+          "swap_capacity_pressure.window": 2,
+          "swap_capacity_pressure.max_moves": 2203,
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.029128703144703255,
+          "VNS.ls_sample": 4
+        }
+      },
+      {
+        "number": 23,
+        "cost": 0.693624524323101,
+        "seconds": 25.35,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_setup_consolidation_urgency, neighborhood=remove_redundant_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_setup_consolidation_urgency",
+          "greedy_setup_consolidation_urgency.rule": "roulette",
+          "greedy_setup_consolidation_urgency.alpha": 0.0029079051136322587,
+          "greedy_setup_consolidation_urgency.future_window": 1,
+          "greedy_setup_consolidation_urgency.setup_bias": 9.640280172674917,
+          "greedy_setup_consolidation_urgency.consolidation_weight": 0.15970297485067952,
+          "greedy_setup_consolidation_urgency.holding_weight": 9.402433142652724,
+          "greedy_setup_consolidation_urgency.same_setup_bonus": 0.47174358367863345,
+          "neighborhood": "remove_redundant_setup",
+          "SA.T0": 200.95537633113878,
+          "SA.alpha": 0.8403579331637635,
+          "SA.iters_per_T": 11
+        }
+      },
+      {
+        "number": 24,
+        "cost": 0.685237805507374,
+        "seconds": 25.3,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_forward_cover_cost, neighborhood=remove_redundant_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_forward_cover_cost",
+          "greedy_forward_cover_cost.rule": "greedy",
+          "greedy_forward_cover_cost.alpha": 0.5900679457254183,
+          "greedy_forward_cover_cost.holding_weight": 3.1720380229169622,
+          "neighborhood": "remove_redundant_setup",
+          "SA.T0": 172.2559577962481,
+          "SA.alpha": 0.8453983745107093,
+          "SA.iters_per_T": 13
+        }
+      },
+      {
+        "number": 25,
+        "cost": 0.8954347965650284,
+        "seconds": 25.78,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_setup_consolidation_urgency, neighborhood=remove_redundant_setup, perturbation=remove_low_value_setup_and_recover]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_setup_consolidation_urgency",
+          "greedy_setup_consolidation_urgency.rule": "rcl",
+          "greedy_setup_consolidation_urgency.alpha": 0.05614598070329235,
+          "greedy_setup_consolidation_urgency.future_window": 1,
+          "greedy_setup_consolidation_urgency.setup_bias": 8.679481724456496,
+          "greedy_setup_consolidation_urgency.consolidation_weight": 1.6410959186741207,
+          "greedy_setup_consolidation_urgency.holding_weight": 9.882705383707028,
+          "greedy_setup_consolidation_urgency.same_setup_bonus": 0.269577033493535,
+          "neighborhood": "remove_redundant_setup",
+          "perturbation": "remove_low_value_setup_and_recover",
+          "remove_low_value_setup_and_recover.strength": 4.672371384797532,
+          "ILS.strength": 6,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.0260486444683658,
+          "ILS.ls_sample": 250
+        }
+      },
+      {
+        "number": 26,
+        "cost": 0.7611916416498592,
+        "seconds": 25.33,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_forward_cover_cost, neighborhood=shift_setup_in_time]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_forward_cover_cost",
+          "greedy_forward_cover_cost.rule": "greedy",
+          "greedy_forward_cover_cost.alpha": 0.5324921084237835,
+          "greedy_forward_cover_cost.holding_weight": 2.6263437488783317,
+          "neighborhood": "shift_setup_in_time",
+          "SA.T0": 171.91178294351343,
+          "SA.alpha": 0.8557594646716332,
+          "SA.iters_per_T": 13
+        }
+      },
+      {
+        "number": 27,
+        "cost": 0.6971795178713159,
+        "seconds": 25.38,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_setup_consolidation_urgency, neighborhood=remove_redundant_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_setup_consolidation_urgency",
+          "greedy_setup_consolidation_urgency.rule": "roulette",
+          "greedy_setup_consolidation_urgency.alpha": 0.043298232980811806,
+          "greedy_setup_consolidation_urgency.future_window": 1,
+          "greedy_setup_consolidation_urgency.setup_bias": 0.14629783904896598,
+          "greedy_setup_consolidation_urgency.consolidation_weight": 0.17727172796011903,
+          "greedy_setup_consolidation_urgency.holding_weight": 9.995804124955,
+          "greedy_setup_consolidation_urgency.same_setup_bonus": 9.972787562508454,
+          "neighborhood": "remove_redundant_setup",
+          "SA.T0": 163.6800550414328,
+          "SA.alpha": 0.8545579759916753,
+          "SA.iters_per_T": 15
+        }
+      },
+      {
+        "number": 28,
+        "cost": 0.6766211985416277,
+        "seconds": 25.33,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_forward_cover_cost, neighborhood=remove_redundant_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_forward_cover_cost",
+          "greedy_forward_cover_cost.rule": "greedy",
+          "greedy_forward_cover_cost.alpha": 0.5272816923782924,
+          "greedy_forward_cover_cost.holding_weight": 2.8012688425121404,
+          "neighborhood": "remove_redundant_setup",
+          "SA.T0": 111.57028545539741,
+          "SA.alpha": 0.8521325137779115,
+          "SA.iters_per_T": 16
+        }
+      },
+      {
+        "number": 29,
+        "cost": 0.6645976913957675,
+        "seconds": 25.32,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_forward_cover_cost, neighborhood=remove_redundant_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_forward_cover_cost",
+          "greedy_forward_cover_cost.rule": "greedy",
+          "greedy_forward_cover_cost.alpha": 0.5240943656154259,
+          "greedy_forward_cover_cost.holding_weight": 2.8405041652896785,
+          "neighborhood": "remove_redundant_setup",
+          "SA.T0": 82.55517982901137,
+          "SA.alpha": 0.941802991670592,
+          "SA.iters_per_T": 18
+        }
+      },
+      {
+        "number": 30,
+        "cost": 0.7060429824311366,
+        "seconds": 25.29,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_forward_cover_cost, neighborhood=swap_capacity_pressure]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_forward_cover_cost",
+          "greedy_forward_cover_cost.rule": "greedy",
+          "greedy_forward_cover_cost.alpha": 0.36951865254867233,
+          "greedy_forward_cover_cost.holding_weight": 1.9936584227532086,
+          "neighborhood": "swap_capacity_pressure",
+          "swap_capacity_pressure.window": 1,
+          "swap_capacity_pressure.max_moves": 80,
+          "SA.T0": 12.021318566099627,
+          "SA.alpha": 0.9632379159767,
+          "SA.iters_per_T": 19
+        }
+      },
+      {
+        "number": 31,
+        "cost": 0.679297918398544,
+        "seconds": 25.3,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_forward_cover_cost, neighborhood=remove_redundant_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_forward_cover_cost",
+          "greedy_forward_cover_cost.rule": "greedy",
+          "greedy_forward_cover_cost.alpha": 0.6199086127552028,
+          "greedy_forward_cover_cost.holding_weight": 3.2955478904671804,
+          "neighborhood": "remove_redundant_setup",
+          "SA.T0": 92.79519236316122,
+          "SA.alpha": 0.9375735391110027,
+          "SA.iters_per_T": 20
+        }
+      },
+      {
+        "number": 32,
+        "cost": 0.6843310082555354,
+        "seconds": 25.34,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_forward_cover_cost, neighborhood=remove_redundant_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_forward_cover_cost",
+          "greedy_forward_cover_cost.rule": "greedy",
+          "greedy_forward_cover_cost.alpha": 0.6882590022238577,
+          "greedy_forward_cover_cost.holding_weight": 3.42849810827182,
+          "neighborhood": "remove_redundant_setup",
+          "SA.T0": 75.4751629995651,
+          "SA.alpha": 0.9369173742544097,
+          "SA.iters_per_T": 20
+        }
+      },
+      {
+        "number": 33,
+        "cost": 0.6762870970707058,
+        "seconds": 25.31,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_forward_cover_cost, neighborhood=remove_redundant_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_forward_cover_cost",
+          "greedy_forward_cover_cost.rule": "greedy",
+          "greedy_forward_cover_cost.alpha": 0.3877959629385005,
+          "greedy_forward_cover_cost.holding_weight": 3.5229992072486036,
+          "neighborhood": "remove_redundant_setup",
+          "SA.T0": 70.67619304027822,
+          "SA.alpha": 0.9350864133826213,
+          "SA.iters_per_T": 34
+        }
+      },
+      {
+        "number": 34,
+        "cost": 1.0016143245613491,
+        "seconds": 25.22,
+        "enqueued": false,
+        "summary": "SA[constructor=critical_period_seeding, neighborhood=shift_setup_in_time]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "critical_period_seeding",
+          "critical_period_seeding.priority_mode": "demand",
+          "critical_period_seeding.use_rng_shuffle": false,
+          "neighborhood": "shift_setup_in_time",
+          "SA.T0": 8.528674102150969,
+          "SA.alpha": 0.9315273107533925,
+          "SA.iters_per_T": 35
+        }
+      },
+      {
+        "number": 35,
+        "cost": 0.7129657793903137,
+        "seconds": 29.16,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_forward_cover_cost, neighborhood=swap_capacity_pressure]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_forward_cover_cost",
+          "greedy_forward_cover_cost.rule": "roulette",
+          "greedy_forward_cover_cost.alpha": 0.3663954361791887,
+          "greedy_forward_cover_cost.holding_weight": 2.200399143438533,
+          "neighborhood": "swap_capacity_pressure",
+          "swap_capacity_pressure.window": 2,
+          "swap_capacity_pressure.max_moves": 2014,
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.2863401071857653,
+          "VNS.ls_sample": 235
+        }
+      },
+      {
+        "number": 36,
+        "cost": 0.8305173955266377,
+        "seconds": 25.59,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_forward_cover_cost, neighborhood=swap_capacity_pressure, perturbation=merge_adjacent_lots]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_forward_cover_cost",
+          "greedy_forward_cover_cost.rule": "rcl",
+          "greedy_forward_cover_cost.alpha": 0.3729627529878343,
+          "greedy_forward_cover_cost.holding_weight": 3.9118771882323014,
+          "neighborhood": "swap_capacity_pressure",
+          "swap_capacity_pressure.window": 1,
+          "swap_capacity_pressure.max_moves": 3397,
+          "perturbation": "merge_adjacent_lots",
+          "merge_adjacent_lots.strength": 4.942264085508963,
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.023865788373951452,
+          "ILS.ls_sample": 4
+        }
+      },
+      {
+        "number": 37,
+        "cost": 0.695316541519362,
+        "seconds": 25.35,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_capacity_pressure_balance, neighborhood=remove_redundant_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_capacity_pressure_balance",
+          "greedy_capacity_pressure_balance.rule": "rcl",
+          "greedy_capacity_pressure_balance.alpha": 0.0025197611857629143,
+          "greedy_capacity_pressure_balance.source_pressure_weight": 0.03180540330389636,
+          "greedy_capacity_pressure_balance.target_pressure_weight": 0.0005800486443101605,
+          "greedy_capacity_pressure_balance.slack_weight": 0.046995634998327596,
+          "greedy_capacity_pressure_balance.setup_penalty_weight": 4.9251634760696685,
+          "greedy_capacity_pressure_balance.gap_weight": 1.8630151782775086,
+          "neighborhood": "remove_redundant_setup",
+          "SA.T0": 74.15808342911828,
+          "SA.alpha": 0.9577767555966265,
+          "SA.iters_per_T": 35
+        }
+      },
+      {
+        "number": 38,
+        "cost": 0.6794328169231424,
+        "seconds": 25.29,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_forward_cover_cost, neighborhood=remove_redundant_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_forward_cover_cost",
+          "greedy_forward_cover_cost.rule": "greedy",
+          "greedy_forward_cover_cost.alpha": 0.4428492644585179,
+          "greedy_forward_cover_cost.holding_weight": 1.5631873812502053,
+          "neighborhood": "remove_redundant_setup",
+          "SA.T0": 9.66268729342282,
+          "SA.alpha": 0.8787460792687363,
+          "SA.iters_per_T": 34
+        }
+      },
+      {
+        "number": 39,
+        "cost": 0.6641413079074082,
+        "seconds": 25.33,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_forward_cover_cost, neighborhood=remove_redundant_setup]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_forward_cover_cost",
+          "greedy_forward_cover_cost.rule": "greedy",
+          "greedy_forward_cover_cost.alpha": 0.20522776160181622,
+          "greedy_forward_cover_cost.holding_weight": 2.8277617403407014,
+          "neighborhood": "remove_redundant_setup",
+          "SA.T0": 65.99985762746721,
+          "SA.alpha": 0.9212909942114548,
+          "SA.iters_per_T": 31
+        }
+      }
+    ]
+  },
+  "test": {
+    "tuned": {
+      "label": "tuned",
+      "summary": "SA[constructor=greedy_forward_cover_cost, neighborhood=remove_redundant_setup]",
+      "mean": 90880.69333333333,
+      "std": 15682.520474271843,
+      "per_instance": [
+        82951.93333333333,
+        75232.26666666666,
+        86946.93333333333,
+        88449.33333333334,
+        120823.0
+      ],
+      "config": {
+        "skeleton": "SA",
+        "constructor": "greedy_forward_cover_cost",
+        "greedy_forward_cover_cost.rule": "greedy",
+        "greedy_forward_cover_cost.alpha": 0.20522776160181622,
+        "greedy_forward_cover_cost.holding_weight": 2.8277617403407014,
+        "neighborhood": "remove_redundant_setup",
+        "SA.T0": 65.99985762746721,
+        "SA.alpha": 0.9212909942114548,
+        "SA.iters_per_T": 31
+      },
+      "gap_per_instance": [
+        0.0657654231527592,
+        0.07178547650728799,
+        0.058101281124527254,
+        0.06909375138497749,
+        0.07152485854662197
+      ],
+      "mean_gap": 0.06725415814323478
+    },
+    "baselines": [
+      {
+        "label": "SA:constructor=greedy_forward_cover_cost",
+        "summary": "SA[constructor=greedy_forward_cover_cost, neighborhood=remove_redundant_setup]",
+        "mean": 88725.85333333333,
+        "std": 15463.031293070868,
+        "per_instance": [
+          80119.59999999999,
+          74347.86666666667,
+          85188.33333333334,
+          85405.13333333335,
+          118568.33333333333
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_forward_cover_cost",
+          "greedy_forward_cover_cost.rule": "greedy",
+          "greedy_forward_cover_cost.alpha": 0.5,
+          "greedy_forward_cover_cost.holding_weight": 2.5,
+          "neighborhood": "remove_redundant_setup",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.029375639187390397,
+          0.05918600134295639,
+          0.03669998677580285,
+          0.03229827678596625,
+          0.05152923369812633
+        ],
+        "mean_gap": 0.04181782755804844
+      },
+      {
+        "label": "ILS:constructor=greedy_forward_cover_cost",
+        "summary": "ILS[constructor=greedy_forward_cover_cost, neighborhood=remove_redundant_setup, perturbation=backward_lot_shift]",
+        "mean": 91719.09333333334,
+        "std": 14888.208329523364,
+        "per_instance": [
+          83780.2,
+          77360.73333333334,
+          87346.53333333334,
+          89874.33333333333,
+          120233.66666666667
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_forward_cover_cost",
+          "greedy_forward_cover_cost.rule": "greedy",
+          "greedy_forward_cover_cost.alpha": 0.5,
+          "greedy_forward_cover_cost.holding_weight": 2.5,
+          "neighborhood": "remove_redundant_setup",
+          "perturbation": "backward_lot_shift",
+          "backward_lot_shift.strength": 3,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.07640698313830088,
+          0.10210836536388526,
+          0.06296421597142277,
+          0.0863178336737859,
+          0.06629832620893127
+        ],
+        "mean_gap": 0.07881914487126522
+      },
+      {
+        "label": "SA:constructor=critical_period_seeding",
+        "summary": "SA[constructor=critical_period_seeding, neighborhood=remove_redundant_setup]",
+        "mean": 92839.8,
+        "std": 16402.25663271165,
+        "per_instance": [
+          84961.66666666667,
+          76714.66666666666,
+          89720.2,
+          88607.46666666666,
+          124195.0
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "critical_period_seeding",
+          "critical_period_seeding.priority_mode": "criticality",
+          "critical_period_seeding.use_rng_shuffle": true,
+          "neighborhood": "remove_redundant_setup",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.09158645239649243,
+          0.09290427115179865,
+          0.09185056819426415,
+          0.07100512089089794,
+          0.10142961031589777
+        ],
+        "mean_gap": 0.08975520458987019
+      },
+      {
+        "label": "SA:constructor=greedy_setup_consolidation_urgency",
+        "summary": "SA[constructor=greedy_setup_consolidation_urgency, neighborhood=remove_redundant_setup]",
+        "mean": 93432.58666666667,
+        "std": 16344.424403278597,
+        "per_instance": [
+          83995.59999999999,
+          76764.66666666666,
+          91547.46666666666,
+          90538.86666666667,
+          124316.33333333333
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_setup_consolidation_urgency",
+          "greedy_setup_consolidation_urgency.rule": "greedy",
+          "greedy_setup_consolidation_urgency.alpha": 0.5,
+          "greedy_setup_consolidation_urgency.future_window": 6,
+          "greedy_setup_consolidation_urgency.setup_bias": 5.0,
+          "greedy_setup_consolidation_urgency.consolidation_weight": 5.0,
+          "greedy_setup_consolidation_urgency.holding_weight": 5.0,
+          "greedy_setup_consolidation_urgency.same_setup_bonus": 5.0,
+          "neighborhood": "remove_redundant_setup",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.07917443969925424,
+          0.09361658883408787,
+          0.11408750199782718,
+          0.09435009810676113,
+          0.10250566109130464
+        ],
+        "mean_gap": 0.09674685794584702
+      },
+      {
+        "label": "VNS:constructor=greedy_forward_cover_cost",
+        "summary": "VNS[constructor=greedy_forward_cover_cost, neighborhood=remove_redundant_setup]",
+        "mean": 93563.37333333334,
+        "std": 15978.5473096677,
+        "per_instance": [
+          84316.0,
+          78309.06666666667,
+          88154.4,
+          93240.4,
+          123797.0
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_forward_cover_cost",
+          "greedy_forward_cover_cost.rule": "greedy",
+          "greedy_forward_cover_cost.alpha": 0.5,
+          "greedy_forward_cover_cost.holding_weight": 2.5,
+          "neighborhood": "remove_redundant_setup",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.08329093497376445,
+          0.11561865740463736,
+          0.0727955547226203,
+          0.12700373490626465,
+          0.09789992727788716
+        ],
+        "mean_gap": 0.09932176185703478
+      },
+      {
+        "label": "default:SA",
+        "summary": "SA[constructor=clustered_item_windowing, neighborhood=remove_redundant_setup]",
+        "mean": 94340.70666666667,
+        "std": 17546.482167753424,
+        "per_instance": [
+          85987.53333333333,
+          76987.8,
+          89841.4,
+          91042.13333333333,
+          127844.66666666667
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "clustered_item_windowing",
+          "clustered_item_windowing.window_frac": 0.375,
+          "clustered_item_windowing.holding_bias": 1.75,
+          "clustered_item_windowing.split_bias": 1.25,
+          "neighborhood": "remove_redundant_setup",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.1047667747610702,
+          0.0967954252109174,
+          0.09332551239707625,
+          0.10043312019790569,
+          0.13379686289812404
+        ],
+        "mean_gap": 0.10582353909301871
+      },
+      {
+        "label": "SA:constructor=greedy_capacity_pressure_balance",
+        "summary": "SA[constructor=greedy_capacity_pressure_balance, neighborhood=remove_redundant_setup]",
+        "mean": 94493.95999999999,
+        "std": 17616.564577571116,
+        "per_instance": [
+          85201.99999999999,
+          78795.2,
+          90176.13333333333,
+          89593.46666666666,
+          128703.0
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_capacity_pressure_balance",
+          "greedy_capacity_pressure_balance.rule": "greedy",
+          "greedy_capacity_pressure_balance.alpha": 0.5,
+          "greedy_capacity_pressure_balance.source_pressure_weight": 2.5,
+          "greedy_capacity_pressure_balance.target_pressure_weight": 1.5,
+          "greedy_capacity_pressure_balance.slack_weight": 2.5,
+          "greedy_capacity_pressure_balance.setup_penalty_weight": 2.5,
+          "greedy_capacity_pressure_balance.gap_weight": 1.0,
+          "neighborhood": "remove_redundant_setup",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.09467425211863303,
+          0.12254428479030798,
+          0.09739905191430386,
+          0.08292297712722445,
+          0.1414090352790933
+        ],
+        "mean_gap": 0.10778992024591252
+      },
+      {
+        "label": "default:VNS",
+        "summary": "VNS[constructor=clustered_item_windowing, neighborhood=remove_redundant_setup]",
+        "mean": 100876.52,
+        "std": 17536.544024529652,
+        "per_instance": [
+          91887.0,
+          84937.0,
+          94330.73333333334,
+          99263.86666666667,
+          133964.0
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "clustered_item_windowing",
+          "clustered_item_windowing.window_frac": 0.375,
+          "clustered_item_windowing.holding_bias": 1.75,
+          "clustered_item_windowing.split_bias": 1.25,
+          "neighborhood": "remove_redundant_setup",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.18056305021507535,
+          0.2100425396119864,
+          0.1479584841338029,
+          0.19980983001543118,
+          0.18806647865339932
+        ],
+        "mean_gap": 0.18528807652593904
+      },
+      {
+        "label": "VNS:constructor=greedy_setup_consolidation_urgency",
+        "summary": "VNS[constructor=greedy_setup_consolidation_urgency, neighborhood=remove_redundant_setup]",
+        "mean": 100946.56,
+        "std": 17484.802139488642,
+        "per_instance": [
+          91947.73333333332,
+          80882.86666666667,
+          101802.33333333333,
+          98211.86666666667,
+          131888.0
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_setup_consolidation_urgency",
+          "greedy_setup_consolidation_urgency.rule": "greedy",
+          "greedy_setup_consolidation_urgency.alpha": 0.5,
+          "greedy_setup_consolidation_urgency.future_window": 6,
+          "greedy_setup_consolidation_urgency.setup_bias": 5.0,
+          "greedy_setup_consolidation_urgency.consolidation_weight": 5.0,
+          "greedy_setup_consolidation_urgency.holding_weight": 5.0,
+          "greedy_setup_consolidation_urgency.same_setup_bonus": 5.0,
+          "neighborhood": "remove_redundant_setup",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.18134335133764673,
+          0.1522859224181572,
+          0.2388841698246535,
+          0.1870942268099388,
+          0.1696553681335249
+        ],
+        "mean_gap": 0.18585260770478423
+      },
+      {
+        "label": "ILS:constructor=greedy_setup_consolidation_urgency",
+        "summary": "ILS[constructor=greedy_setup_consolidation_urgency, neighborhood=remove_redundant_setup, perturbation=backward_lot_shift]",
+        "mean": 101506.06666666667,
+        "std": 18420.527279411832,
+        "per_instance": [
+          90252.8,
+          83075.73333333334,
+          99720.13333333335,
+          98763.66666666667,
+          135718.0
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_setup_consolidation_urgency",
+          "greedy_setup_consolidation_urgency.rule": "greedy",
+          "greedy_setup_consolidation_urgency.alpha": 0.5,
+          "greedy_setup_consolidation_urgency.future_window": 6,
+          "greedy_setup_consolidation_urgency.setup_bias": 5.0,
+          "greedy_setup_consolidation_urgency.consolidation_weight": 5.0,
+          "greedy_setup_consolidation_urgency.holding_weight": 5.0,
+          "greedy_setup_consolidation_urgency.same_setup_bonus": 5.0,
+          "neighborhood": "remove_redundant_setup",
+          "perturbation": "backward_lot_shift",
+          "backward_lot_shift.strength": 3,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.15956686863703415,
+          0.1835262764495429,
+          0.2135448231324473,
+          0.19376387495517716,
+          0.2036219159616169
+        ],
+        "mean_gap": 0.1908047518271637
+      },
+      {
+        "label": "SA:neighborhood=swap_capacity_pressure",
+        "summary": "SA[constructor=clustered_item_windowing, neighborhood=swap_capacity_pressure]",
+        "mean": 101499.14666666667,
+        "std": 17455.967170984506,
+        "per_instance": [
+          91554.0,
+          86423.86666666667,
+          95227.73333333334,
+          99046.8,
+          135243.33333333334
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "clustered_item_windowing",
+          "clustered_item_windowing.window_frac": 0.375,
+          "clustered_item_windowing.holding_bias": 1.75,
+          "clustered_item_windowing.split_bias": 1.25,
+          "neighborhood": "swap_capacity_pressure",
+          "swap_capacity_pressure.window": 2,
+          "swap_capacity_pressure.max_moves": 2500,
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.17628467029493844,
+          0.23122496796944836,
+          0.1588745315754075,
+          0.19718612887239678,
+          0.19941231073035476
+        ],
+        "mean_gap": 0.19259652188850918
+      },
+      {
+        "label": "VNS:constructor=critical_period_seeding",
+        "summary": "VNS[constructor=critical_period_seeding, neighborhood=remove_redundant_setup]",
+        "mean": 102490.25333333333,
+        "std": 18790.78724644488,
+        "per_instance": [
+          93370.73333333332,
+          82192.86666666667,
+          101085.2,
+          98854.8,
+          136947.66666666666
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "critical_period_seeding",
+          "critical_period_seeding.priority_mode": "criticality",
+          "critical_period_seeding.use_rng_shuffle": true,
+          "neighborhood": "remove_redundant_setup",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.19962603790327682,
+          0.1709486456941347,
+          0.23015701097446095,
+          0.19486541041664152,
+          0.2145272767046831
+        ],
+        "mean_gap": 0.20202487633863941
+      },
+      {
+        "label": "ILS:constructor=greedy_capacity_pressure_balance",
+        "summary": "ILS[constructor=greedy_capacity_pressure_balance, neighborhood=remove_redundant_setup, perturbation=backward_lot_shift]",
+        "mean": 102900.6,
+        "std": 19080.687479158954,
+        "per_instance": [
+          91282.20000000001,
+          85629.26666666666,
+          96211.26666666666,
+          102644.26666666666,
+          138736.0
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_capacity_pressure_balance",
+          "greedy_capacity_pressure_balance.rule": "greedy",
+          "greedy_capacity_pressure_balance.alpha": 0.5,
+          "greedy_capacity_pressure_balance.source_pressure_weight": 2.5,
+          "greedy_capacity_pressure_balance.target_pressure_weight": 1.5,
+          "greedy_capacity_pressure_balance.slack_weight": 2.5,
+          "greedy_capacity_pressure_balance.setup_penalty_weight": 2.5,
+          "greedy_capacity_pressure_balance.gap_weight": 1.0,
+          "neighborhood": "remove_redundant_setup",
+          "perturbation": "backward_lot_shift",
+          "backward_lot_shift.strength": 3,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.17279258722498902,
+          0.219904815362508,
+          0.17084364699019694,
+          0.24066897932707218,
+          0.23038720090813955
+        ],
+        "mean_gap": 0.20691944596258113
+      },
+      {
+        "label": "default:ILS",
+        "summary": "ILS[constructor=clustered_item_windowing, neighborhood=remove_redundant_setup, perturbation=backward_lot_shift]",
+        "mean": 102868.21333333333,
+        "std": 18502.8735129751,
+        "per_instance": [
+          93400.0,
+          84960.8,
+          99921.73333333334,
+          99061.53333333334,
+          136997.0
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "clustered_item_windowing",
+          "clustered_item_windowing.window_frac": 0.375,
+          "clustered_item_windowing.holding_bias": 1.75,
+          "clustered_item_windowing.split_bias": 1.25,
+          "neighborhood": "remove_redundant_setup",
+          "perturbation": "backward_lot_shift",
+          "backward_lot_shift.strength": 3,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.20000205567803975,
+          0.21038160282875612,
+          0.21599819566781786,
+          0.19736421178167526,
+          0.21496479185512335
+        ],
+        "mean_gap": 0.20774217156228247
+      },
+      {
+        "label": "ILS:constructor=critical_period_seeding",
+        "summary": "ILS[constructor=critical_period_seeding, neighborhood=remove_redundant_setup, perturbation=backward_lot_shift]",
+        "mean": 103425.25333333333,
+        "std": 21023.290323190507,
+        "per_instance": [
+          90474.8,
+          82008.0,
+          99511.59999999999,
+          103213.53333333334,
+          141918.33333333334
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "critical_period_seeding",
+          "critical_period_seeding.priority_mode": "criticality",
+          "critical_period_seeding.use_rng_shuffle": true,
+          "neighborhood": "remove_redundant_setup",
+          "perturbation": "backward_lot_shift",
+          "backward_lot_shift.strength": 3,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.16241912191712543,
+          0.168314969783484,
+          0.21100707535115093,
+          0.24754974838738278,
+          0.2586098842949799
+        ],
+        "mean_gap": 0.2095801599468246
+      },
+      {
+        "label": "VNS:constructor=greedy_capacity_pressure_balance",
+        "summary": "VNS[constructor=greedy_capacity_pressure_balance, neighborhood=remove_redundant_setup]",
+        "mean": 103370.46666666666,
+        "std": 19305.67149797063,
+        "per_instance": [
+          95104.0,
+          85017.33333333334,
+          98603.73333333334,
+          98689.26666666665,
+          139438.0
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_capacity_pressure_balance",
+          "greedy_capacity_pressure_balance.rule": "greedy",
+          "greedy_capacity_pressure_balance.alpha": 0.5,
+          "greedy_capacity_pressure_balance.source_pressure_weight": 2.5,
+          "greedy_capacity_pressure_balance.target_pressure_weight": 1.5,
+          "greedy_capacity_pressure_balance.slack_weight": 2.5,
+          "greedy_capacity_pressure_balance.setup_penalty_weight": 2.5,
+          "greedy_capacity_pressure_balance.gap_weight": 1.0,
+          "neighborhood": "remove_redundant_setup",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.22189502680090248,
+          0.2111869966881979,
+          0.19995878593756714,
+          0.19286459655357172,
+          0.2366129232515653
+        ],
+        "mean_gap": 0.2125036658463609
+      },
+      {
+        "label": "ILS:neighborhood=swap_capacity_pressure",
+        "summary": "ILS[constructor=clustered_item_windowing, neighborhood=swap_capacity_pressure, perturbation=backward_lot_shift]",
+        "mean": 104939.37333333334,
+        "std": 18544.564312936076,
+        "per_instance": [
+          93993.06666666667,
+          89534.26666666666,
+          98774.6,
+          101769.93333333333,
+          140625.0
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "clustered_item_windowing",
+          "clustered_item_windowing.window_frac": 0.375,
+          "clustered_item_windowing.holding_bias": 1.75,
+          "clustered_item_windowing.split_bias": 1.25,
+          "neighborhood": "swap_capacity_pressure",
+          "swap_capacity_pressure.window": 2,
+          "swap_capacity_pressure.max_moves": 2500,
+          "perturbation": "backward_lot_shift",
+          "backward_lot_shift.strength": 3,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.2076217689452145,
+          0.27553682634929594,
+          0.20203814896936448,
+          0.23010084649817286,
+          0.24713989251316978
+        ],
+        "mean_gap": 0.2324874966550435
+      },
+      {
+        "label": "VNS:neighborhood=swap_capacity_pressure",
+        "summary": "VNS[constructor=clustered_item_windowing, neighborhood=swap_capacity_pressure]",
+        "mean": 106319.48,
+        "std": 19076.551322822128,
+        "per_instance": [
+          97128.13333333333,
+          87269.13333333333,
+          102268.73333333334,
+          102594.06666666667,
+          142337.33333333334
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "clustered_item_windowing",
+          "clustered_item_windowing.window_frac": 0.375,
+          "clustered_item_windowing.holding_bias": 1.75,
+          "clustered_item_windowing.split_bias": 1.25,
+          "neighborhood": "swap_capacity_pressure",
+          "swap_capacity_pressure.window": 2,
+          "swap_capacity_pressure.max_moves": 2500,
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.24790106706820914,
+          0.24326693582777495,
+          0.24456002771402305,
+          0.24006220814749454,
+          0.26232580689027246
+        ],
+        "mean_gap": 0.24762320912955482
+      },
+      {
+        "label": "ILS:perturbation=merge_adjacent_lots",
+        "summary": "ILS[constructor=clustered_item_windowing, neighborhood=remove_redundant_setup, perturbation=merge_adjacent_lots]",
+        "mean": 106973.24,
+        "std": 18367.17187900921,
+        "per_instance": [
+          100102.73333333334,
+          87286.73333333332,
+          101867.73333333332,
+          104821.33333333334,
+          140787.66666666666
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "clustered_item_windowing",
+          "clustered_item_windowing.window_frac": 0.375,
+          "clustered_item_windowing.holding_bias": 1.75,
+          "clustered_item_windowing.split_bias": 1.25,
+          "neighborhood": "remove_redundant_setup",
+          "perturbation": "merge_adjacent_lots",
+          "merge_adjacent_lots.strength": 3.0,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.28611869142388263,
+          0.24351767165194063,
+          0.23968005555785402,
+          0.26698334803927504,
+          0.2485825100362427
+        ],
+        "mean_gap": 0.256976455341839
+      },
+      {
+        "label": "ILS:perturbation=remove_low_value_setup_and_recover",
+        "summary": "ILS[constructor=clustered_item_windowing, neighborhood=remove_redundant_setup, perturbation=remove_low_value_setup_and_recover]",
+        "mean": 108058.61333333333,
+        "std": 20154.159886827885,
+        "per_instance": [
+          99897.13333333333,
+          85399.06666666667,
+          104982.86666666665,
+          104821.33333333334,
+          145192.66666666666
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "clustered_item_windowing",
+          "clustered_item_windowing.window_frac": 0.375,
+          "clustered_item_windowing.holding_bias": 1.75,
+          "clustered_item_windowing.split_bias": 1.25,
+          "neighborhood": "remove_redundant_setup",
+          "perturbation": "remove_low_value_setup_and_recover",
+          "remove_low_value_setup_and_recover.strength": 3.0,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.2834771451428611,
+          0.21662530475324848,
+          0.27758969129206873,
+          0.26698334803927504,
+          0.2876484743137219
+        ],
+        "mean_gap": 0.26646479270823503
+      },
+      {
+        "label": "SA:neighborhood=shift_setup_in_time",
+        "summary": "SA[constructor=clustered_item_windowing, neighborhood=shift_setup_in_time]",
+        "mean": 127101.57333333333,
+        "std": 22700.469382385516,
+        "per_instance": [
+          117539.2,
+          104910.26666666666,
+          121188.59999999999,
+          120951.79999999999,
+          170918.0
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "clustered_item_windowing",
+          "clustered_item_windowing.window_frac": 0.375,
+          "clustered_item_windowing.holding_bias": 1.75,
+          "clustered_item_windowing.split_bias": 1.25,
+          "neighborhood": "shift_setup_in_time",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.5101422015283966,
+          0.4945887600068763,
+          0.47480547043661736,
+          0.461953513108433,
+          0.5157948881675801
+        ],
+        "mean_gap": 0.49145696664958066
+      }
+    ],
+    "best_baseline": "SA:constructor=greedy_forward_cover_cost",
+    "gain_vs_best_baseline": -0.024286495074941666,
+    "wins_per_instance": "0/5",
+    "reference": 129394.44,
+    "best_known": [
+      77833.2,
+      70193.4,
+      82172.6,
+      82733.0,
+      112758.0
+    ],
+    "best_baseline_by_gap": "SA:constructor=greedy_forward_cover_cost",
+    "tuned_vs_best_baseline": {
+      "a": "tuned",
+      "b": "SA:constructor=greedy_forward_cover_cost",
+      "mean_diff": -0.025436330585186337,
+      "ci95": [
+        -0.03347322416876841,
+        -0.01731829887487578
+      ],
+      "wins_a": 0,
+      "n": 5,
+      "significant": true
+    },
+    "mip_reference": [
+      77833.2,
+      70193.4,
+      82172.6,
+      82733.0,
+      112758.0
+    ]
+  }
+}

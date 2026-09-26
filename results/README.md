@@ -24,6 +24,8 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run9/`](tune_run9/)–[`tune_run14/`](tune_run14/) | 24 sep | corridas 11–16 (desde cero; 3 sin y 3 con planificador) | SA, ILS, VNS | 5+5, 10×15 | 5 s | 40 | réplicas de la comparación del planificador, con muestreo de vecindarios |
 | runs 15–22 (solo en el log de Actions) | 25 sep | corridas 15 y 16 | SA, ILS, VNS | 5+5, 10×15 | 5 s | 40 | ruido del tuning: 2 semillas del tuner × con/sin re-evaluación final |
 | [`tune_run23/`](tune_run23/) | 25 sep | corrida 16 | SA, ILS, VNS | 5+5, 10×15 | 5 s | 40 × 3 réplicas | réplicas en paralelo; gemelo con numéricos por defecto |
+| [`tune_run24/`](tune_run24/) | 25 sep | corrida 16 | SA, ILS, VNS | 10+10, 10×15 | 5 s | 40 × 3 réplicas | ¿más instancias bajan el ruido? |
+| [`tune_run25/`](tune_run25/) | 25 sep | corrida 16 | SA, ILS, VNS | 5+5, 10×15 | 5 s | 40 × 3 réplicas | sondeo inicial de un solo componente |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -86,6 +88,26 @@ primeros trials y nunca evaluó bien `greedy_forward_cover_cost`. El problema no
 selección final sino la exploración de los componentes. Cambio: **sondeo inicial** (`--screen`,
 por defecto un tercio de los trials): después de los defaults se encolan variantes de un solo
 componente, intercaladas entre esqueletos y slots, las mismas que se usan como referencia en test.
+
+**Runs 24 y 25** (mismo catálogo, 3 réplicas cada una):
+
+| Run | Instancias | Sondeo | Gap por réplica | Media | Desvío | Mejor no afinado |
+|---|---|---|---|---|---|---|
+| 23 | 5+5 | no | 10,35 / 11,30 / 4,34 % | 8,66 % | 3,08 | 4,34 % |
+| 25 | 5+5 | sí (13) | 11,10 / 5,68 / 6,85 % | 7,88 % | 2,33 | 4,31 % |
+| 24 | 10+10 | no | 8,62 / 4,82 / 5,33 % | 6,26 % | 1,68 | 4,82 % |
+
+- **Duplicar las instancias corta el desvío a la mitad** (3,1 → 1,7) y baja la media 2,4 puntos:
+  en 2 de 3 réplicas el tuner eligió los componentes buenos.
+- **El sondeo ayuda poco**: el constructor bueno entró en los trials de las 3 réplicas, pero en la
+  réplica 0 su variante por defecto costó en train 0,759, y la misma configuración, en las mismas
+  instancias, costó 0,669 y 0,671 en las otras dos réplicas. Solo cambia la semilla de
+  evaluación. **El ruido de evaluar un trial con una semilla es mayor que la diferencia entre
+  constructores**, y con eso la elección buena queda 5.ª o 6.ª en train.
+- Cambio: la selección final re-evalúa el mejor trial de cada una de las k mejores **elecciones de
+  componentes distintas** (antes, los k mejores trials, que suelen ser la misma elección con otros
+  numéricos). Con k = 5, la elección buena habría entrado en 7 de las 9 réplicas de las runs
+  23–25 (antes, en 5).
 
 ### ProblemModel del CLSP por piezas: de 4 rechazos a aceptado a la primera, por arreglos del framework
 
