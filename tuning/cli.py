@@ -58,7 +58,8 @@ def run_experiment(pack: ProblemPack, catalog: str, args, train, test, out_dir: 
     result = tune_with_optuna(assembler, train, args.budget, args.trials, seed=args.tuner_seed, space=space,
                               on_trial=on_trial, normalizers=normalizers,
                               reeval_top=args.reeval_top, reeval_seeds=args.reeval_seeds,
-                              screen=args.trials // 3 if args.screen < 0 else args.screen)
+                              screen=args.trials // 3 if args.screen < 0 else args.screen,
+                              defaults_margin=args.defaults_margin)
     for r in result.reevaluated:
         mark = "d" if r.get("twin") else "*" if r["enqueued"] else " "
         print(f"  re-evaluado #{r['number']:>3}{mark} media {r['mean']:.4f} "
@@ -74,7 +75,7 @@ def run_experiment(pack: ProblemPack, catalog: str, args, train, test, out_dir: 
         "settings": {"trials": args.trials, "budget": args.budget, "train": len(train), "test": len(test),
                      "problem": pack.name, "size": args.size, "seed": args.seed, "tuner_seed": args.tuner_seed, "seeds_test": args.seeds,
                      "objective": args.objective, "skeletons": args.skeletons or "all", "ref_time": args.ref_time,
-                     "reeval_top": args.reeval_top, "reeval_seeds": args.reeval_seeds, "screen": args.screen},
+                     "reeval_top": args.reeval_top, "reeval_seeds": args.reeval_seeds, "screen": args.screen, "defaults_margin": args.defaults_margin},
         "tuning": result.to_dict(),
     }
     return payload, report, assembler.penalty_cost
@@ -115,6 +116,8 @@ def main(pack: ProblemPack, argv: list[str] | None = None) -> None:
     ap.add_argument("--reeval-top", type=int, default=0,
                     help="selección final: re-evaluar en train los k mejores trials (y el mejor default) con más semillas")
     ap.add_argument("--reeval-seeds", type=int, default=2, help="semillas extra por configuración re-evaluada")
+    ap.add_argument("--defaults-margin", type=float, default=0.005,
+                    help="en la selección final, el afinado tiene que ganarle a sus numéricos por defecto por más que esto (relativo) y que el ruido")
     ap.add_argument("--screen", type=int, default=-1,
                     help="variantes de un solo componente encoladas tras los defaults (-1 = un tercio de los trials; 0 = no)")
     ap.add_argument("--generated", default=pack.default_workspace)

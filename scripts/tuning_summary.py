@@ -57,6 +57,8 @@ def render_catalog(payload: dict) -> str:
             chosen = r["number"] == tun.get("best_trial_number") and bool(r.get("twin")) == bool(tun.get("best_is_twin"))
             mark = " ✔" if chosen else ""
             tag = " (numéricos por defecto)" if r.get("twin") else "*" if r["enqueued"] else ""
+            if r.get("preferred_defaults"):
+                tag += ", preferido: el afinado no le gana por más que el ruido"
             out.append(f"| {r['number']}{tag}{mark} | {r['mean']:.4f} | "
                        + ", ".join(f"{c:.4f}" for c in r["costs"]) + f" | `{r['summary']}` |")
     return "\n".join(out)

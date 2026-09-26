@@ -205,7 +205,7 @@ def test_final_selection_reevaluates_top_trials_with_more_seeds(assembler, tiny)
     assert 2 <= len(tuned) <= 3  # los 2 mejores (+ el mejor default si no estaba)
     assert len(rows) <= 5  # + a lo sumo un gemelo con numéricos por defecto por cada uno de los 2
     assert all(len(r["costs"]) == 2 for r in rows)
-    chosen = min(rows, key=lambda r: r["mean"])
+    chosen = next((r for r in rows if r.get("preferred_defaults")), None) or min(rows, key=lambda r: r["mean"])
     assert result.best_trial_number == chosen["number"] and result.best_cost == chosen["mean"]
     assert result.best_is_twin == chosen["twin"]
     if not chosen["twin"]:
@@ -298,3 +298,12 @@ def test_final_selection_reevaluates_distinct_component_choices(assembler, tiny)
     choices = [repr(sorted((k, v) for k, v in by_number[r["number"]].config.items() if k == "skeleton" or k in SLOT_KEYS))
                for r in tuned]
     assert len(choices) == len(set(choices))
+
+
+def test_defaults_are_preferred_when_the_tuned_gain_is_within_noise():
+    """Run 26, réplica 1: el afinado ganaba en train por 0.0008 y perdía 1.3 puntos en test."""
+    from tuning.optuna_tuner import prefer_defaults
+
+    assert prefer_defaults([0.6845, 0.6840, 0.6850], [0.6853, 0.6848, 0.6858])  # 0.1 %: dentro del margen
+    assert not prefer_defaults([0.60, 0.61, 0.60], [0.70, 0.71, 0.70])  # 15 %, consistente: gana el afinado
+    assert prefer_defaults([0.60, 0.75, 0.62], [0.70, 0.62, 0.71])  # gana en media pero con mucho ruido

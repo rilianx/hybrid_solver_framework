@@ -120,7 +120,10 @@ quedaron 1,3 puntos peor. Lo que queda abierto: en ninguna de las 12 réplicas d
 numéricos afinados le ganaron en test a los defaults de los mismos componentes. Con este
 presupuesto el tuning sirve para **elegir componentes**, no para afinar parámetros continuos; una
 regla que prefiera los defaults cuando la diferencia en train está dentro del ruido de la
-re-evaluación cerraría ese último punto.
+re-evaluación cerraría ese último punto. Implementada (`prefer_defaults`, `--defaults-margin`):
+si el ganador de la re-evaluación es un trial afinado, se elige su gemelo con numéricos por
+defecto salvo que el afinado gane por más de 0,5 % y de dos errores estándar de la diferencia
+pareada por semilla. En la réplica 1 de la run 26 (0,1 % de diferencia) habría elegido el gemelo.
 
 ### ProblemModel del CLSP por piezas: de 4 rechazos a aceptado a la primera, por arreglos del framework
 

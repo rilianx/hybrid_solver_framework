@@ -22,7 +22,8 @@ Decisiones:
   Cada elección de componentes entre esos k entra además con los parámetros numéricos por
   defecto ("gemelo"): en las runs 19 y 22 el tuner eligió los componentes correctos, pero sus
   numéricos afinados en 5 instancias quedaron en test 0.7 y 2.3 puntos peor que los defaults
-  de esa misma elección.
+  de esa misma elección. Y si el afinado le gana a su gemelo en train por menos que el ruido
+  (`prefer_defaults`), se elige el gemelo.
 - Sondeo inicial (`screen`): después de los defaults se encolan variantes de un solo componente
   (cada constructor, vecindario… alternativo con lo demás en su default), repartidas entre
   esqueletos y slots. En la run 23 dos de tres réplicas no llegaron a probar bien el constructor
@@ -132,6 +133,7 @@ def tune_with_optuna(
     reeval_top: int = 0,
     reeval_seeds: int = 2,
     screen: int = 0,
+    defaults_margin: float = 0.005,
 ) -> TuningResult:
     """Corre `n_trials` evaluaciones (incluidos los defaults encolados) y devuelve el resultado.
 
@@ -171,13 +173,30 @@ def tune_with_optuna(
     best_cost, reevaluated = best.cost, []
     if reeval_top > 0:
         best, best_cost, reevaluated = _reevaluate(assembler, trials, train_instances, budget, seed,
-                                                   reeval_top, reeval_seeds, normalizers)
+                                                   reeval_top, reeval_seeds, normalizers, defaults_margin)
     return TuningResult(
         best_config=best.config, best_cost=best_cost, trials=trials,
         seconds=time.perf_counter() - t0, penalty_cost=assembler.penalty_cost,
         reevaluated=reevaluated, best_trial_number=best.defaults_of if best.defaults_of is not None else best.number,
         best_is_twin=best.defaults_of is not None,
     )
+
+
+def prefer_defaults(tuned: list[float], defaults: list[float], margin: float = 0.005) -> bool:
+    """¿Quedarse con los numéricos por defecto? Sí, salvo que el afinado gane en train por más que el
+    ruido: más que `margin` (relativo) y más que dos errores estándar de la diferencia pareada por
+    semilla. Runs 23-26: en ninguna de 12 réplicas los numéricos afinados ganaron en test a los
+    defaults de los mismos componentes; en la run 26 ganaron en train por 0.0008 y perdieron 1.3
+    puntos en test."""
+    diffs = [d - t for t, d in zip(tuned, defaults)]
+    gain = sum(diffs) / len(diffs)
+    base = abs(sum(defaults) / len(defaults)) or 1.0
+    if len(diffs) > 1:
+        m = gain
+        se = (sum((x - m) ** 2 for x in diffs) / (len(diffs) - 1) / len(diffs)) ** 0.5
+    else:
+        se = 0.0
+    return gain <= max(margin * base, 2 * se)
 
 
 def screening_configs(assembler: Assembler) -> list[dict[str, Any]]:
@@ -216,7 +235,8 @@ def defaults_twin(assembler: Assembler, t: Trial) -> Trial | None:
 
 
 def _reevaluate(assembler: Assembler, trials: list[Trial], instances: list[Any], budget: float, seed: int,
-                top: int, n_seeds: int, normalizers: list[float] | None) -> tuple[Trial, float, list[dict[str, Any]]]:
+                top: int, n_seeds: int, normalizers: list[float] | None,
+                defaults_margin: float = 0.005) -> tuple[Trial, float, list[dict[str, Any]]]:
     """El mejor trial de cada una de las `top` mejores elecciones de componentes distintas (más su
     gemelo con numéricos por defecto y el mejor default), con `n_seeds` semillas más.
 
@@ -255,6 +275,11 @@ def _reevaluate(assembler: Assembler, trials: list[Trial], instances: list[Any],
         rows.append({"number": t.number, "enqueued": t.enqueued, "twin": t.defaults_of is not None,
                      "summary": t.summary, "costs": costs, "mean": sum(costs) / len(costs)})
     pick = min(range(len(cands)), key=lambda i: rows[i]["mean"]) if cands else None
+    if pick is not None and not cands[pick].enqueued and cands[pick].defaults_of is None:
+        twin = next((i for i, c in enumerate(cands) if c.defaults_of == cands[pick].number), None)
+        if twin is not None and prefer_defaults(rows[pick]["costs"], rows[twin]["costs"], defaults_margin):
+            pick = twin
+            rows[twin]["preferred_defaults"] = True
     if pick is None:
         best = min(trials, key=lambda t: t.cost)
         return best, best.cost, rows
