@@ -1,0 +1,23 @@
+{
+  "problem": "cvrp",
+  "variant": "routes",
+  "accepted": true,
+  "heuristic_rounds": 1,
+  "mip_rounds": 5,
+  "llm_calls": 6,
+  "seconds": 87.5,
+  "tokens": {
+    "calls": 6,
+    "input_tokens": 19076,
+    "output_tokens": 15257,
+    "total_tokens": 34333,
+    "reasoning_tokens": 6034
+  },
+  "rejections": [
+    "vista MIP: rechazado en la capa 'semantic_mip'. Propiedades violadas:\n  - groups_partition_structural: variable_groups debe ser una partición de structural_variables (instancia de tamaño realista 0): faltan [], repetidas o ajenas ['pen']",
+    "model_r2.py: rechazado en la capa 'syntactic'. Propiedades violadas:\n  - no_redefinition: la vista MIP vuelve a definir ['canonical', 'violations'], que ya están en la vista heurística aprobada (tu código se concatena después y los reemplaza): usa los de la vista heurística tal cual y ponle otro nombre a tus funciones auxiliares",
+    "vista MIP: rechazado en la capa 'semantic_mip'. Propiedades violadas:\n  - families_agree: la familia 'capacidad.transicion' del MIP rechaza una solución que violations considera factible: restricción 0 (1·u[2] + -1·u[1] + 23·x[1,2] >= 9) vale -1 en el punto de sol=((1,), (2,), (3,), (4,))",
+    "model_r4.py: rechazado en la capa 'syntactic'. Propiedades violadas:\n  - no_redefinition: la vista MIP vuelve a definir ['violations'], que ya están en la vista heurística aprobada (tu código se concatena después y los reemplaza): usa los de la vista heurística tal cual y ponle otro nombre a tus funciones auxiliares"
+  ],
+  "model": "generated/cvrp_routes_cycle/model/parts.py"
+}
