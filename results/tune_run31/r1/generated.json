@@ -1,0 +1,2237 @@
+{
+  "catalog": "generated",
+  "generated_components": [
+    "geographic_cluster_destruction",
+    "route_segment_destruction",
+    "uniform_customer_arc_destruction",
+    "depot_balance_lookahead",
+    "high_demand_first_fill",
+    "nearest_next_customer",
+    "customer_swap_exchange",
+    "route_suffix_2opt_star",
+    "customer_relocation_kick",
+    "interroute_customer_swap_kick",
+    "route_segment_reversal_kick"
+  ],
+  "settings": {
+    "trials": 40,
+    "budget": 5.0,
+    "train": 10,
+    "test": 10,
+    "problem": "cvrp_routes",
+    "size": "30",
+    "seed": 0,
+    "tuner_seed": 1,
+    "seeds_test": 3,
+    "objective": "ratio",
+    "skeletons": [
+      "SA",
+      "ILS",
+      "VNS",
+      "LNS_MIP"
+    ],
+    "ref_time": 60.0,
+    "reeval_top": 5,
+    "reeval_seeds": 2,
+    "screen": -1,
+    "defaults_margin": 0.005
+  },
+  "tuning": {
+    "best_config": {
+      "skeleton": "ILS",
+      "constructor": "greedy_nearest_next_customer",
+      "greedy_nearest_next_customer.rule": "greedy",
+      "greedy_nearest_next_customer.alpha": 0.5,
+      "greedy_nearest_next_customer.distance_weight": 5.0,
+      "greedy_nearest_next_customer.depot_bias": 5.0,
+      "neighborhood": "route_suffix_2opt_star",
+      "perturbation": "route_segment_reversal_kick",
+      "route_segment_reversal_kick.strength": 25.5,
+      "ILS.strength": 4,
+      "ILS.ls_strategy": "first",
+      "ILS.ls_time_share": 0.16,
+      "ILS.ls_sample": 32
+    },
+    "best_cost": 0.33632040800686686,
+    "best_summary": "ILS[constructor=greedy_nearest_next_customer, neighborhood=route_suffix_2opt_star, perturbation=route_segment_reversal_kick]",
+    "best_default_cost": 0.405947595520606,
+    "best_default_summary": "ILS[constructor=trivial, neighborhood=customer_swap_exchange, perturbation=customer_relocation_kick]",
+    "n_trials": 40,
+    "n_failed": 2,
+    "seconds": 3324.1,
+    "skeleton_usage": {
+      "ILS": 17,
+      "VNS": 11,
+      "SA": 6,
+      "LNS_MIP": 6
+    },
+    "best_trial_number": 38,
+    "reevaluated": [
+      {
+        "number": 38,
+        "enqueued": false,
+        "twin": false,
+        "summary": "ILS[constructor=greedy_nearest_next_customer, neighborhood=route_suffix_2opt_star, perturbation=route_segment_reversal_kick]",
+        "costs": [
+          0.33436685064184785,
+          0.3318599562395629,
+          0.336385675421193
+        ],
+        "mean": 0.33420416076753456
+      },
+      {
+        "number": 29,
+        "enqueued": false,
+        "twin": false,
+        "summary": "ILS[constructor=greedy_high_demand_first_fill, neighborhood=route_suffix_2opt_star, perturbation=route_segment_reversal_kick]",
+        "costs": [
+          0.3408457215598537,
+          0.34874683949659624,
+          0.3402056447152501
+        ],
+        "mean": 0.3432660685905667
+      },
+      {
+        "number": 31,
+        "enqueued": false,
+        "twin": false,
+        "summary": "ILS[constructor=greedy_depot_balance_lookahead, neighborhood=route_suffix_2opt_star, perturbation=route_segment_reversal_kick]",
+        "costs": [
+          0.34378842957692257,
+          0.35098569698238774,
+          0.3497405688055391
+        ],
+        "mean": 0.34817156512161646
+      },
+      {
+        "number": 23,
+        "enqueued": false,
+        "twin": false,
+        "summary": "VNS[constructor=greedy_high_demand_first_fill, neighborhood=route_suffix_2opt_star]",
+        "costs": [
+          0.3539136140899257,
+          0.3649983291579533,
+          0.35458382415356193
+        ],
+        "mean": 0.35783192246714696
+      },
+      {
+        "number": 39,
+        "enqueued": false,
+        "twin": false,
+        "summary": "ILS[constructor=greedy_nearest_next_customer, neighborhood=route_suffix_2opt_star, perturbation=interroute_customer_swap_kick]",
+        "costs": [
+          0.35437019272482956,
+          0.35053885268173707,
+          0.35453877498375264
+        ],
+        "mean": 0.3531492734634398
+      },
+      {
+        "number": 38,
+        "enqueued": false,
+        "twin": true,
+        "summary": "ILS[constructor=greedy_nearest_next_customer, neighborhood=route_suffix_2opt_star, perturbation=route_segment_reversal_kick]",
+        "costs": [
+          0.33493382718104864,
+          0.33723870733334876,
+          0.33678868950620305
+        ],
+        "mean": 0.33632040800686686,
+        "preferred_defaults": true
+      },
+      {
+        "number": 29,
+        "enqueued": false,
+        "twin": true,
+        "summary": "ILS[constructor=greedy_high_demand_first_fill, neighborhood=route_suffix_2opt_star, perturbation=route_segment_reversal_kick]",
+        "costs": [
+          0.34690941861936664,
+          0.33991451115137555,
+          0.34296524076471896
+        ],
+        "mean": 0.34326305684515374
+      },
+      {
+        "number": 31,
+        "enqueued": false,
+        "twin": true,
+        "summary": "ILS[constructor=greedy_depot_balance_lookahead, neighborhood=route_suffix_2opt_star, perturbation=route_segment_reversal_kick]",
+        "costs": [
+          0.33795858392722994,
+          0.3389368350209209,
+          0.3376914454164445
+        ],
+        "mean": 0.33819562145486515
+      },
+      {
+        "number": 23,
+        "enqueued": false,
+        "twin": true,
+        "summary": "VNS[constructor=greedy_high_demand_first_fill, neighborhood=route_suffix_2opt_star]",
+        "costs": [
+          0.37955838491404786,
+          0.38735061295761086,
+          0.3776250942037597
+        ],
+        "mean": 0.3815113640251395
+      },
+      {
+        "number": 39,
+        "enqueued": false,
+        "twin": true,
+        "summary": "ILS[constructor=greedy_nearest_next_customer, neighborhood=route_suffix_2opt_star, perturbation=interroute_customer_swap_kick]",
+        "costs": [
+          0.3953835933229049,
+          0.3918067238952503,
+          0.39718358549521915
+        ],
+        "mean": 0.39479130090445813
+      },
+      {
+        "number": 1,
+        "enqueued": true,
+        "twin": false,
+        "summary": "ILS[constructor=trivial, neighborhood=customer_swap_exchange, perturbation=customer_relocation_kick]",
+        "costs": [
+          0.405947595520606,
+          0.4037636107201891,
+          0.3941743574324974
+        ],
+        "mean": 0.4012951878910975
+      }
+    ],
+    "best_is_twin": true,
+    "incumbent_curve": [
+      1.0,
+      0.405947595520606,
+      0.405947595520606,
+      0.405947595520606,
+      0.405947595520606,
+      0.40026838224296934,
+      0.40026838224296934,
+      0.40026838224296934,
+      0.40026838224296934,
+      0.39717406636778296,
+      0.39717406636778296,
+      0.39717406636778296,
+      0.3825708557612973,
+      0.3825708557612973,
+      0.3754643571399525,
+      0.3754643571399525,
+      0.3754643571399525,
+      0.3754643571399525,
+      0.3748434263280494,
+      0.3547254654793496,
+      0.3547254654793496,
+      0.3547254654793496,
+      0.3547254654793496,
+      0.3539136140899257,
+      0.3539136140899257,
+      0.3539136140899257,
+      0.3539136140899257,
+      0.3539136140899257,
+      0.344156620716202,
+      0.3408457215598537,
+      0.3408457215598537,
+      0.3408457215598537,
+      0.3408457215598537,
+      0.3374618964709119,
+      0.33460624742300693,
+      0.33460624742300693,
+      0.33460624742300693,
+      0.33460624742300693,
+      0.33436685064184785,
+      0.33436685064184785
+    ],
+    "trials": [
+      {
+        "number": 0,
+        "cost": 1.0,
+        "seconds": 50.01,
+        "enqueued": true,
+        "summary": "SA[constructor=trivial, neighborhood=customer_swap_exchange]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "trivial",
+          "neighborhood": "customer_swap_exchange",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 1,
+        "cost": 0.405947595520606,
+        "seconds": 50.25,
+        "enqueued": true,
+        "summary": "ILS[constructor=trivial, neighborhood=customer_swap_exchange, perturbation=customer_relocation_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "trivial",
+          "neighborhood": "customer_swap_exchange",
+          "perturbation": "customer_relocation_kick",
+          "customer_relocation_kick.strength": 25.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 2,
+        "cost": 1.0,
+        "seconds": 50.03,
+        "enqueued": true,
+        "summary": "VNS[constructor=trivial, neighborhood=customer_swap_exchange]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "trivial",
+          "neighborhood": "customer_swap_exchange",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 3,
+        "cost": 0.46514896494514485,
+        "seconds": 55.36,
+        "enqueued": true,
+        "summary": "LNS_MIP[constructor=trivial, destruction=geographic_cluster_destruction]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "trivial",
+          "destruction": "geographic_cluster_destruction",
+          "geographic_cluster_destruction.ratio": 0.42500000000000004,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        }
+      },
+      {
+        "number": 4,
+        "cost": 1000000000000.0,
+        "seconds": 10.0,
+        "enqueued": false,
+        "summary": "SA[constructor=random, neighborhood=customer_swap_exchange]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "random",
+          "neighborhood": "customer_swap_exchange",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 5,
+        "cost": 0.40026838224296934,
+        "seconds": 50.23,
+        "enqueued": false,
+        "summary": "ILS[constructor=random, neighborhood=customer_swap_exchange, perturbation=customer_relocation_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "random",
+          "neighborhood": "customer_swap_exchange",
+          "perturbation": "customer_relocation_kick",
+          "customer_relocation_kick.strength": 25.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 6,
+        "cost": 1000000000000.0,
+        "seconds": 10.03,
+        "enqueued": false,
+        "summary": "VNS[constructor=random, neighborhood=customer_swap_exchange]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "random",
+          "neighborhood": "customer_swap_exchange",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 7,
+        "cost": 0.536822769510786,
+        "seconds": 55.29,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=random, destruction=geographic_cluster_destruction]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "random",
+          "destruction": "geographic_cluster_destruction",
+          "geographic_cluster_destruction.ratio": 0.42500000000000004,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        }
+      },
+      {
+        "number": 8,
+        "cost": 1.0,
+        "seconds": 50.02,
+        "enqueued": false,
+        "summary": "SA[constructor=trivial, neighborhood=route_suffix_2opt_star]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "trivial",
+          "neighborhood": "route_suffix_2opt_star",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 9,
+        "cost": 0.39717406636778296,
+        "seconds": 50.32,
+        "enqueued": false,
+        "summary": "ILS[constructor=trivial, neighborhood=route_suffix_2opt_star, perturbation=customer_relocation_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "trivial",
+          "neighborhood": "route_suffix_2opt_star",
+          "perturbation": "customer_relocation_kick",
+          "customer_relocation_kick.strength": 25.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 10,
+        "cost": 1.0,
+        "seconds": 50.05,
+        "enqueued": false,
+        "summary": "VNS[constructor=trivial, neighborhood=route_suffix_2opt_star]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "trivial",
+          "neighborhood": "route_suffix_2opt_star",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 11,
+        "cost": 1.0,
+        "seconds": 50.45,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=trivial, destruction=route_segment_destruction]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "trivial",
+          "destruction": "route_segment_destruction",
+          "route_segment_destruction.ratio": 0.42500000000000004,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        }
+      },
+      {
+        "number": 12,
+        "cost": 0.3825708557612973,
+        "seconds": 50.02,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_depot_balance_lookahead, neighborhood=customer_swap_exchange]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_depot_balance_lookahead",
+          "greedy_depot_balance_lookahead.rule": "greedy",
+          "greedy_depot_balance_lookahead.alpha": 0.5,
+          "greedy_depot_balance_lookahead.start_weight": 5.0,
+          "greedy_depot_balance_lookahead.balance_weight": 5.0,
+          "greedy_depot_balance_lookahead.route_growth_weight": 5.0,
+          "neighborhood": "customer_swap_exchange",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 13,
+        "cost": 1.0,
+        "seconds": 50.02,
+        "enqueued": false,
+        "summary": "ILS[constructor=trivial, neighborhood=customer_swap_exchange, perturbation=interroute_customer_swap_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "trivial",
+          "neighborhood": "customer_swap_exchange",
+          "perturbation": "interroute_customer_swap_kick",
+          "interroute_customer_swap_kick.strength": 25.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 14,
+        "cost": 0.3754643571399525,
+        "seconds": 50.25,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_depot_balance_lookahead, neighborhood=customer_swap_exchange]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_depot_balance_lookahead",
+          "greedy_depot_balance_lookahead.rule": "greedy",
+          "greedy_depot_balance_lookahead.alpha": 0.5,
+          "greedy_depot_balance_lookahead.start_weight": 5.0,
+          "greedy_depot_balance_lookahead.balance_weight": 5.0,
+          "greedy_depot_balance_lookahead.route_growth_weight": 5.0,
+          "neighborhood": "customer_swap_exchange",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 15,
+        "cost": 0.5418715712800665,
+        "seconds": 56.62,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_depot_balance_lookahead, destruction=geographic_cluster_destruction]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_depot_balance_lookahead",
+          "greedy_depot_balance_lookahead.rule": "greedy",
+          "greedy_depot_balance_lookahead.alpha": 0.5,
+          "greedy_depot_balance_lookahead.start_weight": 5.0,
+          "greedy_depot_balance_lookahead.balance_weight": 5.0,
+          "greedy_depot_balance_lookahead.route_growth_weight": 5.0,
+          "destruction": "geographic_cluster_destruction",
+          "geographic_cluster_destruction.ratio": 0.42500000000000004,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        }
+      },
+      {
+        "number": 16,
+        "cost": 0.4164851246858062,
+        "seconds": 50.02,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_high_demand_first_fill, neighborhood=customer_swap_exchange]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_high_demand_first_fill",
+          "greedy_high_demand_first_fill.rule": "greedy",
+          "greedy_high_demand_first_fill.alpha": 0.5,
+          "greedy_high_demand_first_fill.demand_weight": 5.0,
+          "greedy_high_demand_first_fill.residual_capacity_weight": 5.0,
+          "neighborhood": "customer_swap_exchange",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 17,
+        "cost": 0.48101977616897706,
+        "seconds": 50.05,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_depot_balance_lookahead, neighborhood=customer_swap_exchange]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_depot_balance_lookahead",
+          "greedy_depot_balance_lookahead.rule": "greedy",
+          "greedy_depot_balance_lookahead.alpha": 0.49627325390953003,
+          "greedy_depot_balance_lookahead.start_weight": 5.033868940648027,
+          "greedy_depot_balance_lookahead.balance_weight": 5.523182274126933,
+          "greedy_depot_balance_lookahead.route_growth_weight": 5.182493318501809,
+          "neighborhood": "customer_swap_exchange",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.02091834535112408,
+          "VNS.ls_sample": 4
+        }
+      },
+      {
+        "number": 18,
+        "cost": 0.3748434263280494,
+        "seconds": 50.02,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_depot_balance_lookahead, neighborhood=route_suffix_2opt_star]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_depot_balance_lookahead",
+          "greedy_depot_balance_lookahead.rule": "rcl",
+          "greedy_depot_balance_lookahead.alpha": 0.9485486529327309,
+          "greedy_depot_balance_lookahead.start_weight": 2.2939789352903106,
+          "greedy_depot_balance_lookahead.balance_weight": 1.516788400791798,
+          "greedy_depot_balance_lookahead.route_growth_weight": 0.14919050266565748,
+          "neighborhood": "route_suffix_2opt_star",
+          "SA.T0": 963.5572708732675,
+          "SA.alpha": 0.8045493250267935,
+          "SA.iters_per_T": 49
+        }
+      },
+      {
+        "number": 19,
+        "cost": 0.3547254654793496,
+        "seconds": 51.57,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_high_demand_first_fill, neighborhood=route_suffix_2opt_star]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_high_demand_first_fill",
+          "greedy_high_demand_first_fill.rule": "roulette",
+          "greedy_high_demand_first_fill.alpha": 0.027522570966347026,
+          "greedy_high_demand_first_fill.demand_weight": 9.920767152686084,
+          "greedy_high_demand_first_fill.residual_capacity_weight": 0.7215198977411266,
+          "neighborhood": "route_suffix_2opt_star",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.29626046082693375,
+          "VNS.ls_sample": 234
+        }
+      },
+      {
+        "number": 20,
+        "cost": 0.3607576988018557,
+        "seconds": 52.59,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_high_demand_first_fill, neighborhood=route_suffix_2opt_star]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_high_demand_first_fill",
+          "greedy_high_demand_first_fill.rule": "roulette",
+          "greedy_high_demand_first_fill.alpha": 0.029920345375332114,
+          "greedy_high_demand_first_fill.demand_weight": 9.38377980613243,
+          "greedy_high_demand_first_fill.residual_capacity_weight": 0.28324926744495466,
+          "neighborhood": "route_suffix_2opt_star",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.2942670177120218,
+          "VNS.ls_sample": 255
+        }
+      },
+      {
+        "number": 21,
+        "cost": 0.3560581269941992,
+        "seconds": 51.95,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_high_demand_first_fill, neighborhood=route_suffix_2opt_star]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_high_demand_first_fill",
+          "greedy_high_demand_first_fill.rule": "roulette",
+          "greedy_high_demand_first_fill.alpha": 0.011294524600649062,
+          "greedy_high_demand_first_fill.demand_weight": 9.441995617053989,
+          "greedy_high_demand_first_fill.residual_capacity_weight": 0.06413167436350664,
+          "neighborhood": "route_suffix_2opt_star",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.2915775300183321,
+          "VNS.ls_sample": 227
+        }
+      },
+      {
+        "number": 22,
+        "cost": 0.358348623657609,
+        "seconds": 52.49,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_high_demand_first_fill, neighborhood=route_suffix_2opt_star]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_high_demand_first_fill",
+          "greedy_high_demand_first_fill.rule": "roulette",
+          "greedy_high_demand_first_fill.alpha": 0.016246671580539183,
+          "greedy_high_demand_first_fill.demand_weight": 9.84510772078168,
+          "greedy_high_demand_first_fill.residual_capacity_weight": 0.41667811474435895,
+          "neighborhood": "route_suffix_2opt_star",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.2938902515449833,
+          "VNS.ls_sample": 248
+        }
+      },
+      {
+        "number": 23,
+        "cost": 0.3539136140899257,
+        "seconds": 51.45,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_high_demand_first_fill, neighborhood=route_suffix_2opt_star]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_high_demand_first_fill",
+          "greedy_high_demand_first_fill.rule": "roulette",
+          "greedy_high_demand_first_fill.alpha": 0.02940868440192182,
+          "greedy_high_demand_first_fill.demand_weight": 9.926573968766188,
+          "greedy_high_demand_first_fill.residual_capacity_weight": 0.049489905711618654,
+          "neighborhood": "route_suffix_2opt_star",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.29731114833620675,
+          "VNS.ls_sample": 256
+        }
+      },
+      {
+        "number": 24,
+        "cost": 0.35482341193050615,
+        "seconds": 50.03,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_high_demand_first_fill, neighborhood=route_suffix_2opt_star, perturbation=route_segment_reversal_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_high_demand_first_fill",
+          "greedy_high_demand_first_fill.rule": "roulette",
+          "greedy_high_demand_first_fill.alpha": 0.03404271650178459,
+          "greedy_high_demand_first_fill.demand_weight": 9.794505254320494,
+          "greedy_high_demand_first_fill.residual_capacity_weight": 0.05235740638798015,
+          "neighborhood": "route_suffix_2opt_star",
+          "perturbation": "route_segment_reversal_kick",
+          "route_segment_reversal_kick.strength": 33.65327498387371,
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.2936780956625581,
+          "ILS.ls_sample": 4
+        }
+      },
+      {
+        "number": 25,
+        "cost": 0.354019440372202,
+        "seconds": 50.03,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_high_demand_first_fill, neighborhood=route_suffix_2opt_star, perturbation=route_segment_reversal_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_high_demand_first_fill",
+          "greedy_high_demand_first_fill.rule": "roulette",
+          "greedy_high_demand_first_fill.alpha": 0.20862947116083394,
+          "greedy_high_demand_first_fill.demand_weight": 9.926507990551652,
+          "greedy_high_demand_first_fill.residual_capacity_weight": 2.0122041385725056,
+          "neighborhood": "route_suffix_2opt_star",
+          "perturbation": "route_segment_reversal_kick",
+          "route_segment_reversal_kick.strength": 40.52377725028498,
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.023078788947834883,
+          "ILS.ls_sample": 5
+        }
+      },
+      {
+        "number": 26,
+        "cost": 0.36651609386560574,
+        "seconds": 50.68,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_nearest_next_customer, neighborhood=route_suffix_2opt_star]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_nearest_next_customer",
+          "greedy_nearest_next_customer.rule": "rcl",
+          "greedy_nearest_next_customer.alpha": 0.9835486524502621,
+          "greedy_nearest_next_customer.distance_weight": 2.5361665576271673,
+          "greedy_nearest_next_customer.depot_bias": 4.140085520460426,
+          "neighborhood": "route_suffix_2opt_star",
+          "VNS.shake_strength": 3,
+          "VNS.ls_time_share": 0.2326082722387665,
+          "VNS.ls_sample": 87
+        }
+      },
+      {
+        "number": 27,
+        "cost": 0.7415797514462241,
+        "seconds": 52.46,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_high_demand_first_fill, destruction=uniform_customer_arc_destruction]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_high_demand_first_fill",
+          "greedy_high_demand_first_fill.rule": "rcl",
+          "greedy_high_demand_first_fill.alpha": 0.3243828222108014,
+          "greedy_high_demand_first_fill.demand_weight": 7.341958695396201,
+          "greedy_high_demand_first_fill.residual_capacity_weight": 3.478336038355887,
+          "destruction": "uniform_customer_arc_destruction",
+          "uniform_customer_arc_destruction.ratio": 0.34135946696656677,
+          "LNS_MIP.destroy_ratio": 0.5912911438093167,
+          "LNS_MIP.mip_time_share": 0.04025708153230852
+        }
+      },
+      {
+        "number": 28,
+        "cost": 0.344156620716202,
+        "seconds": 50.45,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_high_demand_first_fill, neighborhood=route_suffix_2opt_star, perturbation=route_segment_reversal_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_high_demand_first_fill",
+          "greedy_high_demand_first_fill.rule": "roulette",
+          "greedy_high_demand_first_fill.alpha": 0.2966679465462976,
+          "greedy_high_demand_first_fill.demand_weight": 0.07806300582558734,
+          "greedy_high_demand_first_fill.residual_capacity_weight": 2.7030060966573277,
+          "neighborhood": "route_suffix_2opt_star",
+          "perturbation": "route_segment_reversal_kick",
+          "route_segment_reversal_kick.strength": 49.14498028666237,
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.026282318608870536,
+          "ILS.ls_sample": 227
+        }
+      },
+      {
+        "number": 29,
+        "cost": 0.3408457215598537,
+        "seconds": 50.51,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_high_demand_first_fill, neighborhood=route_suffix_2opt_star, perturbation=route_segment_reversal_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_high_demand_first_fill",
+          "greedy_high_demand_first_fill.rule": "roulette",
+          "greedy_high_demand_first_fill.alpha": 0.3126438041680857,
+          "greedy_high_demand_first_fill.demand_weight": 0.9573215616891305,
+          "greedy_high_demand_first_fill.residual_capacity_weight": 3.0275175193992805,
+          "neighborhood": "route_suffix_2opt_star",
+          "perturbation": "route_segment_reversal_kick",
+          "route_segment_reversal_kick.strength": 47.3575664275491,
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.02628901579545964,
+          "ILS.ls_sample": 254
+        }
+      },
+      {
+        "number": 30,
+        "cost": 0.3460359454123997,
+        "seconds": 50.93,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_depot_balance_lookahead, neighborhood=route_suffix_2opt_star, perturbation=route_segment_reversal_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_depot_balance_lookahead",
+          "greedy_depot_balance_lookahead.rule": "roulette",
+          "greedy_depot_balance_lookahead.alpha": 0.021304398448342476,
+          "greedy_depot_balance_lookahead.start_weight": 9.636149966184277,
+          "greedy_depot_balance_lookahead.balance_weight": 9.705611764614053,
+          "greedy_depot_balance_lookahead.route_growth_weight": 9.834676175544239,
+          "neighborhood": "route_suffix_2opt_star",
+          "perturbation": "route_segment_reversal_kick",
+          "route_segment_reversal_kick.strength": 49.92726707629883,
+          "ILS.strength": 2,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.028705604650318226,
+          "ILS.ls_sample": 250
+        }
+      },
+      {
+        "number": 31,
+        "cost": 0.34378842957692257,
+        "seconds": 50.67,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_depot_balance_lookahead, neighborhood=route_suffix_2opt_star, perturbation=route_segment_reversal_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_depot_balance_lookahead",
+          "greedy_depot_balance_lookahead.rule": "roulette",
+          "greedy_depot_balance_lookahead.alpha": 0.16392576426664549,
+          "greedy_depot_balance_lookahead.start_weight": 9.819168981831755,
+          "greedy_depot_balance_lookahead.balance_weight": 9.318559365987932,
+          "greedy_depot_balance_lookahead.route_growth_weight": 9.951612625896917,
+          "neighborhood": "route_suffix_2opt_star",
+          "perturbation": "route_segment_reversal_kick",
+          "route_segment_reversal_kick.strength": 49.70896365766817,
+          "ILS.strength": 2,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.02577762194230615,
+          "ILS.ls_sample": 239
+        }
+      },
+      {
+        "number": 32,
+        "cost": 0.3510221811721703,
+        "seconds": 50.42,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_depot_balance_lookahead, neighborhood=route_suffix_2opt_star, perturbation=route_segment_reversal_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_depot_balance_lookahead",
+          "greedy_depot_balance_lookahead.rule": "roulette",
+          "greedy_depot_balance_lookahead.alpha": 0.005373601566484892,
+          "greedy_depot_balance_lookahead.start_weight": 9.859676582794489,
+          "greedy_depot_balance_lookahead.balance_weight": 9.845532407490063,
+          "greedy_depot_balance_lookahead.route_growth_weight": 9.68426664765604,
+          "neighborhood": "route_suffix_2opt_star",
+          "perturbation": "route_segment_reversal_kick",
+          "route_segment_reversal_kick.strength": 49.27709361107283,
+          "ILS.strength": 2,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.020855393060908292,
+          "ILS.ls_sample": 256
+        }
+      },
+      {
+        "number": 33,
+        "cost": 0.3374618964709119,
+        "seconds": 51.15,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_next_customer, neighborhood=route_suffix_2opt_star, perturbation=route_segment_reversal_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_next_customer",
+          "greedy_nearest_next_customer.rule": "greedy",
+          "greedy_nearest_next_customer.alpha": 0.020322918361865006,
+          "greedy_nearest_next_customer.distance_weight": 9.735694145659805,
+          "greedy_nearest_next_customer.depot_bias": 9.461609475206464,
+          "neighborhood": "route_suffix_2opt_star",
+          "perturbation": "route_segment_reversal_kick",
+          "route_segment_reversal_kick.strength": 49.67830737988027,
+          "ILS.strength": 2,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.05496506491442124,
+          "ILS.ls_sample": 256
+        }
+      },
+      {
+        "number": 34,
+        "cost": 0.33460624742300693,
+        "seconds": 50.45,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_next_customer, neighborhood=route_suffix_2opt_star, perturbation=route_segment_reversal_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_next_customer",
+          "greedy_nearest_next_customer.rule": "greedy",
+          "greedy_nearest_next_customer.alpha": 0.0016566134903079344,
+          "greedy_nearest_next_customer.distance_weight": 9.303218820242485,
+          "greedy_nearest_next_customer.depot_bias": 9.824694867068782,
+          "neighborhood": "route_suffix_2opt_star",
+          "perturbation": "route_segment_reversal_kick",
+          "route_segment_reversal_kick.strength": 49.81684456314406,
+          "ILS.strength": 2,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.08415143229529366,
+          "ILS.ls_sample": 131
+        }
+      },
+      {
+        "number": 35,
+        "cost": 0.3368801444894032,
+        "seconds": 50.39,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_next_customer, neighborhood=route_suffix_2opt_star, perturbation=route_segment_reversal_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_next_customer",
+          "greedy_nearest_next_customer.rule": "greedy",
+          "greedy_nearest_next_customer.alpha": 0.07061846695439383,
+          "greedy_nearest_next_customer.distance_weight": 9.826949286848254,
+          "greedy_nearest_next_customer.depot_bias": 9.988623290071818,
+          "neighborhood": "route_suffix_2opt_star",
+          "perturbation": "route_segment_reversal_kick",
+          "route_segment_reversal_kick.strength": 49.58686605919908,
+          "ILS.strength": 2,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.08069838013617799,
+          "ILS.ls_sample": 106
+        }
+      },
+      {
+        "number": 36,
+        "cost": 0.3412643349083455,
+        "seconds": 50.3,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_next_customer, neighborhood=route_suffix_2opt_star, perturbation=route_segment_reversal_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_next_customer",
+          "greedy_nearest_next_customer.rule": "greedy",
+          "greedy_nearest_next_customer.alpha": 0.009301039186900673,
+          "greedy_nearest_next_customer.distance_weight": 9.839237828534666,
+          "greedy_nearest_next_customer.depot_bias": 9.83358840106033,
+          "neighborhood": "route_suffix_2opt_star",
+          "perturbation": "route_segment_reversal_kick",
+          "route_segment_reversal_kick.strength": 5.027912807514955,
+          "ILS.strength": 2,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.08932866862028727,
+          "ILS.ls_sample": 98
+        }
+      },
+      {
+        "number": 37,
+        "cost": 0.42454143974098957,
+        "seconds": 50.65,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_nearest_next_customer, destruction=route_segment_destruction]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_nearest_next_customer",
+          "greedy_nearest_next_customer.rule": "greedy",
+          "greedy_nearest_next_customer.alpha": 0.01351498075340208,
+          "greedy_nearest_next_customer.distance_weight": 9.759510610328114,
+          "greedy_nearest_next_customer.depot_bias": 9.86825890676184,
+          "destruction": "route_segment_destruction",
+          "route_segment_destruction.ratio": 0.762722076116499,
+          "LNS_MIP.destroy_ratio": 0.07009636420828985,
+          "LNS_MIP.mip_time_share": 0.9249318533463791
+        }
+      },
+      {
+        "number": 38,
+        "cost": 0.33436685064184785,
+        "seconds": 50.35,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_next_customer, neighborhood=route_suffix_2opt_star, perturbation=route_segment_reversal_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_next_customer",
+          "greedy_nearest_next_customer.rule": "greedy",
+          "greedy_nearest_next_customer.alpha": 0.03755330352280273,
+          "greedy_nearest_next_customer.distance_weight": 9.51111842951826,
+          "greedy_nearest_next_customer.depot_bias": 9.920423498860773,
+          "neighborhood": "route_suffix_2opt_star",
+          "perturbation": "route_segment_reversal_kick",
+          "route_segment_reversal_kick.strength": 40.227763350440185,
+          "ILS.strength": 3,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.08667449613589442,
+          "ILS.ls_sample": 105
+        }
+      },
+      {
+        "number": 39,
+        "cost": 0.35437019272482956,
+        "seconds": 51.26,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_next_customer, neighborhood=route_suffix_2opt_star, perturbation=interroute_customer_swap_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_next_customer",
+          "greedy_nearest_next_customer.rule": "greedy",
+          "greedy_nearest_next_customer.alpha": 0.026459544194463825,
+          "greedy_nearest_next_customer.distance_weight": 9.521349812337197,
+          "greedy_nearest_next_customer.depot_bias": 9.874420583917528,
+          "neighborhood": "route_suffix_2opt_star",
+          "perturbation": "interroute_customer_swap_kick",
+          "interroute_customer_swap_kick.strength": 2.1484816628006875,
+          "ILS.strength": 3,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.09003263918888316,
+          "ILS.ls_sample": 98
+        }
+      }
+    ]
+  },
+  "test": {
+    "tuned": {
+      "label": "tuned",
+      "summary": "ILS[constructor=greedy_nearest_next_customer, neighborhood=route_suffix_2opt_star, perturbation=route_segment_reversal_kick]",
+      "mean": 709.6990119792642,
+      "std": 167.06860059200267,
+      "per_instance": [
+        864.7538377427368,
+        502.4539268766231,
+        902.5514465198559,
+        647.5701831128972,
+        825.8461746115643,
+        394.7678091530967,
+        815.1213925234454,
+        646.8624165749596,
+        881.711519320705,
+        615.3514133567579
+      ],
+      "config": {
+        "skeleton": "ILS",
+        "constructor": "greedy_nearest_next_customer",
+        "greedy_nearest_next_customer.rule": "greedy",
+        "greedy_nearest_next_customer.alpha": 0.5,
+        "greedy_nearest_next_customer.distance_weight": 5.0,
+        "greedy_nearest_next_customer.depot_bias": 5.0,
+        "neighborhood": "route_suffix_2opt_star",
+        "perturbation": "route_segment_reversal_kick",
+        "route_segment_reversal_kick.strength": 25.5,
+        "ILS.strength": 4,
+        "ILS.ls_strategy": "first",
+        "ILS.ls_time_share": 0.16,
+        "ILS.ls_sample": 32
+      },
+      "gap_per_instance": [
+        0.025767801330835303,
+        0.004372727282196818,
+        0.06537995147812835,
+        0.029421272242548854,
+        0.018241840392868698,
+        0.020321700983854597,
+        0.029047922291923968,
+        0.007576898000546973,
+        0.018448097363977574,
+        0.0449048568079636
+      ],
+      "mean_gap": 0.026348306817484474
+    },
+    "baselines": [
+      {
+        "label": "SA:constructor=greedy_nearest_next_customer",
+        "summary": "SA[constructor=greedy_nearest_next_customer, neighborhood=customer_swap_exchange]",
+        "mean": 749.1347157288315,
+        "std": 163.08356849205842,
+        "per_instance": [
+          948.7906959856293,
+          572.395926772581,
+          918.5345612494598,
+          712.4207117401681,
+          849.1294293203201,
+          433.4647198719218,
+          848.0311492093701,
+          665.0942097854432,
+          898.6304359741888,
+          644.8553173792318
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_nearest_next_customer",
+          "greedy_nearest_next_customer.rule": "greedy",
+          "greedy_nearest_next_customer.alpha": 0.5,
+          "greedy_nearest_next_customer.distance_weight": 5.0,
+          "greedy_nearest_next_customer.depot_bias": 5.0,
+          "neighborhood": "customer_swap_exchange",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.1254520115051162,
+          0.14418223702919425,
+          0.08424656574233824,
+          0.13251204977677083,
+          0.046949346528778954,
+          0.12033820904755979,
+          0.07059476065417387,
+          0.03597541548634027,
+          0.037990814111599984,
+          0.09500431532664516
+        ],
+        "mean_gap": 0.08932457252085176
+      },
+      {
+        "label": "SA:constructor=greedy_depot_balance_lookahead",
+        "summary": "SA[constructor=greedy_depot_balance_lookahead, neighborhood=customer_swap_exchange]",
+        "mean": 774.2341269560205,
+        "std": 185.92716269395038,
+        "per_instance": [
+          958.1129270107425,
+          543.9196603719208,
+          1002.5922931800096,
+          723.7235305019918,
+          907.6431594331025,
+          415.39818119740966,
+          858.0041009606995,
+          720.9283364437788,
+          941.1637765613842,
+          670.8553038991664
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_depot_balance_lookahead",
+          "greedy_depot_balance_lookahead.rule": "greedy",
+          "greedy_depot_balance_lookahead.alpha": 0.5,
+          "greedy_depot_balance_lookahead.start_weight": 5.0,
+          "greedy_depot_balance_lookahead.balance_weight": 5.0,
+          "greedy_depot_balance_lookahead.route_growth_weight": 5.0,
+          "neighborhood": "customer_swap_exchange",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.13651000743964625,
+          0.08726003219056369,
+          0.18346907844323673,
+          0.15047977338904683,
+          0.1190948986545305,
+          0.07364321253602826,
+          0.08318508814766788,
+          0.12294472255916229,
+          0.0871202616081424,
+          0.13915390465385868
+        ],
+        "mean_gap": 0.11828609796218835
+      },
+      {
+        "label": "VNS:constructor=greedy_nearest_next_customer",
+        "summary": "VNS[constructor=greedy_nearest_next_customer, neighborhood=customer_swap_exchange]",
+        "mean": 775.858370930572,
+        "std": 189.75819093332294,
+        "per_instance": [
+          985.6062362892967,
+          550.9221739358338,
+          983.9616828042381,
+          706.1526402392543,
+          904.9071620970792,
+          424.8356040389518,
+          892.6691596604528,
+          700.6419644250487,
+          963.7824006343722,
+          645.1046851811928
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_nearest_next_customer",
+          "greedy_nearest_next_customer.rule": "greedy",
+          "greedy_nearest_next_customer.alpha": 0.5,
+          "greedy_nearest_next_customer.distance_weight": 5.0,
+          "greedy_nearest_next_customer.depot_bias": 5.0,
+          "neighborhood": "customer_swap_exchange",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.16912246913578177,
+          0.10125760145972547,
+          0.1614773361944355,
+          0.12254790024171873,
+          0.11572150170920631,
+          0.09803529087504953,
+          0.12694790305880116,
+          0.09134591689884228,
+          0.11324660128653644,
+          0.09542775731726194
+        ],
+        "mean_gap": 0.11951302781773591
+      },
+      {
+        "label": "LNS_MIP:constructor=greedy_nearest_next_customer",
+        "summary": "LNS_MIP[constructor=greedy_nearest_next_customer, destruction=geographic_cluster_destruction]",
+        "mean": 784.7679834157498,
+        "std": 186.95906777114365,
+        "per_instance": [
+          1021.0866824731982,
+          574.5238677056983,
+          926.1058813658558,
+          690.3603292130853,
+          920.6081726272379,
+          424.4210266510572,
+          866.2466927358737,
+          700.2478768090441,
+          970.7836298037867,
+          753.2956747726605
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_nearest_next_customer",
+          "greedy_nearest_next_customer.rule": "greedy",
+          "greedy_nearest_next_customer.alpha": 0.5,
+          "greedy_nearest_next_customer.distance_weight": 5.0,
+          "greedy_nearest_next_customer.depot_bias": 5.0,
+          "destruction": "geographic_cluster_destruction",
+          "geographic_cluster_destruction.ratio": 0.42500000000000004,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.21120924306360675,
+          0.148435852583114,
+          0.09318382099724287,
+          0.09744337669793669,
+          0.13508034400907679,
+          0.09696376909490872,
+          0.09359092710410229,
+          0.09073207140790028,
+          0.12133358707559909,
+          0.27914276638874125
+        ],
+        "mean_gap": 0.13671157584222288
+      },
+      {
+        "label": "VNS:constructor=greedy_depot_balance_lookahead",
+        "summary": "VNS[constructor=greedy_depot_balance_lookahead, neighborhood=customer_swap_exchange]",
+        "mean": 791.4151760493654,
+        "std": 185.07070972578305,
+        "per_instance": [
+          976.4262504565357,
+          560.0311993492961,
+          984.8661691726196,
+          743.088530458821,
+          936.0738176744931,
+          450.97727497209274,
+          900.7051988160392,
+          685.4778548529724,
+          987.7370146300906,
+          688.7684501106933
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_depot_balance_lookahead",
+          "greedy_depot_balance_lookahead.rule": "greedy",
+          "greedy_depot_balance_lookahead.alpha": 0.5,
+          "greedy_depot_balance_lookahead.start_weight": 5.0,
+          "greedy_depot_balance_lookahead.balance_weight": 5.0,
+          "greedy_depot_balance_lookahead.route_growth_weight": 5.0,
+          "neighborhood": "customer_swap_exchange",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.1582332039218807,
+          0.11946595093820103,
+          0.16254500014531004,
+          0.181263684403462,
+          0.15414898821898296,
+          0.16560137284684082,
+          0.13709298018763494,
+          0.06772573725620185,
+          0.14091611734982173,
+          0.16957153768574032
+        ],
+        "mean_gap": 0.14565645729540763
+      },
+      {
+        "label": "ILS:constructor=greedy_nearest_next_customer",
+        "summary": "ILS[constructor=greedy_nearest_next_customer, neighborhood=customer_swap_exchange, perturbation=customer_relocation_kick]",
+        "mean": 817.1594524305998,
+        "std": 201.2184980813007,
+        "per_instance": [
+          1015.2122140218926,
+          587.4382301885519,
+          1058.9022848265026,
+          742.7624004988503,
+          945.2109903545343,
+          441.2506527085344,
+          944.5303334251645,
+          717.7164555337537,
+          1031.0688404145376,
+          687.5021223336762
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_next_customer",
+          "greedy_nearest_next_customer.rule": "greedy",
+          "greedy_nearest_next_customer.alpha": 0.5,
+          "greedy_nearest_next_customer.distance_weight": 5.0,
+          "greedy_nearest_next_customer.depot_bias": 5.0,
+          "neighborhood": "customer_swap_exchange",
+          "perturbation": "customer_relocation_kick",
+          "customer_relocation_kick.strength": 25.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.2042409703317825,
+          0.17425082341764284,
+          0.24993790567673754,
+          0.18074524620623744,
+          0.1654148290156527,
+          0.1404618261495758,
+          0.1924199095595531,
+          0.11794177769616411,
+          0.19096787981230756,
+          0.16742123459746444
+        ],
+        "mean_gap": 0.1783802402463118
+      },
+      {
+        "label": "VNS:constructor=greedy_high_demand_first_fill",
+        "summary": "VNS[constructor=greedy_high_demand_first_fill, neighborhood=customer_swap_exchange]",
+        "mean": 823.7942582827802,
+        "std": 210.49913828273353,
+        "per_instance": [
+          1023.150844799707,
+          596.2501273164746,
+          1051.2815037560958,
+          750.8991096830248,
+          955.0827821482693,
+          423.64700311487996,
+          1020.1432965810194,
+          735.237246793096,
+          1012.3274717421268,
+          669.9231968931089
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_high_demand_first_fill",
+          "greedy_high_demand_first_fill.rule": "greedy",
+          "greedy_high_demand_first_fill.alpha": 0.5,
+          "greedy_high_demand_first_fill.demand_weight": 5.0,
+          "greedy_high_demand_first_fill.residual_capacity_weight": 5.0,
+          "neighborhood": "customer_swap_exchange",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.21365774477454433,
+          0.19186523277437406,
+          0.2409422662610327,
+          0.1936799083303894,
+          0.1775864316131411,
+          0.09496321840986632,
+          0.2878773019768798,
+          0.14523281216540432,
+          0.16932008362482115,
+          0.1375711291591519
+        ],
+        "mean_gap": 0.18526961290896052
+      },
+      {
+        "label": "ILS:neighborhood=route_suffix_2opt_star",
+        "summary": "ILS[constructor=trivial, neighborhood=route_suffix_2opt_star, perturbation=customer_relocation_kick]",
+        "mean": 822.7285927283035,
+        "std": 199.7713837576225,
+        "per_instance": [
+          1025.5034773735588,
+          578.3440181950399,
+          1041.5254916570088,
+          747.1079109720624,
+          1013.4318086008404,
+          452.81164623870825,
+          949.4597556326117,
+          734.8291399206923,
+          987.7884524020819,
+          696.4842262904301
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "trivial",
+          "neighborhood": "route_suffix_2opt_star",
+          "perturbation": "customer_relocation_kick",
+          "customer_relocation_kick.strength": 25.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.21644842882506968,
+          0.15607208500239125,
+          0.22942618068294962,
+          0.1876531629641921,
+          0.24952890940949737,
+          0.17034251122639696,
+          0.19864304604842567,
+          0.14459712976059494,
+          0.1409755321355757,
+          0.18267340408151317
+        ],
+        "mean_gap": 0.18763603901366066
+      },
+      {
+        "label": "SA:constructor=greedy_high_demand_first_fill",
+        "summary": "SA[constructor=greedy_high_demand_first_fill, neighborhood=customer_swap_exchange]",
+        "mean": 832.5509347834309,
+        "std": 218.2820005572978,
+        "per_instance": [
+          1095.1397006931577,
+          598.4304012980417,
+          1045.4567414145768,
+          715.3753883521335,
+          932.9425503614507,
+          437.5432120098831,
+          1048.8318959707742,
+          782.7992882352389,
+          1007.822311189729,
+          661.1678583093232
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_high_demand_first_fill",
+          "greedy_high_demand_first_fill.rule": "greedy",
+          "greedy_high_demand_first_fill.alpha": 0.5,
+          "greedy_high_demand_first_fill.demand_weight": 5.0,
+          "greedy_high_demand_first_fill.residual_capacity_weight": 5.0,
+          "neighborhood": "customer_swap_exchange",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.2990506591591761,
+          0.1962234586891387,
+          0.23406666371814464,
+          0.1372090031515133,
+          0.1502882360721392,
+          0.13087952963948313,
+          0.3240951510804333,
+          0.21931721241946434,
+          0.16411625891303366,
+          0.12270402133975067
+        ],
+        "mean_gap": 0.1977950194182277
+      },
+      {
+        "label": "default:ILS",
+        "summary": "ILS[constructor=trivial, neighborhood=customer_swap_exchange, perturbation=customer_relocation_kick]",
+        "mean": 831.7763632704025,
+        "std": 208.40147082504944,
+        "per_instance": [
+          1038.3738470540059,
+          569.9916741238076,
+          1095.7900136218398,
+          732.8414273215884,
+          995.2883236167044,
+          450.51850847732476,
+          945.804244126277,
+          762.8315444431497,
+          1017.4280187948549,
+          708.896031124473
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "trivial",
+          "neighborhood": "customer_swap_exchange",
+          "perturbation": "customer_relocation_kick",
+          "customer_relocation_kick.strength": 25.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.23171521369865683,
+          0.13937629232310988,
+          0.2934805168659935,
+          0.16497419760587187,
+          0.22715857446173723,
+          0.16441563936137685,
+          0.19402815487391906,
+          0.188214713905746,
+          0.17521162788565656,
+          0.20374941832530416
+        ],
+        "mean_gap": 0.1982324349307372
+      },
+      {
+        "label": "ILS:constructor=greedy_depot_balance_lookahead",
+        "summary": "ILS[constructor=greedy_depot_balance_lookahead, neighborhood=customer_swap_exchange, perturbation=customer_relocation_kick]",
+        "mean": 829.3321100111265,
+        "std": 198.48571867775416,
+        "per_instance": [
+          1034.686914960126,
+          598.4450715620845,
+          1040.149162648409,
+          757.8047177038168,
+          979.3196565120538,
+          457.3211764447573,
+          963.5598805754046,
+          739.082917883342,
+          1024.5414293530978,
+          698.410172468173
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_depot_balance_lookahead",
+          "greedy_depot_balance_lookahead.rule": "greedy",
+          "greedy_depot_balance_lookahead.alpha": 0.5,
+          "greedy_depot_balance_lookahead.start_weight": 5.0,
+          "greedy_depot_balance_lookahead.balance_weight": 5.0,
+          "greedy_depot_balance_lookahead.route_growth_weight": 5.0,
+          "neighborhood": "customer_swap_exchange",
+          "perturbation": "customer_relocation_kick",
+          "customer_relocation_kick.strength": 25.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.22734178849655853,
+          0.19625278359301243,
+          0.22780154938015348,
+          0.20465752894936204,
+          0.20746972019186272,
+          0.1819978980735288,
+          0.21644371280742028,
+          0.15122297212609118,
+          0.18342819224946658,
+          0.18594378011607263
+        ],
+        "mean_gap": 0.19825599259835286
+      },
+      {
+        "label": "ILS:constructor=random",
+        "summary": "ILS[constructor=random, neighborhood=customer_swap_exchange, perturbation=customer_relocation_kick]",
+        "mean": 835.0557799975549,
+        "std": 201.31536514218945,
+        "per_instance": [
+          1020.5920519210953,
+          606.4534083197029,
+          1060.0365651786276,
+          749.9541899548632,
+          976.6032425901916,
+          456.96213625775783,
+          975.9386674501393,
+          757.651088409039,
+          1047.3340265150202,
+          699.0324233791121
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "random",
+          "neighborhood": "customer_swap_exchange",
+          "perturbation": "customer_relocation_kick",
+          "customer_relocation_kick.strength": 25.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.2106225141336421,
+          0.2122609280217821,
+          0.25127682053989475,
+          0.19217780015107933,
+          0.2041204689679689,
+          0.18106991842111797,
+          0.23207128071421387,
+          0.18014544339731997,
+          0.20975548491252208,
+          0.1870004007476019
+        ],
+        "mean_gap": 0.2060501060007143
+      },
+      {
+        "label": "ILS:constructor=greedy_high_demand_first_fill",
+        "summary": "ILS[constructor=greedy_high_demand_first_fill, neighborhood=customer_swap_exchange, perturbation=customer_relocation_kick]",
+        "mean": 847.6396548997967,
+        "std": 215.34813271985678,
+        "per_instance": [
+          1047.3550399474775,
+          592.0375686401296,
+          1141.5773948668357,
+          739.4587884274611,
+          959.1809726207906,
+          453.87525247206764,
+          1005.9870813956019,
+          808.2742792765866,
+          1025.42223813126,
+          703.2279332197562
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_high_demand_first_fill",
+          "greedy_high_demand_first_fill.rule": "greedy",
+          "greedy_high_demand_first_fill.alpha": 0.5,
+          "greedy_high_demand_first_fill.demand_weight": 5.0,
+          "greedy_high_demand_first_fill.residual_capacity_weight": 5.0,
+          "neighborhood": "customer_swap_exchange",
+          "perturbation": "customer_relocation_kick",
+          "customer_relocation_kick.strength": 25.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.242368671463831,
+          0.18344460190599232,
+          0.34752835890003886,
+          0.17549360147303258,
+          0.1826393689970109,
+          0.173091520887358,
+          0.27000582423419217,
+          0.2589980035619474,
+          0.18444559760779952,
+          0.1941246366136745
+        ],
+        "mean_gap": 0.22121401856448772
+      },
+      {
+        "label": "default:LNS_MIP",
+        "summary": "LNS_MIP[constructor=trivial, destruction=geographic_cluster_destruction]",
+        "mean": 1012.171234026572,
+        "std": 317.0055928252393,
+        "per_instance": [
+          1278.7353126690045,
+          773.4354559705487,
+          1079.7071605388496,
+          1053.3606207486805,
+          1181.2550308696489,
+          524.9513844696512,
+          1040.7746563789296,
+          1025.6160750377835,
+          1323.9841437512391,
+          839.8924998313852
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "trivial",
+          "destruction": "geographic_cluster_destruction",
+          "geographic_cluster_destruction.ratio": 0.42500000000000004,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.5168310944817198,
+          0.5460471831094594,
+          0.27449617054063535,
+          0.6744931416217816,
+          0.4564495587471641,
+          0.35679575972767064,
+          0.31392330951493613,
+          0.5975376478010533,
+          0.5293087394189613,
+          0.42618954506502726
+        ],
+        "mean_gap": 0.4692072150028409
+      },
+      {
+        "label": "LNS_MIP:constructor=greedy_depot_balance_lookahead",
+        "summary": "LNS_MIP[constructor=greedy_depot_balance_lookahead, destruction=geographic_cluster_destruction]",
+        "mean": 1080.6642552790595,
+        "std": 270.07036782065796,
+        "per_instance": [
+          1204.685539633407,
+          916.3416587560556,
+          1352.34098414504,
+          1354.4633909085799,
+          1009.3712228458894,
+          552.584618714947,
+          1259.880216409438,
+          987.9203926951204,
+          1249.8232710283269,
+          919.2312576537914
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_depot_balance_lookahead",
+          "greedy_depot_balance_lookahead.rule": "greedy",
+          "greedy_depot_balance_lookahead.alpha": 0.5,
+          "greedy_depot_balance_lookahead.start_weight": 5.0,
+          "greedy_depot_balance_lookahead.balance_weight": 5.0,
+          "greedy_depot_balance_lookahead.route_growth_weight": 5.0,
+          "destruction": "geographic_cluster_destruction",
+          "geographic_cluster_destruction.ratio": 0.42500000000000004,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.4289935278118282,
+          0.8317073898660207,
+          0.5963156201518878,
+          1.1531464286581936,
+          0.24452233743604343,
+          0.42821695445307745,
+          0.5905325647499076,
+          0.5388214545123169,
+          0.4436469349982913,
+          0.5609116755132431
+        ],
+        "mean_gap": 0.581681488815081
+      },
+      {
+        "label": "LNS_MIP:destruction=uniform_customer_arc_destruction",
+        "summary": "LNS_MIP[constructor=trivial, destruction=uniform_customer_arc_destruction]",
+        "mean": 1107.3932285863386,
+        "std": 276.4754460306753,
+        "per_instance": [
+          1262.6902881915157,
+          799.9228697918165,
+          1436.5786582811627,
+          1200.8302058104084,
+          1215.3487220159077,
+          557.0678012804875,
+          1296.2163330826247,
+          1021.731496762223,
+          1282.6068573524658,
+          1000.9390532947732
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "trivial",
+          "destruction": "uniform_customer_arc_destruction",
+          "uniform_customer_arc_destruction.ratio": 0.42500000000000004,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.49779854583928235,
+          0.5989938009689141,
+          0.6957505382718693,
+          0.9089207478181875,
+          0.4984859862148836,
+          0.4398042428667572,
+          0.6364050025360675,
+          0.5914868845651032,
+          0.4815146279851203,
+          0.6996565790775355
+        ],
+        "mean_gap": 0.6048816956143721
+      },
+      {
+        "label": "LNS_MIP:constructor=random",
+        "summary": "LNS_MIP[constructor=random, destruction=geographic_cluster_destruction]",
+        "mean": 1159.1642709060013,
+        "std": 345.3370147062485,
+        "per_instance": [
+          1622.0331582170522,
+          800.7538811105651,
+          1521.1467506592019,
+          1102.237001119414,
+          1437.9079426087178,
+          567.9936159846044,
+          1147.879017148291,
+          1071.427765717941,
+          1247.8766713815298,
+          1072.3869051126965
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "random",
+          "destruction": "geographic_cluster_destruction",
+          "geographic_cluster_destruction.ratio": 0.42500000000000004,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.9240497281088723,
+          0.6006549385577916,
+          0.7955754850953645,
+          0.7521903348773261,
+          0.7728943655712637,
+          0.4680432369920751,
+          0.4491369365023371,
+          0.6688956367719965,
+          0.4413984550100325,
+          0.8209794618280474
+        ],
+        "mean_gap": 0.6693818579315107
+      },
+      {
+        "label": "LNS_MIP:constructor=greedy_high_demand_first_fill",
+        "summary": "LNS_MIP[constructor=greedy_high_demand_first_fill, destruction=geographic_cluster_destruction]",
+        "mean": 1168.768075834223,
+        "std": 332.5200207953984,
+        "per_instance": [
+          1305.469510465068,
+          839.9306079663193,
+          1424.9223257950466,
+          1273.384948754647,
+          1581.078565240027,
+          555.4419802083278,
+          1499.4084596229445,
+          951.5455955718891,
+          1219.1619829104839,
+          1037.3367818074776
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_high_demand_first_fill",
+          "greedy_high_demand_first_fill.rule": "greedy",
+          "greedy_high_demand_first_fill.alpha": 0.5,
+          "greedy_high_demand_first_fill.demand_weight": 5.0,
+          "greedy_high_demand_first_fill.residual_capacity_weight": 5.0,
+          "destruction": "geographic_cluster_destruction",
+          "geographic_cluster_destruction.ratio": 0.42500000000000004,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.5485431009472754,
+          0.6789666680385433,
+          0.6819912971933076,
+          1.0242586644434621,
+          0.9494191504040634,
+          0.43560212586689284,
+          0.8929243842628568,
+          0.4821627210448771,
+          0.4082306680424007,
+          0.7614621790553369
+        ],
+        "mean_gap": 0.6863560959299017
+      },
+      {
+        "label": "default:SA",
+        "summary": "SA[constructor=trivial, neighborhood=customer_swap_exchange]",
+        "mean": 2013.6181654122934,
+        "std": 442.46850412899767,
+        "per_instance": [
+          2410.086259688992,
+          1420.5238080083886,
+          2479.855146355543,
+          2186.428317170531,
+          2174.3328308347964,
+          1033.0543556369164,
+          2162.1325513117845,
+          2086.951047489001,
+          2386.9793760675475,
+          1795.8379615594324
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "trivial",
+          "neighborhood": "customer_swap_exchange",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          1.8588353999931098,
+          1.8395347212979591,
+          1.9272436110808808,
+          2.475694030737093,
+          1.6808826284594824,
+          1.670044904658027,
+          1.7295787229423407,
+          2.2507123753483484,
+          1.757154183350093,
+          2.0494442156837147
+        ],
+        "mean_gap": 1.923912479355105
+      },
+      {
+        "label": "SA:neighborhood=route_suffix_2opt_star",
+        "summary": "SA[constructor=trivial, neighborhood=route_suffix_2opt_star]",
+        "mean": 2013.6181654122934,
+        "std": 442.46850412899767,
+        "per_instance": [
+          2410.086259688992,
+          1420.5238080083886,
+          2479.855146355543,
+          2186.428317170531,
+          2174.3328308347964,
+          1033.0543556369164,
+          2162.1325513117845,
+          2086.951047489001,
+          2386.9793760675475,
+          1795.8379615594324
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "trivial",
+          "neighborhood": "route_suffix_2opt_star",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          1.8588353999931098,
+          1.8395347212979591,
+          1.9272436110808808,
+          2.475694030737093,
+          1.6808826284594824,
+          1.670044904658027,
+          1.7295787229423407,
+          2.2507123753483484,
+          1.757154183350093,
+          2.0494442156837147
+        ],
+        "mean_gap": 1.923912479355105
+      },
+      {
+        "label": "ILS:perturbation=interroute_customer_swap_kick",
+        "summary": "ILS[constructor=trivial, neighborhood=customer_swap_exchange, perturbation=interroute_customer_swap_kick]",
+        "mean": 2013.6181654122934,
+        "std": 442.46850412899767,
+        "per_instance": [
+          2410.086259688992,
+          1420.5238080083886,
+          2479.855146355543,
+          2186.428317170531,
+          2174.3328308347964,
+          1033.0543556369164,
+          2162.1325513117845,
+          2086.951047489001,
+          2386.9793760675475,
+          1795.8379615594324
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "trivial",
+          "neighborhood": "customer_swap_exchange",
+          "perturbation": "interroute_customer_swap_kick",
+          "interroute_customer_swap_kick.strength": 25.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          1.8588353999931098,
+          1.8395347212979591,
+          1.9272436110808808,
+          2.475694030737093,
+          1.6808826284594824,
+          1.670044904658027,
+          1.7295787229423407,
+          2.2507123753483484,
+          1.757154183350093,
+          2.0494442156837147
+        ],
+        "mean_gap": 1.923912479355105
+      },
+      {
+        "label": "ILS:perturbation=route_segment_reversal_kick",
+        "summary": "ILS[constructor=trivial, neighborhood=customer_swap_exchange, perturbation=route_segment_reversal_kick]",
+        "mean": 2013.6181654122934,
+        "std": 442.46850412899767,
+        "per_instance": [
+          2410.086259688992,
+          1420.5238080083886,
+          2479.855146355543,
+          2186.428317170531,
+          2174.3328308347964,
+          1033.0543556369164,
+          2162.1325513117845,
+          2086.951047489001,
+          2386.9793760675475,
+          1795.8379615594324
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "trivial",
+          "neighborhood": "customer_swap_exchange",
+          "perturbation": "route_segment_reversal_kick",
+          "route_segment_reversal_kick.strength": 25.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          1.8588353999931098,
+          1.8395347212979591,
+          1.9272436110808808,
+          2.475694030737093,
+          1.6808826284594824,
+          1.670044904658027,
+          1.7295787229423407,
+          2.2507123753483484,
+          1.757154183350093,
+          2.0494442156837147
+        ],
+        "mean_gap": 1.923912479355105
+      },
+      {
+        "label": "default:VNS",
+        "summary": "VNS[constructor=trivial, neighborhood=customer_swap_exchange]",
+        "mean": 2013.6181654122934,
+        "std": 442.46850412899767,
+        "per_instance": [
+          2410.086259688992,
+          1420.5238080083886,
+          2479.855146355543,
+          2186.428317170531,
+          2174.3328308347964,
+          1033.0543556369164,
+          2162.1325513117845,
+          2086.951047489001,
+          2386.9793760675475,
+          1795.8379615594324
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "trivial",
+          "neighborhood": "customer_swap_exchange",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          1.8588353999931098,
+          1.8395347212979591,
+          1.9272436110808808,
+          2.475694030737093,
+          1.6808826284594824,
+          1.670044904658027,
+          1.7295787229423407,
+          2.2507123753483484,
+          1.757154183350093,
+          2.0494442156837147
+        ],
+        "mean_gap": 1.923912479355105
+      },
+      {
+        "label": "VNS:neighborhood=route_suffix_2opt_star",
+        "summary": "VNS[constructor=trivial, neighborhood=route_suffix_2opt_star]",
+        "mean": 2013.6181654122934,
+        "std": 442.46850412899767,
+        "per_instance": [
+          2410.086259688992,
+          1420.5238080083886,
+          2479.855146355543,
+          2186.428317170531,
+          2174.3328308347964,
+          1033.0543556369164,
+          2162.1325513117845,
+          2086.951047489001,
+          2386.9793760675475,
+          1795.8379615594324
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "trivial",
+          "neighborhood": "route_suffix_2opt_star",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          1.8588353999931098,
+          1.8395347212979591,
+          1.9272436110808808,
+          2.475694030737093,
+          1.6808826284594824,
+          1.670044904658027,
+          1.7295787229423407,
+          2.2507123753483484,
+          1.757154183350093,
+          2.0494442156837147
+        ],
+        "mean_gap": 1.923912479355105
+      },
+      {
+        "label": "LNS_MIP:destruction=route_segment_destruction",
+        "summary": "LNS_MIP[constructor=trivial, destruction=route_segment_destruction]",
+        "mean": 2013.6181654122934,
+        "std": 442.46850412899767,
+        "per_instance": [
+          2410.086259688992,
+          1420.5238080083886,
+          2479.855146355543,
+          2186.428317170531,
+          2174.3328308347964,
+          1033.0543556369164,
+          2162.1325513117845,
+          2086.951047489001,
+          2386.9793760675475,
+          1795.8379615594324
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "trivial",
+          "destruction": "route_segment_destruction",
+          "route_segment_destruction.ratio": 0.42500000000000004,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          1.8588353999931098,
+          1.8395347212979591,
+          1.9272436110808808,
+          2.475694030737093,
+          1.6808826284594824,
+          1.670044904658027,
+          1.7295787229423407,
+          2.2507123753483484,
+          1.757154183350093,
+          2.0494442156837147
+        ],
+        "mean_gap": 1.923912479355105
+      },
+      {
+        "label": "VNS:constructor=random",
+        "summary": "VNS[constructor=random, neighborhood=customer_swap_exchange]",
+        "mean": 133333334029.0949,
+        "std": 339934633966.61884,
+        "per_instance": [
+          1015.5852651727535,
+          592.0425412694782,
+          333333333996.0123,
+          774.5324687744303,
+          1009.1492587893766,
+          464.4953358517137,
+          666666666978.842,
+          741.4852696092601,
+          333333333978.7064,
+          740.0979263789277
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "random",
+          "neighborhood": "customer_swap_exchange",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.204683482226036,
+          0.18345454186871016,
+          393469703.7664658,
+          0.2312490911273654,
+          0.24424866287490504,
+          0.20054031809743783,
+          841631631.7952675,
+          0.15496496429920772,
+          385026952.0788843,
+          0.2567321712455304
+        ],
+        "mean_gap": 162012828.91164908
+      },
+      {
+        "label": "SA:constructor=random",
+        "summary": "SA[constructor=random, neighborhood=customer_swap_exchange]",
+        "mean": 166666667343.6225,
+        "std": 372677995947.22107,
+        "per_instance": [
+          1047.163652035135,
+          582.1100834096657,
+          333333334007.651,
+          333333333823.69147,
+          1006.6460406666126,
+          464.25269744372855,
+          666666667009.3542,
+          750.8226681975398,
+          333333333979.82654,
+          764.7065111242131
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "random",
+          "neighborhood": "customer_swap_exchange",
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.24214164783065786,
+          0.16360020447445797,
+          393469703.7802042,
+          529889165.5087855,
+          0.24116227523204062,
+          0.1999131919047258,
+          841631631.8337874,
+          0.16950924274838444,
+          385026952.08017814,
+          0.2985190740808559
+        ],
+        "mean_gap": 215001745.45178008
+      }
+    ],
+    "best_baseline": "SA:constructor=greedy_nearest_next_customer",
+    "gain_vs_best_baseline": 0.0526416716801067,
+    "wins_per_instance": "10/10",
+    "reference": 2013.6181654122934,
+    "best_known": [
+      843.0307878847451,
+      500.2663983481996,
+      847.1639111170047,
+      629.0623679285295,
+      811.0511097176361,
+      386.90523662530967,
+      792.1121794872142,
+      641.9980627370522,
+      865.7402587356348,
+      588.9066447988091
+    ],
+    "best_baseline_by_gap": "SA:constructor=greedy_nearest_next_customer",
+    "tuned_vs_best_baseline": {
+      "a": "tuned",
+      "b": "SA:constructor=greedy_nearest_next_customer",
+      "mean_diff": 0.06297626570336728,
+      "ci95": [
+        0.03907314275050578,
+        0.09031876513231418
+      ],
+      "wins_a": 10,
+      "n": 10,
+      "significant": true
+    },
+    "mip_reference": [
+      870.6463968933448,
+      516.5152486271277,
+      918.7937864558506,
+      674.6788789422478,
+      879.4305807347789,
+      397.42199910218886,
+      811.3981632926534,
+      671.1042273950072,
+      936.0292921889559,
+      597.3087684931404
+    ]
+  }
+}
