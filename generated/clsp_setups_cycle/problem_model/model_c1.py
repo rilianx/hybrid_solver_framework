@@ -288,17 +288,16 @@ from typing import Optional
 
 import pulp
 
-from examples.lotsizing.instance import CLSPInstance
+
+def _as_tuple_partial(partial):
+    return tuple(tuple(row) for row in partial)
 
 
-Partial = tuple[tuple[Optional[int], ...], ...]
-
-
-def empty_partial(inst: CLSPInstance):
+def empty_partial(inst):
     return tuple(tuple(None for _ in range(inst.n_periods)) for _ in range(inst.n_items))
 
 
-def _next_unassigned(partial: Partial):
+def _first_undecided(partial):
     for i, row in enumerate(partial):
         for t, v in enumerate(row):
             if v is None:
@@ -306,136 +305,109 @@ def _next_unassigned(partial: Partial):
     return None
 
 
-def _with_assignment(partial: Partial, i: int, t: int, value: int) -> Partial:
+def _completion_setup(partial):
+    # undecided -> True, fixed decisions preserved
     return tuple(
-        tuple(value if (ii == i and tt == t) else v for tt, v in enumerate(row))
-        for ii, row in enumerate(partial)
+        tuple(True if v is None else bool(v) for v in row)
+        for row in partial
     )
 
 
-def _fixed_setup_mask(partial: Partial):
-    fixed = {}
-    undecided = []
-    for i, row in enumerate(partial):
-        for t, v in enumerate(row):
-            if v is None:
-                undecided.append((i, t))
-            else:
-                fixed[(i, t)] = int(v)
-    return fixed, tuple(undecided)
-
-
 @lru_cache(maxsize=None)
-def _can_complete(inst: CLSPInstance, partial: Partial) -> bool:
-    n_items, n_periods = inst.n_items, inst.n_periods
-    fixed, undecided = _fixed_setup_mask(partial)
+def _is_completable(inst, partial_tuple):
+    partial = partial_tuple
+    setup = _completion_setup(partial)
 
-    prob = pulp.LpProblem("clsp_partial_feas", pulp.LpMinimize)
-    y = {}
-    x = {}
-    inv = {}
+    n_items = inst.n_items
+    n_periods = inst.n_periods
+    demand = inst.demand
 
-    for i in range(n_items):
-        for t in range(n_periods):
-            if (i, t) in fixed:
-                y[i, t] = pulp.LpVariable(f"y_{i}_{t}", lowBound=fixed[(i, t)], upBound=fixed[(i, t)], cat="Binary")
-            else:
-                y[i, t] = pulp.LpVariable(f"y_{i}_{t}", lowBound=0, upBound=1, cat="Binary")
-            x[i, t] = pulp.LpVariable(f"x_{i}_{t}", lowBound=0)
-            inv[i, t] = pulp.LpVariable(f"inv_{i}_{t}", lowBound=0)
+    prob = pulp.LpProblem("clsp_completion", pulp.LpMinimize)
+    x = {
+        (i, t): pulp.LpVariable(f"x_{i}_{t}", lowBound=0)
+        for i in range(n_items)
+        for t in range(n_periods)
+    }
+    inv = {
+        (i, t): pulp.LpVariable(f"inv_{i}_{t}", lowBound=0)
+        for i in range(n_items)
+        for t in range(n_periods)
+    }
+    unmet = {
+        (i, t): pulp.LpVariable(f"unmet_{i}_{t}", lowBound=0, upBound=demand[i][t])
+        for i in range(n_items)
+        for t in range(n_periods)
+    }
 
     for t in range(n_periods):
         prob += (
             pulp.lpSum(x[i, t] for i in range(n_items))
-            + pulp.lpSum(inst.setup_time[i] * y[i, t] for i in range(n_items))
+            + pulp.lpSum(inst.setup_time[i] * (1.0 if setup[i][t] else 0.0) for i in range(n_items))
             <= inst.capacity[t]
         )
         for i in range(n_items):
-            prob += x[i, t] <= inst.capacity[t] * y[i, t]
+            if not setup[i][t]:
+                prob += x[i, t] == 0
 
     for i in range(n_items):
         for t in range(n_periods):
             prev_inv = inv[i, t - 1] if t > 0 else 0
-            prob += prev_inv + x[i, t] == inst.demand[i][t] + inv[i, t]
+            prob += prev_inv + x[i, t] + unmet[i, t] == demand[i][t] + inv[i, t]
 
-    prob += 0
+    prob += pulp.lpSum(unmet[i, t] for i in range(n_items) for t in range(n_periods))
     prob.solve(pulp.PULP_CBC_CMD(msg=False))
-    return pulp.LpStatus[prob.status] in {"Optimal", "Integer Feasible"}
+
+    status = pulp.LpStatus[prob.status]
+    if status not in {"Optimal", "Integer Feasible"}:
+        return False
+
+    total_unmet = float(
+        pulp.value(pulp.lpSum(unmet[i, t] for i in range(n_items) for t in range(n_periods)))
+    )
+    return total_unmet <= 1e-9
 
 
-def candidates(inst: CLSPInstance, partial) -> list:
-    partial = tuple(tuple(row) for row in partial)
-    nxt = _next_unassigned(partial)
+def candidates(inst, partial) -> list:
+    partial = _as_tuple_partial(partial)
+    nxt = _first_undecided(partial)
     if nxt is None:
         return []
     i, t = nxt
+
     out = []
-    for val in (0, 1):
-        cand = (i, t, val)
-        if _can_complete(inst, _with_assignment(partial, i, t, val)):
-            out.append(cand)
+    for val in (False, True):
+        new_partial = tuple(
+            tuple(
+                val if (ii == i and tt == t) else partial[ii][tt]
+                for tt in range(inst.n_periods)
+            )
+            for ii in range(inst.n_items)
+        )
+        if _is_completable(inst, new_partial):
+            out.append((i, t, val))
     return out
 
 
-def apply_action(inst: CLSPInstance, partial, action):
+def apply_action(inst, partial, action):
     i, t, val = action
-    partial = tuple(tuple(row) for row in partial)
-    if partial[i][t] is not None:
-        return partial
-    return _with_assignment(partial, i, t, int(val))
-
-
-def is_complete(inst: CLSPInstance, partial) -> bool:
-    return all(v is not None for row in partial for v in row)
-
-
-def to_solution(inst: CLSPInstance, partial):
-    partial = tuple(tuple(row) for row in partial)
-    return canonical(tuple(tuple(bool(v) for v in row) for row in partial))
-
-
-def complete_partial(inst: CLSPInstance, partial, rng):
-    partial = tuple(tuple(row) for row in partial)
-    if is_complete(inst, partial):
-        return to_solution(inst, partial)
-
-    # First, try to complete the current partial exactly.
-    n_items, n_periods = inst.n_items, inst.n_periods
-    prob = pulp.LpProblem("clsp_complete_partial", pulp.LpMinimize)
-    y, x, inv = {}, {}, {}
-
-    for i in range(n_items):
-        for t in range(n_periods):
-            v = partial[i][t]
-            if v is None:
-                y[i, t] = pulp.LpVariable(f"y_{i}_{t}", lowBound=0, upBound=1, cat="Binary")
-            else:
-                y[i, t] = pulp.LpVariable(f"y_{i}_{t}", lowBound=int(v), upBound=int(v), cat="Binary")
-            x[i, t] = pulp.LpVariable(f"x_{i}_{t}", lowBound=0)
-            inv[i, t] = pulp.LpVariable(f"inv_{i}_{t}", lowBound=0)
-
-    for t in range(n_periods):
-        prob += (
-            pulp.lpSum(x[i, t] for i in range(n_items))
-            + pulp.lpSum(inst.setup_time[i] * y[i, t] for i in range(n_items))
-            <= inst.capacity[t]
+    return tuple(
+        tuple(
+            val if (ii == i and tt == t) else partial[ii][tt]
+            for tt in range(inst.n_periods)
         )
-        for i in range(n_items):
-            prob += x[i, t] <= inst.capacity[t] * y[i, t]
+        for ii in range(inst.n_items)
+    )
 
-    for i in range(n_items):
-        for t in range(n_periods):
-            prev_inv = inv[i, t - 1] if t > 0 else 0
-            prob += prev_inv + x[i, t] == inst.demand[i][t] + inv[i, t]
 
-    prob += 0
-    prob.solve(pulp.PULP_CBC_CMD(msg=False))
-    if pulp.LpStatus[prob.status] in {"Optimal", "Integer Feasible"}:
-        sol = tuple(
-            tuple(bool(round(pulp.value(y[i, t]))) for t in range(n_periods))
-            for i in range(n_items)
-        )
-        return canonical(sol)
+def is_complete(inst, partial) -> bool:
+    return _first_undecided(_as_tuple_partial(partial)) is None
 
-    # Conservative fallback: turn everything on and rely on instance feasibility.
-    return trivial_solution(inst)
+
+def to_solution(inst, partial):
+    partial = _as_tuple_partial(partial)
+    return _completion_setup(partial)
+
+
+def complete_partial(inst, partial, rng):
+    # Seguro y simple: cerrar todo con setups activos.
+    return tuple(tuple(True for _ in range(inst.n_periods)) for _ in range(inst.n_items))
