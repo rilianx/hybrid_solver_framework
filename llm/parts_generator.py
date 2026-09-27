@@ -290,8 +290,13 @@ def _load(path: Path, forbidden: list[str]):
 
 def generate_problem_model_parts(client: LLMClient, spec: ModelSpec, cases: list[TestCase], workspace: str | Path,
                                  max_rounds: int = 4, mip_time_limit: float = 20.0, verbose: bool = True,
-                                 scale_instances: list | None = None, construction: bool = True) -> PartsGenerationResult:
-    """`scale_instances`: instancias de tamaño realista para medir la granularidad de `variable_groups`."""
+                                 scale_instances: list | None = None, construction: bool = True,
+                                 accepted_model: str | None = None) -> PartsGenerationResult:
+    """`scale_instances`: instancias de tamaño realista para medir la granularidad de `variable_groups`.
+
+    `accepted_model`: el código de un modelo ya aceptado (vistas heurística y MIP, como las concatena
+    `_concat`); se salta a la vista constructiva. Corridas 52 y 53: el modelo de la 52 se aceptó sin
+    vista constructiva y rehacerlo entero para reintentar solo esa etapa se rechazó en la heurística."""
     ws = Path(workspace) / "problem_model"
     ws.mkdir(parents=True, exist_ok=True)
     t0 = time.perf_counter()
@@ -305,6 +310,20 @@ def generate_problem_model_parts(client: LLMClient, spec: ModelSpec, cases: list
             res.tokens.add(used)
         blocks = extract_code_blocks(text)
         return blocks[0] if blocks else None
+
+    if accepted_model is not None:
+        heur, _, rest = accepted_model.partition("\n# ---- vista MIP ----\n")
+        mip = rest.split("\n# ---- vista constructiva ----\n")[0]
+        if not rest:
+            raise ValueError("accepted_model no tiene el separador de la vista MIP")
+        for st, src in ((res.heuristic, heur), (res.mip, mip)):
+            st.accepted, st.source = True, src.strip("\n") + "\n"
+        path = ws / "model_accepted.py"
+        path.write_text(_concat(res.heuristic.source, res.mip.source))
+        res.path = path
+        _construction_stage(res, spec, cases, ws, ask, max_rounds, scale_instances, verbose)
+        res.seconds = time.perf_counter() - t0
+        return res
 
     # etapa 1: vista heurística
     context1 = (f"\n# El problema\n{spec.description}\n\n# Formato de respuesta\n{spec.answer_format}\n"

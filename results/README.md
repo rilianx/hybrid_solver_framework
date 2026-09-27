@@ -369,6 +369,13 @@ con una prueba de completabilidad (una acción entra si después todavía existe
 factible, p.ej. la "más permisiva": activar todo lo que falta). También: esos rechazos salían
 rotulados "vista MIP".
 
+Repetir el modelo entero para reintentar la vista constructiva (corrida 53) se rechazó antes, en
+la vista heurística (6 rondas: un `PulpError` y después un costo que no coincide en un caso
+oculto): la variación entre generaciones. Arreglos: `llm.cycle model --construction-only` (input
+`construction_only` de `generate.yml`) genera solo la vista constructiva sobre el modelo ya
+aceptado; y el traceback de un error salta también las librerías instaladas (en la 53 los tres
+marcos eran de PuLP y no se veía la línea del LLM).
+
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 
 Desde la corrida 43, una corrección trae solo las funciones o métodos que cambian y

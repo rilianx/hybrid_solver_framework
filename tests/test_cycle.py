@@ -199,3 +199,29 @@ def test_a_neighborhood_without_undo_is_valid(tmp_path):
     assert "def undo" not in path.read_text()
     report, _, _ = validate_generated_module(path, pack.make_contexts(strict=False))
     assert report.passed, report.feedback()
+
+
+def test_the_construction_view_can_be_added_to_an_accepted_model():
+    """Corridas 52 y 53: el modelo se aceptó sin vista constructiva; rehacerlo entero para reintentar
+    esa etapa se rechazó en la heurística. --construction-only reusa las vistas aceptadas."""
+    from llm import ScriptedClient
+
+    from tests.test_model_parts import _ref_sources
+
+    heur, mip = _ref_sources()
+    ws = Path("generated") / f"test_cycle_{uuid.uuid4().hex[:8]}"
+    try:
+        stats = run_model_stage("cvrp", "routes", ws, ScriptedClient(responses=[f"```python\n{heur}\n```",
+                                                                                f"```python\n{mip}\n```", "sin código"]),
+                                rounds=1)
+        assert stats["accepted"] and not stats["construction_accepted"]
+        before = model_path(ws).read_text()
+        assert "vista constructiva" not in before
+        client = ScriptedClient(responses=[f"```python\n{ROUTES_CONSTRUCTION}\n```"])
+        stats = run_model_stage("cvrp", "routes", ws, client, rounds=1, construction_only=True)
+        assert stats["accepted"] and stats["construction_accepted"] and stats["llm_calls"] == 1
+        after = model_path(ws).read_text()
+        assert after.startswith(before.split("# ---- vista MIP ----")[0].rstrip()[:200]) and "def candidates" in after
+        assert (ws / "model_stats.json").exists() and (ws / "model_stats_construction.json").exists()
+    finally:
+        shutil.rmtree(ws, ignore_errors=True)

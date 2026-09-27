@@ -245,29 +245,35 @@ def load_variant(problem: str, variant: str, workspace: str | Path | None, refer
 
 
 def run_model_stage(problem: str, variant: str, workspace: str | Path, client, rounds: int = 6,
-                    model_name: str | None = None, construction: bool = True) -> dict:
-    """Genera las piezas de la variante; si se aceptan, las deja en `<workspace>/model/parts.py`."""
+                    model_name: str | None = None, construction: bool = True, construction_only: bool = False) -> dict:
+    """Genera las piezas de la variante; si se aceptan, las deja en `<workspace>/model/parts.py`.
+    `construction_only`: solo la vista constructiva, sobre el modelo ya aceptado del workspace."""
     from .parts_generator import generate_problem_model_parts
 
     base = base_pack(problem)
     make_spec, _ = base.variants[variant]
     ws = Path(workspace)
     scale = base.make_instances(1, 777, base.parse_size(base.default_size))
+    accepted = model_path(ws).read_text() if construction_only else None
     res = generate_problem_model_parts(client, make_spec(), base.load_cases(), ws, max_rounds=rounds, scale_instances=scale,
-                                       verbose=False, construction=construction)
+                                       verbose=False, construction=construction, accepted_model=accepted)
     stats = {"problem": problem, "variant": variant, "accepted": res.path is not None,
              "heuristic_rounds": res.heuristic.rounds, "mip_rounds": res.mip.rounds,
              "construction_rounds": res.construction.rounds, "construction_accepted": res.construction.accepted,
              "llm_calls": res.llm_calls,
              "seconds": round(res.seconds, 1), "tokens": res.tokens.as_dict(model_name),
              "rejections": res.heuristic.reports + res.mip.reports + res.construction.reports}
-    if res.path is not None:
+    if construction_only:
+        stats["construction_only"] = True
+        stats["accepted"] = res.construction.accepted
+    if res.path is not None and (not construction_only or res.construction.accepted):
         target = model_path(ws)
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(res.path, target)
         stats["model"] = str(target)
     ws.mkdir(parents=True, exist_ok=True)
-    (ws / "model_stats.json").write_text(json.dumps(stats, indent=2, ensure_ascii=False))
+    name = "model_stats_construction.json" if construction_only else "model_stats.json"
+    (ws / name).write_text(json.dumps(stats, indent=2, ensure_ascii=False))
     return stats
 
 
@@ -276,7 +282,8 @@ def _stage_model(args) -> None:
 
     inner = OpenAIClient(model=args.model or "gpt-5.4-mini")
     client = TranscriptClient(inner, Path(args.workspace) / "transcript")
-    stats = run_model_stage(args.problem, args.variant, args.workspace, client, args.rounds, inner.model)
+    stats = run_model_stage(args.problem, args.variant, args.workspace, client, args.rounds, inner.model,
+                            construction_only=args.construction_only)
     print(json.dumps({k: v for k, v in stats.items() if k != "rejections"}, indent=2, ensure_ascii=False))
     if not stats["accepted"]:
         raise SystemExit(1)
@@ -319,6 +326,8 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--variant", required=True)
     ap.add_argument("--workspace", required=True)
     ap.add_argument("--reference", action="store_true", help="usar las piezas de referencia de la variante")
+    ap.add_argument("--construction-only", action="store_true",
+                    help="model: solo la vista constructiva, sobre el modelo ya aceptado del workspace")
     ap.add_argument("--rounds", type=int, default=6)
     ap.add_argument("--model", default=None)
     ap.add_argument("--slots", nargs="*", default=["neighborhood", "greedy_score"],
