@@ -314,6 +314,9 @@ contra la media de las tres configuraciones escritas a mano:
   (corrida 50): aceptado en la primera ronda, 2,1 → 7,2 mil evaluaciones/s (3,4×): costo de ruta
   incremental en el Split (O(n³) → O(n²)), todavía sin el corte por capacidad. La versión de la
   corrida 47 queda como `parts_opt_run47.py`.
+- **Rutas con memoria acotada** (corrida 51): el modelo de la corrida 41 (`lru_cache` de 200 mil
+  entradas) violaba la regla; reoptimizado desde el original, aceptado en la primera ronda:
+  4,8 → 40,9 mil evaluaciones/s (8,4×) con cachés de 8192 (la de la 41 hacía 51 mil).
 - **Qué elige el tuner sigue siendo la mayor fuente de ruido**: cada réplica eligió un esqueleto
   distinto, y en esta máquina VNS le saca 0,8–1,2 puntos a los SA a 5 s. Si las tres hubieran
   elegido VNS, el ciclo quedaría a la par de lo escrito a mano (en esta máquina, 0,36 puntos por
