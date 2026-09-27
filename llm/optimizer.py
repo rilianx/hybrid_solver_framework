@@ -43,6 +43,10 @@ MODEL_TECHNIQUES = """- Evita recalcular lo mismo: memoriza por (instancia, solu
   hashables).
 - Precalcula por instancia lo que no depende de la solución (matriz de distancias, demandas en listas) y guárdalo en
   una caché por instancia.
+- Poda: descarta de entrada lo que nunca puede ser parte del óptimo, en vez de evaluarlo y penalizarlo. P.ej. en
+  un DP de corte (Split) de un tour en rutas, deja de extender un segmento cuando la carga supera la capacidad (salvo
+  el segmento de un solo cliente) y acumula su costo de forma incremental en vez de recalcularlo: pasa de O(n³) a
+  O(n·L). Las salidas tienen que seguir siendo las mismas (se comparan una por una).
 - Usa estructuras simples en los bucles internos (listas e índices en vez de dicts y objetos; evita crear tuplas o
   dicts por cada paso).
 - Mantén exactamente los mismos resultados, incluidos los empates y el orden: se comparan salida por salida.

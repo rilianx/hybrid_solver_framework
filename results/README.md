@@ -298,9 +298,10 @@ contra la media de las tres configuraciones escritas a mano:
   nunca eligió SA.
 - **La velocidad pesa en presupuestos cortos**: a 1,25 s el generado va 2,1 puntos atrás. El Split
   del modelo generado es O(n³) (todos los segmentos, sin corte por capacidad, y el costo de cada
-  ruta recalculado entero); el de referencia es O(n·L) y corta cuando se acaba la capacidad. La
-  optimización no podía agregar el corte: la prueba de equivalencia exige las mismas salidas que
-  el modelo original, que penaliza los segmentos sobrecargados en vez de descartarlos.
+  ruta recalculado entero); el de referencia es O(n·L) y corta cuando se acaba la capacidad. Corrección
+  posterior: el corte sí pasa la prueba de equivalencia (mismas salidas en todas las soluciones
+  de prueba) y acelera el modelo 3,3 veces (2,2 → 7,1 mil evaluaciones/s); no era la prueba, el
+  LLM no lo encontró. El prompt de la optimización ahora sugiere la poda.
 - **Qué elige el tuner sigue siendo la mayor fuente de ruido**: cada réplica eligió un esqueleto
   distinto, y en esta máquina VNS le saca 0,8–1,2 puntos a los SA a 5 s. Si las tres hubieran
   elegido VNS, el ciclo quedaría a la par de lo escrito a mano (en esta máquina, 0,36 puntos por
@@ -309,8 +310,8 @@ contra la media de las tres configuraciones escritas a mano:
 Arreglos que salen de aquí: un SA que enfríe según el tiempo y no según las iteraciones (con
 cualquier velocidad del modelo usaría todo el presupuesto); en el tuner, que la selección final
 reevalúe con más semillas cuando las mejores configuraciones difieren en el esqueleto (hecho: carrera, abajo); y en la
-optimización del modelo, permitir un cambio de semántica que no cambie el óptimo (descartar
-segmentos imposibles en vez de penalizarlos) validado contra los casos, no salida por salida.
+optimización del modelo, sugerir la poda (descartar segmentos imposibles en vez de penalizarlos;
+hecho, y no hacía falta relajar la prueba de equivalencia).
 
 **SA con enfriamiento por tiempo** (nuevo default, `SA.cooling = time`: T = T0 · T_end^(t/presupuesto)).
 Las dos configuraciones SA de la run 35, en las mismas instancias de test y a 5 s (una semilla):
