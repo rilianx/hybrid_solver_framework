@@ -254,7 +254,7 @@ clase que lo define), se repitieron como 45 y 46. Mismos modelos y prompts que l
 | 45 rutas (parches) | 12 | 1 | 1 | 702 | 29 mil |
 | 46 gran tour (parches) | 9 | 8 | 1 (7 como parche) | 1071 | 52 mil |
 
-- **Cada corrección sale 25–40 % más corta**: el LLM ya no reescribe lo que pasaba. La entrada no
+- **Cada corrección sale 20–45 % más corta**: el LLM ya no reescribe lo que pasaba. La entrada no
   cambia (el módulo rechazado sigue en el prompt como contexto).
 - **No rescata más componentes.** Casi todos los rechazos son de calidad (el operador no mejora
   o no perturba lo suficiente en su esqueleto), y eso es un problema de la idea, no de una
