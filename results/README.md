@@ -35,6 +35,7 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run32/`](tune_run32/) | 26 sep | ciclo CVRP gran tour, 2.ª generación (componentes 40) | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | variación entre generaciones |
 | [`tune_run33/`](tune_run33/) | 27 sep | ciclo CVRP rutas, 2.ª generación optimizada (corrida 41) | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | efecto de la optimización al volver a afinar |
 | [`tune_run35/`](tune_run35/) | 27 sep | ciclo CVRP gran tour, 2.ª generación optimizada (modelo de la corrida 47, componentes de la 42) | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | efecto de la optimización, memoria acotada |
+| [`tune_run36/`](tune_run36/) | 27 sep | lo mismo que la run 35 | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | selección final en carrera |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -307,9 +308,32 @@ contra la media de las tres configuraciones escritas a mano:
 
 Arreglos que salen de aquí: un SA que enfríe según el tiempo y no según las iteraciones (con
 cualquier velocidad del modelo usaría todo el presupuesto); en el tuner, que la selección final
-reevalúe con más semillas cuando las mejores configuraciones difieren en el esqueleto; y en la
+reevalúe con más semillas cuando las mejores configuraciones difieren en el esqueleto (hecho: carrera, abajo); y en la
 optimización del modelo, permitir un cambio de semántica que no cambie el óptimo (descartar
 segmentos imposibles en vez de penalizarlos) validado contra los casos, no salida por salida.
+
+**Selección final en carrera** (run 36: lo mismo que la 35, con `--race-seeds 6`). Después de las 2
+semillas extra de siempre, los candidatos que pierden contra el líder por más que el ruido salen y
+los empatados siguen recibiendo semillas:
+
+| | Run 35 (sin carrera) | Run 36 (carrera) |
+|---|---|---|
+| Elegido | VNS / SA / SA | VNS / VNS / VNS |
+| Gap afinado, mejor conocido común | 1,99 % | 1,34 % (−0,64 [−1,01, −0,27]) |
+| Contra lo escrito a mano (run 30) | +0,87 [+0,37, +1,31] | +0,23 [−0,02, +0,48], **ruido** |
+| Desvío entre réplicas | 0,22 | 0,14 |
+| Tiempo de tuning por réplica | 53–56 min | 56–67 min (+4 a +19 %) |
+
+- De 10 candidatos por réplica, 7 a 9 salen después de las 2 semillas de siempre: la carrera
+  solo gasta en los que quedan cerca. En dos réplicas llegaron al tope de 6 semillas extra un
+  VNS y un SA todavía empatados, y ganó VNS por la media.
+- **Con esto, el ciclo completo en gran tour ya no se distingue de lo escrito a mano.**
+- Cautela: en train los finalistas difieren en ~0,1 % del costo normalizado aun con 7 semillas,
+  y en test el VNS gana por 0,6–1,2 puntos. La señal de train es débil (el objetivo del tuner
+  normaliza por la partida trivial y promedia 10 instancias); que las tres réplicas eligieran
+  VNS se sostiene en la media, no en una diferencia significativa. La siguiente mejora del tuner
+  sería el objetivo, no la selección: por ejemplo, el gap contra el mejor conocido en train en
+  vez del cociente con la partida trivial.
 
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 
