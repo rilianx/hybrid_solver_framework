@@ -64,3 +64,22 @@ def test_a_module_level_component_cache_is_rejected_and_a_per_run_one_is_not():
     assert check_component_memory("neighborhood", PerRunCache, PACK.problem_factory, inst, sol).passed
     r = check_component_memory("neighborhood", LeakyRelocate, PACK.problem_factory, inst, sol)
     assert not r.passed and "bounded_memory" == r.name
+
+
+def test_the_static_review_finds_unbounded_caches_without_running_anything():
+    """Corridas 42 y 52: lru_cache(maxsize=None) en modelos aceptados; la medición dinámica no cabe en un
+    modelo que resuelve un LP por evaluación (39 por segundo)."""
+    import types as _t
+
+    from core.validation.resources import static_cache_check
+
+    class Data:  # un objeto por instancia que guarda la caché, como el modelo optimizado del gran tour
+        def __init__(self):
+            self.split_cache = functools.lru_cache(maxsize=None)(lambda tour: tour)
+
+    ok_mod = _t.SimpleNamespace(f=functools.lru_cache(maxsize=4096)(lambda x: x))
+    assert static_cache_check(ok_mod).passed
+    assert not static_cache_check(_t.SimpleNamespace(f=functools.lru_cache(maxsize=None)(lambda x: x))).passed
+    assert not static_cache_check(_t.SimpleNamespace(f=functools.lru_cache(maxsize=200_000)(lambda x: x))).passed
+    r = static_cache_check(_t.SimpleNamespace(_DATA={1: Data()}))
+    assert not r.passed and "split_cache" in r.message

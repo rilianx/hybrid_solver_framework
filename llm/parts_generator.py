@@ -24,6 +24,7 @@ from typing import Any
 
 from core.model_parts import CONSTRUCTION_PARTS, HEURISTIC_PARTS, MIP_PARTS, TestCase
 from core.validation.base import ValidationReport, describe_exception, fail
+from core.validation.resources import static_cache_check
 from core.validation.model_parts import check_construction_view, check_heuristic_view, check_mip_optimum, check_mip_view
 from core.validation.syntactic import load_module
 
@@ -285,6 +286,10 @@ def _load(path: Path, forbidden: list[str]):
     module, res = load_module(path)
     r = ValidationReport(subject=path.name)
     r.add(res)
+    if module is not None:  # corrida 52: el modelo del CLSP se aceptó con dos lru_cache(maxsize=None)
+        r.add(static_cache_check(module, "modelo"))
+        if not r.passed:
+            return None, r
     return module, r
 
 

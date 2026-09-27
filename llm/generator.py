@@ -24,6 +24,7 @@ from core.validation import ValidationContext, ValidationReport, validate_compon
 from core.validation.base import fail, ok
 from core.validation.diversity import improving_neighbors
 from core.validation.quality import diversity_check, probe_checks
+from core.validation.resources import static_cache_check
 from core.validation.syntactic import load_module
 
 from .client import LLMClient, TokenUsage
@@ -100,6 +101,7 @@ def validate_generated_module(
         report.add(fail("syntactic", "component_present", "el módulo no define el dict COMPONENT"))
     if not callable(factory):
         report.add(fail("syntactic", "factory_present", "el módulo no define `build_component(problem, **params)`"))
+    report.add(static_cache_check(module, "componente"))
     if not report.passed:
         return report, module, component
 

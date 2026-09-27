@@ -379,6 +379,19 @@ marcos eran de PuLP y no se veía la línea del LLM).
 Vista constructiva sola sobre el modelo de la 52, con la pista de completabilidad (corrida 54):
 **aceptada en la primera ronda** (6,5 mil tokens; antes, 6 rondas rechazadas).
 
+**Componentes** (corrida 55): 10 de 12 (3 puntajes, 1 vecindario, 3 perturbaciones, 3
+destrucciones), 47 mil tokens, 6 correcciones como parche. **Optimización** (corrida 56): cortada
+por el límite de 45 min del job. El modelo resuelve dos LP por evaluación (39 soluciones/s; la
+referencia escrita a mano, uno, 62/s) y la medición de memoria hacía 30 mil evaluaciones por
+candidato. Además, ese modelo se había aceptado en la etapa del modelo con dos
+`lru_cache(maxsize=None)`: la regla de memoria solo corría en la optimización. Arreglos: una
+revisión estática e instantánea de las cachés (`lru_cache` sin límite o con más de 8192 entradas,
+en el módulo y un nivel adentro de lo que guarda) que corre también al aceptar modelos y
+componentes, y la medición dinámica solo cuando cabe en 60 s. De los 353 componentes generados
+hasta ahora, ninguno tiene una caché sin límite; de los modelos, el del CLSP y las versiones
+optimizadas de las corridas 41 y 42. Si el modelo aceptado viola la regla, la optimización se lo
+dice al LLM y pide solo no perder velocidad (0,8×) en vez de 1,5×.
+
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 
 Desde la corrida 43, una corrección trae solo las funciones o métodos que cambian y

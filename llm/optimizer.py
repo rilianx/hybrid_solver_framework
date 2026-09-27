@@ -29,7 +29,7 @@ from typing import Any
 
 from core.model_parts import CONSTRUCTION_PARTS, HEURISTIC_PARTS, MIP_PARTS
 from core.validation.base import ValidationReport, fail, ok
-from core.validation.resources import MAX_CACHE, check_component_memory, check_parts_memory
+from core.validation.resources import MAX_CACHE, check_component_memory, check_parts_memory, static_cache_check
 from core.validation.equivalence import check_component_equivalent, check_parts_equivalent, component_speed, parts_speed
 from core.validation.syntactic import load_module
 
@@ -120,6 +120,14 @@ def optimize_model(client: LLMClient, workspace: str | Path, spec, cases: list, 
     instances = [(c.instance, [s["answer"] for s in c.solutions]) for c in cases] + [(i, []) for i in scale_instances]
     source = path.read_text()
     prompt = model_prompt(source, res.speed_before, spec)
+    leak = static_cache_check(old, "modelo aceptado")
+    if not leak.passed:
+        # corrida 52: el modelo del CLSP se aceptó (antes de la revisión estática) con cachés sin límite;
+        # aquí lo primero es acotarlas, y basta con no perder velocidad
+        min_speedup = min(min_speedup, 0.8)
+        prompt += (f"\n\n# Lo primero\nEl módulo actual no cumple la regla de memoria: {leak.message}. Acótalas; con eso "
+                   f"basta que no sea más lento (al menos {min_speedup:g} veces la velocidad actual), aunque si puedes "
+                   f"acelerarlo, mejor.")
     prev = None  # la primera versión optimizada es un módulo completo
     for rnd in range(1, rounds + 1):
         res.rounds = rnd

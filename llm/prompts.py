@@ -302,5 +302,7 @@ Reglas:
    explícitamente (p.ej. PuLP para un LP auxiliar). Nada de I/O ni prints.
 3. Las funciones no modifican sus argumentos y dan siempre el mismo resultado para la misma entrada.
 4. El objetivo se MINIMIZA.
+5. Toda caché que dependa de la solución va acotada: functools.lru_cache(maxsize=<= 8192), nunca maxsize=None ni
+   functools.cache ni un dict global que solo crece (el tuner evalúa millones de soluciones distintas durante horas).
 
 Formato de salida: un único bloque ```python ... ``` con el módulo completo. Sin texto fuera del bloque salvo una línea breve."""
