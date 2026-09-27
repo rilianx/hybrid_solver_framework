@@ -33,10 +33,12 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run30/`](tune_run30/) | 26 sep | CVRP escrito a mano | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | referencia para el ciclo completo |
 | [`tune_run31/`](tune_run31/) | 26 sep | ciclo CVRP rutas, 2.ª generación (componentes 39) | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | variación entre generaciones |
 | [`tune_run32/`](tune_run32/) | 26 sep | ciclo CVRP gran tour, 2.ª generación (componentes 40) | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | variación entre generaciones |
+| [`tune_run33/`](tune_run33/) | 27 sep | ciclo CVRP rutas, 2.ª generación optimizada (corrida 41) | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | efecto de la optimización al volver a afinar |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
-límite de tiempo) y quedó relanzada como la 4. Runs 9–14, en orden: corridas 11, 12, 13, 14,
+límite de tiempo) y quedó relanzada como la 4. La run 34 (gran tour optimizado, corrida 42) no
+dejó resultados: el modelo tenía una caché sin límite y los tres runners se quedaron sin memoria. Runs 9–14, en orden: corridas 11, 12, 13, 14,
 15 y 16 (`generated/clsp_scratch3`, `…3_planner`, `…4`, `…4_planner`, `…5`, `…5_planner`).
 Las runs 15–22 terminaron el tuning pero no pudieron crear su rama (`GITHUB_TOKEN` no puede
 empujar una rama cuya historia cambia `.github/workflows`); las cifras de abajo salen del log
@@ -236,6 +238,24 @@ guardado de cada run):
 - Pendiente: afinar de nuevo sobre los catálogos optimizados (el tuner podría elegir otra cosa con
   más movimientos por segundo) y compararlos con la referencia escrita a mano con el mismo mejor
   conocido.
+- **Rutas, afinando de nuevo** (run 33 contra 31, mismo mejor conocido): 4,96 → 5,03 % de gap,
+  diferencia +0,07 [−0,88, +0,92], **ruido**. La réplica que eligió lo mismo que la run 31 (ILS con
+  2-opt* entre rutas y el kick de inversión) mejora ~2 puntos (2,76 % contra 4,6–5,2 %), pero las
+  otras dos eligieron VNS y quedaron peor (6,4 y 6,0 %). Lo que gana el catálogo más rápido lo
+  pierde el tuner eligiendo: con 40 trials, la selección sigue siendo la mayor fuente de ruido.
+  Contra el escrito a mano (run 30): +4,65 [+3,80, +5,55].
+- **Gran tour: la caché que agotó la memoria.** La run 34 murió en los tres runners (58 min a
+  2 h 12). El modelo optimizado en la corrida 42 memoizaba el Split con `lru_cache(maxsize=None)`
+  a nivel de módulo, con el tour como clave: en 5 s no se nota, en horas de tuning cada tour
+  distinto queda en memoria. Las pruebas de equivalencia y velocidad miraban salidas y tiempo, no
+  memoria. Arreglo: `core/validation/resources.py` mide con `tracemalloc` la memoria retenida al
+  evaluar 10 mil soluciones nuevas después de llenar las cachés acotadas (modelo: ≤ 1 MB; un
+  componente, reconstruido en cada tanda, ≤ 1,5 MB), y los prompts piden `maxsize ≤ 8192`. Con la
+  regla, el modelo de la corrida 42 retiene 11,5 MB y se rechaza; el de referencia escrito a mano
+  (`maxsize=8192`), 0,3 MB. El modelo de rutas de la corrida 41 (`maxsize=200000`) también la
+  violaría, aunque en la práctica cupo en la run 33. Se rehízo la optimización del gran tour
+  (corrida 47): 222 → 1,6 mil evaluaciones/s con cachés acotadas (la versión que perdía memoria
+  hacía 4,5 mil). Tuning de nuevo: run 35, pendiente.
 
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 

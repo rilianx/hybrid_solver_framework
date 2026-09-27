@@ -1,0 +1,38 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("SA", "ILS", "VNS", "LNS_MIP")
+constructor "--constructor=" c ("trivial", "random", "greedy_depot_balance_lookahead", "greedy_high_demand_first_fill", "greedy_nearest_next_customer") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP")
+greedy_depot_balance_lookahead.rule "--greedy_depot_balance_lookahead.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_depot_balance_lookahead"
+greedy_depot_balance_lookahead.alpha "--greedy_depot_balance_lookahead.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_depot_balance_lookahead"
+greedy_depot_balance_lookahead.start_weight "--greedy_depot_balance_lookahead.start_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_depot_balance_lookahead"
+greedy_depot_balance_lookahead.balance_weight "--greedy_depot_balance_lookahead.balance_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_depot_balance_lookahead"
+greedy_depot_balance_lookahead.route_growth_weight "--greedy_depot_balance_lookahead.route_growth_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_depot_balance_lookahead"
+greedy_high_demand_first_fill.rule "--greedy_high_demand_first_fill.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_high_demand_first_fill"
+greedy_high_demand_first_fill.alpha "--greedy_high_demand_first_fill.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_high_demand_first_fill"
+greedy_high_demand_first_fill.demand_weight "--greedy_high_demand_first_fill.demand_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_high_demand_first_fill"
+greedy_high_demand_first_fill.residual_capacity_weight "--greedy_high_demand_first_fill.residual_capacity_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_high_demand_first_fill"
+greedy_nearest_next_customer.rule "--greedy_nearest_next_customer.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_nearest_next_customer"
+greedy_nearest_next_customer.alpha "--greedy_nearest_next_customer.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_nearest_next_customer"
+greedy_nearest_next_customer.distance_weight "--greedy_nearest_next_customer.distance_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_nearest_next_customer"
+greedy_nearest_next_customer.depot_bias "--greedy_nearest_next_customer.depot_bias=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_nearest_next_customer"
+neighborhood "--neighborhood=" c ("customer_swap_exchange", "route_suffix_2opt_star") | skeleton %in% c("SA", "ILS", "VNS")
+perturbation "--perturbation=" c ("customer_relocation_kick", "interroute_customer_swap_kick", "route_segment_reversal_kick") | skeleton %in% c("ILS")
+customer_relocation_kick.strength "--customer_relocation_kick.strength=" r (1.0, 50.0) | skeleton %in% c("ILS") & perturbation == "customer_relocation_kick"
+interroute_customer_swap_kick.strength "--interroute_customer_swap_kick.strength=" r (1.0, 50.0) | skeleton %in% c("ILS") & perturbation == "interroute_customer_swap_kick"
+route_segment_reversal_kick.strength "--route_segment_reversal_kick.strength=" r (1.0, 50.0) | skeleton %in% c("ILS") & perturbation == "route_segment_reversal_kick"
+destruction "--destruction=" c ("geographic_cluster_destruction", "route_segment_destruction", "uniform_customer_arc_destruction") | skeleton %in% c("LNS_MIP")
+geographic_cluster_destruction.ratio "--geographic_cluster_destruction.ratio=" r (0.05, 0.8) | skeleton %in% c("LNS_MIP") & destruction == "geographic_cluster_destruction"
+route_segment_destruction.ratio "--route_segment_destruction.ratio=" r (0.05, 0.8) | skeleton %in% c("LNS_MIP") & destruction == "route_segment_destruction"
+uniform_customer_arc_destruction.ratio "--uniform_customer_arc_destruction.ratio=" r (0.05, 0.8) | skeleton %in% c("LNS_MIP") & destruction == "uniform_customer_arc_destruction"
+SA.T0 "--SA.T0=" r (1.0, 1000.0) | skeleton == "SA"  # log-scale
+SA.alpha "--SA.alpha=" r (0.8, 0.999) | skeleton == "SA"
+SA.iters_per_T "--SA.iters_per_T=" i (1, 50) | skeleton == "SA"
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+ILS.ls_sample "--ILS.ls_sample=" i (4, 256) | skeleton == "ILS"  # log-scale
+VNS.shake_strength "--VNS.shake_strength=" i (1, 4) | skeleton == "VNS"
+VNS.ls_time_share "--VNS.ls_time_share=" r (0.02, 0.3) | skeleton == "VNS"
+VNS.ls_sample "--VNS.ls_sample=" i (4, 256) | skeleton == "VNS"  # log-scale
+LNS_MIP.destroy_ratio "--LNS_MIP.destroy_ratio=" r (0.05, 0.6) | skeleton == "LNS_MIP"
+LNS_MIP.mip_time_share "--LNS_MIP.mip_time_share=" r (0.04, 1.0) | skeleton == "LNS_MIP"  # log-scale
