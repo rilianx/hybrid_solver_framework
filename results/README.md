@@ -36,6 +36,9 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run33/`](tune_run33/) | 27 sep | ciclo CVRP rutas, 2.ª generación optimizada (corrida 41) | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | efecto de la optimización al volver a afinar |
 | [`tune_run35/`](tune_run35/) | 27 sep | ciclo CVRP gran tour, 2.ª generación optimizada (modelo de la corrida 47, componentes de la 42) | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | efecto de la optimización, memoria acotada |
 | [`tune_run36/`](tune_run36/) | 27 sep | lo mismo que la run 35 | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | selección final en carrera |
+| [`tune_run37/`](tune_run37/) | 27 sep | ciclo CVRP gran tour: modelo de la corrida 50, SA por tiempo, carrera | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | todos los arreglos juntos |
+| [`tune_run38/`](tune_run38/) | 27 sep | ciclo CVRP rutas: modelo de la corrida 51, SA por tiempo, carrera | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | todos los arreglos juntos |
+| [`tune_run39/`](tune_run39/) | 27 sep | CLSP escrito a mano | SA, ILS, VNS, LNS_MIP | 10+10, 10×15 | 5 s | 40 × 3 réplicas | referencia para el ciclo del CLSP |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -327,6 +330,24 @@ cualquier velocidad del modelo usaría todo el presupuesto); en el tuner, que la
 reevalúe con más semillas cuando las mejores configuraciones difieren en el esqueleto (hecho: carrera, abajo); y en la
 optimización del modelo, sugerir la poda (descartar segmentos imposibles en vez de penalizarlos;
 hecho, y no hacía falta relajar la prueba de equivalencia).
+
+**Todo junto** (runs 37 y 38: modelos reoptimizados con memoria acotada, SA por tiempo, selección en
+carrera; mismos catálogos de componentes que las runs 32–36):
+
+| Comparación (mismo mejor conocido por par) | Gap afinado | Diferencia por instancia |
+|---|---|---|
+| Gran tour, run 37 contra run 36 | 0,58 contra 1,56 % | −0,98 [−1,18, −0,77] |
+| **Gran tour (37) contra escrito a mano (30)** | **0,58 contra 1,33 %** | **−0,76 [−1,07, −0,43]** |
+| Rutas, run 38 contra run 33 | 5,66 contra 5,03 % | +0,62 [−0,28, +1,38], ruido |
+| Rutas (38) contra escrito a mano (30) | 6,58 contra 1,30 % | +5,28 [+4,59, +6,01] |
+
+- **En gran tour el ciclo completo le gana a lo escrito a mano**, con las tres réplicas de acuerdo
+  (VNS con 2-opt sobre el tour, desvío 0,11). La mejora sobre la run 36 viene del modelo 3,4 veces
+  más rápido (corrida 50): el VNS generado ya igualaba a lo escrito a mano a 5 s y lo superaba con
+  más tiempo; más velocidad es más tiempo.
+- En rutas no cambia nada: el catálogo es el límite (su mejor vecindario es un intercambio entre
+  rutas; lo escrito a mano tiene `relocate` con delta O(1)). Las réplicas se ponen de acuerdo
+  (desvío 0,52 contra 1,62), pero en algo peor.
 
 **SA con enfriamiento por tiempo** (nuevo default, `SA.cooling = time`: T = T0 · T_end^(t/presupuesto)).
 Las dos configuraciones SA de la run 35, en las mismas instancias de test y a 5 s (una semilla):
