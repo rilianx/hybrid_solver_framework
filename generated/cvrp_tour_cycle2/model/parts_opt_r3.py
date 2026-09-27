@@ -195,11 +195,7 @@ def cost_terms(inst, sol) -> dict[str, float]:
     tour = _as_tour(sol)
     data = _idata(inst)
     _, split_cost = data.split_cache(tour)
-
-    vio = violations(inst, tour)
-    penalty = 1e6 * vio["visita"] + 1e6 * vio["capacidad"]
-
-    return {"distancia": float(split_cost + penalty)}
+    return {"distancia": float(split_cost)}
 
 
 def variables(inst) -> dict[str, tuple[float, float, str]]:
