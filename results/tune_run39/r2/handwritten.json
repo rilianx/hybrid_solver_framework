@@ -1,0 +1,1500 @@
+{
+  "catalog": "handwritten",
+  "generated_components": [],
+  "settings": {
+    "trials": 40,
+    "budget": 5.0,
+    "train": 10,
+    "test": 10,
+    "problem": "clsp",
+    "size": "10x15",
+    "seed": 0,
+    "tuner_seed": 2,
+    "seeds_test": 3,
+    "objective": "ratio",
+    "skeletons": [
+      "SA",
+      "ILS",
+      "VNS",
+      "LNS_MIP"
+    ],
+    "ref_time": 60.0,
+    "reeval_top": 5,
+    "reeval_seeds": 2,
+    "race_seeds": 6,
+    "screen": -1,
+    "defaults_margin": 0.005
+  },
+  "tuning": {
+    "best_config": {
+      "skeleton": "LNS_MIP",
+      "constructor": "greedy_unit_marginal_cost",
+      "greedy_unit_marginal_cost.rule": "greedy",
+      "greedy_unit_marginal_cost.alpha": 0.5,
+      "destruction": "period_window",
+      "LNS_MIP.destroy_ratio": 0.325,
+      "LNS_MIP.mip_time_share": 0.2
+    },
+    "best_cost": 0.6514101730391747,
+    "best_summary": "LNS_MIP[constructor=greedy_unit_marginal_cost, destruction=period_window]",
+    "best_default_cost": 0.661020381280541,
+    "best_default_summary": "LNS_MIP[constructor=lot_for_lot, destruction=period_window]",
+    "n_trials": 40,
+    "n_failed": 0,
+    "seconds": 3641.2,
+    "skeleton_usage": {
+      "LNS_MIP": 22,
+      "SA": 6,
+      "ILS": 6,
+      "VNS": 6
+    },
+    "best_trial_number": 26,
+    "reevaluated": [
+      {
+        "number": 26,
+        "enqueued": false,
+        "twin": false,
+        "summary": "LNS_MIP[constructor=greedy_unit_marginal_cost, destruction=period_window]",
+        "costs": [
+          0.6496218764732473,
+          0.6499438483640244,
+          0.6562181204201003,
+          0.649303693536974,
+          0.6504863124130115,
+          0.651852838840914,
+          0.6554761485570934
+        ],
+        "mean": 0.6518432626579093,
+        "seeds": 7
+      },
+      {
+        "number": 21,
+        "enqueued": false,
+        "twin": false,
+        "summary": "LNS_MIP[constructor=greedy_unit_marginal_cost, destruction=random_setups]",
+        "costs": [
+          0.6561481724002256,
+          0.6548471713355665,
+          0.6594871688886962
+        ],
+        "mean": 0.6568275042081627,
+        "seeds": 3,
+        "eliminated_after": 2
+      },
+      {
+        "number": 11,
+        "enqueued": false,
+        "twin": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+        "costs": [
+          0.6564670162893103,
+          0.6561661899258667,
+          0.656365211917459
+        ],
+        "mean": 0.6563328060442121,
+        "seeds": 3,
+        "eliminated_after": 2
+      },
+      {
+        "number": 35,
+        "enqueued": false,
+        "twin": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=period_window]",
+        "costs": [
+          0.6598938632949155,
+          0.661118179875481,
+          0.6638873654976797
+        ],
+        "mean": 0.661633136222692,
+        "seeds": 3,
+        "eliminated_after": 2
+      },
+      {
+        "number": 12,
+        "enqueued": false,
+        "twin": false,
+        "summary": "LNS_MIP[constructor=greedy_latest_source, destruction=period_window]",
+        "costs": [
+          0.6635939284333437,
+          0.6535139152557445,
+          0.6511471513331887,
+          0.6609919178088969
+        ],
+        "mean": 0.6573117282077935,
+        "seeds": 4,
+        "eliminated_after": 3
+      },
+      {
+        "number": 26,
+        "enqueued": false,
+        "twin": true,
+        "summary": "LNS_MIP[constructor=greedy_unit_marginal_cost, destruction=period_window]",
+        "costs": [
+          0.6528309144209354,
+          0.64905338847484,
+          0.6516085599583208,
+          0.6509555443173105,
+          0.6516475330823843,
+          0.6497378703557014,
+          0.654037400664731
+        ],
+        "mean": 0.6514101730391747,
+        "seeds": 7
+      },
+      {
+        "number": 21,
+        "enqueued": false,
+        "twin": true,
+        "summary": "LNS_MIP[constructor=greedy_unit_marginal_cost, destruction=random_setups]",
+        "costs": [
+          0.6590996201307994,
+          0.6555038835812809,
+          0.6531308120700254
+        ],
+        "mean": 0.6559114385940352,
+        "seeds": 3,
+        "eliminated_after": 2
+      },
+      {
+        "number": 35,
+        "enqueued": false,
+        "twin": true,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=period_window]",
+        "costs": [
+          0.661020381280541,
+          0.6537441299846436,
+          0.6511471513331887,
+          0.6614316878997629
+        ],
+        "mean": 0.656835837624534,
+        "seeds": 4,
+        "eliminated_after": 3
+      }
+    ],
+    "best_is_twin": true,
+    "incumbent_curve": [
+      0.7257990156533775,
+      0.7257990156533775,
+      0.7257990156533775,
+      0.661020381280541,
+      0.661020381280541,
+      0.661020381280541,
+      0.661020381280541,
+      0.6528309144209354,
+      0.6528309144209354,
+      0.6528309144209354,
+      0.6528309144209354,
+      0.6528309144209354,
+      0.6528309144209354,
+      0.6528309144209354,
+      0.6528309144209354,
+      0.6528309144209354,
+      0.6528309144209354,
+      0.6528309144209354,
+      0.6528309144209354,
+      0.6528309144209354,
+      0.6528309144209354,
+      0.6528309144209354,
+      0.6528309144209354,
+      0.6504744523693464,
+      0.6504744523693464,
+      0.6504744523693464,
+      0.6496218764732473,
+      0.6496218764732473,
+      0.6496218764732473,
+      0.6496218764732473,
+      0.6496218764732473,
+      0.6496218764732473,
+      0.6496218764732473,
+      0.6496218764732473,
+      0.6496218764732473,
+      0.6496218764732473,
+      0.6496218764732473,
+      0.6496218764732473,
+      0.6496218764732473,
+      0.6496218764732473
+    ],
+    "trials": [
+      {
+        "number": 0,
+        "cost": 0.7257990156533775,
+        "seconds": 50.54,
+        "enqueued": true,
+        "summary": "SA[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 1,
+        "cost": 0.7829955359053284,
+        "seconds": 57.03,
+        "enqueued": true,
+        "summary": "ILS[constructor=lot_for_lot, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 2,
+        "cost": 0.751815782753383,
+        "seconds": 57.02,
+        "enqueued": true,
+        "summary": "VNS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 3,
+        "cost": 0.661020381280541,
+        "seconds": 52.32,
+        "enqueued": true,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=period_window]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        }
+      },
+      {
+        "number": 4,
+        "cost": 0.7078673883139954,
+        "seconds": 50.68,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.5,
+          "neighborhood": "setup_flip",
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 5,
+        "cost": 0.7190591206616928,
+        "seconds": 56.56,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.5,
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 6,
+        "cost": 0.7101712978219841,
+        "seconds": 56.32,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.5,
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 7,
+        "cost": 0.6528309144209354,
+        "seconds": 52.96,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_unit_marginal_cost, destruction=period_window]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.5,
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        }
+      },
+      {
+        "number": 8,
+        "cost": 0.7267178760289723,
+        "seconds": 50.7,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_latest_source, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_latest_source",
+          "greedy_latest_source.rule": "greedy",
+          "greedy_latest_source.alpha": 0.5,
+          "neighborhood": "setup_flip",
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 9,
+        "cost": 0.7969031049889992,
+        "seconds": 57.17,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_latest_source, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_latest_source",
+          "greedy_latest_source.rule": "greedy",
+          "greedy_latest_source.alpha": 0.5,
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 10,
+        "cost": 0.7473242283068542,
+        "seconds": 57.2,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_latest_source, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_latest_source",
+          "greedy_latest_source.rule": "greedy",
+          "greedy_latest_source.alpha": 0.5,
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 11,
+        "cost": 0.6564670162893103,
+        "seconds": 51.61,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        }
+      },
+      {
+        "number": 12,
+        "cost": 0.6635939284333437,
+        "seconds": 52.2,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_latest_source, destruction=period_window]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_latest_source",
+          "greedy_latest_source.rule": "greedy",
+          "greedy_latest_source.alpha": 0.5,
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        }
+      },
+      {
+        "number": 13,
+        "cost": 0.6562256292180609,
+        "seconds": 51.02,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_unit_marginal_cost, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "rcl",
+          "greedy_unit_marginal_cost.alpha": 0.033003005560422405,
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.26193033786300074,
+          "LNS_MIP.mip_time_share": 0.1498489767773298
+        }
+      },
+      {
+        "number": 14,
+        "cost": 0.6632768656677889,
+        "seconds": 50.88,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_unit_marginal_cost, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "rcl",
+          "greedy_unit_marginal_cost.alpha": 0.0019919335378850676,
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.14691836561494007,
+          "LNS_MIP.mip_time_share": 0.05349883902121357
+        }
+      },
+      {
+        "number": 15,
+        "cost": 0.6530542772018654,
+        "seconds": 51.22,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_unit_marginal_cost, destruction=period_window]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "rcl",
+          "greedy_unit_marginal_cost.alpha": 0.9784554561385193,
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.15052790538826827,
+          "LNS_MIP.mip_time_share": 0.7546986256565756
+        }
+      },
+      {
+        "number": 16,
+        "cost": 0.6790919663438263,
+        "seconds": 69.08,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_unit_marginal_cost, destruction=period_window]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "roulette",
+          "greedy_unit_marginal_cost.alpha": 0.9619685566027136,
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.5747364794910759,
+          "LNS_MIP.mip_time_share": 0.9677520459015535
+        }
+      },
+      {
+        "number": 17,
+        "cost": 0.6826211557701861,
+        "seconds": 50.7,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_unit_marginal_cost, destruction=period_window]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "rcl",
+          "greedy_unit_marginal_cost.alpha": 0.9745442779729633,
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.0888906339462438,
+          "LNS_MIP.mip_time_share": 0.686606474333912
+        }
+      },
+      {
+        "number": 18,
+        "cost": 0.6589592966705003,
+        "seconds": 57.39,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_unit_marginal_cost, destruction=period_window]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "roulette",
+          "greedy_unit_marginal_cost.alpha": 0.7160801223554475,
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.5006457811289123,
+          "LNS_MIP.mip_time_share": 0.4679888546417601
+        }
+      },
+      {
+        "number": 19,
+        "cost": 0.7072925457325436,
+        "seconds": 50.7,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.24803077416243596,
+          "neighborhood": "setup_flip",
+          "SA.T0": 1.2462725801624583,
+          "SA.cooling": "iterations",
+          "SA.T_end": 1.0835829561894144e-05,
+          "SA.alpha": 0.8011527771888238,
+          "SA.iters_per_T": 2
+        }
+      },
+      {
+        "number": 20,
+        "cost": 0.7618811198063848,
+        "seconds": 52.17,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "rcl",
+          "greedy_unit_marginal_cost.alpha": 0.7535879766983835,
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.28836106390797744,
+          "ILS.ls_sample": 4
+        }
+      },
+      {
+        "number": 21,
+        "cost": 0.6561481724002256,
+        "seconds": 50.85,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_unit_marginal_cost, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "rcl",
+          "greedy_unit_marginal_cost.alpha": 0.04520533667329657,
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.20175571183302138,
+          "LNS_MIP.mip_time_share": 0.09312509003171511
+        }
+      },
+      {
+        "number": 22,
+        "cost": 0.6629837166715535,
+        "seconds": 51.24,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_unit_marginal_cost, destruction=random_setups]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "rcl",
+          "greedy_unit_marginal_cost.alpha": 0.2635268602618345,
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.19433251519375547,
+          "LNS_MIP.mip_time_share": 0.06736293218101679
+        }
+      },
+      {
+        "number": 23,
+        "cost": 0.6504744523693464,
+        "seconds": 51.92,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_unit_marginal_cost, destruction=period_window]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "rcl",
+          "greedy_unit_marginal_cost.alpha": 0.2524572043472204,
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.2141884954658638,
+          "LNS_MIP.mip_time_share": 0.09862108436605947
+        }
+      },
+      {
+        "number": 24,
+        "cost": 0.6917539909460617,
+        "seconds": 50.9,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_latest_source, destruction=period_window]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_latest_source",
+          "greedy_latest_source.rule": "rcl",
+          "greedy_latest_source.alpha": 0.9886978531611732,
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.07464612576617818,
+          "LNS_MIP.mip_time_share": 0.3526140313286185
+        }
+      },
+      {
+        "number": 25,
+        "cost": 0.7819807453611112,
+        "seconds": 51.64,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "rcl",
+          "greedy_unit_marginal_cost.alpha": 0.30551051796090345,
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.2917436928179524,
+          "VNS.ls_sample": 4
+        }
+      },
+      {
+        "number": 26,
+        "cost": 0.6496218764732473,
+        "seconds": 52.18,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_unit_marginal_cost, destruction=period_window]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.6105995122729633,
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.25139206370173384,
+          "LNS_MIP.mip_time_share": 0.10619087419195561
+        }
+      },
+      {
+        "number": 27,
+        "cost": 0.6527692293833187,
+        "seconds": 53.02,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_unit_marginal_cost, destruction=period_window]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.6527047201805171,
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.39273040918777713,
+          "LNS_MIP.mip_time_share": 0.10787067251475481
+        }
+      },
+      {
+        "number": 28,
+        "cost": 0.652836265455084,
+        "seconds": 52.9,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_unit_marginal_cost, destruction=period_window]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.7040381037743615,
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.41879897995091797,
+          "LNS_MIP.mip_time_share": 0.10205515538507574
+        }
+      },
+      {
+        "number": 29,
+        "cost": 0.7801816071634038,
+        "seconds": 50.53,
+        "enqueued": false,
+        "summary": "SA[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "SA.T0": 640.796231518282,
+          "SA.cooling": "iterations",
+          "SA.T_end": 0.0852197463754021,
+          "SA.alpha": 0.9942505735297658,
+          "SA.iters_per_T": 50
+        }
+      },
+      {
+        "number": 30,
+        "cost": 0.652994723876702,
+        "seconds": 52.33,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_unit_marginal_cost, destruction=period_window]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.6176717365414252,
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.43211621857808835,
+          "LNS_MIP.mip_time_share": 0.0976391756699376
+        }
+      },
+      {
+        "number": 31,
+        "cost": 0.6516117285347758,
+        "seconds": 52.3,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_unit_marginal_cost, destruction=period_window]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.3710601606501291,
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.2726709124156008,
+          "LNS_MIP.mip_time_share": 0.14237247718386334
+        }
+      },
+      {
+        "number": 32,
+        "cost": 0.6515062576827579,
+        "seconds": 52.01,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_unit_marginal_cost, destruction=period_window]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.36278275223987316,
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.25671296017648876,
+          "LNS_MIP.mip_time_share": 0.12898736095892693
+        }
+      },
+      {
+        "number": 33,
+        "cost": 0.8777225675484654,
+        "seconds": 51.29,
+        "enqueued": false,
+        "summary": "ILS[constructor=lot_for_lot, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 6,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.03723562987083397,
+          "ILS.ls_sample": 252
+        }
+      },
+      {
+        "number": 34,
+        "cost": 0.6515062576827579,
+        "seconds": 52.05,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_unit_marginal_cost, destruction=period_window]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.34488153087669016,
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.2413687291649546,
+          "LNS_MIP.mip_time_share": 0.13758170277566326
+        }
+      },
+      {
+        "number": 35,
+        "cost": 0.6598938632949155,
+        "seconds": 51.53,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=period_window]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.23688979172329339,
+          "LNS_MIP.mip_time_share": 0.06632397257419924
+        }
+      },
+      {
+        "number": 36,
+        "cost": 0.7257396555481181,
+        "seconds": 50.67,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.19435541460439254,
+          "neighborhood": "setup_flip",
+          "SA.T0": 888.8135111425382,
+          "SA.cooling": "iterations",
+          "SA.T_end": 1.177358412225603e-05,
+          "SA.alpha": 0.9989165020866045,
+          "SA.iters_per_T": 2
+        }
+      },
+      {
+        "number": 37,
+        "cost": 0.8780463611576173,
+        "seconds": 51.36,
+        "enqueued": false,
+        "summary": "VNS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.026896528386154334,
+          "VNS.ls_sample": 234
+        }
+      },
+      {
+        "number": 38,
+        "cost": 0.7156159783741678,
+        "seconds": 51.59,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "roulette",
+          "greedy_unit_marginal_cost.alpha": 0.14637590387026633,
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 1,
+          "VNS.ls_time_share": 0.2992162061031708,
+          "VNS.ls_sample": 5
+        }
+      },
+      {
+        "number": 39,
+        "cost": 0.712277469577239,
+        "seconds": 52.21,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.38190123704671153,
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.2971284602123555,
+          "ILS.ls_sample": 5
+        }
+      }
+    ]
+  },
+  "test": {
+    "tuned": {
+      "label": "tuned",
+      "summary": "LNS_MIP[constructor=greedy_unit_marginal_cost, destruction=period_window]",
+      "mean": 86578.21666666667,
+      "std": 15606.044904760107,
+      "per_instance": [
+        77354.06666666667,
+        69829.4,
+        82497.53333333334,
+        83137.73333333334,
+        114805.33333333333,
+        91302.5,
+        115999.23333333334,
+        71318.8,
+        76268.66666666667,
+        83268.90000000001
+      ],
+      "config": {
+        "skeleton": "LNS_MIP",
+        "constructor": "greedy_unit_marginal_cost",
+        "greedy_unit_marginal_cost.rule": "greedy",
+        "greedy_unit_marginal_cost.alpha": 0.5,
+        "destruction": "period_window",
+        "LNS_MIP.destroy_ratio": 0.325,
+        "LNS_MIP.mip_time_share": 0.2
+      },
+      "gap_per_instance": [
+        0.00248653701769349,
+        0.002310947287435911,
+        0.0039542783523137184,
+        0.004892042272531362,
+        0.018156878743267248,
+        0.00762040347856796,
+        0.008979396098645289,
+        0.0012354206326476748,
+        0.012001277352730603,
+        0.005745640946357877
+      ],
+      "mean_gap": 0.006738282218219113
+    },
+    "baselines": [
+      {
+        "label": "LNS_MIP:constructor=greedy_unit_marginal_cost",
+        "summary": "LNS_MIP[constructor=greedy_unit_marginal_cost, destruction=period_window]",
+        "mean": 86593.95,
+        "std": 15610.340991807323,
+        "per_instance": [
+          77354.06666666667,
+          69829.4,
+          82497.53333333334,
+          83137.73333333334,
+          114805.33333333333,
+          91459.83333333333,
+          115999.23333333334,
+          71318.8,
+          76268.66666666667,
+          83268.90000000001
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.5,
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.00248653701769349,
+          0.002310947287435911,
+          0.0039542783523137184,
+          0.004892042272531362,
+          0.018156878743267248,
+          0.009356744507717835,
+          0.008979396098645289,
+          0.0012354206326476748,
+          0.012001277352730603,
+          0.005745640946357877
+        ],
+        "mean_gap": 0.006911916321134101
+      },
+      {
+        "label": "LNS_MIP:destruction=random_setups",
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=random_setups]",
+        "mean": 87299.86,
+        "std": 15713.900886170819,
+        "per_instance": [
+          77895.93333333333,
+          71019.06666666667,
+          83202.66666666667,
+          83101.0,
+          115647.66666666667,
+          92509.33333333333,
+          116775.46666666667,
+          71416.93333333333,
+          76288.93333333333,
+          85141.59999999999
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "random_setups",
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.009508973737572765,
+          0.019387077450704646,
+          0.012535403123019907,
+          0.00444804370686425,
+          0.025627154318688443,
+          0.02093909563118934,
+          0.01573119451482714,
+          0.0026131018229941455,
+          0.012270193717087458,
+          0.028364648304449874
+        ],
+        "mean_gap": 0.015142488632739797
+      },
+      {
+        "label": "default:LNS_MIP",
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=period_window]",
+        "mean": 87910.6,
+        "std": 16107.353032533516,
+        "per_instance": [
+          78435.53333333333,
+          71155.46666666666,
+          83850.26666666668,
+          83829.26666666668,
+          117294.33333333333,
+          92978.0,
+          117172.43333333333,
+          71244.13333333333,
+          77758.93333333333,
+          85387.63333333333
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.01650203510699965,
+          0.021344923475588154,
+          0.020416375612633302,
+          0.013250657738347181,
+          0.04023070055635368,
+          0.026111331832428374,
+          0.01918407240112885,
+          0.0001871849443404887,
+          0.03177547606600113,
+          0.03133630942315697
+        ],
+        "mean_gap": 0.022033906715697778
+      },
+      {
+        "label": "LNS_MIP:constructor=greedy_latest_source",
+        "summary": "LNS_MIP[constructor=greedy_latest_source, destruction=period_window]",
+        "mean": 88868.91333333333,
+        "std": 18267.851403065684,
+        "per_instance": [
+          78435.53333333333,
+          71365.86666666667,
+          83187.53333333334,
+          83829.26666666668,
+          125405.33333333333,
+          93062.66666666667,
+          119541.63333333333,
+          71244.13333333333,
+          77780.53333333334,
+          84836.63333333333
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_latest_source",
+          "greedy_latest_source.rule": "greedy",
+          "greedy_latest_source.alpha": 0.5,
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.01650203510699965,
+          0.0243649440301008,
+          0.012351237922778813,
+          0.013250657738347181,
+          0.11216351241892662,
+          0.02704571874218284,
+          0.03979174295674092,
+          0.0001871849443404887,
+          0.03206208429643422,
+          0.024681173494119316
+        ],
+        "mean_gap": 0.030240029165097087
+      },
+      {
+        "label": "SA:constructor=greedy_unit_marginal_cost",
+        "summary": "SA[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "mean": 92136.18333333333,
+        "std": 17728.64398228816,
+        "per_instance": [
+          83123.73333333332,
+          74709.06666666667,
+          86499.86666666667,
+          85980.86666666668,
+          122897.66666666667,
+          98162.66666666667,
+          127193.63333333332,
+          75258.33333333333,
+          78863.46666666667,
+          88672.53333333333
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.5,
+          "neighborhood": "setup_flip",
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.07725976363210647,
+          0.07235226683355254,
+          0.052660700363219154,
+          0.039257208933154646,
+          0.08992414433270075,
+          0.0833296546447123,
+          0.10635003060301115,
+          0.056542020212230176,
+          0.046431417923452546,
+          0.0710122731496465
+        ],
+        "mean_gap": 0.06951194806277862
+      },
+      {
+        "label": "VNS:constructor=greedy_unit_marginal_cost",
+        "summary": "VNS[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip]",
+        "mean": 93836.36333333333,
+        "std": 17780.118627809796,
+        "per_instance": [
+          85046.53333333333,
+          74641.99999999999,
+          88507.26666666666,
+          89896.86666666667,
+          124133.66666666667,
+          99576.0,
+          128853.96666666666,
+          75830.0,
+          81641.79999999999,
+          90235.53333333334
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.5,
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.10217870062457172,
+          0.07138961135895172,
+          0.07708976795996057,
+          0.08659019577032948,
+          0.1008856725612965,
+          0.09892729439809297,
+          0.12079186850012191,
+          0.06456757470083162,
+          0.08329684385955104,
+          0.08989063514072808
+        ],
+        "mean_gap": 0.08956081648744356
+      },
+      {
+        "label": "ILS:constructor=greedy_unit_marginal_cost",
+        "summary": "ILS[constructor=greedy_unit_marginal_cost, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "mean": 94299.3,
+        "std": 18041.54393746093,
+        "per_instance": [
+          85730.26666666665,
+          75109.93333333332,
+          87854.46666666667,
+          89518.40000000001,
+          124329.66666666667,
+          101147.66666666667,
+          130217.59999999998,
+          75554.4,
+          82280.8,
+          91249.8
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_unit_marginal_cost",
+          "greedy_unit_marginal_cost.rule": "greedy",
+          "greedy_unit_marginal_cost.alpha": 0.5,
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.11103968869040348,
+          0.07810619065937105,
+          0.06914551403590331,
+          0.08201564067542587,
+          0.10262390842926153,
+          0.1162723112464869,
+          0.1326529635921294,
+          0.06069846190131223,
+          0.09177567067652798,
+          0.1021412386524496
+        ],
+        "mean_gap": 0.09464715885592714
+      },
+      {
+        "label": "default:SA",
+        "summary": "SA[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "mean": 95994.7,
+        "std": 17636.615401922598,
+        "per_instance": [
+          85529.33333333334,
+          77837.26666666666,
+          89973.46666666667,
+          91209.66666666666,
+          125518.0,
+          103615.83333333333,
+          130402.50000000001,
+          77192.33333333333,
+          85459.73333333334,
+          93208.86666666667
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.10843565027090138,
+          0.11725354201713645,
+          0.09493269857186785,
+          0.10245810821155593,
+          0.11316270242466167,
+          0.1435111611412763,
+          0.13426125258661425,
+          0.08369319638882794,
+          0.13395661777519463,
+          0.125803407365178
+        ],
+        "mean_gap": 0.11574683367532144
+      },
+      {
+        "label": "SA:constructor=greedy_latest_source",
+        "summary": "SA[constructor=greedy_latest_source, neighborhood=setup_flip]",
+        "mean": 96899.34333333334,
+        "std": 18094.002043599667,
+        "per_instance": [
+          85529.33333333334,
+          78192.86666666667,
+          90368.6,
+          91697.66666666667,
+          127270.0,
+          106652.66666666667,
+          131329.6,
+          77192.33333333333,
+          87364.86666666667,
+          93395.5
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_latest_source",
+          "greedy_latest_source.rule": "greedy",
+          "greedy_latest_source.alpha": 0.5,
+          "neighborhood": "setup_flip",
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.10843565027090138,
+          0.12235772124329933,
+          0.09974127628917667,
+          0.10835660095326739,
+          0.12870040263218574,
+          0.177025853823629,
+          0.14232531276393476,
+          0.08369319638882794,
+          0.15923564061804749,
+          0.12805761825850417
+        ],
+        "mean_gap": 0.12579292732417738
+      },
+      {
+        "label": "default:VNS",
+        "summary": "VNS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "mean": 99817.41666666667,
+        "std": 18364.734967632634,
+        "per_instance": [
+          89592.4,
+          81568.06666666667,
+          91091.6,
+          94279.33333333333,
+          132151.33333333334,
+          110221.5,
+          133170.43333333332,
+          80143.53333333334,
+          88245.8,
+          97710.16666666667
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.16109182993745638,
+          0.1708043627622663,
+          0.10853982957822923,
+          0.13956140032796258,
+          0.17199075305817185,
+          0.2164117335452258,
+          0.1583371677703176,
+          0.12512471196916694,
+          0.1709246565345348,
+          0.1801713989393653
+        ],
+        "mean_gap": 0.1602957844422697
+      },
+      {
+        "label": "VNS:constructor=greedy_latest_source",
+        "summary": "VNS[constructor=greedy_latest_source, neighborhood=setup_flip]",
+        "mean": 100612.27666666667,
+        "std": 18559.95950232082,
+        "per_instance": [
+          91992.06666666667,
+          81381.40000000001,
+          94853.13333333333,
+          93937.73333333334,
+          135370.66666666666,
+          110837.33333333333,
+          132071.8,
+          80143.53333333334,
+          91065.66666666667,
+          94469.43333333333
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_latest_source",
+          "greedy_latest_source.rule": "greedy",
+          "greedy_latest_source.alpha": 0.5,
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.19219082227653786,
+          0.1681250035884277,
+          0.15431583439410856,
+          0.13543245540876478,
+          0.20054157280784207,
+          0.2232081107726717,
+          0.14878108394677073,
+          0.12512471196916694,
+          0.20834118409890448,
+          0.14102889287203926
+        ],
+        "mean_gap": 0.1697089672135234
+      },
+      {
+        "label": "ILS:constructor=greedy_latest_source",
+        "summary": "ILS[constructor=greedy_latest_source, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "mean": 103347.78666666667,
+        "std": 18863.217242590286,
+        "per_instance": [
+          92619.6,
+          85651.8,
+          98003.46666666666,
+          98491.33333333333,
+          135448.66666666666,
+          112340.83333333333,
+          138578.93333333332,
+          82205.2,
+          93544.8,
+          96593.23333333334
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_latest_source",
+          "greedy_latest_source.rule": "greedy",
+          "greedy_latest_source.alpha": 0.5,
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.20032347444733314,
+          0.22942108617393267,
+          0.19265383676148318,
+          0.1904721614510936,
+          0.2012333197348894,
+          0.23980083579805467,
+          0.20538114303624197,
+          0.1540681839878254,
+          0.24123655528752364,
+          0.16668075800105955
+        ],
+        "mean_gap": 0.20212713546794372
+      },
+      {
+        "label": "default:ILS",
+        "summary": "ILS[constructor=lot_for_lot, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "mean": 103552.12666666666,
+        "std": 20104.393963558206,
+        "per_instance": [
+          93251.53333333334,
+          84055.46666666667,
+          95347.66666666667,
+          96899.13333333333,
+          136973.66666666666,
+          111632.0,
+          141329.1666666667,
+          82214.46666666666,
+          92203.33333333333,
+          101614.83333333333
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.20851314935724155,
+          0.20650778066765824,
+          0.16033406106982942,
+          0.17122712017373154,
+          0.21475785901369887,
+          0.23197810444532732,
+          0.22930310086352415,
+          0.15419827752414203,
+          0.22343676882834707,
+          0.22733308210497136
+        ],
+        "mean_gap": 0.20275893040484716
+      }
+    ],
+    "best_baseline": "LNS_MIP:constructor=greedy_unit_marginal_cost",
+    "gain_vs_best_baseline": 0.000181690907197589,
+    "wins_per_instance": "1/10",
+    "reference": 132104.72,
+    "best_known": [
+      77162.2,
+      69668.4,
+      82172.6,
+      82733.0,
+      112758.0,
+      90612.0,
+      114966.9,
+      71230.8,
+      75364.20000000001,
+      82793.20000000001
+    ],
+    "best_baseline_by_gap": "LNS_MIP:constructor=greedy_unit_marginal_cost",
+    "tuned_vs_best_baseline": {
+      "a": "tuned",
+      "b": "LNS_MIP:constructor=greedy_unit_marginal_cost",
+      "mean_diff": 0.0001736341029149875,
+      "ci95": [
+        0.0,
+        0.0005209023087449625
+      ],
+      "wins_a": 1,
+      "n": 10,
+      "significant": false
+    },
+    "mip_reference": [
+      77833.2,
+      69774.4,
+      82172.6,
+      82733.0,
+      112758.0,
+      91976.0,
+      115139.09999999999,
+      71230.8,
+      75364.20000000001,
+      83170.20000000001
+    ]
+  }
+}
