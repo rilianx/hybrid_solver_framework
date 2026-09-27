@@ -3,7 +3,6 @@ from __future__ import annotations
 from functools import lru_cache
 from math import inf
 from random import Random
-from typing import Dict
 from weakref import WeakKeyDictionary
 
 from examples.cvrp.instance import CVRPInstance
@@ -16,9 +15,9 @@ class _InstData:
         "n",
         "customers",
         "customer_set",
+        "customer_to_idx",
         "demand",
         "capacity",
-        "dist",
         "dist_row",
         "split_cache",
         "mip_split_cache",
@@ -28,13 +27,13 @@ class _InstData:
         self.n = inst.n_customers
         self.customers = tuple(inst.customers)
         self.customer_set = set(self.customers)
+        self.customer_to_idx = {c: i for i, c in enumerate(self.customers)}
         self.demand = inst.demand
         self.capacity = inst.capacity
-        self.dist = inst.dist
 
         n = self.n
-        # Precompute distancias por fila para acelerar los bucles internos.
-        self.dist_row = [[self.dist(i, j) for j in range(n + 1)] for i in range(n + 1)]
+        dist = inst.dist
+        self.dist_row = [[dist(i, j) for j in range(n + 1)] for i in range(n + 1)]
 
         self.split_cache = lru_cache(maxsize=8192)(self._split_dp_cached)
         self.mip_split_cache = lru_cache(maxsize=8192)(self._mip_split_dp_cached)
@@ -44,9 +43,11 @@ class _InstData:
             return 0.0
         dr = self.dist_row
         total = dr[0][route[0]]
-        for i in range(len(route) - 1):
-            total += dr[route[i]][route[i + 1]]
-        total += dr[route[-1]][0]
+        prev = route[0]
+        for c in route[1:]:
+            total += dr[prev][c]
+            prev = c
+        total += dr[prev][0]
         return total
 
     def _split_dp_cached(self, tour: tuple[int, ...]):
@@ -57,30 +58,26 @@ class _InstData:
         demand = self.demand
         cap = self.capacity
         dr = self.dist_row
+        big_penalty = 1e6
 
         seg_cost = [[inf] * (n + 1) for _ in range(n)]
-        big_penalty = 1e6
 
         for i in range(n):
             load = 0.0
-            first = tour[i]
-            # route cost incrementally to avoid slicing
-            cost = dr[0][first]
-            prev = first
-            for j in range(i + 1, n + 1):
-                c = tour[j - 1]
+            route_cost = 0.0
+            prev = 0
+            for j in range(i, n):
+                c = tour[j]
                 load += demand[c]
-                if j == i + 1:
-                    cost = dr[0][c] + dr[c][0]
+                if j == i:
+                    route_cost = dr[0][c] + dr[c][0]
                 else:
-                    cost += dr[prev][c] - dr[prev][0]  # compensated below
-                    # revert above and set exact incremental by maintaining route cost directly
+                    route_cost += dr[prev][c] - dr[prev][0] + dr[c][0]
                 prev = c
-                route_cost = self._route_cost(tour[i:j])
                 excess = load - cap
                 if excess < 0.0:
                     excess = 0.0
-                seg_cost[i][j] = route_cost + big_penalty * excess
+                seg_cost[i][j + 1] = route_cost + big_penalty * excess
 
         dp = [inf] * (n + 1)
         prev_idx = [-1] * (n + 1)
@@ -119,19 +116,26 @@ class _InstData:
         demand = self.demand
         cap = self.capacity
         dr = self.dist_row
+        big_penalty = 1e6
 
         seg_cost = [[inf] * (n + 1) for _ in range(n)]
-        big_penalty = 1e6
 
         for i in range(n):
             load = 0.0
-            for j in range(i + 1, n + 1):
-                load += demand[tour[j - 1]]
-                route_cost = self._mip_route_cost(tour[i:j])
+            route_cost = 0.0
+            prev = 0
+            for j in range(i, n):
+                c = tour[j]
+                load += demand[c]
+                if j == i:
+                    route_cost = dr[0][c] + dr[c][0]
+                else:
+                    route_cost += dr[prev][c] - dr[prev][0] + dr[c][0]
+                prev = c
                 excess = load - cap
                 if excess < 0.0:
                     excess = 0.0
-                seg_cost[i][j] = route_cost + big_penalty * excess
+                seg_cost[i][j + 1] = route_cost + big_penalty * excess
 
         dp = [inf] * (n + 1)
         prev_idx = [-1] * (n + 1)
@@ -208,27 +212,28 @@ def _split_dp(inst: CVRPInstance, tour: tuple[int, ...]):
 def violations(inst, sol) -> dict[str, float]:
     tour = _as_tour(sol)
     data = _idata(inst)
-    customers = data.customer_set
 
-    counts = {c: 0 for c in customers}
+    idx = data.customer_to_idx
+    counts = [0] * len(data.customers)
     extra = 0
     for c in tour:
-        if c in counts:
-            counts[c] += 1
-        else:
+        pos = idx.get(c)
+        if pos is None:
             extra += 1
+        else:
+            counts[pos] += 1
 
     missing = 0
     duplicated = 0
-    for c in customers:
-        cnt = counts[c]
+    for cnt in counts:
         if cnt == 0:
             missing += 1
         elif cnt > 1:
             duplicated += cnt - 1
+
     visita = float(missing + duplicated + extra)
 
-    routes, _ = _split_dp(inst, tour)
+    routes, _ = data.split_cache(tour)
     capacidad = 0.0
     demand = data.demand
     cap = data.capacity
@@ -245,7 +250,7 @@ def violations(inst, sol) -> dict[str, float]:
 def cost_terms(inst, sol) -> dict[str, float]:
     tour = _as_tour(sol)
     data = _idata(inst)
-    routes, split_cost = data.split_cache(tour)
+    _, split_cost = data.split_cache(tour)
 
     vio = violations(inst, tour)
     penalty = 1e6 * vio["visita"] + 1e6 * vio["capacidad"]
@@ -383,9 +388,10 @@ def objective_terms(inst) -> dict[str, tuple[dict[str, float], float]]:
     coef: dict[str, float] = {}
     dr = _idata(inst).dist_row
     for i in range(n + 1):
+        row = dr[i]
         for j in range(n + 1):
             if i != j:
-                coef[f"x_{i}_{j}"] = float(dr[i][j])
+                coef[f"x_{i}_{j}"] = float(row[j])
     return {"distancia": (coef, 0.0)}
 
 
