@@ -334,12 +334,13 @@ los empatados siguen recibiendo semillas:
   solo gasta en los que quedan cerca. En dos réplicas llegaron al tope de 6 semillas extra un
   VNS y un SA todavía empatados, y ganó VNS por la media.
 - **Con esto, el ciclo completo en gran tour ya no se distingue de lo escrito a mano.**
-- Cautela: en train los finalistas difieren en ~0,1 % del costo normalizado aun con 7 semillas,
-  y en test el VNS gana por 0,6–1,2 puntos. La señal de train es débil (el objetivo del tuner
-  normaliza por la partida trivial y promedia 10 instancias); que las tres réplicas eligieran
-  VNS se sostiene en la media, no en una diferencia significativa. La siguiente mejora del tuner
-  sería el objetivo, no la selección: por ejemplo, el gap contra el mejor conocido en train en
-  vez del cociente con la partida trivial.
+- Cautela: en dos réplicas los finalistas (un VNS y un SA) siguen empatados en train aun con 7
+  semillas, y ganó VNS por la media, no por una diferencia significativa.
+- No es el objetivo del tuner: en las instancias de train, las configuraciones de la run 35 se
+  separan tanto como en test (VNS 0,17 %, los SA 1,49 y 1,35 % de gap contra el mejor de los
+  tres; en cociente con la partida trivial, 0,4718 contra 0,4781 y 0,4771). En la run 35 las
+  réplicas r1 y r2 no eligieron SA por una señal débil sino porque ningún VNS llegó a sus
+  candidatos finales: la trayectoria de TPE no lo probó con buenos parámetros.
 
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 
