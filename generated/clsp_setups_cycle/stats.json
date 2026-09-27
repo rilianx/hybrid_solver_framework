@@ -1,0 +1,154 @@
+{
+  "greedy_score": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 2,
+    "llm_seconds": 21.4,
+    "rejections_by_layer": {
+      "quality": 1
+    },
+    "rounds_per_accepted": {
+      "immediate_setup_cost_first": 1,
+      "capacity_pressure_with_demand_horizon": 1,
+      "inventory_balance_and_setup_sparsity": 2
+    },
+    "abandoned": [],
+    "patches": 1,
+    "accepted_files": [
+      "generated/clsp_setups_cycle/greedy_score/immediate_setup_cost_first_r1.py",
+      "generated/clsp_setups_cycle/greedy_score/capacity_pressure_with_demand_horizon_r1.py",
+      "generated/clsp_setups_cycle/greedy_score/inventory_balance_and_setup_sparsity_r2.py"
+    ],
+    "tokens": {
+      "calls": 2,
+      "input_tokens": 8064,
+      "output_tokens": 3212,
+      "total_tokens": 11276,
+      "reasoning_tokens": 632
+    }
+  },
+  "neighborhood": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 1,
+    "llm_calls": 5,
+    "llm_seconds": 40.0,
+    "rejections_by_layer": {
+      "quality": 6
+    },
+    "rounds_per_accepted": {
+      "single_setup_flip": 1
+    },
+    "abandoned": [
+      "setup_relocation_within_item",
+      "cross_item_period_swap"
+    ],
+    "patches": 4,
+    "accepted_files": [
+      "generated/clsp_setups_cycle/neighborhood/single_setup_flip_r1.py"
+    ],
+    "tokens": {
+      "calls": 5,
+      "input_tokens": 12348,
+      "output_tokens": 5132,
+      "total_tokens": 17480,
+      "reasoning_tokens": 3132
+    },
+    "combinations": {
+      "single_setup_flip": {
+        "compatible_skeletons": [
+          "SA",
+          "ILS",
+          "TS",
+          "VNS",
+          "GRASP",
+          "MIP_PERTURB"
+        ],
+        "gains": {
+          "SA/trivial": 0.1678,
+          "SA/random": 0.0,
+          "VNS/trivial": 0.1447,
+          "VNS/random": 0.0,
+          "TS/trivial": 0.0115,
+          "TS/random": 0.0,
+          "GRASP/trivial": 0.0661,
+          "GRASP/random": 0.0
+        }
+      }
+    }
+  },
+  "perturbation": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 1,
+    "llm_seconds": 11.4,
+    "rejections_by_layer": {},
+    "rounds_per_accepted": {
+      "column_shuffle_kick": 1,
+      "period_block_complement_kick": 1,
+      "biased_ruin_and_repair_kick": 1
+    },
+    "abandoned": [],
+    "patches": 0,
+    "accepted_files": [
+      "generated/clsp_setups_cycle/perturbation/column_shuffle_kick_r1.py",
+      "generated/clsp_setups_cycle/perturbation/period_block_complement_kick_r1.py",
+      "generated/clsp_setups_cycle/perturbation/biased_ruin_and_repair_kick_r1.py"
+    ],
+    "tokens": {
+      "calls": 1,
+      "input_tokens": 5468,
+      "output_tokens": 1935,
+      "total_tokens": 7403,
+      "reasoning_tokens": 311
+    }
+  },
+  "destruction": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 2,
+    "llm_seconds": 19.2,
+    "rejections_by_layer": {
+      "quality": 1
+    },
+    "rounds_per_accepted": {
+      "uniform_random_destruction": 1,
+      "setup_intensity_destruction": 1,
+      "period_chunk_destruction": 2
+    },
+    "abandoned": [],
+    "patches": 1,
+    "accepted_files": [
+      "generated/clsp_setups_cycle/destruction/uniform_random_destruction_r1.py",
+      "generated/clsp_setups_cycle/destruction/setup_intensity_destruction_r1.py",
+      "generated/clsp_setups_cycle/destruction/period_chunk_destruction_r2.py"
+    ],
+    "tokens": {
+      "calls": 2,
+      "input_tokens": 7411,
+      "output_tokens": 2967,
+      "total_tokens": 10378,
+      "reasoning_tokens": 789
+    }
+  },
+  "_run": {
+    "problem": "clsp_setups",
+    "model": "gpt-5.4-mini",
+    "provider": "openai",
+    "from_scratch": true,
+    "catalog_diversity": "annotate",
+    "planner": false,
+    "wall_seconds": 167.0,
+    "tokens": {
+      "calls": 10,
+      "input_tokens": 33291,
+      "output_tokens": 13246,
+      "total_tokens": 46537,
+      "reasoning_tokens": 4864
+    },
+    "note": "define LLM_PRICE_IN y LLM_PRICE_OUT (USD por millón de tokens) para estimar el costo"
+  }
+}
