@@ -79,6 +79,7 @@ def _short(obj, n: int = 300) -> str:
 
 def check_neighborhood(impl, ctx: ValidationContext) -> list[CheckResult]:
     results: list[CheckResult] = []
+    has_undo = callable(getattr(impl, "undo", None))
     f = ctx.problem.objective
     empty: list[int] = []
     for k in range(len(ctx.instances)):
@@ -99,7 +100,7 @@ def check_neighborhood(impl, ctx: ValidationContext) -> list[CheckResult]:
                     try:
                         applied = impl.apply(sol, m)
                         step = "undo"
-                        back = impl.undo(applied, m)
+                        back = impl.undo(applied, m) if has_undo else sol  # opcional: ver core.contracts.Neighborhood
                         step = "delta"
                         d = impl.delta(sol, m)
                     except Exception as exc:  # noqa: BLE001 — con el movimiento y la solución, el LLM puede corregirlo

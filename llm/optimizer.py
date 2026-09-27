@@ -47,7 +47,7 @@ COMPONENT_TECHNIQUES = """- Vecindario: calcula `delta` de forma INCREMENTAL, co
   problem.objective(sol). Si el movimiento puede volver infactible la solución, incluye la variación de la penalización
   (problem.penalty × variación de violations) para que delta siga siendo exactamente f(apply) − f(sol).
 - Precalcula en __init__ lo que no depende de la solución.
-- Mantén exactamente los mismos movimientos, en el mismo orden, y los mismos resultados de apply/undo: se comparan uno
+- Mantén exactamente los mismos movimientos, en el mismo orden, y los mismos resultados de apply (y de undo si lo define): se comparan uno
   por uno con la versión aceptada."""
 
 
@@ -164,7 +164,7 @@ def component_prompt(slot: str, source: str, speed: float, spec, model_source: s
         f"\n# Componente actual\n```python\n{source}\n```",
         f"\n# Modelo del problema (lo que ve el componente)\n```python\n{model_source}\n```",
         f"\n# Técnicas\n{COMPONENT_TECHNIQUES}",
-        "\n# Lo que se verificará\n- Mismas salidas que el componente actual, uno por uno (movimientos y su orden, apply, undo, "
+        "\n# Lo que se verificará\n- Mismas salidas que el componente actual, uno por uno (movimientos y su orden, apply, "
         "delta; o puntajes; o resultados con la misma semilla), y las validaciones del slot.\n- Al menos 1,5 veces más rápido.",
         "\nDevuelve UN solo bloque ```python``` con el módulo COMPLETO (mismo COMPONENT, mismo build_component).",
     ])

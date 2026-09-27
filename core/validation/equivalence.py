@@ -171,7 +171,7 @@ def check_component_equivalent(slot: str, old, new, problem, sols: list, n_moves
                         report.add(fail(LAYER, "delta_equal", f"delta(sol, {_short(m)}) cambió en {where}: antes {old.delta(sol, m):.6g}, "
                                                               f"ahora {new.delta(sol, m):.6g}"))
                         return report
-                    if old.undo(ao, m) != new.undo(an, m):
+                    if callable(getattr(old, "undo", None)) and callable(getattr(new, "undo", None)) and old.undo(ao, m) != new.undo(an, m):
                         report.add(fail(LAYER, "undo_equal", f"undo(…, {_short(m)}) cambió en {where}"))
                         return report
             elif slot == "perturbation":

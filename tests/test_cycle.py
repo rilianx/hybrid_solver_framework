@@ -186,3 +186,16 @@ def test_greedy_scores_that_pick_the_same_elements_in_another_order_are_distinct
 
     near, far = greedy_score_signature(Nearest(), None, P), greedy_score_signature(FarFromDepot(), None, P)
     assert similarity(near, near) == 1.0 and similarity(near, far) < 0.5
+
+
+def test_a_neighborhood_without_undo_is_valid(tmp_path):
+    """Ningún esqueleto usa undo (las soluciones son inmutables) y era la mayor fuente de rechazos."""
+    from llm.generator import validate_generated_module
+
+    pack = load_variant("cvrp", "tour", None, reference=True)
+    path = tmp_path / "neighborhood" / "tour_swap_r1.py"
+    path.parent.mkdir()
+    path.write_text(TOUR_SWAP.replace("    def undo(self, sol, m):\n        return self.apply(sol, m)\n\n", ""))
+    assert "def undo" not in path.read_text()
+    report, _, _ = validate_generated_module(path, pack.make_contexts(strict=False))
+    assert report.passed, report.feedback()

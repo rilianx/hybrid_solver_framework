@@ -65,8 +65,8 @@ def protocol_source(slot: str) -> str:
 
 SLOT_HINTS = {
     "neighborhood": (
-        "Un movimiento `m` debe ser un objeto pequeño y hashable (tupla). Propiedades que se verificarán automáticamente: "
-        "`undo(apply(sol, m), m) == sol` (cuidado con movimientos compuestos: la inversa debe restaurar TODAS las celdas tocadas); "
+        "Un movimiento `m` debe ser un objeto pequeño y hashable (tupla). No escribas `undo`: las soluciones son inmutables y el "
+        "esqueleto conserva la anterior. Propiedades que se verificarán automáticamente: "
         "`delta(sol, m) == objective(apply(sol, m)) - objective(sol)` (puedes implementarlo literalmente así si no hay forma "
         "incremental barata); `moves(sol)` no vacío; y al menos un movimiento debe MEJORAR la solución de partida del esqueleto "
         "(no basta con que mejore soluciones aleatorias). Un vecindario con 6 movimientos que nunca mejoran es inútil aunque sea correcto. "
@@ -271,8 +271,8 @@ def correction_prompt(spec: ProblemSpec, slot: str, module_source: str, feedback
             "en un único bloque ```python```.",
             *pinned,
             "Importante: arregla SOLO lo que el reporte señala y no rompas lo que ya pasaba. Si el problema es que el operador no "
-            "mejora, NO agregues movimientos compuestos (dos cambios a la vez, mover+quitar): mantén movimientos elementales con "
-            "`undo` exacto y usa las pistas del reporte sobre qué movimientos concretos sí mejoran.",
+            "mejora, NO agregues movimientos compuestos (dos cambios a la vez, mover+quitar): mantén movimientos elementales "
+            "y usa las pistas del reporte sobre qué movimientos concretos sí mejoran.",
             f"\n# Reporte del validador\n{feedback}",
             f"\n# Contrato del slot (Protocol exacto)\n```python\n{protocol_source(slot)}```",
             f"\n# Módulo rechazado\n```python\n{module_source}\n```",
