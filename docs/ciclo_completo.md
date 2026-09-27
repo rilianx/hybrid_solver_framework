@@ -60,7 +60,7 @@ graph TD;
 
 	planifica_slots --> genera_componente;
 	genera_componente --> valida_componente;
-	valida_componente -. &nbsp;rechazado: reporte&nbsp; .-> genera_componente;
+	valida_componente -. &nbsp;rechazado: parche por función&nbsp; .-> genera_componente;
 	valida_componente -. &nbsp;quedan variantes o slots&nbsp; .-> planifica_slots;
 	valida_componente -. &nbsp;catálogo listo&nbsp; .-> acelera_modelo;
 	valida_componente -. &nbsp;sin optimizar&nbsp; .-> replicas;
@@ -85,3 +85,8 @@ graph TD;
 	classDef first fill-opacity:0
 	classDef last fill:#bfb6fc
 ```
+
+Los arcos "rechazado" son reparaciones localizadas (`llm/patching.py`): el LLM devuelve solo las
+funciones o métodos que cambia, el framework los reemplaza por nombre en el código rechazado y
+vuelve a validar el módulo entero. En la optimización de componentes también el primer pedido es
+un parche (normalmente `__init__` y `delta`) sobre el componente aceptado.

@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from core.model_parts import TestCase
+from core.model_parts import CONSTRUCTION_PARTS, HEURISTIC_PARTS, MIP_PARTS, TestCase
 from core.validation.base import ValidationReport, fail
 from core.validation.model_parts import check_construction_view, check_heuristic_view, check_mip_optimum, check_mip_view
 from core.validation.syntactic import load_module
@@ -30,6 +30,7 @@ from core.validation.syntactic import load_module
 from .client import LLMClient, TokenUsage
 from .model_generator import ModelSpec, _imports
 from .parser import extract_code_blocks
+from .patching import PATCH_INSTRUCTIONS, merge_reply
 from .prompts import MODEL_SYSTEM_PROMPT
 
 HEURISTIC_CONTRACT = '''
@@ -175,13 +176,20 @@ def mip_prompt(spec: ModelSpec, cases: list[TestCase], heuristic_source: str) ->
 
 def correction_prompt(stage: str, source: str, feedback: str, context: str) -> str:
     return "\n".join([
-        f"La {stage} fue RECHAZADA por el validador. Corrígela y devuelve el código completo de esa etapa en un único bloque "
-        "```python```. El reporte dice qué pieza falla y con qué caso o solución; los casos ocultos se describen sin la "
-        "instancia: corrige el modelo, no lo ajustes a un caso.",
+        f"La {stage} fue RECHAZADA por el validador. Corrígela. El reporte dice qué pieza falla y con qué caso o solución; los "
+        "casos ocultos se describen sin la instancia: corrige el modelo, no lo ajustes a un caso.",
+        PATCH_INSTRUCTIONS,
         f"\n# Reporte del validador\n{feedback}",
         context,
-        f"\n# Código rechazado\n```python\n{source}\n```",
+        f"\n# Código rechazado (se mantiene salvo lo que devuelvas)\n```python\n{source}\n```",
     ])
+
+
+def _merge(reply: str, previous: str | None, required: tuple[str, ...], stage) -> str:
+    """Reparación localizada: en una corrección, la respuesta trae solo las funciones que cambian."""
+    merged = merge_reply(previous, reply, required)
+    stage.patches += merged.mode == "patch"
+    return merged.source
 
 
 @dataclass
@@ -190,6 +198,7 @@ class StageResult:
     rounds: int = 0
     reports: list[str] = field(default_factory=list)
     source: str = ""
+    patches: int = 0  # correcciones aplicadas como parche sobre el código rechazado
 
 
 @dataclass
@@ -295,12 +304,14 @@ def generate_problem_model_parts(client: LLMClient, spec: ModelSpec, cases: list
     context1 = (f"\n# El problema\n{spec.description}\n\n# Formato de respuesta\n{spec.answer_format}\n"
                 f"{_representation_block(spec)}\n{HEURISTIC_CONTRACT}")
     prompt = heuristic_prompt(spec, cases)
+    prev = None
     for rnd in range(1, max_rounds + 1):
         res.heuristic.rounds = rnd
         src = ask(prompt)
         if src is None:
             res.heuristic.reports.append("sin bloque ```python```")
             continue
+        src = _merge(src, prev, HEURISTIC_PARTS, res.heuristic)
         path = ws / f"heuristic_r{rnd}.py"
         path.write_text(src)
         module, report = _load(path, spec.forbidden_modules)
@@ -314,6 +325,7 @@ def generate_problem_model_parts(client: LLMClient, spec: ModelSpec, cases: list
         res.heuristic.reports.append(report.feedback())
         if verbose:
             print(f"[modelo/heurística] ✘ ronda {rnd}: {report.failed_layer}")
+        prev = src
         prompt = correction_prompt("vista heurística", src, report.feedback(), context1)
     if not res.heuristic.accepted:
         res.seconds = time.perf_counter() - t0
@@ -323,12 +335,14 @@ def generate_problem_model_parts(client: LLMClient, spec: ModelSpec, cases: list
     context2 = (f"\n# El problema\n{spec.description}\n\n# Vista heurística aprobada (no la cambies)\n```python\n"
                 f"{res.heuristic.source}\n```\n{MIP_CONTRACT}")
     prompt = mip_prompt(spec, cases, res.heuristic.source)
+    prev = None
     for rnd in range(1, max_rounds + 1):
         res.mip.rounds = rnd
         src = ask(prompt)
         if src is None:
             res.mip.reports.append("sin bloque ```python```")
             continue
+        src = _merge(src, prev, MIP_PARTS, res.mip)
         path = ws / f"model_r{rnd}.py"
         path.write_text(_concat(res.heuristic.source, src))
         clash = redefined_names(res.heuristic.source, src)
@@ -351,6 +365,7 @@ def generate_problem_model_parts(client: LLMClient, spec: ModelSpec, cases: list
         res.mip.reports.append(report.feedback())
         if verbose:
             print(f"[modelo/MIP] ✘ ronda {rnd}: {report.failed_layer}")
+        prev = src
         prompt = correction_prompt("vista MIP", src, report.feedback(), context2)
     if construction and res.mip.accepted:
         _construction_stage(res, spec, cases, ws, ask, max_rounds, scale_instances, verbose)
@@ -364,12 +379,14 @@ def _construction_stage(res, spec, cases, ws, ask, max_rounds, scale_instances, 
     context3 = (f"\n# El problema\n{spec.description}\n\n# Vista heurística aprobada (no la cambies)\n```python\n"
                 f"{res.heuristic.source}\n```\n{CONSTRUCTION_CONTRACT}")
     prompt = construction_prompt(spec, cases, res.heuristic.source)
+    prev = None
     for rnd in range(1, max_rounds + 1):
         res.construction.rounds = rnd
         src = ask(prompt)
         if src is None:
             res.construction.reports.append("sin bloque ```python```")
             continue
+        src = _merge(src, prev, CONSTRUCTION_PARTS, res.construction)
         path = ws / f"model_c{rnd}.py"
         path.write_text(_concat(res.heuristic.source, res.mip.source, src))
         clash = redefined_names(res.heuristic.source + "\n" + res.mip.source, src)
@@ -390,6 +407,7 @@ def _construction_stage(res, spec, cases, ws, ask, max_rounds, scale_instances, 
         res.construction.reports.append(report.feedback())
         if verbose:
             print(f"[modelo/construcción] ✘ ronda {rnd}: {report.failed_layer}")
+        prev = src
         prompt = correction_prompt("vista constructiva", src, report.feedback(), context3)
 
 

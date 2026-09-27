@@ -13,8 +13,10 @@ por segundo en rutas, 200–300 en gran tour; el `relocate` escrito a mano, 39 m
 
 - Modelo: se reescribe el módulo entero (`<workspace>/model/parts.py`); el anterior queda como
   `parts_slow.py`.
-- Componentes: la versión rápida se guarda como la ronda siguiente del mismo nombre
-  (`<slot>/<nombre>_r{k+1}.py`), que es la que carga el catálogo.
+- Componentes: el LLM devuelve solo los métodos que reescribe (normalmente `__init__` y `delta`) y se
+  aplican sobre el componente aceptado (`llm.patching`); la versión rápida se guarda como la ronda
+  siguiente del mismo nombre (`<slot>/<nombre>_r{k+1}.py`), que es la que carga el catálogo.
+- Las correcciones de una versión rechazada también son parches sobre esa versión.
 """
 
 from __future__ import annotations
@@ -25,12 +27,14 @@ from pathlib import Path
 from random import Random
 from typing import Any
 
+from core.model_parts import CONSTRUCTION_PARTS, HEURISTIC_PARTS, MIP_PARTS
 from core.validation.base import ValidationReport, fail, ok
 from core.validation.equivalence import check_component_equivalent, check_parts_equivalent, component_speed, parts_speed
 from core.validation.syntactic import load_module
 
 from .client import LLMClient, TokenUsage
 from .parser import extract_code_blocks
+from .patching import PATCH_INSTRUCTIONS, defined_names, merge_reply
 from .prompts import MODEL_SYSTEM_PROMPT, SYSTEM_PROMPT
 
 MODEL_TECHNIQUES = """- Evita recalcular lo mismo: memoriza por (instancia, solución) el resultado de una evaluación costosa (p.ej. un
@@ -98,12 +102,17 @@ def optimize_model(client: LLMClient, workspace: str | Path, spec, cases: list, 
     instances = [(c.instance, [s["answer"] for s in c.solutions]) for c in cases] + [(i, []) for i in scale_instances]
     source = path.read_text()
     prompt = model_prompt(source, res.speed_before, spec)
+    prev = None  # la primera versión optimizada es un módulo completo
     for rnd in range(1, rounds + 1):
         res.rounds = rnd
         src = _ask(client, MODEL_SYSTEM_PROMPT, prompt, tokens)
         if src is None:
             res.reports.append("sin bloque ```python```")
             continue
+        if prev is not None:  # corrección: parche sobre la versión rechazada
+            required = tuple(n for n in (*HEURISTIC_PARTS, *MIP_PARTS, *CONSTRUCTION_PARTS) if n in defined_names(prev))
+            if required:
+                src = merge_reply(prev, src, required).source
         cand = path.with_name(f"parts_opt_r{rnd}.py")
         cand.write_text(src)
         new, r = load_module(cand)
@@ -131,9 +140,11 @@ def optimize_model(client: LLMClient, workspace: str | Path, spec, cases: list, 
         res.reports.append(report.feedback())
         if verbose:
             print(f"[optimizar/modelo] ✘ ronda {rnd}: {report.failed_layer}")
-        prompt = (f"La versión optimizada fue RECHAZADA. Corrígela y devuelve el módulo completo en un único bloque ```python```."
+        prev = src
+        prompt = (f"La versión optimizada fue RECHAZADA. Corrígela. {PATCH_INSTRUCTIONS}"
                   f"\n\n# Reporte\n{report.feedback()}\n\n# Módulo original (el oráculo)\n```python\n{source}\n```"
-                  f"\n\n# Tu versión rechazada\n```python\n{src}\n```\n\n# Técnicas\n{MODEL_TECHNIQUES}")
+                  f"\n\n# Tu versión rechazada (se mantiene salvo lo que devuelvas)\n```python\n{src}\n```"
+                  f"\n\n# Técnicas\n{MODEL_TECHNIQUES}")
     return res
 
 
@@ -166,7 +177,9 @@ def component_prompt(slot: str, source: str, speed: float, spec, model_source: s
         f"\n# Técnicas\n{COMPONENT_TECHNIQUES}",
         "\n# Lo que se verificará\n- Mismas salidas que el componente actual, uno por uno (movimientos y su orden, apply, "
         "delta; o puntajes; o resultados con la misma semilla), y las validaciones del slot.\n- Al menos 1,5 veces más rápido.",
-        "\nDevuelve UN solo bloque ```python``` con el módulo COMPLETO (mismo COMPONENT, mismo build_component).",
+        "\nDevuelve UN solo bloque ```python``` solo con lo que reescribes: los métodos que cambian (normalmente `__init__` "
+        "para precalcular y `delta`) dentro de `class <MismaClase>:`, las funciones auxiliares nuevas y los imports que "
+        "agregues. El resto del componente (COMPONENT, build_component, los otros métodos) queda tal cual.",
     ])
 
 
@@ -191,12 +204,15 @@ def optimize_components(client: LLMClient, pack, workspace: str | Path, rounds: 
         res = OptimizationResult(speed_before=before)
         source = path.read_text()
         prompt = component_prompt(slot, source, before, spec, model_source)
+        prev = source
         for rnd in range(1, rounds + 1):
             res.rounds = rnd
             src = _ask(client, SYSTEM_PROMPT, prompt, tokens)
             if src is None:
                 res.reports.append("sin bloque ```python```")
                 continue
+            # parche sobre el componente aceptado (primera ronda) o sobre la versión rechazada (correcciones)
+            src = merge_reply(prev, src, required=("COMPONENT", "build_component")).source
             cand = path.with_name(f"{base}_r{k + rnd}.py")
             cand.write_text(src)
             report, new_mod, new_comp = validate_generated_module(cand, contexts)
@@ -229,9 +245,11 @@ def optimize_components(client: LLMClient, pack, workspace: str | Path, rounds: 
             cand.unlink(missing_ok=True)
             if verbose:
                 print(f"[optimizar/{slot}] ✘ {base} ronda {rnd}: {report.failed_layer}")
-            prompt = (f"La versión optimizada fue RECHAZADA. Corrígela y devuelve el módulo completo en un único bloque ```python```."
+            prev = src
+            prompt = (f"La versión optimizada fue RECHAZADA. Corrígela. {PATCH_INSTRUCTIONS}"
                       f"\n\n# Reporte\n{report.feedback()}\n\n# Componente original (el oráculo)\n```python\n{source}\n```"
-                      f"\n\n# Tu versión rechazada\n```python\n{src}\n```\n\n# Técnicas\n{COMPONENT_TECHNIQUES}")
+                      f"\n\n# Tu versión rechazada (se mantiene salvo lo que devuelvas)\n```python\n{src}\n```"
+                      f"\n\n# Técnicas\n{COMPONENT_TECHNIQUES}")
         out[f"{slot}/{base}"] = {"accepted": res.accepted, "rounds": res.rounds, "before": round(res.speed_before, 1),
                                  "after": round(res.speed_after, 1), "rejections": res.reports}
     return out

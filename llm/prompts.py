@@ -14,6 +14,7 @@ from core import contracts
 from core.validation.syntactic import PROTOCOL_FOR_SLOT
 
 from .fewshot import FEWSHOT
+from .patching import PATCH_INSTRUCTIONS
 
 
 @dataclass
@@ -267,15 +268,16 @@ def correction_prompt(spec: ProblemSpec, slot: str, module_source: str, feedback
     return "\n".join(
         [
             f"El siguiente componente para el slot `{slot}` del problema '{spec.name}' fue RECHAZADO por el validador automático.",
-            "Corrígelo manteniendo la misma idea algorítmica y el mismo `COMPONENT['name']`. Devuelve el módulo completo corregido "
-            "en un único bloque ```python```.",
+            "Corrígelo manteniendo la misma idea algorítmica y el mismo `COMPONENT['name']`. El reporte dice qué método falla: "
+            "corrige ese.",
+            PATCH_INSTRUCTIONS,
             *pinned,
             "Importante: arregla SOLO lo que el reporte señala y no rompas lo que ya pasaba. Si el problema es que el operador no "
             "mejora, NO agregues movimientos compuestos (dos cambios a la vez, mover+quitar): mantén movimientos elementales "
             "y usa las pistas del reporte sobre qué movimientos concretos sí mejoran.",
             f"\n# Reporte del validador\n{feedback}",
             f"\n# Contrato del slot (Protocol exacto)\n```python\n{protocol_source(slot)}```",
-            f"\n# Módulo rechazado\n```python\n{module_source}\n```",
+            f"\n# Módulo rechazado (se mantiene salvo lo que devuelvas)\n```python\n{module_source}\n```",
             f"\n# Recordatorio del problema\n{spec.solution_representation}\n{spec.variable_naming}",
         ]
     )
