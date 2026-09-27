@@ -274,6 +274,43 @@ guardado de cada run):
   - El afinado casi no le gana al mejor no afinado (+0,41 [−0,06, +0,88]): con un solo vecindario
     bueno, el tuner tiene poco que elegir.
 
+**De dónde sale la brecha con lo escrito a mano** (`scripts/diagnose_gap.py`; datos en
+`tune_run35/diagnose_gap_vs_run30.json`). Las configuraciones elegidas por cada réplica de las
+runs 30 y 35, en las mismas 10 instancias de test y la misma máquina, a 1,25–20 s, contando
+iteraciones y llamadas a los componentes. Gap contra el mejor conocido común; diferencia pareada
+contra la media de las tres configuraciones escritas a mano:
+
+| Presupuesto | VNS generado (r0) | SA generados (r1 / r2) | Escrito a mano (media) |
+|---|---|---|---|
+| 1,25 s | 4,69 % (+2,29 [+1,15, +3,86]) | 4,11 / 4,68 % | 2,39 % |
+| 5 s | 0,91 % (−0,36 [−1,12, +0,51]) | 2,07 / 1,73 % | 1,26 % |
+| 20 s | 0,44 % (−0,33 [−0,81, +0,11]) | 2,07 / 1,68 % | 0,77 % |
+
+- **Los componentes generados no son el problema**: con VNS, el catálogo generado iguala a lo
+  escrito a mano desde los 5 s y queda por delante a 20 s (sin separarse del ruido).
+- **La brecha está en las dos réplicas que eligieron SA.** Con un solo vecindario (2-opt sobre el
+  tour), SA se estanca: 2,07 % a 5, 10 y 20 s. No es la velocidad: con el modelo de referencia
+  del gran tour (4 a 6 veces más iteraciones) se estanca en 1,89 %. Tampoco es solo el
+  enfriamiento: el SA enfría por iteraciones (con los parámetros elegidos, los defaults, la
+  temperatura se vuelve despreciable en ~1500 iteraciones, menos de 1 s), pero repartirlo en los
+  5 s no mejora (2,64 / 1,82 %). VNS sale de ese óptimo local con sus sacudidas; lo escrito a mano
+  nunca eligió SA.
+- **La velocidad pesa en presupuestos cortos**: a 1,25 s el generado va 2,1 puntos atrás. El Split
+  del modelo generado es O(n³) (todos los segmentos, sin corte por capacidad, y el costo de cada
+  ruta recalculado entero); el de referencia es O(n·L) y corta cuando se acaba la capacidad. La
+  optimización no podía agregar el corte: la prueba de equivalencia exige las mismas salidas que
+  el modelo original, que penaliza los segmentos sobrecargados en vez de descartarlos.
+- **Qué elige el tuner sigue siendo la mayor fuente de ruido**: en train las tres réplicas
+  estaban a pocas décimas; en test, VNS le saca 0,8–1,2 puntos a los SA. Si las tres hubieran
+  elegido VNS, el ciclo quedaría a la par de lo escrito a mano (en esta máquina, 0,36 puntos por
+  delante a 5 s).
+
+Arreglos que salen de aquí: un SA que enfríe según el tiempo y no según las iteraciones (con
+cualquier velocidad del modelo usaría todo el presupuesto); en el tuner, que la selección final
+reevalúe con más semillas cuando las mejores configuraciones difieren en el esqueleto; y en la
+optimización del modelo, permitir un cambio de semántica que no cambie el óptimo (descartar
+segmentos imposibles en vez de penalizarlos) validado contra los casos, no salida por salida.
+
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 
 Desde la corrida 43, una corrección trae solo las funciones o métodos que cambian y
