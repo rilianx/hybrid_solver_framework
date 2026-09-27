@@ -321,8 +321,8 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--reference", action="store_true", help="usar las piezas de referencia de la variante")
     ap.add_argument("--rounds", type=int, default=6)
     ap.add_argument("--model", default=None)
-    ap.add_argument("--slots", nargs="+", default=["neighborhood", "greedy_score"],
-                    help="optimize: slots cuyos componentes se aceleran")
+    ap.add_argument("--slots", nargs="*", default=["neighborhood", "greedy_score"],
+                    help="optimize: slots cuyos componentes se aceleran (vacío: solo el modelo)")
     args = ap.parse_args(argv)
     if args.stage == "model":
         return _stage_model(args)

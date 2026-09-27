@@ -29,6 +29,7 @@ from typing import Any
 
 from core.model_parts import CONSTRUCTION_PARTS, HEURISTIC_PARTS, MIP_PARTS
 from core.validation.base import ValidationReport, fail, ok
+from core.validation.resources import MAX_CACHE, check_component_memory, check_parts_memory
 from core.validation.equivalence import check_component_equivalent, check_parts_equivalent, component_speed, parts_speed
 from core.validation.syntactic import load_module
 
@@ -44,7 +45,10 @@ MODEL_TECHNIQUES = """- Evita recalcular lo mismo: memoriza por (instancia, solu
   una caché por instancia.
 - Usa estructuras simples en los bucles internos (listas e índices en vez de dicts y objetos; evita crear tuplas o
   dicts por cada paso).
-- Mantén exactamente los mismos resultados, incluidos los empates y el orden: se comparan salida por salida."""
+- Mantén exactamente los mismos resultados, incluidos los empates y el orden: se comparan salida por salida.
+- Toda caché que dependa de la solución tiene que estar ACOTADA (functools.lru_cache(maxsize=<= {MAX_CACHE})): el tuner evalúa
+  millones de soluciones distintas durante horas, y una caché sin límite (maxsize=None, functools.cache, un dict global
+  que solo crece) agota la memoria. Se mide que la memoria retenida no crezca con soluciones nuevas.""".replace("{MAX_CACHE}", str(MAX_CACHE))
 
 COMPONENT_TECHNIQUES = """- Vecindario: calcula `delta` de forma INCREMENTAL, con los pocos términos que cambia el movimiento (p.ej. en rutas,
   las distancias de los arcos que se quitan y se agregan), en vez de problem.objective(apply(sol, m)) −
@@ -52,7 +56,9 @@ COMPONENT_TECHNIQUES = """- Vecindario: calcula `delta` de forma INCREMENTAL, co
   (problem.penalty × variación de violations) para que delta siga siendo exactamente f(apply) − f(sol).
 - Precalcula en __init__ lo que no depende de la solución.
 - Mantén exactamente los mismos movimientos, en el mismo orden, y los mismos resultados de apply (y de undo si lo define): se comparan uno
-  por uno con la versión aceptada."""
+  por uno con la versión aceptada.
+- Nada de cachés de módulo que crezcan con cada solución: guarda lo que necesites en el propio componente (vive una corrida)
+  o acótalo (lru_cache(maxsize=<= {MAX_CACHE})). Se mide que la memoria retenida entre corridas no crezca.""".replace("{MAX_CACHE}", str(MAX_CACHE))
 
 
 @dataclass
@@ -83,7 +89,7 @@ def model_prompt(source: str, speed: float, spec) -> str:
         f"\n# Técnicas\n{MODEL_TECHNIQUES}",
         "\n# Lo que se verificará\n- Mismas salidas que el módulo actual, función por función, en soluciones al azar, triviales "
         "y de los casos (incluidas vista MIP y vista constructiva), y las validaciones contra los casos de prueba.\n"
-        "- Al menos 1,5 veces más evaluaciones por segundo.",
+        "- Al menos 1,5 veces más evaluaciones por segundo.\n- Memoria acotada: la retenida no crece al evaluar soluciones nuevas.",
         "\nDevuelve UN solo bloque ```python``` con el módulo COMPLETO (mismos nombres de funciones).",
     ])
 
@@ -130,6 +136,7 @@ def optimize_model(client: LLMClient, workspace: str | Path, spec, cases: list, 
                 else:
                     res.speed_after = speed
                     report.add(ok("speed", "faster", f"{speed:,.0f} contra {res.speed_before:,.0f} evaluaciones/s"))
+                    report.add(check_parts_memory(new, inst))
         if report.passed:
             path.with_name("parts_slow.py").write_text(source)
             path.write_text(src)
@@ -231,6 +238,7 @@ def optimize_components(client: LLMClient, pack, workspace: str | Path, rounds: 
                     report.add(fail("speed", "faster", f"{after:,.0f} contra {before:,.0f} por segundo: se pide al menos {min_speedup:g} veces más"))
                 else:
                     res.speed_after = after
+                    report.add(check_component_memory(slot, lambda p, m=new_mod: m.build_component(p), pack.problem_factory, inst, sols[1]))
             if report.passed:
                 res.accepted = True
                 # las rondas rechazadas intermedias no deben quedar como la más alta

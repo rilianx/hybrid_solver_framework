@@ -203,9 +203,12 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   rechazado (los métodos dentro de su clase, las definiciones nuevas se
   agregan) y el módulo entero se vuelve a validar. Una respuesta que trae el
   módulo completo lo reemplaza. El `undo` de los vecindarios es opcional.
+  La optimización exige además memoria acotada (`core/validation/resources.py`):
+  la memoria retenida no puede crecer al evaluar soluciones nuevas (una caché
+  `lru_cache(maxsize=None)` de módulo agotó los runners en la run 34).
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 215 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 218 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -226,7 +229,7 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 215 passed (~130 s)
+python -m pytest -q                 # 218 passed (~240 s)
 
 # segundo problema: CVRP con flota libre (mismos CLI, otro pack)
 python -m examples.cvrp.tune --catalog handwritten --size 30 --trials 30 --ref-time 60

@@ -73,6 +73,10 @@ on:
         description: "Ciclo completo, target=components: usar las piezas de referencia de la variante en vez del modelo generado"
         default: false
         type: boolean
+      opt_slots:
+        description: "Con target=optimize: slots cuyos componentes se aceleran (none = solo el modelo)"
+        default: "neighborhood greedy_score"
+        type: string
       workspace:
         description: "Directorio de salida (vacío = según from_scratch/planner); úsalo para no pisar una corrida anterior"
         default: ""
@@ -152,6 +156,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           SLOTS: ${{ inputs.slots }}
+          OPT_SLOTS: ${{ inputs.opt_slots }}
           N: ${{ inputs.n }}
           ROUNDS: ${{ inputs.rounds }}
           PROVIDER: ${{ inputs.provider }}
@@ -168,8 +173,9 @@ jobs:
             [ "$REFERENCE" = "true" ] && CARGS="$CARGS --reference"
             if [ "$STAGE" = "optimize" ]; then
               [ -n "$MODEL" ] && CARGS="$CARGS --model $MODEL"
-              echo "python -m llm.cycle optimize $CARGS --rounds $ROUNDS"
-              python -W ignore -m llm.cycle optimize $CARGS --rounds "$ROUNDS" 2>&1 | tee generate.log
+              OPT="${OPT_SLOTS:-neighborhood greedy_score}"; [ "$OPT" = "none" ] && OPT=""
+              echo "python -m llm.cycle optimize $CARGS --rounds $ROUNDS --slots $OPT"
+              python -W ignore -m llm.cycle optimize $CARGS --rounds "$ROUNDS" --slots $OPT 2>&1 | tee generate.log
             elif [ "$STAGE" = "model" ]; then
               [ -n "$MODEL" ] && CARGS="$CARGS --model $MODEL"
               echo "python -m llm.cycle model $CARGS --rounds $ROUNDS"
