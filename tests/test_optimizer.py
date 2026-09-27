@@ -150,3 +150,11 @@ def test_a_renamed_component_is_rejected(tmp_path):
     client = ScriptedClient(responses=[f"```python\n{renamed}\n```"])
     row = optimize_components(client, pack, tmp_path, rounds=1, verbose=False)["neighborhood/tour_swap"]
     assert not row["accepted"] and "same_component_metadata" in row["rejections"][0]
+
+
+def test_an_unchanged_correction_is_pointed_out():
+    """Corrida 48: la ronda 3 devolvió el módulo idéntico a la 2 y nadie se lo dijo."""
+    from llm.optimizer import _unchanged_note
+
+    assert "EXACTAMENTE igual" in _unchanged_note("x = 1\n", "x = 1\n")
+    assert _unchanged_note("x = 1\n", "x = 2\n") == "" and _unchanged_note(None, "x = 1\n") == ""

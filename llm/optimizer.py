@@ -83,6 +83,14 @@ def _ask(client: LLMClient, system: str, prompt: str, tokens: TokenUsage) -> str
     return blocks[0] if blocks else None
 
 
+def _unchanged_note(previous: str | None, current: str) -> str:
+    """Corrida 48: la corrección de la ronda 3 dejó el módulo idéntico al de la ronda 2."""
+    if previous is not None and previous.strip() == current.strip():
+        return ("OJO: tu corrección anterior dejó el módulo EXACTAMENTE igual a la versión rechazada antes; lo que "
+                "cambiaste no es lo que falla. Relee el reporte: nombra la función y la solución donde difiere. ")
+    return ""
+
+
 # ---------------------------------------------------------------- modelo
 def model_prompt(source: str, speed: float, spec) -> str:
     return "\n".join([
@@ -129,9 +137,12 @@ def optimize_model(client: LLMClient, workspace: str | Path, spec, cases: list, 
         report = ValidationReport(subject=cand.name)
         report.add(r)
         if new is not None:
-            report = validate_parts(new, cases, scale_instances=scale_instances, decoder=spec.decoder)
+            # primero la prueba diferencial: nombra la función que cambió y la solución donde cambia
+            # (corrida 48: con solo "costo equivocado en un caso oculto" el LLM corrigió cost_terms,
+            # que estaba bien, en vez del Split)
+            report = check_parts_equivalent(old, new, instances)
             if report.passed:
-                report = check_parts_equivalent(old, new, instances)
+                report = validate_parts(new, cases, scale_instances=scale_instances, decoder=spec.decoder)
             if report.passed:
                 speed = parts_speed(new, inst)
                 if speed < min_speedup * res.speed_before:
@@ -151,8 +162,9 @@ def optimize_model(client: LLMClient, workspace: str | Path, spec, cases: list, 
         res.reports.append(report.feedback())
         if verbose:
             print(f"[optimizar/modelo] ✘ ronda {rnd}: {report.failed_layer}")
+        same = _unchanged_note(prev, src)
         prev = src
-        prompt = (f"La versión optimizada fue RECHAZADA. Corrígela. {PATCH_INSTRUCTIONS}"
+        prompt = (f"La versión optimizada fue RECHAZADA. Corrígela. {same}{PATCH_INSTRUCTIONS}"
                   f"\n\n# Reporte\n{report.feedback()}\n\n# Módulo original (el oráculo)\n```python\n{source}\n```"
                   f"\n\n# Tu versión rechazada (se mantiene salvo lo que devuelvas)\n```python\n{src}\n```"
                   f"\n\n# Técnicas\n{MODEL_TECHNIQUES}")
@@ -257,8 +269,9 @@ def optimize_components(client: LLMClient, pack, workspace: str | Path, rounds: 
             cand.unlink(missing_ok=True)
             if verbose:
                 print(f"[optimizar/{slot}] ✘ {base} ronda {rnd}: {report.failed_layer}")
+            same = _unchanged_note(prev if prev != source else None, src)
             prev = src
-            prompt = (f"La versión optimizada fue RECHAZADA. Corrígela. {PATCH_INSTRUCTIONS}"
+            prompt = (f"La versión optimizada fue RECHAZADA. Corrígela. {same}{PATCH_INSTRUCTIONS}"
                       f"\n\n# Reporte\n{report.feedback()}\n\n# Componente original (el oráculo)\n```python\n{source}\n```"
                       f"\n\n# Tu versión rechazada (se mantiene salvo lo que devuelvas)\n```python\n{src}\n```"
                       f"\n\n# Técnicas\n{COMPONENT_TECHNIQUES}")

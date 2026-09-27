@@ -301,7 +301,13 @@ contra la media de las tres configuraciones escritas a mano:
   ruta recalculado entero); el de referencia es O(n·L) y corta cuando se acaba la capacidad. Corrección
   posterior: el corte sí pasa la prueba de equivalencia (mismas salidas en todas las soluciones
   de prueba) y acelera el modelo 3,3 veces (2,2 → 7,1 mil evaluaciones/s); no era la prueba, el
-  LLM no lo encontró. El prompt de la optimización ahora sugiere la poda.
+  LLM no lo encontró. El prompt de la optimización ahora sugiere la poda. Primer intento con la
+  sugerencia (corrida 48): rechazado en las 3 rondas. El LLM escribió un costo incremental con
+  aristas sumadas dos veces y sin el corte; el reporte decía "costo equivocado en un caso
+  oculto", sin nombrar la función, y la ronda 3 corrigió `cost_terms` (que estaba bien) y dejó el
+  módulo idéntico a la ronda 2. Arreglos: la prueba diferencial contra el modelo aceptado va
+  primero (nombra la función y la solución donde difiere) y una corrección que no cambia nada se
+  señala en el siguiente pedido.
 - **Qué elige el tuner sigue siendo la mayor fuente de ruido**: cada réplica eligió un esqueleto
   distinto, y en esta máquina VNS le saca 0,8–1,2 puntos a los SA a 5 s. Si las tres hubieran
   elegido VNS, el ciclo quedaría a la par de lo escrito a mano (en esta máquina, 0,36 puntos por
