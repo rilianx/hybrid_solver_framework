@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any
 
 from core.model_parts import CONSTRUCTION_PARTS, HEURISTIC_PARTS, MIP_PARTS, TestCase
-from core.validation.base import ValidationReport, fail
+from core.validation.base import ValidationReport, describe_exception, fail
 from core.validation.model_parts import check_construction_view, check_heuristic_view, check_mip_optimum, check_mip_view
 from core.validation.syntactic import load_module
 
@@ -87,6 +87,12 @@ def complete_partial(inst, partial, rng): ...       # callejón sin salida (cand
 # Regla de oro: elegir CUALQUIER candidato en cada paso tiene que llevar a una solución factible. La calidad la pone
 # el puntaje; la factibilidad, tus candidatos. Las acciones deben llevar la información que un puntaje necesita para
 # comparar (p.ej. el aumento de costo que producen), porque el puntaje solo ve (partial, acción).
+# Cómo cumplirla sin quitar las decisiones: filtra con una prueba de completabilidad. Una acción entra en candidates
+# solo si, después de aplicarla, todavía existe una forma factible de completar lo que falta; si el problema tiene una
+# completación "más permisiva" (la que nunca puede volver infactible lo que ya es completable: activar todo lo que
+# falta, abrir todo lo que queda, etc.), úsala como prueba, y complete_partial puede ser justamente esa completación.
+# Ofrecer todas las acciones da construcciones infactibles; ofrecer solo la acción segura deja al puntaje sin nada
+# que elegir (el validador exige las dos cosas: factibles siempre, y construcciones al azar distintas entre sí).
 '''
 
 
@@ -255,14 +261,14 @@ def redefined_names(heuristic: str, mip: str) -> list[str]:
     return sorted(n for n in h.keys() & m.keys() if h[n] != m[n])
 
 
-def _run_checks(checks) -> ValidationReport:
+def _run_checks(checks, subject: str = "vista MIP", layer: str = "semantic_mip") -> ValidationReport:
     """Los validadores en orden; una excepción del código generado es un rechazo, no una caída."""
-    report = ValidationReport(subject="vista MIP")
+    report = ValidationReport(subject=subject)
     for check in checks:
         try:
             r = check()
         except Exception as exc:  # noqa: BLE001
-            report.add(fail("semantic_mip", "runs", f"el módulo lanzó {type(exc).__name__}: {exc} durante la validación"))
+            report.add(fail(layer, "runs", f"el módulo lanzó {describe_exception(exc)} durante la validación"))
             return report
         report.extend(r.results)
         if not r.passed:
@@ -398,7 +404,8 @@ def _construction_stage(res, spec, cases, ws, ask, max_rounds, scale_instances, 
         else:
             module, report = _load(path, spec.forbidden_modules)
         if module is not None:
-            report = _run_checks([lambda: check_construction_view(module, cases, scale_instances=scale_instances)])
+            report = _run_checks([lambda: check_construction_view(module, cases, scale_instances=scale_instances)],
+                                 subject="vista constructiva", layer="construction")
         if report.passed:
             res.construction.accepted, res.construction.source, res.path = True, src, path
             if verbose:

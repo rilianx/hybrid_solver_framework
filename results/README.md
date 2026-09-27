@@ -357,6 +357,18 @@ los empatados siguen recibiendo semillas:
   réplicas r1 y r2 no eligieron SA por una señal débil sino porque ningún VNS llegó a sus
   candidatos finales: la trayectoria de TPE no lo probó con buenos parámetros.
 
+### Ciclo completo en el CLSP (representación de setups)
+
+**Modelo por piezas** (corrida 52): vista heurística en la ronda 1, vista MIP en la 6 (la última;
+rechazos por familias que no coinciden, términos del objetivo y la partición de grupos), 70 mil
+tokens. **La vista constructiva no se aceptó** en 6 rondas: oscila entre ofrecer todas las
+acciones (completaciones al azar infactibles por demanda) y ofrecer solo la segura (todas las
+construcciones al azar iguales, el puntaje no tendría qué elegir). Sin ella el ciclo sigue con
+constructores completos. Arreglo en el contrato de la vista constructiva: filtrar los candidatos
+con una prueba de completabilidad (una acción entra si después todavía existe una completación
+factible, p.ej. la "más permisiva": activar todo lo que falta). También: esos rechazos salían
+rotulados "vista MIP".
+
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 
 Desde la corrida 43, una corrección trae solo las funciones o métodos que cambian y
