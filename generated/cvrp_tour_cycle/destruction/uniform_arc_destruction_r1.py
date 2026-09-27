@@ -1,35 +1,31 @@
-from __future__ import annotations
-
 from random import Random
-from typing import Any
 
 COMPONENT = {
     "name": "uniform_arc_destruction",
     "slot": "destruction",
     "compatible_skeletons": ["LNS_MIP", "MIP_PERTURB"],
     "requires": ["ProblemModel.to_assignment"],
-    "params": {"ratio": {"type": "float", "range": [0.05, 0.8]}},
+    "params": {"ratio": {"type": "float", "range": [0.05, 0.6]}},
 }
 
 
 class UniformArcDestruction:
-    """Libera arcos estructurales al azar de forma uniforme."""
+    """Libera arcos estructurales al azar, preservando el resto de la asignación."""
 
-    def __init__(self, problem, **params):
+    def __init__(self, problem, inst):
         self.problem = problem
+        self.inst = inst
 
-    def destroy(self, sol, ratio: float, rng: Random) -> tuple[Any, set[str]]:
-        assignment = dict(self.problem.to_assignment(sol))
-        vars_list = list(assignment.keys())
-        n_vars = len(vars_list)
-        k = max(1, int(round(ratio * n_vars)))
-        k = min(k, n_vars)
+    def destroy(self, sol, ratio: float, rng: Random):
+        assignment = self.problem.to_assignment(sol)
+        vars_ = list(assignment.keys())
+        n = len(vars_)
+        k = max(1, min(n, int(round(ratio * n))))
 
-        chosen = set(rng.sample(vars_list, k))
+        chosen = set(rng.sample(vars_, k))
         partial = {v: val for v, val in assignment.items() if v not in chosen}
         return partial, chosen
 
 
-def build_component(problem, **params):
-    ratio = params.get("ratio", 0.2)
-    return UniformArcDestruction(problem, ratio=ratio)
+def build_component(problem, ratio: float = 0.2):
+    return UniformArcDestruction(problem, problem.inst)
