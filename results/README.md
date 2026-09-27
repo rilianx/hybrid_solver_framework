@@ -237,6 +237,33 @@ guardado de cada run):
   más movimientos por segundo) y compararlos con la referencia escrita a mano con el mismo mejor
   conocido.
 
+### Reparación localizada: correcciones más cortas, no más componentes rescatados
+
+Desde la corrida 43, una corrección trae solo las funciones o métodos que cambian y
+`llm/patching.py` los reemplaza por nombre en el módulo rechazado (`undo` de los vecindarios ya
+no se pide). Corridas 43 y 44: la mitad de las respuestas traían el método solo
+(`def perturb(self, …)`), a veces con la sangría de la clase; lo sangrado no parseaba y lo suelto
+quedaba como función del módulo, sin corregir nada. Arreglado (un método con `self` va a la
+clase que lo define), se repitieron como 45 y 46. Mismos modelos y prompts que las corridas
+37–40 (correcciones con el módulo completo):
+
+| Corrida | Aceptados | Correcciones | Rescatadas | Tokens de salida por corrección | Tokens de la corrida |
+|---|---|---|---|---|---|
+| 37 / 39 rutas (módulo completo) | 10 / 9 de 12 | 7 / 11 | 2 / 3 | 1126 / 1312 | 44 / 57 mil |
+| 38 / 40 gran tour (módulo completo) | 8 / 8 | 10 / 9 | 1 / 1 | 1342 / 1507 | 58 / 59 mil |
+| 45 rutas (parches) | 12 | 1 | 1 | 702 | 29 mil |
+| 46 gran tour (parches) | 9 | 8 | 1 (7 como parche) | 1071 | 52 mil |
+
+- **Cada corrección sale 25–40 % más corta**: el LLM ya no reescribe lo que pasaba. La entrada no
+  cambia (el módulo rechazado sigue en el prompt como contexto).
+- **No rescata más componentes.** Casi todos los rechazos son de calidad (el operador no mejora
+  o no perturba lo suficiente en su esqueleto), y eso es un problema de la idea, no de una
+  función. El parche sirve para errores localizados (un `delta` sin la penalización, un índice
+  mal puesto); las corridas tuvieron pocos de esos. Los rechazos sintácticos quedaron en 0 en las
+  dos (3 en cada corrida de rutas antes), con una muestra chica.
+- La rutas 45 aceptó 12 de 12 con una sola corrección: variación entre generaciones, no efecto de
+  los parches (ya se vio que otra generación cambia 2 a 4 puntos).
+
 ### ProblemModel del CLSP por piezas: de 4 rechazos a aceptado a la primera, por arreglos del framework
 
 El CLSP pone a prueba otra cosa que el CVRP: la solución es el plan de setups y el costo sale de
