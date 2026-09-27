@@ -392,6 +392,12 @@ hasta ahora, ninguno tiene una caché sin límite; de los modelos, el del CLSP y
 optimizadas de las corridas 41 y 42. Si el modelo aceptado viola la regla, la optimización se lo
 dice al LLM y pide solo no perder velocidad (0,8×) en vez de 1,5×.
 
+Con eso (corrida 57), el modelo del CLSP se aceptó en la primera ronda con cachés acotadas y la
+misma velocidad (43 → 40 evaluaciones/s). La optimización de componentes volvió a cortarse a los
+45 min (cada `delta` resuelve LP) y, como las estadísticas se escribían al final, no quedó
+registro; sus archivos a medio validar no se usan. Ahora la etapa guarda las estadísticas a medida
+que avanza, no empieza componentes después de `--max-minutes` (35) y el log sale sin buffer.
+
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 
 Desde la corrida 43, una corrección trae solo las funciones o métodos que cambian y

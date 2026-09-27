@@ -180,7 +180,7 @@ jobs:
               [ -n "$MODEL" ] && CARGS="$CARGS --model $MODEL"
               OPT="${OPT_SLOTS:-neighborhood greedy_score}"; [ "$OPT" = "none" ] && OPT=""
               echo "python -m llm.cycle optimize $CARGS --rounds $ROUNDS --slots $OPT"
-              python -W ignore -m llm.cycle optimize $CARGS --rounds "$ROUNDS" --slots $OPT 2>&1 | tee generate.log
+              python -u -W ignore -m llm.cycle optimize $CARGS --rounds "$ROUNDS" --slots $OPT 2>&1 | tee generate.log
             elif [ "$STAGE" = "model" ]; then
               [ -n "$MODEL" ] && CARGS="$CARGS --model $MODEL"
               [ "$CONSTRUCTION_ONLY" = "true" ] && CARGS="$CARGS --construction-only"

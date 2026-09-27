@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from random import Random
-from typing import Any
+from typing import Iterable
 
 import pulp
 
@@ -25,64 +25,51 @@ def from_answer(inst, answer):
     return canonical(answer)
 
 
-@lru_cache(maxsize=8192)
-def _instance_data(inst_key):
-    return inst_key
-
-
-def _inst_key(inst: CLSPInstance):
-    return (
-        inst.n_items,
-        inst.n_periods,
-        tuple(tuple(float(d) for d in row) for row in inst.demand),
-        tuple(float(x) for x in inst.capacity),
-        tuple(float(x) for x in inst.setup_time),
-        tuple(float(x) for x in inst.setup_cost),
-        tuple(float(x) for x in inst.holding_cost),
-    )
-
-
-def _key_to_data(inst_key):
-    n_items, n_periods, demand, capacity, setup_time, setup_cost, holding_cost = inst_key
-    return n_items, n_periods, demand, capacity, setup_time, setup_cost, holding_cost
-
-
-@lru_cache(maxsize=8192)
-def _solve_optimal_production_cached(inst_key, sol):
-    n_items, n_periods, demand, capacity, setup_time, setup_cost, holding_cost = _key_to_data(inst_key)
+@lru_cache(maxsize=None)
+def _solve_optimal_production(inst: CLSPInstance, sol):
+    n_items = inst.n_items
+    n_periods = inst.n_periods
+    demand = inst.demand
     setup = sol
 
     def build_model(minimize_inventory: bool, target_unmet: float | None = None):
         prob = pulp.LpProblem("clsp_production", pulp.LpMinimize)
-        x = [[pulp.LpVariable(f"x_{i}_{t}", lowBound=0) for t in range(n_periods)] for i in range(n_items)]
-        inv = [[pulp.LpVariable(f"inv_{i}_{t}", lowBound=0) for t in range(n_periods)] for i in range(n_items)]
-        unmet = [
-            [pulp.LpVariable(f"unmet_{i}_{t}", lowBound=0, upBound=demand[i][t]) for t in range(n_periods)]
+        x = {
+            (i, t): pulp.LpVariable(f"x_{i}_{t}", lowBound=0)
             for i in range(n_items)
-        ]
+            for t in range(n_periods)
+        }
+        inv = {
+            (i, t): pulp.LpVariable(f"inv_{i}_{t}", lowBound=0)
+            for i in range(n_items)
+            for t in range(n_periods)
+        }
+        unmet = {
+            (i, t): pulp.LpVariable(f"unmet_{i}_{t}", lowBound=0, upBound=demand[i][t])
+            for i in range(n_items)
+            for t in range(n_periods)
+        }
 
         for t in range(n_periods):
             prob += (
-                pulp.lpSum(x[i][t] for i in range(n_items))
-                + pulp.lpSum(setup_time[i] * (1.0 if setup[i][t] else 0.0) for i in range(n_items))
-                <= capacity[t]
+                pulp.lpSum(x[i, t] for i in range(n_items))
+                + pulp.lpSum(inst.setup_time[i] * (1.0 if setup[i][t] else 0.0) for i in range(n_items))
+                <= inst.capacity[t]
             )
             for i in range(n_items):
                 if not setup[i][t]:
-                    prob += x[i][t] == 0
+                    prob += x[i, t] == 0
 
         for i in range(n_items):
             for t in range(n_periods):
-                prev_inv = inv[i][t - 1] if t > 0 else 0
-                prob += prev_inv + x[i][t] + unmet[i][t] == demand[i][t] + inv[i][t]
+                prev_inv = inv[i, t - 1] if t > 0 else 0
+                prob += prev_inv + x[i, t] + unmet[i, t] == demand[i][t] + inv[i, t]
 
         if target_unmet is not None:
-            prob += pulp.lpSum(unmet[i][t] for i in range(n_items) for t in range(n_periods)) == target_unmet
-            prob += pulp.lpSum(
-                holding_cost[i] * inv[i][t] for i in range(n_items) for t in range(n_periods)
-            )
+            prob += pulp.lpSum(unmet[i, t] for i in range(n_items) for t in range(n_periods)) == target_unmet
+            prob += pulp.lpSum(inst.holding_cost[i] * inv[i, t] for i in range(n_items) for t in range(n_periods))
         else:
-            prob += pulp.lpSum(unmet[i][t] for i in range(n_items) for t in range(n_periods))
+            prob += pulp.lpSum(unmet[i, t] for i in range(n_items) for t in range(n_periods))
 
         return prob, x, inv, unmet
 
@@ -90,24 +77,24 @@ def _solve_optimal_production_cached(inst_key, sol):
     prob1.solve(pulp.PULP_CBC_CMD(msg=False))
     status1 = pulp.LpStatus[prob1.status]
     if status1 not in {"Optimal", "Integer Feasible"}:
+        # Should not happen for valid instances; fall back to maximal coverage 0 if needed.
         min_unmet = sum(sum(row) for row in demand)
     else:
-        min_unmet = float(
-            pulp.value(pulp.lpSum(unmet1[i][t] for i in range(n_items) for t in range(n_periods)))
-        )
+        min_unmet = float(pulp.value(pulp.lpSum(unmet1[i, t] for i in range(n_items) for t in range(n_periods))))
 
     prob2, x2, inv2, unmet2 = build_model(minimize_inventory=True, target_unmet=min_unmet)
     prob2.solve(pulp.PULP_CBC_CMD(msg=False))
 
-    total_unmet = float(sum(pulp.value(unmet2[i][t]) for i in range(n_items) for t in range(n_periods)))
-    total_inventory = float(
-        sum(holding_cost[i] * pulp.value(inv2[i][t]) for i in range(n_items) for t in range(n_periods))
+    total_unmet = float(
+        sum(pulp.value(unmet2[i, t]) for i in range(n_items) for t in range(n_periods))
     )
-    return {"unmet": max(0.0, total_unmet), "inventory": max(0.0, total_inventory)}
-
-
-def _solve_optimal_production(inst: CLSPInstance, sol):
-    return _solve_optimal_production_cached(_inst_key(inst), sol)
+    total_inventory = float(
+        sum(inst.holding_cost[i] * pulp.value(inv2[i, t]) for i in range(n_items) for t in range(n_periods))
+    )
+    return {
+        "unmet": max(0.0, total_unmet),
+        "inventory": max(0.0, total_inventory),
+    }
 
 
 def violations(inst, sol) -> dict[str, float]:
@@ -130,6 +117,11 @@ def cost_terms(inst, sol) -> dict[str, float]:
 
 
 # ---- vista MIP ----
+from typing import Any
+
+from examples.lotsizing.instance import CLSPInstance
+
+
 def variables(inst) -> dict[str, tuple[float, float, str]]:
     n_items, n_periods = inst.n_items, inst.n_periods
     big_m = sum(max(0.0, d) for row in inst.demand for d in row)
@@ -157,40 +149,41 @@ def aux_values(inst, sol) -> dict[str, float]:
     n_items, n_periods = inst.n_items, inst.n_periods
     demand = inst.demand
 
+    import pulp
+
     def build_model(minimize_inventory: bool, target_unmet: float | None = None):
         prob = pulp.LpProblem("clsp_aux_values", pulp.LpMinimize)
-        x = [[pulp.LpVariable(f"x_{i}_{t}", lowBound=0) for t in range(n_periods)] for i in range(n_items)]
-        inv = [[pulp.LpVariable(f"inv_{i}_{t}", lowBound=0) for t in range(n_periods)] for i in range(n_items)]
-        unmet = [
-            [pulp.LpVariable(f"unmet_{i}_{t}", lowBound=0, upBound=demand[i][t]) for t in range(n_periods)]
+        x = {(i, t): pulp.LpVariable(f"x_{i}_{t}", lowBound=0) for i in range(n_items) for t in range(n_periods)}
+        inv = {(i, t): pulp.LpVariable(f"inv_{i}_{t}", lowBound=0) for i in range(n_items) for t in range(n_periods)}
+        unmet = {
+            (i, t): pulp.LpVariable(f"unmet_{i}_{t}", lowBound=0, upBound=demand[i][t])
             for i in range(n_items)
-        ]
+            for t in range(n_periods)
+        }
 
         for t in range(n_periods):
             prob += (
-                pulp.lpSum(x[i][t] for i in range(n_items))
+                pulp.lpSum(x[i, t] for i in range(n_items))
                 + pulp.lpSum(inst.setup_time[i] * (1.0 if sol[i][t] else 0.0) for i in range(n_items))
                 <= inst.capacity[t]
             )
             for i in range(n_items):
                 if not sol[i][t]:
-                    prob += x[i][t] == 0
+                    prob += x[i, t] == 0
 
         for i in range(n_items):
             for t in range(n_periods):
-                prev_inv = inv[i][t - 1] if t > 0 else 0
-                prob += prev_inv + x[i][t] + unmet[i][t] == demand[i][t] + inv[i][t]
+                prev_inv = inv[i, t - 1] if t > 0 else 0
+                prob += prev_inv + x[i, t] + unmet[i, t] == demand[i][t] + inv[i, t]
 
         if target_unmet is not None:
-            prob += pulp.lpSum(unmet[i][t] for i in range(n_items) for t in range(n_periods)) == target_unmet
+            prob += pulp.lpSum(unmet[i, t] for i in range(n_items) for t in range(n_periods)) == target_unmet
             if minimize_inventory:
-                prob += pulp.lpSum(
-                    inst.holding_cost[i] * inv[i][t] for i in range(n_items) for t in range(n_periods)
-                )
+                prob += pulp.lpSum(inst.holding_cost[i] * inv[i, t] for i in range(n_items) for t in range(n_periods))
             else:
                 prob += 0
         else:
-            prob += pulp.lpSum(unmet[i][t] for i in range(n_items) for t in range(n_periods))
+            prob += pulp.lpSum(unmet[i, t] for i in range(n_items) for t in range(n_periods))
 
         return prob, x, inv, unmet
 
@@ -200,9 +193,7 @@ def aux_values(inst, sol) -> dict[str, float]:
     if status1 not in {"Optimal", "Integer Feasible"}:
         min_unmet = float(sum(sum(row) for row in demand))
     else:
-        min_unmet = float(
-            pulp.value(pulp.lpSum(unmet1[i][t] for i in range(n_items) for t in range(n_periods))) or 0.0
-        )
+        min_unmet = float(pulp.value(pulp.lpSum(unmet1[i, t] for i in range(n_items) for t in range(n_periods))) or 0.0)
 
     prob2, x2, inv2, unmet2 = build_model(minimize_inventory=True, target_unmet=min_unmet)
     prob2.solve(pulp.PULP_CBC_CMD(msg=False))
@@ -210,15 +201,18 @@ def aux_values(inst, sol) -> dict[str, float]:
     vals: dict[str, float] = {}
     for i in range(n_items):
         for t in range(n_periods):
-            vals[f"x_{i}_{t}"] = float(pulp.value(x2[i][t]) or 0.0)
-            vals[f"inv_{i}_{t}"] = float(pulp.value(inv2[i][t]) or 0.0)
-            vals[f"unmet_{i}_{t}"] = float(pulp.value(unmet2[i][t]) or 0.0)
+            vals[f"x_{i}_{t}"] = float(pulp.value(x2[i, t]) or 0.0)
+            vals[f"inv_{i}_{t}"] = float(pulp.value(inv2[i, t]) or 0.0)
+            vals[f"unmet_{i}_{t}"] = float(pulp.value(unmet2[i, t]) or 0.0)
     return vals
 
 
 def from_assignment(inst, x) -> "sol":
     n_items, n_periods = inst.n_items, inst.n_periods
-    return tuple(tuple(bool(x.get(f"y_{i}_{t}", 0.0)) for t in range(n_periods)) for i in range(n_items))
+    return tuple(
+        tuple(bool(x.get(f"y_{i}_{t}", 0.0)) for t in range(n_periods))
+        for i in range(n_items)
+    )
 
 
 def constraint_families(inst) -> dict[str, list[tuple[dict[str, float], str, float]]]:
@@ -289,6 +283,12 @@ def variable_groups(inst) -> dict[str, list[str]]:
 
 
 # ---- vista constructiva ----
+from functools import lru_cache
+from typing import Optional
+
+import pulp
+
+
 def _as_tuple_partial(partial):
     return tuple(tuple(row) for row in partial)
 
@@ -306,51 +306,65 @@ def _first_undecided(partial):
 
 
 def _completion_setup(partial):
-    return tuple(tuple(True if v is None else bool(v) for v in row) for row in partial)
+    # undecided -> True, fixed decisions preserved
+    return tuple(
+        tuple(True if v is None else bool(v) for v in row)
+        for row in partial
+    )
 
 
-@lru_cache(maxsize=8192)
-def _is_completable_cached(inst_key, partial_tuple):
-    n_items, n_periods, demand, capacity, setup_time, setup_cost, holding_cost = _key_to_data(inst_key)
+@lru_cache(maxsize=None)
+def _is_completable(inst, partial_tuple):
     partial = partial_tuple
     setup = _completion_setup(partial)
 
+    n_items = inst.n_items
+    n_periods = inst.n_periods
+    demand = inst.demand
+
     prob = pulp.LpProblem("clsp_completion", pulp.LpMinimize)
-    x = [[pulp.LpVariable(f"x_{i}_{t}", lowBound=0) for t in range(n_periods)] for i in range(n_items)]
-    inv = [[pulp.LpVariable(f"inv_{i}_{t}", lowBound=0) for t in range(n_periods)] for i in range(n_items)]
-    unmet = [
-        [pulp.LpVariable(f"unmet_{i}_{t}", lowBound=0, upBound=demand[i][t]) for t in range(n_periods)]
+    x = {
+        (i, t): pulp.LpVariable(f"x_{i}_{t}", lowBound=0)
         for i in range(n_items)
-    ]
+        for t in range(n_periods)
+    }
+    inv = {
+        (i, t): pulp.LpVariable(f"inv_{i}_{t}", lowBound=0)
+        for i in range(n_items)
+        for t in range(n_periods)
+    }
+    unmet = {
+        (i, t): pulp.LpVariable(f"unmet_{i}_{t}", lowBound=0, upBound=demand[i][t])
+        for i in range(n_items)
+        for t in range(n_periods)
+    }
 
     for t in range(n_periods):
         prob += (
-            pulp.lpSum(x[i][t] for i in range(n_items))
-            + pulp.lpSum(setup_time[i] * (1.0 if setup[i][t] else 0.0) for i in range(n_items))
-            <= capacity[t]
+            pulp.lpSum(x[i, t] for i in range(n_items))
+            + pulp.lpSum(inst.setup_time[i] * (1.0 if setup[i][t] else 0.0) for i in range(n_items))
+            <= inst.capacity[t]
         )
         for i in range(n_items):
             if not setup[i][t]:
-                prob += x[i][t] == 0
+                prob += x[i, t] == 0
 
     for i in range(n_items):
         for t in range(n_periods):
-            prev_inv = inv[i][t - 1] if t > 0 else 0
-            prob += prev_inv + x[i][t] + unmet[i][t] == demand[i][t] + inv[i][t]
+            prev_inv = inv[i, t - 1] if t > 0 else 0
+            prob += prev_inv + x[i, t] + unmet[i, t] == demand[i][t] + inv[i, t]
 
-    prob += pulp.lpSum(unmet[i][t] for i in range(n_items) for t in range(n_periods))
+    prob += pulp.lpSum(unmet[i, t] for i in range(n_items) for t in range(n_periods))
     prob.solve(pulp.PULP_CBC_CMD(msg=False))
 
     status = pulp.LpStatus[prob.status]
     if status not in {"Optimal", "Integer Feasible"}:
         return False
 
-    total_unmet = float(pulp.value(pulp.lpSum(unmet[i][t] for i in range(n_items) for t in range(n_periods))))
+    total_unmet = float(
+        pulp.value(pulp.lpSum(unmet[i, t] for i in range(n_items) for t in range(n_periods)))
+    )
     return total_unmet <= 1e-9
-
-
-def _is_completable(inst, partial_tuple):
-    return _is_completable_cached(_inst_key(inst), partial_tuple)
 
 
 def candidates(inst, partial) -> list:
@@ -363,7 +377,10 @@ def candidates(inst, partial) -> list:
     out = []
     for val in (False, True):
         new_partial = tuple(
-            tuple(val if (ii == i and tt == t) else partial[ii][tt] for tt in range(inst.n_periods))
+            tuple(
+                val if (ii == i and tt == t) else partial[ii][tt]
+                for tt in range(inst.n_periods)
+            )
             for ii in range(inst.n_items)
         )
         if _is_completable(inst, new_partial):
@@ -374,7 +391,10 @@ def candidates(inst, partial) -> list:
 def apply_action(inst, partial, action):
     i, t, val = action
     return tuple(
-        tuple(val if (ii == i and tt == t) else partial[ii][tt] for tt in range(inst.n_periods))
+        tuple(
+            val if (ii == i and tt == t) else partial[ii][tt]
+            for tt in range(inst.n_periods)
+        )
         for ii in range(inst.n_items)
     )
 
@@ -389,4 +409,5 @@ def to_solution(inst, partial):
 
 
 def complete_partial(inst, partial, rng):
+    # Seguro y simple: cerrar todo con setups activos.
     return tuple(tuple(True for _ in range(inst.n_periods)) for _ in range(inst.n_items))

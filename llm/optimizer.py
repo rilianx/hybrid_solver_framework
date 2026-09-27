@@ -25,7 +25,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from random import Random
-from typing import Any
+from typing import Any, Callable
 
 from core.model_parts import CONSTRUCTION_PARTS, HEURISTIC_PARTS, MIP_PARTS
 from core.validation.base import ValidationReport, fail, ok
@@ -215,7 +215,11 @@ def component_prompt(slot: str, source: str, speed: float, spec, model_source: s
 
 
 def optimize_components(client: LLMClient, pack, workspace: str | Path, rounds: int = 2, min_speedup: float = 1.5,
-                        slots=("neighborhood",), tokens: TokenUsage | None = None, verbose: bool = True) -> dict[str, dict]:
+                        slots=("neighborhood",), tokens: TokenUsage | None = None, verbose: bool = True,
+                        deadline: float | None = None, on_row: Callable[[str, dict], None] | None = None) -> dict[str, dict]:
+    """`deadline` (time.monotonic()): los componentes que quedan cuando se pasa no se intentan (corridas 56 y
+    57: el job del CLSP se cortó a los 45 min sin guardar nada). `on_row(clave, fila)` se llama con cada
+    resultado, para guardar a medida que avanza."""
     from .generator import validate_generated_module
 
     tokens = tokens if tokens is not None else TokenUsage()
@@ -227,6 +231,11 @@ def optimize_components(client: LLMClient, pack, workspace: str | Path, rounds: 
     contexts = pack.make_contexts(strict=False)
     out: dict[str, dict] = {}
     for slot, base, path, k in latest_components(workspace, slots):
+        if deadline is not None and time.monotonic() > deadline:
+            out[f"{slot}/{base}"] = {"accepted": False, "skipped": "sin tiempo"}
+            if on_row is not None:
+                on_row(f"{slot}/{base}", out[f"{slot}/{base}"])
+            continue
         old_mod, r = load_module(path)
         if old_mod is None:
             continue
@@ -285,6 +294,11 @@ def optimize_components(client: LLMClient, pack, workspace: str | Path, rounds: 
                       f"\n\n# Técnicas\n{COMPONENT_TECHNIQUES}")
         out[f"{slot}/{base}"] = {"accepted": res.accepted, "rounds": res.rounds, "before": round(res.speed_before, 1),
                                  "after": round(res.speed_after, 1), "rejections": res.reports}
+        if on_row is not None:
+            on_row(f"{slot}/{base}", out[f"{slot}/{base}"])
+        if verbose:
+            print(f"[optimizar/{slot}] {base}: {'✔' if res.accepted else '✘'} {res.speed_before:,.0f} → {res.speed_after:,.0f}/s",
+                  flush=True)
     return out
 
 

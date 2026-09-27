@@ -32,6 +32,7 @@ import inspect
 import json
 import shutil
 import sys
+import time
 from dataclasses import replace
 from pathlib import Path
 from random import Random
@@ -298,16 +299,28 @@ def _stage_optimize(args) -> None:
     tokens = TokenUsage()
     pack = load_variant(args.problem, args.variant, args.workspace, reference=False)
     scale = pack.make_instances(1, 777, pack.parse_size(pack.default_size))
-    stats: dict = {"problem": args.problem, "variant": args.variant}
+    stats: dict = {"problem": args.problem, "variant": args.variant, "components": {}}
+    out = Path(args.workspace) / "optimize_stats.json"
+    deadline = time.monotonic() + 60 * args.max_minutes
+
+    def save() -> None:  # a medida que avanza: un job cortado no pierde lo hecho (corridas 56 y 57)
+        stats["tokens"] = tokens.as_dict(inner.model)
+        out.write_text(json.dumps(stats, indent=2, ensure_ascii=False))
+
     m = optimize_model(client, args.workspace, pack.make_model_spec(), pack.load_cases(), scale, rounds=args.rounds, tokens=tokens)
     stats["model"] = {"accepted": m.accepted, "rounds": m.rounds, "before": round(m.speed_before, 1),
                       "after": round(m.speed_after, 1), "rejections": m.reports}
+    save()
     for mod in [k for k in sys.modules if k.startswith(import_name(model_path(args.workspace)))]:
         del sys.modules[mod]  # el modelo pudo cambiar: recargarlo antes de optimizar los componentes
     pack = load_variant(args.problem, args.variant, args.workspace, reference=False)
-    stats["components"] = optimize_components(client, pack, args.workspace, rounds=2, slots=tuple(args.slots), tokens=tokens)
-    stats["tokens"] = tokens.as_dict(inner.model)
-    (Path(args.workspace) / "optimize_stats.json").write_text(json.dumps(stats, indent=2, ensure_ascii=False))
+    def row(key: str, value: dict) -> None:
+        stats["components"][key] = value
+        save()
+
+    optimize_components(client, pack, args.workspace, rounds=2, slots=tuple(args.slots), tokens=tokens,
+                        deadline=deadline, on_row=row)
+    save()
     brief = {"model": {k: v for k, v in stats["model"].items() if k != "rejections"},
              "components": {k: {kk: vv for kk, vv in v.items() if kk != "rejections"} for k, v in stats["components"].items()},
              "tokens": stats["tokens"]}
@@ -332,6 +345,8 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--model", default=None)
     ap.add_argument("--slots", nargs="*", default=["neighborhood", "greedy_score"],
                     help="optimize: slots cuyos componentes se aceleran (vacío: solo el modelo)")
+    ap.add_argument("--max-minutes", type=float, default=35.0,
+                    help="optimize: después de estos minutos no se empiezan más componentes")
     args = ap.parse_args(argv)
     if args.stage == "model":
         return _stage_model(args)
