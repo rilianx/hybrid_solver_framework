@@ -4,56 +4,76 @@
     "parsed": 3,
     "accepted": 3,
     "llm_calls": 1,
-    "llm_seconds": 7.4,
+    "llm_seconds": 12.2,
     "rejections_by_layer": {},
     "rounds_per_accepted": {
-      "nearest_extension_score": 1,
-      "high_demand_urgent_score": 1,
-      "route_save_ratio_score": 1
+      "nearest_neighbor_distance": 1,
+      "density_and_capacity_pressure": 1,
+      "route_extension_lookahead": 1
     },
     "abandoned": [],
+    "patches": 0,
     "accepted_files": [
-      "generated/cvrp_routes_cycle/greedy_score/nearest_extension_score_r1.py",
-      "generated/cvrp_routes_cycle/greedy_score/high_demand_urgent_score_r1.py",
-      "generated/cvrp_routes_cycle/greedy_score/route_save_ratio_score_r1.py"
+      "generated/cvrp_routes_cycle/greedy_score/nearest_neighbor_distance_r1.py",
+      "generated/cvrp_routes_cycle/greedy_score/density_and_capacity_pressure_r1.py",
+      "generated/cvrp_routes_cycle/greedy_score/route_extension_lookahead_r1.py"
     ],
     "tokens": {
       "calls": 1,
-      "input_tokens": 5044,
-      "output_tokens": 1666,
-      "total_tokens": 6710,
-      "reasoning_tokens": 171
+      "input_tokens": 5067,
+      "output_tokens": 1707,
+      "total_tokens": 6774,
+      "reasoning_tokens": 187
     }
   },
   "neighborhood": {
     "requested": 3,
     "parsed": 3,
-    "accepted": 1,
-    "llm_calls": 7,
-    "llm_seconds": 41.6,
-    "rejections_by_layer": {
-      "syntactic": 3,
-      "contractual": 5
-    },
+    "accepted": 3,
+    "llm_calls": 1,
+    "llm_seconds": 14.8,
+    "rejections_by_layer": {},
     "rounds_per_accepted": {
-      "swap_customers_across_routes": 3
+      "customer_relocate": 1,
+      "customer_swap": 1,
+      "route_segment_reinsertion": 1
     },
-    "abandoned": [
-      "relocate_customer_between_routes",
-      "two_opt_star_route_exchange"
-    ],
+    "abandoned": [],
+    "patches": 0,
     "accepted_files": [
-      "generated/cvrp_routes_cycle/neighborhood/swap_customers_across_routes_r3.py"
+      "generated/cvrp_routes_cycle/neighborhood/customer_relocate_r1.py",
+      "generated/cvrp_routes_cycle/neighborhood/customer_swap_r1.py",
+      "generated/cvrp_routes_cycle/neighborhood/route_segment_reinsertion_r1.py"
     ],
     "tokens": {
-      "calls": 7,
-      "input_tokens": 13482,
-      "output_tokens": 9118,
-      "total_tokens": 22600,
-      "reasoning_tokens": 3544
+      "calls": 1,
+      "input_tokens": 4584,
+      "output_tokens": 2150,
+      "total_tokens": 6734,
+      "reasoning_tokens": 516
     },
     "combinations": {
-      "swap_customers_across_routes": {
+      "customer_relocate": {
+        "compatible_skeletons": [
+          "SA",
+          "ILS",
+          "TS",
+          "VNS",
+          "GRASP",
+          "MIP_PERTURB"
+        ],
+        "gains": {
+          "SA/trivial": 0.4803,
+          "SA/random": 0.2755,
+          "VNS/trivial": 0.4053,
+          "VNS/random": 0.2168,
+          "TS/trivial": 0.525,
+          "TS/random": 0.3436,
+          "GRASP/trivial": 0.5327,
+          "GRASP/random": 0.0639
+        }
+      },
+      "customer_swap": {
         "compatible_skeletons": [
           "SA",
           "ILS",
@@ -64,13 +84,33 @@
         ],
         "gains": {
           "SA/trivial": 0.0,
-          "SA/random": 0.4373,
+          "SA/random": 0.4456,
           "VNS/trivial": 0.0,
-          "VNS/random": 0.4043,
+          "VNS/random": 0.4097,
           "TS/trivial": 0.0,
-          "TS/random": 0.4786,
+          "TS/random": 0.4625,
           "GRASP/trivial": 0.0,
-          "GRASP/random": 0.2068
+          "GRASP/random": 0.1278
+        }
+      },
+      "route_segment_reinsertion": {
+        "compatible_skeletons": [
+          "SA",
+          "ILS",
+          "TS",
+          "VNS",
+          "GRASP",
+          "MIP_PERTURB"
+        ],
+        "gains": {
+          "SA/trivial": 0.3371,
+          "SA/random": 0.1076,
+          "VNS/trivial": 0.4686,
+          "VNS/random": 0.2031,
+          "TS/trivial": 0.5594,
+          "TS/random": 0.2797,
+          "GRASP/trivial": 0.4807,
+          "GRASP/random": 0.0176
         }
       }
     }
@@ -80,27 +120,28 @@
     "parsed": 3,
     "accepted": 3,
     "llm_calls": 2,
-    "llm_seconds": 12.5,
+    "llm_seconds": 15.9,
     "rejections_by_layer": {
       "quality": 1
     },
     "rounds_per_accepted": {
-      "customer_relocation_perturbation": 1,
-      "segment_reversal_perturbation": 1,
-      "route_split_merge_perturbation": 2
+      "relocate_contiguous_segment": 1,
+      "ruin_and_greedy_reinsert": 1,
+      "cross_route_customer_swap": 2
     },
     "abandoned": [],
+    "patches": 1,
     "accepted_files": [
-      "generated/cvrp_routes_cycle/perturbation/customer_relocation_perturbation_r1.py",
-      "generated/cvrp_routes_cycle/perturbation/segment_reversal_perturbation_r1.py",
-      "generated/cvrp_routes_cycle/perturbation/route_split_merge_perturbation_r2.py"
+      "generated/cvrp_routes_cycle/perturbation/relocate_contiguous_segment_r1.py",
+      "generated/cvrp_routes_cycle/perturbation/ruin_and_greedy_reinsert_r1.py",
+      "generated/cvrp_routes_cycle/perturbation/cross_route_customer_swap_r2.py"
     ],
     "tokens": {
       "calls": 2,
-      "input_tokens": 5466,
-      "output_tokens": 2525,
-      "total_tokens": 7991,
-      "reasoning_tokens": 560
+      "input_tokens": 5714,
+      "output_tokens": 2742,
+      "total_tokens": 8456,
+      "reasoning_tokens": 541
     }
   },
   "destruction": {
@@ -108,25 +149,26 @@
     "parsed": 3,
     "accepted": 3,
     "llm_calls": 1,
-    "llm_seconds": 8.9,
+    "llm_seconds": 13.1,
     "rejections_by_layer": {},
     "rounds_per_accepted": {
-      "route_removal_destruction": 1,
-      "customer_star_destruction": 1,
-      "expensive_edge_destruction": 1
+      "route_based_destruction": 1,
+      "geographic_cluster_destruction": 1,
+      "pivot_segment_destruction": 1
     },
     "abandoned": [],
+    "patches": 0,
     "accepted_files": [
-      "generated/cvrp_routes_cycle/destruction/route_removal_destruction_r1.py",
-      "generated/cvrp_routes_cycle/destruction/customer_star_destruction_r1.py",
-      "generated/cvrp_routes_cycle/destruction/expensive_edge_destruction_r1.py"
+      "generated/cvrp_routes_cycle/destruction/route_based_destruction_r1.py",
+      "generated/cvrp_routes_cycle/destruction/geographic_cluster_destruction_r1.py",
+      "generated/cvrp_routes_cycle/destruction/pivot_segment_destruction_r1.py"
     ],
     "tokens": {
       "calls": 1,
-      "input_tokens": 4356,
-      "output_tokens": 2415,
-      "total_tokens": 6771,
-      "reasoning_tokens": 396
+      "input_tokens": 4379,
+      "output_tokens": 2384,
+      "total_tokens": 6763,
+      "reasoning_tokens": 325
     }
   },
   "_run": {
@@ -136,13 +178,13 @@
     "from_scratch": true,
     "catalog_diversity": "annotate",
     "planner": false,
-    "wall_seconds": 86.7,
+    "wall_seconds": 88.8,
     "tokens": {
-      "calls": 11,
-      "input_tokens": 28348,
-      "output_tokens": 15724,
-      "total_tokens": 44072,
-      "reasoning_tokens": 4671
+      "calls": 5,
+      "input_tokens": 19744,
+      "output_tokens": 8983,
+      "total_tokens": 28727,
+      "reasoning_tokens": 1569
     },
     "note": "define LLM_PRICE_IN y LLM_PRICE_OUT (USD por millón de tokens) para estimar el costo"
   }
