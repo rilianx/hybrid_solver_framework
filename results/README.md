@@ -300,8 +300,8 @@ contra la media de las tres configuraciones escritas a mano:
   ruta recalculado entero); el de referencia es O(n·L) y corta cuando se acaba la capacidad. La
   optimización no podía agregar el corte: la prueba de equivalencia exige las mismas salidas que
   el modelo original, que penaliza los segmentos sobrecargados en vez de descartarlos.
-- **Qué elige el tuner sigue siendo la mayor fuente de ruido**: en train las tres réplicas
-  estaban a pocas décimas; en test, VNS le saca 0,8–1,2 puntos a los SA. Si las tres hubieran
+- **Qué elige el tuner sigue siendo la mayor fuente de ruido**: cada réplica eligió un esqueleto
+  distinto, y en esta máquina VNS le saca 0,8–1,2 puntos a los SA a 5 s. Si las tres hubieran
   elegido VNS, el ciclo quedaría a la par de lo escrito a mano (en esta máquina, 0,36 puntos por
   delante a 5 s).
 
