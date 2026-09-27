@@ -5,137 +5,97 @@ from dataclasses import dataclass
 from functools import lru_cache
 from random import Random
 from typing import Any
+from weakref import WeakKeyDictionary
 
 from examples.cvrp.instance import CVRPInstance
 
 
-# ---------------------------------------------------------------------
-# Utilidades comunes y cachés por instancia
-# ---------------------------------------------------------------------
+# =============================================================================
+# Caches por instancia
+# =============================================================================
+
+@dataclass(frozen=True)
+class _InstData:
+    n: int
+    capacity: float
+    customers: tuple[int, ...]
+    demand: tuple[float, ...]
+    dist: tuple[tuple[float, ...], ...]
+    max_dist: float
+    total_demand: float
+
+
+_INST_CACHE: "WeakKeyDictionary[Any, _InstData]" = WeakKeyDictionary()
+
+
+def _get_inst_data(inst: CVRPInstance) -> _InstData:
+    try:
+        return _INST_CACHE[inst]
+    except Exception:
+        n = int(inst.n_customers)
+        customers = tuple(int(c) for c in inst.customers)
+        demand = tuple(float(inst.demand[c]) for c in range(n + 1))
+        dist = tuple(tuple(float(inst.dist(i, j)) for j in range(n + 1)) for i in range(n + 1))
+        max_dist = max((dist[i][j] for i in range(n + 1) for j in range(n + 1)), default=1.0)
+        total_demand = float(sum(demand[c] for c in customers))
+        data = _InstData(
+            n=n,
+            capacity=float(inst.capacity),
+            customers=customers,
+            demand=demand,
+            dist=dist,
+            max_dist=float(max_dist),
+            total_demand=total_demand,
+        )
+        try:
+            _INST_CACHE[inst] = data
+        except Exception:
+            pass
+        return data
+
+
+# =============================================================================
+# Utilidades comunes
+# =============================================================================
 
 def canonical(sol):
     routes = []
-    append = routes.append
     for route in sol:
         if route:
-            append(tuple(int(c) for c in route))
+            routes.append(tuple(int(c) for c in route))
     routes.sort(key=lambda r: r[0])
     return tuple(routes)
 
 
-def _inst_key(inst: CVRPInstance) -> int:
-    return id(inst)
+def _canonical_sol(sol):
+    if isinstance(sol, tuple) and (not sol or isinstance(sol[0], tuple)):
+        return canonical(sol)
+    return canonical(tuple(sol))
 
 
-_INST_CACHE: dict[int, dict[str, Any]] = {}
-
-
-def _get_inst_data(inst: CVRPInstance) -> dict[str, Any]:
-    key = id(inst)
-    data = _INST_CACHE.get(key)
-    if data is None:
-        n = int(inst.n_customers)
-        customers = tuple(int(c) for c in inst.customers)
-        demand = [0.0] * (n + 1)
-        for c in customers:
-            demand[c] = float(inst.demand[c])
-
-        dist_mat = [[0.0] * (n + 1) for _ in range(n + 1)]
-        max_dist = 1.0
-        for i in range(n + 1):
-            row = dist_mat[i]
-            for j in range(n + 1):
-                if i != j:
-                    d = float(inst.dist(i, j))
-                    row[j] = d
-                    if d > max_dist:
-                        max_dist = d
-
-        data = {
-            "n": n,
-            "customers": customers,
-            "demand": tuple(demand),
-            "capacity": float(inst.capacity),
-            "dist": tuple(tuple(r) for r in dist_mat),
-            "max_dist": max_dist,
-            "penalty_scale": 1.0 + 1000.0 * (n + 1) * max_dist,
-            "total_demand": float(sum(demand)),
-        }
-        _INST_CACHE[key] = data
-    return data
-
-
-@lru_cache(maxsize=200000)
-def _evaluate_cached(inst_key: int, sol: tuple[tuple[int, ...], ...]) -> tuple[float, float, float, float]:
-    inst = _INST_CACHE[inst_key]["_inst"]
-    data = _INST_CACHE[inst_key]
-    n = data["n"]
-    demand = data["demand"]
-    capacity = data["capacity"]
-    dist = data["dist"]
-    penalty_scale = data["penalty_scale"]
-
-    counts = [0] * (n + 1)
-    visita_invalid = 0.0
-    capacidad = 0.0
-    distance = 0.0
-
-    for route in sol:
-        prev = 0
-        load = 0.0
-        for c in route:
-            if 1 <= c <= n:
-                counts[c] += 1
-                d = demand[c]
-                load += d
-                distance += dist[prev][c]
-                prev = c
-            else:
-                visita_invalid += 1.0
-        distance += dist[prev][0]
-        if load > capacity:
-            capacidad += load - capacity
-
-    visita = visita_invalid
-    for c in range(1, n + 1):
-        visita += abs(counts[c] - 1)
-
-    penalized_distance = distance + penalty_scale * (visita + capacidad)
-    return visita, capacidad, distance, penalized_distance
-
-
-def _prepare_inst_cache(inst: CVRPInstance) -> int:
-    key = id(inst)
-    data = _INST_CACHE.get(key)
-    if data is None:
-        data = _get_inst_data(inst)
-    if "_inst" not in data:
-        data["_inst"] = inst
-    return key
-
-
-# ---------------------------------------------------------------------
-# Vista evaluación
-# ---------------------------------------------------------------------
+# =============================================================================
+# Evaluación
+# =============================================================================
 
 def trivial_solution(inst: CVRPInstance):
-    return tuple((c,) for c in inst.customers)
+    data = _get_inst_data(inst)
+    return tuple((c,) for c in data.customers)
 
 
 def random_solution(inst: CVRPInstance, rng: Random):
     data = _get_inst_data(inst)
-    customers = list(data["customers"])
+    customers = list(data.customers)
     rng.shuffle(customers)
 
     routes = []
     current = []
     current_load = 0.0
-    capacity = data["capacity"]
-    demand = data["demand"]
+    cap = data.capacity
+    demand = data.demand
 
     for c in customers:
         d = demand[c]
-        if current and current_load + d > capacity and rng.random() < 0.8:
+        if current and current_load + d > cap and rng.random() < 0.8:
             routes.append(tuple(current))
             current = [c]
             current_load = d
@@ -153,21 +113,90 @@ def from_answer(inst: CVRPInstance, answer):
     return canonical(tuple(tuple(int(c) for c in route) for route in answer))
 
 
+@lru_cache(maxsize=8192)
+def _violations_cached(inst_key: int, sol: tuple[tuple[int, ...], ...]) -> tuple[float, float]:
+    inst = _INST_REF[inst_key]
+    data = _get_inst_data(inst)
+    n = data.n
+    cap = data.capacity
+    demand = data.demand
+
+    counts = [0] * (n + 1)
+    invalid = 0
+
+    for route in sol:
+        load = 0.0
+        for c in route:
+            if 1 <= c <= n:
+                counts[c] += 1
+                load += demand[c]
+            else:
+                invalid += 1
+        # capacidad
+        if load > cap:
+            pass
+
+    visita = float(invalid)
+    for c in data.customers:
+        visita += abs(counts[c] - 1)
+
+    capacidad = 0.0
+    for route in sol:
+        load = 0.0
+        for c in route:
+            if 1 <= c <= n:
+                load += demand[c]
+        if load > cap:
+            capacidad += load - cap
+
+    return float(visita), float(capacidad)
+
+
+# weak reference support for cached evaluation
+_INST_REF: dict[int, CVRPInstance] = {}
+
+
+def _inst_key(inst: CVRPInstance) -> int:
+    k = id(inst)
+    _INST_REF[k] = inst
+    return k
+
+
 def violations(inst: CVRPInstance, sol) -> dict[str, float]:
-    sol = canonical(sol)
-    key = _prepare_inst_cache(inst)
-    visita, capacidad, _, _ = _evaluate_cached(key, sol)
-    return {"visita": float(visita), "capacidad": float(capacidad)}
+    s = _canonical_sol(sol)
+    v, c = _violations_cached(_inst_key(inst), s)
+    return {"visita": v, "capacidad": c}
+
+
+@lru_cache(maxsize=8192)
+def _cost_cached(inst_key: int, sol: tuple[tuple[int, ...], ...]) -> float:
+    inst = _INST_REF[inst_key]
+    data = _get_inst_data(inst)
+    n = data.n
+    dist = data.dist
+
+    distance = 0.0
+    for route in sol:
+        prev = 0
+        for c in route:
+            if 1 <= c <= n:
+                distance += dist[prev][c]
+                prev = c
+        distance += dist[prev][0]
+
+    v1, v2 = _violations_cached(inst_key, sol)
+    penalty_scale = 1.0 + 1000.0 * (n + 1) * data.max_dist
+    return float(distance + penalty_scale * (v1 + v2))
 
 
 def cost_terms(inst: CVRPInstance, sol) -> dict[str, float]:
-    sol = canonical(sol)
-    key = _prepare_inst_cache(inst)
-    _, _, _, penalized_distance = _evaluate_cached(key, sol)
-    return {"distancia": float(penalized_distance)}
+    s = _canonical_sol(sol)
+    return {"distancia": _cost_cached(_inst_key(inst), s)}
 
 
-# ---- vista MIP ----
+# =============================================================================
+# Vista MIP
+# =============================================================================
 
 def _x_name(i: int, j: int) -> str:
     return f"x_{i}_{j}"
@@ -178,27 +207,39 @@ def _f_name(i: int, j: int) -> str:
 
 
 def variables(inst) -> dict[str, tuple[float, float, str]]:
-    n = inst.n_customers
+    data = _get_inst_data(inst)
+    n = data.n
     vars_: dict[str, tuple[float, float, str]] = {}
+
     for i in range(n + 1):
         for j in range(n + 1):
             if i != j:
                 vars_[_x_name(i, j)] = (0.0, 1.0, "binary")
-                vars_[_f_name(i, j)] = (0.0, float(inst.capacity), "continuous")
+                vars_[_f_name(i, j)] = (0.0, float(data.capacity), "continuous")
+
     return vars_
 
 
 def structural_variables(inst) -> list[str]:
-    n = inst.n_customers
+    data = _get_inst_data(inst)
+    n = data.n
     return [_x_name(i, j) for i in range(n + 1) for j in range(n + 1) if i != j]
 
 
+@lru_cache(maxsize=8192)
+def _structural_variables_cached(inst_key: int) -> tuple[str, ...]:
+    inst = _INST_REF[inst_key]
+    return tuple(structural_variables(inst))
+
+
 def to_assignment(inst, sol) -> dict[str, float]:
-    sol = canonical(sol)
-    n = inst.n_customers
+    s = _canonical_sol(sol)
+    data = _get_inst_data(inst)
+    n = data.n
+
     x = {_x_name(i, j): 0.0 for i in range(n + 1) for j in range(n + 1) if i != j}
 
-    for route in sol:
+    for route in s:
         prev = 0
         for c in route:
             if 1 <= c <= n:
@@ -210,14 +251,14 @@ def to_assignment(inst, sol) -> dict[str, float]:
 
 
 def aux_values(inst, sol) -> dict[str, float]:
-    sol = canonical(sol)
-    n = inst.n_customers
+    s = _canonical_sol(sol)
     data = _get_inst_data(inst)
-    demand = data["demand"]
+    n = data.n
+    demand = data.demand
 
     f = {_f_name(i, j): 0.0 for i in range(n + 1) for j in range(n + 1) if i != j}
 
-    for route in sol:
+    for route in s:
         prev = 0
         remaining = 0.0
         for c in route:
@@ -234,16 +275,17 @@ def aux_values(inst, sol) -> dict[str, float]:
 
 
 def from_assignment(inst, x) -> tuple[tuple[int, ...], ...]:
-    n = inst.n_customers
+    data = _get_inst_data(inst)
+    n = data.n
+
     succ = {}
-    get = x.get
     for i in range(n + 1):
         for j in range(n + 1):
-            if i != j and float(get(_x_name(i, j), 0.0)) > 0.5:
+            if i != j and float(x.get(_x_name(i, j), 0.0)) > 0.5:
                 succ[i] = j
 
     routes = []
-    starts = [j for j in range(1, n + 1) if float(get(_x_name(0, j), 0.0)) > 0.5]
+    starts = [j for j in range(1, n + 1) if float(x.get(_x_name(0, j), 0.0)) > 0.5]
     starts.sort()
     used = set()
 
@@ -266,36 +308,40 @@ def from_assignment(inst, x) -> tuple[tuple[int, ...], ...]:
 
 
 def constraint_families(inst) -> dict[str, list[tuple[dict[str, float], str, float]]]:
-    n = inst.n_customers
-    q = float(inst.capacity)
     data = _get_inst_data(inst)
-    total_demand = data["total_demand"]
+    n = data.n
+    q = float(data.capacity)
+    total_demand = data.total_demand
 
     fam: dict[str, list[tuple[dict[str, float], str, float]]] = {
         "visita": [],
         "capacidad": [],
     }
 
-    for c in inst.customers:
+    for c in data.customers:
         in_coefs = {_x_name(i, c): 1.0 for i in range(n + 1) if i != c}
         out_coefs = {_x_name(c, j): 1.0 for j in range(n + 1) if j != c}
         fam["visita"].append((in_coefs, "==", 1.0))
         fam["visita"].append((out_coefs, "==", 1.0))
 
-    for j in inst.customers:
+    for j in data.customers:
         coefs: dict[str, float] = {}
         for i in range(n + 1):
             if i != j:
-                coefs[_f_name(i, j)] = coefs.get(_f_name(i, j), 0.0) + 1.0
+                name = _f_name(i, j)
+                coefs[name] = coefs.get(name, 0.0) + 1.0
         for k in range(n + 1):
             if k != j:
-                coefs[_f_name(j, k)] = coefs.get(_f_name(j, k), 0.0) - 1.0
-        fam["capacidad"].append((coefs, "==", float(inst.demand[j])))
+                name = _f_name(j, k)
+                coefs[name] = coefs.get(name, 0.0) - 1.0
+        fam["capacidad"].append((coefs, "==", float(data.demand[j])))
 
     depot_coefs: dict[str, float] = {}
     for k in range(1, n + 1):
-        depot_coefs[_f_name(0, k)] = depot_coefs.get(_f_name(0, k), 0.0) + 1.0
-        depot_coefs[_f_name(k, 0)] = depot_coefs.get(_f_name(k, 0), 0.0) - 1.0
+        name = _f_name(0, k)
+        depot_coefs[name] = depot_coefs.get(name, 0.0) + 1.0
+        name = _f_name(k, 0)
+        depot_coefs[name] = depot_coefs.get(name, 0.0) - 1.0
     fam["capacidad"].append((depot_coefs, "==", total_demand))
 
     for i in range(n + 1):
@@ -307,17 +353,19 @@ def constraint_families(inst) -> dict[str, list[tuple[dict[str, float], str, flo
 
 
 def objective_terms(inst) -> dict[str, tuple[dict[str, float], float]]:
-    n = inst.n_customers
+    data = _get_inst_data(inst)
+    n = data.n
     coefs: dict[str, float] = {}
     for i in range(n + 1):
         for j in range(n + 1):
             if i != j:
-                coefs[_x_name(i, j)] = float(inst.dist(i, j))
+                coefs[_x_name(i, j)] = data.dist[i][j]
     return {"distancia": (coefs, 0.0)}
 
 
 def variable_groups(inst) -> dict[str, list[str]]:
-    xs = structural_variables(inst)
+    key = _inst_key(inst)
+    xs = _structural_variables_cached(key)
     groups: dict[str, list[str]] = defaultdict(list)
 
     for idx, name in enumerate(xs):
@@ -329,7 +377,9 @@ def variable_groups(inst) -> dict[str, list[str]]:
     return dict(groups)
 
 
-# ---- vista constructiva ----
+# =============================================================================
+# Vista constructiva
+# =============================================================================
 
 @dataclass(frozen=True)
 class _Partial:
@@ -339,7 +389,8 @@ class _Partial:
 
 
 def empty_partial(inst):
-    return _Partial(finished=tuple(), current=tuple(), remaining=tuple(inst.customers))
+    data = _get_inst_data(inst)
+    return _Partial(finished=tuple(), current=tuple(), remaining=tuple(data.customers))
 
 
 def candidates(inst, partial) -> list:
@@ -353,6 +404,7 @@ def candidates(inst, partial) -> list:
 
 
 def apply_action(inst, partial, action):
+    data = _get_inst_data(inst)
     if not isinstance(partial, _Partial):
         partial = _Partial(
             finished=tuple(),
@@ -370,8 +422,8 @@ def apply_action(inst, partial, action):
         current = (c,)
         finished = partial.finished
     else:
-        load = sum(inst.demand[i] for i in partial.current)
-        if load + inst.demand[c] <= inst.capacity:
+        load = sum(data.demand[i] for i in partial.current)
+        if load + data.demand[c] <= data.capacity:
             current = partial.current + (c,)
             finished = partial.finished
         else:
@@ -398,6 +450,7 @@ def to_solution(inst, partial):
 
 
 def complete_partial(inst, partial, rng):
+    data = _get_inst_data(inst)
     if not isinstance(partial, _Partial):
         partial = _Partial(
             finished=tuple(),
@@ -413,11 +466,11 @@ def complete_partial(inst, partial, rng):
     rng.shuffle(remaining)
 
     for c in remaining:
-        d = inst.demand[c]
+        d = data.demand[c]
         if routes:
             last = routes[-1]
-            load = sum(inst.demand[i] for i in last)
-            if load + d <= inst.capacity:
+            load = sum(data.demand[i] for i in last)
+            if load + d <= data.capacity:
                 routes[-1] = last + (c,)
                 continue
         routes.append((c,))
