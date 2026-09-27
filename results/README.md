@@ -208,6 +208,35 @@ tenía); gran tour 2.ª generación 2,67 / 3,44 / 4,08 % (SA con 2-opt sobre el 
   Pendiente: medir movimientos por segundo, y pedir en el prompt de vecindarios un `delta`
   incremental cuando la representación lo permite.
 
+**Etapa de optimización** (corridas 41 y 42 sobre los catálogos de la 2.ª generación; `llm.cycle
+optimize`). Se midió la velocidad (`scripts/throughput.py`): el modelo de rutas generado evaluaba
+4,9 mil soluciones/s y el de gran tour 219 (la referencia en la misma representación: 75 mil y 11
+mil), y todos los vecindarios recalculaban el objetivo completo en cada `delta`. La etapa pide
+versiones más rápidas y las acepta solo si dan las mismas salidas que las aceptadas (pruebas
+diferenciales) y son al menos 1,5 veces más rápidas. Resultado: modelo de rutas 4,9 → 51 mil
+evaluaciones/s, modelo de gran tour 219 → 4,5 mil; los tres vecindarios de gran tour 4–5 mil → 24–26
+mil `delta`/s; los de rutas no ganaron 1,5× sobre el modelo ya rápido; de los puntajes, 1 de 6.
+
+Efecto en la calidad, sin volver a afinar (`scripts/reevaluate_configs.py`: la configuración que
+eligió cada réplica de las runs 31 y 32, mismas instancias de test, semillas y 5 s, catálogo antes y
+después de optimizar, las dos en la misma máquina y de a una a la vez; gap contra el mejor conocido
+guardado de cada run):
+
+| Variante | Antes de optimizar | Optimizado | Mejora |
+|---|---|---|---|
+| Rutas (run 31) | 2,04 % | 1,19 % | +0,85 puntos |
+| Gran tour (run 32) | 3,25 % | 0,01 % | +3,24 puntos |
+
+- **La velocidad pesaba**: con el mismo algoritmo y las mismas decisiones del tuner, solo más
+  rápido, gran tour gana 3,2 puntos y rutas 0,85. Gana más donde el modelo era más lento (el Split
+  por evaluación del gran tour).
+- La medición de "antes" en esta máquina da peor que en Actions (los 5 s rinden distinto), por eso
+  se compara antes y después en la misma máquina y sin otras corridas en paralelo. Con otra corrida
+  en paralelo, el "antes" del gran tour empeoraba 0,1 puntos más.
+- Pendiente: afinar de nuevo sobre los catálogos optimizados (el tuner podría elegir otra cosa con
+  más movimientos por segundo) y compararlos con la referencia escrita a mano con el mismo mejor
+  conocido.
+
 ### ProblemModel del CLSP por piezas: de 4 rechazos a aceptado a la primera, por arreglos del framework
 
 El CLSP pone a prueba otra cosa que el CVRP: la solución es el plan de setups y el costo sale de

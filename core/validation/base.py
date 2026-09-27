@@ -50,7 +50,8 @@ class ValidationReport:
         for layer in LAYERS:
             if any(not r.passed and r.layer == layer for r in self.results):
                 return layer
-        return None
+        # capas fuera de la cadena de validación (equivalence, speed, …)
+        return next((r.layer for r in self.results if not r.passed), None)
 
     def failures(self) -> list[CheckResult]:
         return [r for r in self.results if not r.passed]
