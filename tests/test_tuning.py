@@ -307,3 +307,46 @@ def test_defaults_are_preferred_when_the_tuned_gain_is_within_noise():
     assert prefer_defaults([0.6845, 0.6840, 0.6850], [0.6853, 0.6848, 0.6858])  # 0.1 %: dentro del margen
     assert not prefer_defaults([0.60, 0.61, 0.60], [0.70, 0.71, 0.70])  # 15 %, consistente: gana el afinado
     assert prefer_defaults([0.60, 0.75, 0.62], [0.70, 0.62, 0.71])  # gana en media pero con mucho ruido
+
+
+def test_clearly_worse_needs_a_paired_difference_beyond_noise():
+    from tuning.optuna_tuner import clearly_worse
+
+    leader = [1.0, 1.1, 0.9, 1.0, 1.05, 0.95]
+    assert clearly_worse([x + 0.2 for x in leader], leader)
+    assert not clearly_worse([x + (0.2 if k % 2 else -0.2) for k, x in enumerate(leader)], leader)
+    assert not clearly_worse(leader, [x + 0.2 for x in leader])  # es mejor, no peor
+
+
+def test_final_selection_races_the_candidates_that_noise_cannot_separate():
+    """Run 35: con 2 semillas extra, dos de tres réplicas eligieron SA y perdían 0,8–1,2 puntos en test
+    contra el VNS de la tercera. La carrera sigue evaluando solo a los que no se separan del líder."""
+    import random
+
+    from tuning.optuna_tuner import Trial, _reevaluate
+
+    means = {"A": 1.00, "B": 1.01, "C": 1.50}
+    calls: list[str] = []
+
+    class Stub:
+        penalty_cost = 1e12
+
+        def evaluate(self, config, instances, budget, seed=0, normalizers=None):
+            name = config["skeleton"]
+            calls.append(name)
+            return means[name] + random.Random(f"{name}-{seed}").gauss(0, 0.05)
+
+    stub, insts = Stub(), [0, 1, 2, 3]
+    trials = []
+    for k, name in enumerate("ABC"):
+        blocks = [stub.evaluate({"skeleton": name}, [i], 1.0, seed=j) for j, i in enumerate(insts)]
+        trials.append(Trial(k, {"skeleton": name}, sum(blocks) / len(blocks), 0.0, enqueued=True, per_instance=blocks))
+    calls.clear()
+    best, _, rows = _reevaluate(stub, trials, insts, 1.0, 0, top=3, n_seeds=2, normalizers=None, race_seeds=6)
+    row = {trials[r["number"]].config["skeleton"]: r for r in rows}
+    assert row["C"]["seeds"] == 3 and row["C"]["eliminated_after"] == 2  # base + 2: fuera
+    assert calls.count("C") == 2 * len(insts)  # no recibe semillas de la carrera
+    assert row["A"]["seeds"] > 3 and best.config["skeleton"] in ("A", "B")
+    # sin carrera (race_seeds = reeval_seeds) todos reciben lo mismo, como antes
+    _, _, rows = _reevaluate(stub, trials, insts, 1.0, 0, top=3, n_seeds=2, normalizers=None, race_seeds=2)
+    assert {r["seeds"] for r in rows} == {3}
