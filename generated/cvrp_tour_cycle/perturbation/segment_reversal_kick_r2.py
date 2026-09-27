@@ -28,19 +28,31 @@ class SegmentReversalKick:
             seg_len = n
 
         start = rng.randrange(0, n - seg_len + 1)
-        segment = tour[start : start + seg_len]
-        reversed_segment = tuple(reversed(segment))
-        perturbed = tour[:start] + reversed_segment + tour[start + seg_len :]
+        segment = list(tour[start : start + seg_len])
+
+        if len(segment) >= 2:
+            # Distinct from relocation: scramble the internal order of a contiguous
+            # segment instead of moving a block elsewhere.
+            for i in range(len(segment) - 1, 0, -1):
+                j = rng.randrange(0, i + 1)
+                segment[i], segment[j] = segment[j], segment[i]
+
+            if tuple(segment) == tour[start : start + seg_len]:
+                # Guarantee a change when the shuffle accidentally leaves the segment unchanged.
+                i = rng.randrange(0, len(segment))
+                j = (i + 1) % len(segment)
+                segment[i], segment[j] = segment[j], segment[i]
+
+        perturbed = tour[:start] + tuple(segment) + tour[start + seg_len :]
 
         if perturbed == tour:
-            # Make sure it differs: swap two positions if reversal had no effect.
             i = rng.randrange(0, n)
             j = (i + 1) % n
             s = list(tour)
             s[i], s[j] = s[j], s[i]
             perturbed = tuple(s)
 
-        return tuple(perturbed)
+        return perturbed
 
 
 def build_component(problem, **params):
