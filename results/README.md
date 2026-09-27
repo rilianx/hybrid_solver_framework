@@ -34,6 +34,7 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run31/`](tune_run31/) | 26 sep | ciclo CVRP rutas, 2.ª generación (componentes 39) | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | variación entre generaciones |
 | [`tune_run32/`](tune_run32/) | 26 sep | ciclo CVRP gran tour, 2.ª generación (componentes 40) | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | variación entre generaciones |
 | [`tune_run33/`](tune_run33/) | 27 sep | ciclo CVRP rutas, 2.ª generación optimizada (corrida 41) | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | efecto de la optimización al volver a afinar |
+| [`tune_run35/`](tune_run35/) | 27 sep | ciclo CVRP gran tour, 2.ª generación optimizada (modelo de la corrida 47, componentes de la 42) | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | efecto de la optimización, memoria acotada |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -255,7 +256,23 @@ guardado de cada run):
   (`maxsize=8192`), 0,3 MB. El modelo de rutas de la corrida 41 (`maxsize=200000`) también la
   violaría, aunque en la práctica cupo en la run 33. Se rehízo la optimización del gran tour
   (corrida 47): 222 → 1,6 mil evaluaciones/s con cachés acotadas (la versión que perdía memoria
-  hacía 4,5 mil). Tuning de nuevo: run 35, pendiente.
+  hacía 4,5 mil).
+- **Gran tour, afinando de nuevo** (run 35, memoria acotada): las tres réplicas terminaron (la run
+  34 no) y eligen 2-opt sobre el tour con SA o VNS.
+
+| Comparación (mismo mejor conocido por par) | Gap afinado | Diferencia por instancia |
+|---|---|---|
+| Gran tour optimizado (35) contra sin optimizar (32) | 4,26 → 1,88 % | −2,38 [−3,19, −1,68] |
+| Gran tour optimizado (35) contra escrito a mano (30) | 2,18 contra 1,30 % | +0,87 [+0,37, +1,31] |
+| Rutas optimizado (33) contra gran tour optimizado (35) | 5,62 contra 1,85 % | +3,77 [+2,73, +4,92] |
+
+  - **La brecha con lo escrito a mano baja de 3,3 a 0,9 puntos** en gran tour; es la primera vez
+    que el ciclo completo (modelo, componentes y aceleración, todo generado) queda a menos de un
+    punto de la referencia. Las réplicas también se ponen de acuerdo (desvío 0,22 contra 0,58).
+  - En rutas la optimización no se vio al afinar (run 33, ruido del tuner), y gran tour queda 3,8
+    puntos por delante: con modelos rápidos las dos, la representación vuelve a pesar.
+  - El afinado casi no le gana al mejor no afinado (+0,41 [−0,06, +0,88]): con un solo vecindario
+    bueno, el tuner tiene poco que elegir.
 
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 
