@@ -376,6 +376,9 @@ oculto): la variación entre generaciones. Arreglos: `llm.cycle model --construc
 aceptado; y el traceback de un error salta también las librerías instaladas (en la 53 los tres
 marcos eran de PuLP y no se veía la línea del LLM).
 
+Vista constructiva sola sobre el modelo de la 52, con la pista de completabilidad (corrida 54):
+**aceptada en la primera ronda** (6,5 mil tokens; antes, 6 rondas rechazadas).
+
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 
 Desde la corrida 43, una corrección trae solo las funciones o métodos que cambian y
