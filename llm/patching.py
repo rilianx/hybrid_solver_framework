@@ -10,6 +10,8 @@ Reglas de `apply_patch(módulo, parche)`:
 - una clase que ya existe se parchea método por método (y atributo por atributo): los métodos del
   parche reemplazan a los del mismo nombre y los nuevos se agregan al final de la clase; una clase
   nueva se agrega entera;
+- un método suelto (una función cuyo primer argumento es `self`, con o sin la sangría de la clase)
+  va a la clase que tiene un método con ese nombre; el LLM lo devuelve así a menudo;
 - una asignación de nivel superior (`COMPONENT = …`, una constante) reemplaza la del mismo nombre o
   se agrega antes de la primera definición;
 - los imports que falten se agregan después de los imports existentes;
@@ -99,6 +101,7 @@ def defined_names(source: str) -> set[str]:
 
 
 def apply_patch(source: str, patch: str, required: tuple[str, ...] = ()) -> PatchResult:
+    patch = textwrap.dedent(patch)  # un método suelto suele venir con la sangría de la clase
     try:
         ptree = ast.parse(patch)
     except SyntaxError as exc:
@@ -140,7 +143,11 @@ def apply_patch(source: str, patch: str, required: tuple[str, ...] = ()) -> Patc
         key = _key(node)
         old = top.get(key) if key else None
         if isinstance(node, ast.ClassDef) and isinstance(old, ast.ClassDef):
-            _patch_class(old, node, olines, plines, replace, insert, res)
+            _patch_class(old, node.body, olines, plines, replace, insert, res)
+            continue
+        owner = _owner(otree, node) if old is None else None
+        if owner is not None:  # método sin su `class` (corridas 43 y 44): va a la clase que lo define
+            _patch_class(owner, [node], olines, plines, replace, insert, res)
             continue
         text = _text(plines, node)
         if old is not None:
@@ -164,10 +171,22 @@ def apply_patch(source: str, patch: str, required: tuple[str, ...] = ()) -> Patc
     return res
 
 
-def _patch_class(old: ast.ClassDef, new: ast.ClassDef, olines, plines, replace, insert, res: PatchResult) -> None:
+def _owner(otree: ast.Module, node: ast.AST) -> ast.ClassDef | None:
+    """La clase del módulo a la que pertenece una función suelta del parche cuyo primer argumento es
+    `self`: la única que tiene un método con ese nombre o, si ninguna lo tiene, la única clase."""
+    if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) or not node.args.args or node.args.args[0].arg != "self":
+        return None
+    classes = [n for n in otree.body if isinstance(n, ast.ClassDef)]
+    having = [c for c in classes if any(isinstance(m, (ast.FunctionDef, ast.AsyncFunctionDef)) and m.name == node.name for m in c.body)]
+    if len(having) == 1:
+        return having[0]
+    return classes[0] if not having and len(classes) == 1 else None
+
+
+def _patch_class(old: ast.ClassDef, nodes: list, olines, plines, replace, insert, res: PatchResult) -> None:
     members = {_key(n): n for n in old.body if _key(n)}
     indent = " " * old.body[0].col_offset
-    for node in new.body:
+    for node in nodes:
         if _is_placeholder(node):
             continue
         key = _key(node)

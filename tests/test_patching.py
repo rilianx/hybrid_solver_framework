@@ -59,6 +59,18 @@ def test_a_complete_module_replaces_the_old_one():
     assert res.mode == "full" and res.source == TOUR_SWAP
 
 
+def test_a_method_without_its_class_goes_into_the_class():
+    """Corridas 43 y 44: la mitad de las correcciones devolvían el método solo, a veces con sangría."""
+    for patch in ("def delta(self, sol, m):\n    return 0.0\n", "    def delta(self, sol, m):\n        return 0.0\n"):
+        res = apply_patch(SLOW_SWAP, patch, REQ)
+        assert res.replaced == ["TourSwap.delta"] and not res.added, res
+        ns: dict = {}
+        exec(res.source, ns)  # noqa: S102
+        assert ns["TourSwap"](None).delta((1, 2), (0, 1)) == 0.0
+    res = apply_patch(SLOW_SWAP, "def size(self):\n    return 3\n", REQ)  # método nuevo: a la única clase
+    assert res.added == ["TourSwap.size"]
+
+
 def test_top_level_functions_are_replaced_by_name():
     src = "def a():\n    return 1\n\n\ndef b():\n    return a() + 1\n"
     res = apply_patch(src, "def a():\n    return 10\n", ("a", "b"))

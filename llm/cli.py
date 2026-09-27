@@ -99,7 +99,7 @@ def main(pack: ProblemPack, argv: list[str] | None = None) -> None:
             "requested": stats.requested, "parsed": stats.parsed, "accepted": stats.accepted,
             "llm_calls": stats.llm_calls, "llm_seconds": round(stats.llm_seconds, 1),
             "rejections_by_layer": dict(stats.rejections_by_layer),
-            "rounds_per_accepted": stats.rounds_per_accepted, "abandoned": stats.abandoned,
+            "rounds_per_accepted": stats.rounds_per_accepted, "abandoned": stats.abandoned, "patches": stats.patches,
             "accepted_files": [str(c.path) for c in accepted],
             "tokens": stats.tokens.as_dict(inner.model),
         }
