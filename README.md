@@ -178,7 +178,8 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   representación con decodificador (`ModelSpec.decoder`): el validador exige
   que la decodificación no sea peor que la respuesta del caso y acepta que
   una respuesta infactible no sea representable.
-- **Ciclo completo** (`llm/cycle.py`) — de la descripción y los casos a un
+- **Ciclo completo** (`llm/cycle.py`; diagrama de estados en
+  [`docs/ciclo_completo.md`](docs/ciclo_completo.md)) — de la descripción y los casos a un
   solver afinado, por representación: `model` genera el ProblemModel por
   piezas, `components` genera desde cero constructores, vecindarios,
   perturbaciones y destrucciones sobre ese modelo (el LLM ve el código de las
