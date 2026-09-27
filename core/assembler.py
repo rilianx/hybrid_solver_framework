@@ -56,6 +56,9 @@ SKELETONS: dict[str, SkeletonDef] = {
         "SA", ("constructor", "neighborhood"),
         params={
             "T0": {"type": "float", "range": [1.0, 1000.0], "log": True},
+            # enfriamiento por tiempo primero (default): ver skeletons/sa.py
+            "cooling": {"type": "cat", "values": ["time", "iterations"]},
+            "T_end": {"type": "float", "range": [1e-5, 1e-1], "log": True},
             "alpha": {"type": "float", "range": [0.8, 0.999]},
             "iters_per_T": {"type": "int", "range": [1, 50]},
         },
@@ -221,8 +224,11 @@ class Assembler:
             constructor = self._component(config, "constructor", skeleton, P)
             if skeleton == "SA":
                 nbh = self._component(config, "neighborhood", skeleton, P)
+                # configuraciones de antes del enfriamiento por tiempo: se reproducen tal cual
+                cooling = config.get("SA.cooling", "iterations" if "SA.alpha" in config else sp("cooling"))
                 sk, extra = build_sa(P, constructor, nbh, MaxTimeStop(budget), T0=sp("T0"), alpha=sp("alpha"),
-                                     iters_per_T=sp("iters_per_T"), acceptance=MetropolisAcceptance())
+                                     iters_per_T=sp("iters_per_T"), acceptance=MetropolisAcceptance(),
+                                     cooling=cooling, T_end=sp("T_end"), budget=budget)
                 return make_run(sk, extra)(inst, rng)
             if skeleton == "ILS":
                 nbh = self._component(config, "neighborhood", skeleton, P)

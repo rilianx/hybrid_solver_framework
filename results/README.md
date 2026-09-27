@@ -312,6 +312,11 @@ reevalúe con más semillas cuando las mejores configuraciones difieren en el es
 optimización del modelo, permitir un cambio de semántica que no cambie el óptimo (descartar
 segmentos imposibles en vez de penalizarlos) validado contra los casos, no salida por salida.
 
+**SA con enfriamiento por tiempo** (nuevo default, `SA.cooling = time`: T = T0 · T_end^(t/presupuesto)).
+Las dos configuraciones SA de la run 35, en las mismas instancias de test y a 5 s (una semilla):
+2,07 → 0,96 % y 1,73 → 1,60 % con `T_end = 10⁻³` (el default); con `10⁻⁴`, 2,35 y 1,58 %. El tuner
+afina `T_end`; las configuraciones anteriores, sin `SA.cooling`, siguen enfriando por iteraciones.
+
 **Selección final en carrera** (run 36: lo mismo que la 35, con `--race-seeds 6`). Después de las 2
 semillas extra de siempre, los candidatos que pierden contra el líder por más que el ruido salen y
 los empatados siguen recibiendo semillas:

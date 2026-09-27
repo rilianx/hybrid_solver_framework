@@ -350,3 +350,18 @@ def test_final_selection_races_the_candidates_that_noise_cannot_separate():
     # sin carrera (race_seeds = reeval_seeds) todos reciben lo mismo, como antes
     _, _, rows = _reevaluate(stub, trials, insts, 1.0, 0, top=3, n_seeds=2, normalizers=None, race_seeds=2)
     assert {r["seeds"] for r in rows} == {3}
+
+
+def test_sa_time_cooling_follows_the_budget_and_old_configs_keep_iteration_cooling():
+    """Run 35: el SA enfriaba por iteraciones y con los defaults quedaba frío antes de 1 s."""
+    from core.skeleton import SearchState
+    from skeletons.sa import _time_cooling_updater
+
+    upd, st = _time_cooling_updater(T0=100.0, T_end=1e-3, budget=10.0), SearchState()
+    for t, expected in ((0.0, 100.0), (5.0, 100.0 * 1e-3 ** 0.5), (10.0, 0.1), (30.0, 0.1)):
+        st.elapsed_time = t
+        upd(st)
+        assert abs(st.extra["temperature"] - expected) < 1e-9 * max(1.0, expected)
+    from core.assembler import SKELETONS
+
+    assert SKELETONS["SA"].params["cooling"]["values"][0] == "time"  # default
