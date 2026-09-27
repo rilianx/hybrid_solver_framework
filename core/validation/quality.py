@@ -11,7 +11,7 @@ from dataclasses import replace
 from random import Random
 from statistics import mean
 
-from .base import CheckResult, ValidationContext, fail, ok
+from .base import CheckResult, ValidationContext, fail, ok, describe_exception
 from .diversity import most_similar, novelty_of_improvements
 from .operational import VariantRunner
 
@@ -271,7 +271,7 @@ def check_component_quality(slot: str, impl, ctx: ValidationContext) -> list[Che
                     except Exception as exc:  # noqa: BLE001 — con el movimiento y la solución, el LLM puede corregirlo
                         bad = next(m for m in sample if _raises(impl.delta, sol, m))
                         results.append(fail(LAYER, "neighborhood.delta_runs",
-                            f"delta(sol, m={bad!r}) lanzó {type(exc).__name__}: {exc}. m salió de moves(sol) con "
+                            f"delta(sol, m={bad!r}) lanzó {describe_exception(exc)}. m salió de moves(sol) con "
                             f"sol={_short(sol)} ({'solución de partida' if group == 'start' else 'solución al azar'})."))
                         return results
                     if group == "start":

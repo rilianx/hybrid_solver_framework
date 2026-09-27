@@ -307,7 +307,10 @@ contra la media de las tres configuraciones escritas a mano:
   oculto", sin nombrar la función, y la ronda 3 corrigió `cost_terms` (que estaba bien) y dejó el
   módulo idéntico a la ronda 2. Arreglos: la prueba diferencial contra el modelo aceptado va
   primero (nombra la función y la solución donde difiere) y una corrección que no cambia nada se
-  señala en el siguiente pedido.
+  señala en el siguiente pedido. Segundo intento (corrida 49, 4 rondas): las cuatro con el mismo
+  `TypeError: 'int' object is not subscriptable`, sin ubicación. Arreglo: todo error que lanza el
+  código validado se informa con la función, la línea y el código donde ocurrió
+  (`describe_exception`, en las 14 capas que informaban solo el tipo y el mensaje).
 - **Qué elige el tuner sigue siendo la mayor fuente de ruido**: cada réplica eligió un esqueleto
   distinto, y en esta máquina VNS le saca 0,8–1,2 puntos a los SA a 5 s. Si las tres hubieran
   elegido VNS, el ciclo quedaría a la par de lo escrito a mano (en esta máquina, 0,36 puntos por

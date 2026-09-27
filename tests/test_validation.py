@@ -530,3 +530,20 @@ def test_perturbation_signature_is_a_shape_profile_too():
     sig = lambda c: perturbation_signature(c, sol, problem)  # noqa: E731
     assert similarity(sig(a), sig(b)) > 0.95
     assert similarity(sig(a), sig(ShiftWithinItem())) < 0.6
+
+
+def test_an_exception_report_says_where_it_happened_in_the_validated_code():
+    """Corrida 49: 'TypeError: 'int' object is not subscriptable' sin ubicación, 4 rondas iguales."""
+    from core.validation.base import describe_exception
+
+    def helper(x):
+        return x[0]
+
+    def cost_terms(inst, sol):
+        return helper(sol)
+
+    try:
+        cost_terms(None, 3)
+    except TypeError as exc:
+        msg = describe_exception(exc)
+    assert msg.startswith("TypeError:") and "helper(), línea" in msg and "`return x[0]`" in msg and "cost_terms()" in msg

@@ -21,7 +21,7 @@ import tracemalloc
 from random import Random
 from typing import Callable
 
-from .base import CheckResult, fail, ok
+from .base import CheckResult, fail, ok, describe_exception
 
 LAYER = "resources"
 LIMIT_MB = 1.0
@@ -72,7 +72,7 @@ def check_parts_memory(parts, inst, n: int = BATCH, limit_mb: float = LIMIT_MB) 
     try:
         growth = _retained_growth(run)
     except Exception as exc:  # noqa: BLE001
-        return fail(LAYER, "bounded_memory", f"el modelo lanzó {type(exc).__name__}: {exc} al medir la memoria")
+        return fail(LAYER, "bounded_memory", f"el modelo lanzó {describe_exception(exc)} al medir la memoria")
     return _verdict("bounded_memory", growth, "modelo", limit_mb)
 
 
@@ -113,7 +113,7 @@ def check_component_memory(slot: str, make, problem_factory, inst, sol, n: int =
         # componente usa y no son suyas (con una sola, la de 8192 del gran tour aún crecía)
         growth = _retained_growth(run, warmup=2)
     except Exception as exc:  # noqa: BLE001
-        return fail(LAYER, "bounded_memory", f"el componente lanzó {type(exc).__name__}: {exc} al medir la memoria")
+        return fail(LAYER, "bounded_memory", f"el componente lanzó {describe_exception(exc)} al medir la memoria")
     return _verdict("bounded_memory", growth, f"componente ({slot})", limit_mb)
 
 

@@ -25,7 +25,7 @@ from typing import Any
 
 from core.model_parts import CONSTRUCTION_PARTS, HEURISTIC_PARTS, MIP_PARTS, TOL, LinearMIP, TestCase, family_of, lhs, violated
 
-from .base import CheckResult, ValidationReport, fail, ok
+from .base import CheckResult, ValidationReport, fail, ok, describe_exception
 
 
 MIN_GROUPS = 4
@@ -83,7 +83,7 @@ def check_heuristic_view(parts, cases: list[TestCase], n_random: int = 4, decode
             if len({repr(s) for s in sols}) == 1 and n_random > 1:
                 report.add(fail(L, "random_varies", f"random_solution devuelve siempre la misma solución en {where}"))
         except Exception as exc:  # noqa: BLE001
-            report.add(fail(L, "runs", f"la vista heurística lanzó {type(exc).__name__}: {exc} en {where}"))
+            report.add(fail(L, "runs", f"la vista heurística lanzó {describe_exception(exc)} en {where}"))
             return report
         for k, sc in enumerate(case.solutions):
             label = f"{where}, solución {k}" + (f" (respuesta {_short(sc['answer'], 120)})" if case.visible else "")
@@ -94,7 +94,7 @@ def check_heuristic_view(parts, cases: list[TestCase], n_random: int = 4, decode
                 v = _viol(parts, inst, sol)
                 cost = sum(parts.cost_terms(inst, sol).values())
             except Exception as exc:  # noqa: BLE001
-                report.add(fail(L, "runs", f"from_answer/violations/cost_terms lanzó {type(exc).__name__}: {exc} en {label}"))
+                report.add(fail(L, "runs", f"from_answer/violations/cost_terms lanzó {describe_exception(exc)} en {label}"))
                 continue
             if sc["feasible"] and v:
                 report.add(fail(L, "feasibility_matches_cases", f"se esperaba FACTIBLE y violations reporta {v} en {label}"))
@@ -134,7 +134,7 @@ def check_mip_view(parts, cases: list[TestCase], n_random: int = 4, scale_instan
             struct = list(parts.structural_variables(inst))
             groups = parts.variable_groups(inst)
         except Exception as exc:  # noqa: BLE001
-            report.add(fail(L, "runs", f"structural_variables/variable_groups lanzó {type(exc).__name__}: {exc} en la instancia de tamaño realista"))
+            report.add(fail(L, "runs", f"structural_variables/variable_groups lanzó {describe_exception(exc)} en la instancia de tamaño realista"))
             return report
         report.extend(_groups(struct, groups, f"instancia de tamaño realista {k}", granularity=True))
         if not report.passed:
@@ -148,7 +148,7 @@ def check_mip_view(parts, cases: list[TestCase], n_random: int = 4, scale_instan
             obj = parts.objective_terms(inst)
             groups = parts.variable_groups(inst)
         except Exception as exc:  # noqa: BLE001
-            report.add(fail(L, "runs", f"la vista MIP lanzó {type(exc).__name__}: {exc} en {where}"))
+            report.add(fail(L, "runs", f"la vista MIP lanzó {describe_exception(exc)} en {where}"))
             return report
         report.extend(_names(dom, struct, fams, obj, groups, where, granularity=not scale_instances))
         if not report.passed:
@@ -161,7 +161,7 @@ def check_mip_view(parts, cases: list[TestCase], n_random: int = 4, scale_instan
                 back = parts.from_assignment(inst, x)
                 aux = parts.aux_values(inst, sol)
             except Exception as exc:  # noqa: BLE001
-                report.add(fail(L, "bridge_runs", f"to_assignment/from_assignment/aux_values lanzó {type(exc).__name__}: {exc} con sol={_short(sol)}"))
+                report.add(fail(L, "bridge_runs", f"to_assignment/from_assignment/aux_values lanzó {describe_exception(exc)} con sol={_short(sol)}"))
                 return report
             # la ida y vuelta se exige a las factibles: una infactible puede no ser representable en
             # la vista MIP (un cliente repetido no tiene arcos propios)
@@ -201,7 +201,7 @@ def check_mip_view(parts, cases: list[TestCase], n_random: int = 4, scale_instan
                     continue
                 report.extend(_point(parts, inst, sol, {**x, **aux}, dom, fams, obj))
             except Exception as exc:  # noqa: BLE001
-                report.add(fail(L, "runs", f"violations/cost_terms lanzó {type(exc).__name__}: {exc} con sol={_short(sol)}"))
+                report.add(fail(L, "runs", f"violations/cost_terms lanzó {describe_exception(exc)} con sol={_short(sol)}"))
             if not report.passed:
                 return report
     if report.passed:
@@ -316,7 +316,7 @@ def check_mip_optimum(parts, cases: list[TestCase], time_limit: float = 20.0) ->
             model = LinearMIP(parts, inst)
             x = model.solve(fixed={}, integer=set(model.variables()), relaxed=set(), time_limit=time_limit)
         except Exception as exc:  # noqa: BLE001
-            report.add(fail(L, "full_mip_runs", f"armar o resolver el MIP completo lanzó {type(exc).__name__}: {exc} en {where}"))
+            report.add(fail(L, "full_mip_runs", f"armar o resolver el MIP completo lanzó {describe_exception(exc)} en {where}"))
             continue
         if x is None:
             report.add(fail(L, "full_mip_solvable", f"el MIP completo no encontró solución en {time_limit:g} s en {where}"))
@@ -405,7 +405,7 @@ def check_construction_view(parts, cases: list[TestCase], scale_instances: list 
                     return report
                 v = _viol(parts, inst, sol)
             except Exception as exc:  # noqa: BLE001
-                report.add(fail(L, "runs", f"la vista constructiva lanzó {type(exc).__name__}: {exc} en {where}"
+                report.add(fail(L, "runs", f"la vista constructiva lanzó {describe_exception(exc)} en {where}"
                                            + (f" tras las acciones {_short(trail, 200)}" if visible else "")))
                 return report
             if v:

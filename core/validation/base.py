@@ -12,6 +12,8 @@ se devuelve al LLM").
 
 from __future__ import annotations
 
+import os
+import traceback
 from dataclasses import dataclass, field
 from typing import Any, Callable, Sequence
 
@@ -138,6 +140,20 @@ class ValidationContext:
     def variables(self, inst) -> set[str]:
         groups = self.problem.variable_groups(inst)
         return {v for vs in groups.values() for v in vs}
+
+
+_CORE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_FRAMEWORK = (os.path.join(_CORE, "validation") + os.sep,
+              *(os.path.join(_CORE, f) for f in ("model_parts.py", "skeleton.py", "neighborhood.py", "construction.py")))
+
+
+def describe_exception(exc: BaseException, frames: int = 3) -> str:
+    """`Tipo: mensaje` más dónde ocurrió en el código validado (función, línea y la línea misma),
+    sin los marcos del framework. Corrida 49: con solo "TypeError: 'int' object is not
+    subscriptable" el LLM repitió el mismo error en las 4 rondas."""
+    tb = [f for f in traceback.extract_tb(exc.__traceback__) if not f.filename.startswith(_FRAMEWORK)]
+    where = "; ".join(f"en {f.name}(), línea {f.lineno}: `{(f.line or '').strip()}`" for f in reversed(tb[-frames:]))
+    return f"{type(exc).__name__}: {exc}" + (f" ({where})" if where else "")
 
 
 def ok(layer: str, name: str, message: str = "") -> CheckResult:

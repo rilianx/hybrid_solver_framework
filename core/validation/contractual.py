@@ -16,7 +16,7 @@ from typing import Any
 
 from core.skeleton import SearchState
 
-from .base import CheckResult, ValidationContext, fail, guard, ok
+from .base import CheckResult, ValidationContext, fail, guard, ok, describe_exception
 
 LAYER = "contractual"
 
@@ -105,7 +105,7 @@ def check_neighborhood(impl, ctx: ValidationContext) -> list[CheckResult]:
                         d = impl.delta(sol, m)
                     except Exception as exc:  # noqa: BLE001 — con el movimiento y la solución, el LLM puede corregirlo
                         out.append(fail(LAYER, f"neighborhood.{step}_runs",
-                                        f"{step}(…, m={m!r}) lanzó {type(exc).__name__}: {exc}. m salió de moves(sol) con "
+                                        f"{step}(…, m={m!r}) lanzó {describe_exception(exc)}. m salió de moves(sol) con "
                                         f"sol={_short(sol)} en inst_{k}"))
                         break
                     if back != sol:

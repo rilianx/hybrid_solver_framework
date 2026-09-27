@@ -16,7 +16,7 @@ from typing import Any, Callable
 
 from core.model_parts import CONSTRUCTION_PARTS, MIP_PARTS, TOL, has_construction
 
-from .base import ValidationReport, fail, ok
+from .base import ValidationReport, fail, ok, describe_exception
 
 LAYER = "equivalence"
 
@@ -108,7 +108,7 @@ def check_parts_equivalent(old, new, instances: list[tuple[Any, list]], n_random
                     report.add(fail(LAYER, "construction_equal", f"la vista constructiva cambió en {where}: {bad}"))
                     return report
         except Exception as exc:  # noqa: BLE001
-            report.add(fail(LAYER, "runs", f"la versión nueva lanzó {type(exc).__name__}: {exc} en {where}"))
+            report.add(fail(LAYER, "runs", f"la versión nueva lanzó {describe_exception(exc)} en {where}"))
             return report
     report.add(ok(LAYER, "same_outputs", f"mismas salidas en {len(instances)} instancias"))
     return report
@@ -199,7 +199,7 @@ def check_component_equivalent(slot: str, old, new, problem, sols: list, n_moves
                             return report
                     partial = view.apply(partial, cands[rng.randrange(len(cands))])
     except Exception as exc:  # noqa: BLE001
-        report.add(fail(LAYER, "runs", f"la versión nueva lanzó {type(exc).__name__}: {exc}"))
+        report.add(fail(LAYER, "runs", f"la versión nueva lanzó {describe_exception(exc)}"))
         return report
     report.add(ok(LAYER, "same_outputs", f"mismas salidas en {len(sols)} soluciones"))
     return report
