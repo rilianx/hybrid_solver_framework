@@ -199,7 +199,13 @@ def optimize_components(client: LLMClient, pack, workspace: str | Path, rounds: 
                 continue
             cand = path.with_name(f"{base}_r{k + rnd}.py")
             cand.write_text(src)
-            report, new_mod, _ = validate_generated_module(cand, contexts)
+            report, new_mod, new_comp = validate_generated_module(cand, contexts)
+            # el catálogo y las configuraciones ya elegidas buscan el componente por nombre (corrida 41:
+            # el LLM lo renombró "…_fast" y las configuraciones de la run 32 ya no lo encontraban)
+            old_comp = {k: v for k, v in old_mod.COMPONENT.items() if k != "combination_gains"}
+            if report.passed and {k: v for k, v in (new_comp or {}).items() if k != "combination_gains"} != old_comp:
+                report.add(fail("equivalence", "same_component_metadata",
+                                f"COMPONENT tiene que quedar idéntico al original (mismo nombre, slot, esqueletos y parámetros): {old_comp}"))
             if report.passed:
                 report = check_component_equivalent(slot, old_mod.build_component(pack.problem_factory(inst)),
                                                     new_mod.build_component(pack.problem_factory(inst)), pack.problem_factory(inst), sols)

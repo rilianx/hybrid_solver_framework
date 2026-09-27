@@ -134,3 +134,19 @@ def test_a_neighborhood_with_other_moves_is_not_equivalent():
 
     report = check_component_equivalent("neighborhood", old, Reversed(P), P, [tour_parts.trivial_solution(inst)])
     assert not report.passed and "moves_equal" in report.feedback()
+
+
+def test_a_renamed_component_is_rejected(tmp_path):
+    """Corrida 41: el LLM renombró el componente '…_fast' y las configuraciones ya elegidas no lo encontraban."""
+    from llm import ScriptedClient
+    from llm.cycle import load_variant
+    from llm.optimizer import optimize_components
+    from tests.test_cycle import TOUR_SWAP
+
+    pack = load_variant("cvrp", "tour", None, reference=True)
+    (tmp_path / "neighborhood").mkdir()
+    (tmp_path / "neighborhood" / "tour_swap_r1.py").write_text(SLOW_SWAP)
+    renamed = TOUR_SWAP.replace('"name": "tour_swap"', '"name": "tour_swap_fast"')
+    client = ScriptedClient(responses=[f"```python\n{renamed}\n```"])
+    row = optimize_components(client, pack, tmp_path, rounds=1, verbose=False)["neighborhood/tour_swap"]
+    assert not row["accepted"] and "same_component_metadata" in row["rejections"][0]

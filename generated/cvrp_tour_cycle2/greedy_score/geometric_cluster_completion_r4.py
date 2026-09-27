@@ -1,7 +1,7 @@
 from math import atan2, hypot, pi, sin, cos
 
 COMPONENT = {
-    "name": "geometric_cluster_completion_fast",
+    "name": "geometric_cluster_completion",
     "slot": "greedy_score",
     "compatible_skeletons": ["SA", "ILS", "TS", "VNS", "GRASP", "LNS_MIP", "FIX_OPT", "LOCAL_BRANCH", "MIP_PERTURB"],
     "requires": [],

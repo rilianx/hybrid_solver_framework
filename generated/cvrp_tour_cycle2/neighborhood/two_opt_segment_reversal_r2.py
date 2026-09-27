@@ -1,5 +1,5 @@
 COMPONENT = {
-    "name": "two_opt_segment_reversal_fast",
+    "name": "two_opt_segment_reversal",
     "slot": "neighborhood",
     "compatible_skeletons": ["SA", "ILS", "TS", "VNS", "GRASP", "MIP_PERTURB"],
     "requires": ["ProblemModel.objective"],
