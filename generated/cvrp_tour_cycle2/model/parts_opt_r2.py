@@ -443,9 +443,15 @@ def candidates(inst, partial) -> list:
 
 def apply_action(inst, partial, action):
     built, open_route, remaining = partial
+
+    if not isinstance(action, (tuple, list)) or not action:
+        return partial
+
     kind = action[0]
 
     if kind == "add":
+        if len(action) < 2:
+            return partial
         c = int(action[1])
         if c not in remaining:
             return partial

@@ -443,10 +443,17 @@ def candidates(inst, partial) -> list:
 
 def apply_action(inst, partial, action):
     built, open_route, remaining = partial
-    kind = action[0]
+
+    try:
+        kind = action[0]
+    except Exception:
+        return partial
 
     if kind == "add":
-        c = int(action[1])
+        try:
+            c = int(action[1])
+        except Exception:
+            return partial
         if c not in remaining:
             return partial
         new_open = open_route + (c,)

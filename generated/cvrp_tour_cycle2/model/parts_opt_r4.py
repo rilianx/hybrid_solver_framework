@@ -46,12 +46,10 @@ class _InstData:
             return 0.0
         dr = self.dist_row
         total = dr[0][route[0]]
-        prev = route[0]
-        for idx in range(1, len(route)):
-            c = route[idx]
-            total += dr[prev][c]
-            prev = c
-        return total + dr[prev][0]
+        for i in range(len(route) - 1):
+            total += dr[route[i]][route[i + 1]]
+        total += dr[route[-1]][0]
+        return total
 
     def _split_dp_cached(self, tour: tuple[int, ...]):
         return self._eval_tour_cached(tour)[0]
@@ -113,7 +111,6 @@ class _InstData:
             if load > cap:
                 capvio += load - cap
 
-        # compute visitation violations exactly
         counts = {c: 0 for c in self.customer_set}
         extra = 0
         for c in tour:
@@ -443,10 +440,17 @@ def candidates(inst, partial) -> list:
 
 def apply_action(inst, partial, action):
     built, open_route, remaining = partial
-    kind = action[0]
+
+    try:
+        kind = action[0]
+    except Exception:
+        return partial
 
     if kind == "add":
-        c = int(action[1])
+        try:
+            c = int(action[1])
+        except Exception:
+            return partial
         if c not in remaining:
             return partial
         new_open = open_route + (c,)
