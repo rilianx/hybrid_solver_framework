@@ -478,6 +478,50 @@ La memoria reduce a la mitad los movimientos del greedy en 3×5 y 5×5, pero no 
 beam search, la política queda a la par de FRG en 5×5 y le gana en 6×6. Como constructor greedy
 por sí sola sigue siendo débil, y la capa de calidad la rechaza (2,5 veces la partida trivial).
 
+**Corridas reales del ciclo en el CPMP (58–62, OpenAI).**
+
+- **58:** modelo aceptado a la primera, pero la vista ciclaba con un puntaje constante (ver
+  abajo).
+- **60:** vista rechazada en 4 rondas.
+- **61:** solo la vista, aceptada en la ronda 5. Es una vista neutral parecida a la de
+  referencia: guarda los layouts recorridos y tiene un tope de pasos.
+- **62:** generación de componentes sobre ese modelo, con unos 46 mil tokens:
+  - `greedy_score` (sin memoria): 0 de 3 aceptados, con 9 rechazos por calidad;
+  - `construction_policy` (con memoria): 2 de 3. Las dos sostienen un plan de verdad.
+    `blocking_chain_unwinder_policy` guarda una pila fuente y una etapa: primero saca los
+    bloqueadores y después termina la pila. `reserve_buffer_then_repair_policy` guarda una
+    pila tampón y alterna una fase de acumulación con una de reparación.
+
+Con 8 instancias al estilo CVS de 4×4 (cota inferior 2,6 movimientos):
+
+| | greedy | beam, nb = 3 |
+|---|---|---|
+| `blocking_chain_unwinder_policy` (política, aceptada) | 21,8 | 4,9 |
+| `reserve_buffer_then_repair_policy` (política, aceptada) | 31,5 | 5,8 |
+| `target_stack_clearance_policy` (política, rechazada) | 20,6 | 5,9 |
+| `blocking_reduction_with_safe_landing` (puntaje, rechazado) | 24,1 | 5,5 |
+| `urgency_pressure_balance` (puntaje, rechazado) | 59,5 | 7,6 |
+| `order_preservation_refuge_choice` (puntaje, rechazado) | 66,6 | 14,5 |
+| partida trivial del modelo generado (A*) | 6,4 | |
+| FRG / BS-FRG (a mano) | 4,4 | 4,1 |
+
+Lo que muestra:
+
+- Con beam search, la mejor política generada queda a medio movimiento de FRG, sin haber visto
+  nada de FRG.
+- Como greedy solas, todas son débiles; la calidad aparece con la beam search.
+- Las políticas superan a los puntajes sin memoria sobre todo como greedy. Con beam, la ventaja
+  es menor: un puntaje rechazado da 5,5, a la par de ellas.
+
+Dos pendientes que salen de aquí:
+
+1. **El gate de calidad juzga solo el greedy.** Rechaza componentes que con beam search son
+   buenos; convendría medirlos con la mejor estrategia constructiva disponible.
+2. **El modelo generado es lento en 5×5.** Su `trivial_solution` es una A* de 10 a 12 s por
+   instancia, que también usan el respaldo de la vista y `PartsModel` para fijar la
+   penalización. La etapa `optimize` del ciclo es la que debería acelerarlo; falta ver si
+   soporta modelos sin vista MIP.
+
 **Validación de la vista constructiva generada: un puntaje constante no puede ciclar.** En la
 corrida 58 la vista del CPMP que escribió el LLM ofrecía movimientos que no empeoran el
 desorden. Pasó las construcciones al azar (que escapan de un ciclo tarde o temprano), pero con
