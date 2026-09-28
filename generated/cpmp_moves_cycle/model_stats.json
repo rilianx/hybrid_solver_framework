@@ -1,0 +1,25 @@
+{
+  "problem": "cpmp",
+  "variant": "moves",
+  "accepted": true,
+  "heuristic_rounds": 1,
+  "mip_rounds": 0,
+  "construction_rounds": 4,
+  "construction_accepted": false,
+  "llm_calls": 5,
+  "seconds": 101.1,
+  "tokens": {
+    "calls": 5,
+    "input_tokens": 17607,
+    "output_tokens": 10255,
+    "total_tokens": 27862,
+    "reasoning_tokens": 5205
+  },
+  "rejections": [
+    "vista constructiva: rechazado en la capa 'construction'. Propiedades violadas:\n  - deterministic_no_cycle: eligiendo siempre el primer candidato (lo que hace un puntaje constante) la construcción no terminó en 10 s (2569 pasos) en un caso oculto ('cpmp_1_4x4'): casi seguro cicla (vuelve a estados ya recorridos). candidates no debe ofrecer acciones que lleven a un estado ya visitado en esta construcción (guárdalos en la parcial) o debe tener un tope de pasos que cierre con complete_partial",
+    "vista constructiva: rechazado en la capa 'construction'. Propiedades violadas:\n  - choices_matter: las 4 construcciones al azar dieron la misma solución en instancia de tamaño realista 0: los candidatos no ofrecen decisiones reales, un puntaje no tendría qué elegir",
+    "vista constructiva: rechazado en la capa 'construction'. Propiedades violadas:\n  - deterministic_no_cycle: eligiendo siempre el último candidato (lo que hace un puntaje constante) la construcción no terminó en 10 s (2483 pasos) en un caso oculto ('cpmp_1_4x4'): casi seguro cicla (vuelve a estados ya recorridos). candidates no debe ofrecer acciones que lleven a un estado ya visitado en esta construcción (guárdalos en la parcial) o debe tener un tope de pasos que cierre con complete_partial",
+    "vista constructiva: rechazado en la capa 'construction'. Propiedades violadas:\n  - random_completion_feasible: completar eligiendo candidatos al azar dio una solución que viola {'orden': 4.0} en un caso oculto ('cpmp_4_5x4') (por complete_partial (sin candidatos), 85 pasos): candidates debe ofrecer solo acciones que se puedan completar a una solución factible, y complete_partial debe terminar en una factible"
+  ],
+  "model": "generated/cpmp_moves_cycle/model/parts.py"
+}
