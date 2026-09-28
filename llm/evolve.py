@@ -374,6 +374,31 @@ def archive_text(archive: list[Individual]) -> str:
     return "\n".join(rows)
 
 
+def _attempt(path: Path, source: str, contexts, op: str, target: str | None, parent: Individual):
+    """Normaliza (números sueltos → parámetros; parámetros inertes fuera), valida y verifica el
+    alcance del operador. (motivo de rechazo o None, módulo, COMPONENT, estados, fuente normalizada, notas)."""
+    from core.validation.params import normalize_machine_file
+
+    path.write_text(source)
+    where = [(ctx.instances[0], ctx.problem) for ctx in contexts if ctx.instances]
+    notes = normalize_machine_file(path, where)
+    report, module, component = light_validation(path, contexts)
+    norm = path.read_text()
+    if not report.passed:
+        return report.feedback()[:700], module, component, (), norm, notes
+    try:
+        states = tuple(module.build_component(contexts[0].problem).states)
+    except Exception as exc:  # noqa: BLE001
+        return f"build_component(problem).states lanzó {type(exc).__name__}: {exc}", module, component, (), norm, notes
+    return scope_check(op, target, parent, states, norm), module, component, states, norm, notes
+
+
+def repair_prompt(op: str, target: str | None, reason: str, source: str) -> str:
+    return (f"Tu módulo (operador `{op}`{' sobre `' + target + '`' if target else ''}) fue RECHAZADO antes de evaluarse:\n\n"
+            f"{reason}\n\nCorrígelo manteniendo lo que el operador pide. Devuelve UN solo bloque ```python``` con el "
+            f"módulo completo.\n\n# Tu módulo\n```python\n{source}\n```")
+
+
 def evolve_prompt(spec, parent: Individual, op: str, target: str | None, prof: str, trace: str, archive: list[Individual],
                   seed: bool) -> str:
     from core.machine import FALLBACK
@@ -388,6 +413,9 @@ def evolve_prompt(spec, parent: Individual, op: str, target: str | None, prof: s
         f"\nLa máquina puede devolver `FALLBACK` (`from core.machine import FALLBACK`, el estado \"{FALLBACK}\") desde "
         "`transition` cuando ninguno de sus estados sabe qué hacer: el framework elige entonces la acción que menos sube la "
         "cota inferior de la vista. No va en `states`.",
+        "\nLos atributos `self._auto_<nombre>` (y `_AUTO`, `_MACHINE`, la envoltura de `build_component`) los puso el "
+        "framework: son números que ya se extrajeron como parámetros. Mantenlos tal cual; si escribes un número suelto "
+        "nuevo, el framework también lo convierte en parámetro.",
         f"\n# Máquina padre: `{parent.name}` (fitness {parent.fitness:.2f}, parámetros afinados {parent.params})\n"
         f"```python\n{parent.source}\n```",
         f"\n# Diagnóstico del padre por estado (instancias de entrenamiento)\n{prof}\n\n{trace}",
@@ -498,13 +526,18 @@ def evolve(client: LLMClient, pack, spec, workspace: str | Path, harness: Harnes
             res.individuals.append({**entry, "status": "sin código"})
             continue
         path = tmp / f"cand_{cid}.py"
-        path.write_text(blocks[0])
-        report, module, component = light_validation(path, contexts)
-        reason = None if report.passed else report.feedback()[:700]
-        states = ()
-        if reason is None:
-            states = tuple(module.build_component(contexts[0].problem).states)
-            reason = scope_check(op, target, parent, states, blocks[0])
+        reason, module, component, states, source, notes = _attempt(path, blocks[0], contexts, op, target, parent)
+        if reason is not None:  # un turno de corrección dentro de la ronda (corrida 65: una línea `python` perdía la ronda)
+            fix = client.complete(SYSTEM_PROMPT, repair_prompt(op, target, reason, blocks[0]))
+            used = getattr(client, "last_usage", None)
+            if isinstance(used, TokenUsage):
+                tokens.add(used)
+            fixed = extract_code_blocks(fix)
+            if fixed:
+                reason, module, component, states, source, notes = _attempt(path, fixed[0], contexts, op, target, parent)
+                entry["repaired"] = reason is None
+        if notes:
+            entry["normalized"] = notes
         if reason is not None:
             parent.rejections.append(f"{op}{'(' + target + ')' if target else ''}: {reason}")
             res.individuals.append({**entry, "status": "rechazado", "reason": reason})
@@ -516,7 +549,7 @@ def evolve(client: LLMClient, pack, spec, workspace: str | Path, harness: Harnes
         if any(x.name == name for x in everyone):
             name = f"{name}_{cid}"
             component = dict(component, name=name)
-        child = Individual(cid, name, blocks[0], module.build_component, component, states, parent=parent.id, op=op, target=target)
+        child = Individual(cid, name, source, module.build_component, component, states, parent=parent.id, op=op, target=target)
         new_states = [s for s in states if s not in parent.states]
         child.todo = new_states if op == "add_state" else [s for s in parent.todo if s != target and s in states]
         child.params, child.train, child.fitness = tune(harness, child.factory, component, train, test, tune_samples, rng)

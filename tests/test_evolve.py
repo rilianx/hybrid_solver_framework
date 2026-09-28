@@ -70,7 +70,9 @@ def _fenced(src):
 
 
 def test_from_the_minimal_machine_the_schedule_adds_a_state_then_refines_it(tmp_path):
-    client = ScriptedClient(responses=[_fenced(BG_ONLY), _fenced(BG_TOUCHES_TRANSITION), _fenced(BG_REFINED)])
+    # ronda 2: fuera de alcance, y el turno de corrección insiste → rechazo; ronda 3: refinamiento válido
+    client = ScriptedClient(responses=[_fenced(BG_ONLY), _fenced(BG_TOUCHES_TRANSITION), _fenced(BG_TOUCHES_TRANSITION),
+                                       _fenced(BG_REFINED)])
     res = evolve(client, PACK, PACK.make_spec(), tmp_path, Harness(PACK), rounds=3, archive_size=4, tune_samples=2,
                  n_train=2, n_test=3, size="4x4", verbose=False)
     ops = [(r.get("op"), r.get("target"), r.get("status")) for r in res.individuals]
@@ -80,9 +82,11 @@ def test_from_the_minimal_machine_the_schedule_adds_a_state_then_refines_it(tmp_
     assert ops[3][:2] == ("refine_priority", "bg")
     base, bg = res.individuals[0], res.individuals[1]
     assert bg["fitness"] < base["fitness"]  # un estado BG ya mejora al comodín solo
-    first, second, third = (c[1] for c in client.calls)
+    first, second, repair, third = (c[1] for c in client.calls)
     assert "`add_state`" in first and "_default" in first and "comodín del framework" in first  # diagnóstico: todo es comodín
     assert "`refine_priority`" in second and "`bg`" in second
+    assert "RECHAZADO" in repair and "transition" in repair and "class BGOnly" in repair  # corrección dentro de la ronda
+    assert res.individuals[2]["repaired"] is False
     assert "ya rechazados" in third and "transition" in third
     assert "bg_only" in res.archive
 

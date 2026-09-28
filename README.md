@@ -211,7 +211,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   constructivas*).
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 286 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 288 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -232,7 +232,7 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 286 passed (~270 s)
+python -m pytest -q                 # 288 passed (~270 s)
 
 # segundo problema: CVRP con flota libre (mismos CLI, otro pack)
 python -m examples.cvrp.tune --catalog handwritten --size 30 --trials 30 --ref-time 60
@@ -414,16 +414,23 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
   `greedy_<nombre>` / `beam_<nombre>`.
 
   **Parámetros extraíbles** (`core/validation/params.py`). Todo número que decide algo (el
-  umbral de una transición, un peso, un tope, un desempate) va en `COMPONENT["params"]`, con
-  rango y `default`, y llega por `build_component(problem, **params)`. Entra al espacio del tuner
-  junto con la regla del greedy, α, `beam_width` y `branching`. Sobre el módulo generado, la
-  validación rechaza:
-  - números sueltos en el código, salvo 0, ±1, 2, tolerancias por debajo de 1e-3 y potencias de
-    10 desde 100, que sirven para ordenar lexicográficamente o como centinela;
-  - parámetros sin `default`;
-  - parámetros que `build_component` no acepta;
-  - parámetros inertes, que no cambian ninguna construcción ni en los extremos de su rango (en
-    las micro-instancias y la sonda).
+  umbral de una transición, un peso, un tope, un desempate) es un parámetro de
+  `COMPONENT["params"]`, con rango y `default`, y llega por `build_component(problem,
+  **params)`. Entra al espacio del tuner junto con la regla del greedy, α, `beam_width` y
+  `branching`. Antes de validar una máquina generada, el framework la **normaliza** en vez de
+  rechazarla (`normalize_machine_file`):
+  - cada número suelto dentro de un método de la clase pasa a ser `self._auto_<método>_k<i>` y
+    un parámetro con rango [0, 2·valor] y el valor como default. Una envoltura de
+    `build_component` los fija, también para `__init__`. Se permiten sueltos 0, ±1, 2,
+    tolerancias por debajo de 1e-3 y potencias de 10 desde 100, que sirven para ordenar
+    lexicográficamente o como centinela;
+  - un parámetro sin `default` toma el de la firma de `build_component`;
+  - un parámetro que no cambia ninguna construcción, ni en los extremos de su rango (en las
+    micro-instancias y la sonda), sale de COMPONENT y queda fijo en su default.
+
+  Se rechaza lo que no se puede normalizar: un número fuera de la clase (en una función de
+  módulo) o parámetros que `build_component` no acepta. En la corrida 65, sin normalizar, 8 de
+  12 máquinas se rechazaron por un `10` o un `0.5` sueltos.
 
   Además, cada estado tiene que alcanzarse con el greedy o la RCL: un estado que nunca se usa
   es código muerto. La calidad se mide como la de una política: como greedy, o dentro de una
@@ -663,6 +670,21 @@ constructivo/s en el runner. Localmente, en otras 3 instancias de 5×5, `trivial
 misma salida en 0,14 s contra 31 s y en 0,2 s contra 124 s. El modelo optimizado reemplaza al
 de la corrida 61 en `generated/cpmp_moves_cycle/model/parts.py`; el anterior queda en
 `parts_slow.py`.
+
+**Corrida 65: `evolve` desde la máquina mínima, 12 rondas, 68 mil tokens.** Ninguna máquina
+llegó a evaluarse, por tres causas:
+- 8 rechazos por números sueltos: la regla rechazaba en vez de extraer;
+- 3 por un error del chequeo de protocolo en Python 3.12, donde `__protocol_attrs__` incluye
+  el atributo `states` y se le exigía ser invocable (en 3.11 no aparecía);
+- 1 por una línea `python` suelta al inicio del módulo.
+
+Ajustes:
+- los números sueltos se extraen como parámetros y los parámetros inertes se sacan;
+- los atributos anotados de un Protocol basta con que existan;
+- cada ronda tiene un turno de corrección con el reporte antes de darse por perdida.
+
+Dos de esas máquinas (`tests/fixtures/run65_good_placement_state.py` es una) pasan ahora la
+validación liviana.
 
 **Validación de la vista constructiva generada: un puntaje constante no puede ciclar.** En la
 corrida 58 la vista del CPMP que escribió el LLM ofrecía movimientos que no empeoran el

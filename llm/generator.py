@@ -91,6 +91,7 @@ def validate_generated_module(
     fallido (o el último exitoso), el módulo y su COMPONENT."""
     path = Path(path)
     report = ValidationReport(subject=f"módulo '{path.name}'")
+    notes = _normalize_if_machine(path, contexts)
     module, r = load_module(path)
     report.add(r)
     if module is None:
@@ -194,10 +195,32 @@ def validate_generated_module(
             component["compatible_skeletons"] = keep
             component["combination_gains"] = gains
 
+    if notes:
+        report.add(ok("syntactic", "params_normalized", "; ".join(notes)))
     if reports:
         # aprobado: se reporta el último contexto, sin los fallos agregables que quedaron compensados
         report.extend([r for r in reports[-1].results if r.name not in AGGREGATE_ANY or r.passed])
     return report, module, component
+
+
+def _normalize_if_machine(path: Path, contexts) -> list[str]:
+    """Una máquina de estados se normaliza antes de validarla: los números sueltos pasan a ser
+    parámetros y los parámetros inertes salen de COMPONENT (`core.validation.params`)."""
+    import ast
+
+    from core.validation.params import _component_of, normalize_machine_file
+
+    try:
+        comp = _component_of(ast.parse(path.read_text()))
+    except (SyntaxError, OSError):
+        return []
+    if not isinstance(comp, dict) or comp.get("slot") != "construction_machine":
+        return []
+    where = [(ctx.instances[0], ctx.problem) for ctx in contexts if ctx.instances]
+    probe = contexts[0].diversity_probe if contexts else None
+    if probe is not None and getattr(probe.problem, "inst", None) is not None:
+        where.append((probe.problem.inst, probe.problem))
+    return normalize_machine_file(path, where)
 
 
 def _improves_on_probe(factory, probe, slot_name: str):

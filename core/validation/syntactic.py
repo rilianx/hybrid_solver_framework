@@ -68,7 +68,13 @@ def check_protocol(slot: str, impl: Any) -> CheckResult:
         for name in getattr(protocol, "__protocol_attrs__", set()) or _protocol_methods(protocol)
         if not name.startswith("_")
     ]
-    missing = [m for m in required if not callable(getattr(impl, m, None))]
+    # atributos de datos del Protocol (anotados, no métodos: p.ej. `states` de una máquina): basta con
+    # que existan. Desde Python 3.12 `__protocol_attrs__` los incluye; exigirlos invocables rechazaba toda
+    # máquina en CI (corrida 65)
+    data = {n for n in getattr(protocol, "__annotations__", {}) if not callable(getattr(protocol, n, None))}
+    required = sorted(set(required) | {n for n in data if not n.startswith("_")})  # igual en 3.11 y 3.12
+    missing = [m for m in required if (not hasattr(impl, m)) if m in data] + \
+              [m for m in required if m not in data and not callable(getattr(impl, m, None))]
     if missing:
         return fail(LAYER, "protocol", f"la implementación no define {missing} exigidos por {protocol.__name__}")
     return ok(LAYER, "protocol", f"cumple {protocol.__name__} ({', '.join(sorted(required))})")

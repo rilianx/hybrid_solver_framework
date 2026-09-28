@@ -119,10 +119,11 @@ SLOT_HINTS = {
         "la máquina con el greedy y con la beam search; la factibilidad es de la vista. PARÁMETROS: todo número que decide "
         "algo (el umbral de una transición, un peso, un tope, un desempate) va en COMPONENT['params'] con 'range' y "
         "'default' (el valor que propones) y llega por build_component(problem, **params); el tuner los afina junto con el "
-        "resto. No dejes números sueltos en el código (se permiten 0, ±1, 2, tolerancias < 1e-3 y potencias de 10 desde 100 "
-        "para ordenar lexicográficamente o como 'muy alto'), y no declares parámetros que no cambien nada. Se verificará: "
+        "resto. Si dejas un número suelto dentro de un método, el framework lo convierte en parámetro (rango [0, 2·valor]); "
+        "mejor decláralo tú con un nombre y un rango con sentido. Los parámetros que no cambian ninguna construcción se "
+        "sacan del espacio del tuner. Se verificará: "
         "memorias hashables y deterministas, transition devuelve un estado de `states`, nada modifica `partial` ni `memory`, "
-        "todos los estados se alcanzan en las micro-instancias, cada parámetro cambia alguna construcción, y el constructor "
+        "todos los estados se alcanzan en las micro-instancias, y el constructor "
         "que arma es factible, termina y no es mucho peor que la referencia (como greedy o dentro de una beam search)."
     ),
     "destruction": (

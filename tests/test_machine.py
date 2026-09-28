@@ -142,15 +142,34 @@ def test_validation_accepts_frg_and_rejects_broken_machines(contexts):
 
 
 def test_generated_machines_expose_their_numbers_as_parameters(tmp_path, contexts):
+    """El framework normaliza la máquina en vez de rechazarla: un número suelto en un método pasa a
+    ser parámetro, uno sin default toma el de la firma, uno inerte sale de COMPONENT. Un número
+    fuera de la clase (en una función de módulo) sigue siendo un rechazo."""
+    import importlib.util
+
+    def load(name):
+        spec = importlib.util.spec_from_file_location(name, tmp_path / f"{name}.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+
     assert _check(tmp_path, MACHINE_MODULE, contexts).passed
     loose = MACHINE_MODULE.replace("L.g(sd) - c <= self.max_gap", "L.g(sd) - c <= 3")
-    assert "no_loose_constants" in _check(tmp_path, loose, contexts, "loose").feedback()
+    r = _check(tmp_path, loose, contexts, "loose")
+    assert r.passed and "extraídos como parámetros" in r.feedback() + str(r.results)
+    mod = load("loose")
+    extracted = [p for p in mod.COMPONENT["params"] if p.startswith("fill_k")]
+    assert extracted and mod.COMPONENT["params"][extracted[0]] == {"type": "int", "range": [0, 6], "default": 3}
+    assert mod.build_component(contexts[0].problem, **{extracted[0]: 5})._auto_fill_k1 == 5  # el tuner lo mueve
     inert = (MACHINE_MODULE.replace('"default": 1.0}}}', '"default": 1.0}, "unused": {"type": "int", "range": [1, 4], "default": 2}}}')
              .replace("def build_component(problem, max_gap=3, height_weight=1.0):", "def build_component(problem, max_gap=3, height_weight=1.0, unused=2):"))
-    fb = _check(tmp_path, inert, contexts, "inert").feedback()
-    assert "params_matter" in fb and "unused" in fb
+    assert _check(tmp_path, inert, contexts, "inert").passed
+    assert "unused" not in load("inert").COMPONENT["params"]
     no_default = MACHINE_MODULE.replace('"range": [0, 10], "default": 3}', '"range": [0, 10]}')
-    assert "params_default" in _check(tmp_path, no_default, contexts, "nodef").feedback()
+    assert _check(tmp_path, no_default, contexts, "nodef").passed
+    assert load("nodef").COMPONENT["params"]["max_gap"]["default"] == 3
+    outside = MACHINE_MODULE.replace("class FillThenUnblock:", "def _gap_limit():\n    return 7\n\n\nclass FillThenUnblock:")
+    assert "no_loose_constants" in _check(tmp_path, outside, contexts, "outside").feedback()
 
 
 def test_what_counts_as_a_loose_constant():
@@ -196,9 +215,40 @@ def test_prompt_and_generation_of_a_machine(contexts, tmp_path):
 
     p = generation_prompt(PACK.make_spec(), "construction_machine", 2)
     assert "class ConstructionMachine(Protocol)" in p and "category_then_top_up" in p and "COMPONENT['params']" in p
-    loose = MACHINE_MODULE.replace("L.g(sd) - c <= self.max_gap", "L.g(sd) - c <= 3")
-    client = ScriptedClient(responses=[f"```python\n{loose}\n```", f"```python\n{MACHINE_MODULE}\n```"])
+    broken = MACHINE_MODULE.replace("states = (\"fill\", \"unblock\")", "states = [\"fill\", \"unblock\"]")  # states no es tupla
+    client = ScriptedClient(responses=[f"```python\n{broken}\n```", f"```python\n{MACHINE_MODULE}\n```"])
     accepted, stats = generate_slot(client, PACK.make_spec(), "construction_machine", 1, contexts[:1], tmp_path, max_rounds=2,
                                     verbose=False)
     assert [c.name for c in accepted] == ["fill_then_unblock"], stats.rejections_by_layer
-    assert "no_loose_constants" in client.calls[1][1]
+    assert "construction_machine.states" in client.calls[1][1]
+
+
+def test_run65_candidate_passes_once_normalized(tmp_path, contexts):
+    """Corrida 65: esta máquina (tal cual la escribió el LLM) se rechazó por un `10.0` y un `0.01`
+    sueltos. Normalizada, el `10.0` es un parámetro del tuner y el `0.01` (sin efecto) queda fijo."""
+    from pathlib import Path
+
+    src = (Path(__file__).parent / "fixtures" / "run65_good_placement_state.py").read_text()
+    r = _check(tmp_path, src, contexts, "run65")
+    assert r.passed, r.feedback()
+    text = (tmp_path / "run65.py").read_text()
+    assert "self._auto_score_k1" in text and "'score_k1': {'type': 'float', 'range': [0.0, 20.0], 'default': 10.0}" in text
+
+
+def test_the_protocol_accepts_states_as_a_data_attribute(monkeypatch):
+    """Desde Python 3.12 `__protocol_attrs__` incluye `states`; exigirlo invocable rechazaba toda
+    máquina en CI (corrida 65)."""
+    from core import contracts
+    from core.validation.syntactic import check_protocol
+
+    monkeypatch.setattr(contracts.ConstructionMachine, "__protocol_attrs__",
+                        {"states", "initial", "transition", "score", "update"}, raising=False)
+    assert check_protocol("construction_machine", FRGMachine()).passed
+
+    class NoStates:
+        def initial(self, p): ...
+        def transition(self, *a): ...
+        def score(self, *a): ...
+        def update(self, *a): ...
+
+    assert "states" in check_protocol("construction_machine", NoStates()).message
