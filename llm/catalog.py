@@ -45,6 +45,12 @@ def build_registry(pack: ProblemPack, generated: list[GeneratedComponent] | None
     return registry
 
 
+def _union(declared, skeletons) -> list[str]:
+    """Esqueletos de un constructor armado con un puntaje: los que declaró el puntaje más los
+    del pack (un puntaje generado declara la lista genérica, que no trae los del pack)."""
+    return list(dict.fromkeys([*declared, *skeletons])) if declared else list(skeletons)
+
+
 def greedy_constructor_spec(score_spec: ComponentSpec, skeletons: list[str]) -> ComponentSpec:
     params = {"rule": {"type": "cat", "values": list(RULES)}, "alpha": {"type": "float", "range": [0.0, 1.0]}}
     params.update(score_spec.params)
@@ -53,7 +59,7 @@ def greedy_constructor_spec(score_spec: ComponentSpec, skeletons: list[str]) -> 
         return GreedyConstructor(problem, score_spec.make(problem, **score_params), rule=rule, alpha=alpha)
 
     component = {"name": f"greedy_{score_spec.name}", "slot": "constructor",
-                 "compatible_skeletons": list(score_spec.compatible_skeletons) or list(skeletons), "params": params}
+                 "compatible_skeletons": _union(score_spec.compatible_skeletons, skeletons), "params": params}
     return ComponentSpec.from_dict(component, factory)
 
 
@@ -110,7 +116,7 @@ def beam_constructor_spec(score_spec: ComponentSpec, skeletons: list[str]) -> Co
         return BeamSearchConstructor(problem, score, beam_width=beam_width, branching=branching)
 
     component = {"name": f"beam_{score_spec.name}", "slot": "constructor",
-                 "compatible_skeletons": list(score_spec.compatible_skeletons) or list(skeletons), "params": params}
+                 "compatible_skeletons": _union(score_spec.compatible_skeletons, skeletons), "params": params}
     return ComponentSpec.from_dict(component, factory)
 
 

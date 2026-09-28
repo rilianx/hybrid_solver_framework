@@ -48,6 +48,9 @@ class ProblemPack:
     # registrar además cada puntaje como `beam_<puntaje>` (core.beam_search); apagado por defecto
     # porque cada paso hace un rollout por hijo y en el CLSP un rollout cuesta LPs
     beam_constructors: bool = False
+    # esqueletos del espacio de diseño por defecto (None = `core.assembler.SKELETONS`); p.ej. ["CONSTRUCT"]
+    # para un problema que todavía no tiene vecindarios ni vista MIP
+    skeletons: list[str] | None = None
 
     @property
     def default_workspace(self) -> str:

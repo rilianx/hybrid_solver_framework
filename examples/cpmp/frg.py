@@ -8,10 +8,11 @@
             mover top(sr) a select_destination              # o a su asignación A[c] (v2)
             si stopping_reduction_criterion: sr ← ∅
 
-Aquí vive todo lo propio del problema: `Layout` (pilas + estado de FRG: sr, A, Sd) y las
-reglas de la §3–4 del paper. `frg_step` hace una iteración y `frg` corre hasta ordenar;
-la vista constructiva (`construction.py`) las expone como acciones y como rollout de la
-beam search (BS-FRG).
+Es un componente de referencia escrito a mano, como `setup_flip` en el CLSP: entra al
+catálogo como constructor (`frg`) y como puntaje (`frg_policy`, en `construction.py`), y
+contra él se comparan los puntajes que genere el LLM. La vista constructiva no lo conoce.
+El estado propio de FRG (pila en reducción sr, asignación A, destinos Sd, veces que se
+redujo cada pila) va en `FRGState`, aparte del `Layout` neutral.
 
 Mejoras de la §4.3, en `FRGConfig`: `prevent` (no generar pilas ordenadas de altura
 máxima cuando quedan menos de M = N/S pilas con espacio, y sacar el tope de una cuando
@@ -30,9 +31,9 @@ está aquí.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
-from .instance import CPMPInstance
+from .layout import Layout
 
 ASSIGNMENT = ("fallback", "always", "never")
 
@@ -52,99 +53,19 @@ DEFAULT = FRGConfig()
 FRG_MINUS = FRGConfig(prevent=False, assignment="never")
 
 
-class Layout:
-    """Layout mutable con el estado interno de FRG. `copy()` antes de modificar un parcial.
+@dataclass
+class FRGState:
+    """Estado interno de FRG. Un movimiento hecho por otro (p.ej. la beam search) lo
+    invalida: se sigue con `FRGState()` (sr = ∅), como en el paper."""
 
-    Atributos que puede leer un puntaje: stacks (listas de grupos, abajo → arriba), H, G,
-    S, N, moves (lista de (so, sd)), sorted_n[i] (contenedores bien puestos desde abajo en
-    la pila i), sr (pila en reducción o None) y los métodos h, e, g, is_sorted_stack, ub,
-    bad, is_sorted."""
+    sr: int | None = None
+    A: dict = field(default_factory=dict)  # posición (desde abajo) en sr → pila destino
+    Sd: set | None = None  # destinos que quedan para los no asignados
+    reduced: list = field(default_factory=list)  # veces que se eligió cada pila para reducir
+    dead: bool = False
 
-    __slots__ = ("stacks", "H", "G", "N", "sorted_n", "moves", "sr", "A", "Sd", "reduced", "dead")
-
-    def __init__(self, stacks, H: int, G: int):
-        self.stacks = [list(s) for s in stacks]
-        self.H, self.G = H, G
-        self.N = sum(len(s) for s in self.stacks)
-        self.sorted_n = [self._count_sorted(s) for s in self.stacks]
-        self.moves: list[tuple[int, int]] = []
-        self.sr: int | None = None
-        self.A: dict[int, int] = {}  # posición (desde abajo) en sr → pila destino
-        self.Sd: set[int] | None = None  # destinos que quedan para los no asignados
-        self.reduced = [0] * len(self.stacks)
-        self.dead = False  # FRG no pudo seguir desde aquí
-
-    @classmethod
-    def from_instance(cls, inst: CPMPInstance) -> "Layout":
-        return cls(inst.stacks, inst.H, inst.G)
-
-    @staticmethod
-    def _count_sorted(s) -> int:
-        n = 1 if s else 0
-        while n < len(s) and s[n] <= s[n - 1]:
-            n += 1
-        return n
-
-    def copy(self) -> "Layout":
-        c = Layout.__new__(Layout)
-        c.stacks = [list(s) for s in self.stacks]
-        c.H, c.G, c.N = self.H, self.G, self.N
-        c.sorted_n = list(self.sorted_n)
-        c.moves = list(self.moves)
-        c.sr, c.A, c.Sd = self.sr, dict(self.A), None if self.Sd is None else set(self.Sd)
-        c.reduced = list(self.reduced)
-        c.dead = self.dead
-        return c
-
-    # --- consultas ---------------------------------------------------------------------
-    @property
-    def S(self) -> int:
-        return len(self.stacks)
-
-    def h(self, i: int) -> int:
-        return len(self.stacks[i])
-
-    def e(self, i: int) -> int:
-        return self.H - len(self.stacks[i])
-
-    def g(self, i: int) -> int:
-        """Grupo del tope; una pila vacía vale G."""
-        return self.stacks[i][-1] if self.stacks[i] else self.G
-
-    def is_sorted_stack(self, i: int) -> bool:
-        return self.sorted_n[i] == len(self.stacks[i])
-
-    def is_sorted(self) -> bool:
-        return all(self.sorted_n[i] == len(s) for i, s in enumerate(self.stacks))
-
-    def bad(self) -> int:
-        """B: contenedores mal puestos. Cada uno se mueve al menos una vez (cota inferior)."""
-        return sum(len(s) - n for s, n in zip(self.stacks, self.sorted_n))
-
-    def ub(self, i: int) -> int:
-        """Contenedores mal puestos desbloqueados de la pila i (Def. 1): el tramo del tope,
-        por encima de la parte ordenada, con grupos no crecientes de abajo hacia arriba."""
-        s, n = self.stacks[i], self.sorted_n[i]
-        if n == len(s):
-            return 0
-        j, count = len(s) - 1, 1
-        while j - 1 >= n and s[j - 1] >= s[j]:
-            j, count = j - 1, count + 1
-        return count
-
-    def key(self):
-        return tuple(tuple(s) for s in self.stacks), self.sr
-
-    # --- movimientos -------------------------------------------------------------------
-    def move(self, so: int, sd: int) -> None:
-        if so == sd or not self.stacks[so] or len(self.stacks[sd]) >= self.H:
-            raise ValueError(f"movimiento inválido {(so, sd)}")
-        c = self.stacks[so].pop()
-        self.sorted_n[so] = min(self.sorted_n[so], len(self.stacks[so]))
-        if self.sorted_n[sd] == len(self.stacks[sd]) and c <= self.g(sd):
-            self.sorted_n[sd] += 1
-        self.stacks[sd].append(c)
-        self.moves.append((so, sd))
+    def copy(self) -> "FRGState":
+        return FRGState(self.sr, dict(self.A), None if self.Sd is None else set(self.Sd), list(self.reduced), self.dead)
 
     def reset_reduction(self) -> None:
         self.sr, self.A, self.Sd = None, {}, None
@@ -200,7 +121,7 @@ def select_bg_move(L: Layout, prevent: bool = True) -> tuple[int, int] | None:
 
 
 # --- reducción (§4, §4.3) -------------------------------------------------------------
-def select_reduce_stack(L: Layout) -> int | None:
+def select_reduce_stack(L: Layout, reduced: list[int]) -> int | None:
     """La menos veces elegida; empate: menor altura; empate: desordenada de mayor grupo
     medio, si no, ordenada de menor grupo medio."""
     cands = [i for i in range(L.S) if L.stacks[i]]
@@ -209,17 +130,16 @@ def select_reduce_stack(L: Layout) -> int | None:
 
     def key(i):
         avg = sum(L.stacks[i]) / L.h(i)
-        return (L.reduced[i], L.h(i), 0 if not L.is_sorted_stack(i) else 1,
+        return (reduced[i], L.h(i), 0 if not L.is_sorted_stack(i) else 1,
                 -avg if not L.is_sorted_stack(i) else avg)
 
     return min(cands, key=key)
 
 
-def stop_reduction(L: Layout, r: int = 1) -> bool:
+def stop_reduction(L: Layout, sr: int, r: int = 1) -> bool:
     """§4.1, con S' = pilas desordenadas distintas de sr: (1) g(sr) ≥ max g(s), s ∈ S'; o
     (2) Σ ub(s) sobre s ∈ S' con g(s) ≤ g(sr) llena al menos e(sr) − r huecos de sr. Solo
     cuando sr ya está ordenada (si no, no puede recibir bien puestos)."""
-    sr = L.sr
     if not L.is_sorted_stack(sr):
         return False
     others = [s for s in range(L.S) if s != sr and not L.is_sorted_stack(s)]
@@ -285,71 +205,55 @@ def unblocking_assignment(L: Layout, sr: int) -> tuple[dict[int, int], set[int]]
     return A, Sd
 
 
-def start_reduction(L: Layout, sr: int, assignment: bool = False) -> None:
-    L.sr = sr
-    L.reduced[sr] += 1
-    L.A, L.Sd = {}, None
+def start_reduction(L: Layout, st: FRGState, sr: int, assignment: bool = False) -> None:
+    if not st.reduced:
+        st.reduced = [0] * L.S
+    st.sr = sr
+    st.reduced[sr] += 1
+    st.A, st.Sd = {}, None
     nonfull_others = sum(1 for s in range(L.S) if s != sr and L.e(s) > 0)
     if assignment and nonfull_others < L.h(sr):
-        L.A, L.Sd = unblocking_assignment(L, sr)
+        st.A, st.Sd = unblocking_assignment(L, sr)
 
 
-def reduction_move(L: Layout, assignment: bool = False) -> tuple[int, int] | None:
+def reduction_move(L: Layout, st: FRGState, assignment: bool = False) -> tuple[int, int] | None:
     """Alg. 4 / 5: (sr, destino) para el tope de la pila en reducción."""
-    if L.sr is None:
-        sr = select_reduce_stack(L)
+    if st.sr is None:
+        sr = select_reduce_stack(L, st.reduced or [0] * L.S)
         if sr is None:
             return None
-        start_reduction(L, sr, assignment)
-    sr = L.sr
+        start_reduction(L, st, sr, assignment)
+    sr = st.sr
     if not L.stacks[sr]:
         return None
-    sd = L.A.get(L.h(sr) - 1)
+    sd = st.A.get(L.h(sr) - 1)
     if sd is None or sd == sr or L.e(sd) == 0:
-        sd = select_destination(L, sr, L.Sd) if L.Sd else None
+        sd = select_destination(L, sr, st.Sd) if st.Sd else None
         if sd is None:
             sd = select_destination(L, sr)
     return None if sd is None else (sr, sd)
 
 
 # --- algoritmo ------------------------------------------------------------------------
-def frg_step(L: Layout, cfg: FRGConfig = DEFAULT, assignment: bool | None = None) -> bool:
-    """Una iteración de FRG (Alg. 3). False si no pudo mover (queda `dead`). `assignment`
-    None: la de `cfg` (\"fallback\" cuenta como sin asignación en una iteración suelta)."""
+def frg_step(L: Layout, st: FRGState, cfg: FRGConfig = DEFAULT, assignment: bool | None = None) -> tuple[int, int] | None:
+    """Una iteración de FRG (Alg. 3) sobre L y st, en su lugar. Devuelve el movimiento hecho,
+    o None si no pudo mover (st.dead). `assignment` None: el de `cfg` ("fallback" cuenta
+    como sin asignación en una iteración suelta)."""
     use = cfg.assignment == "always" if assignment is None else assignment
-    if L.sr is None:
+    if st.sr is None:
         m = select_bg_move(L, cfg.prevent)
         if m is not None:
             L.move(*m)
-            return True
-    m = reduction_move(L, use)
+            return m
+    m = reduction_move(L, st, use)
     if m is None:
-        L.reset_reduction()
-        L.dead = True
-        return False
+        st.reset_reduction()
+        st.dead = True
+        return None
     L.move(*m)
-    if not L.stacks[L.sr] or stop_reduction(L, cfg.r):
-        L.reset_reduction()
-    return True
-
-
-def reduce_stack(L: Layout, s: int, cfg: FRGConfig = DEFAULT, max_moves: int | None = None) -> bool:
-    """Movimiento compuesto R_s de BS*-FRG: reducir s hasta el criterio de parada."""
-    L.reset_reduction()
-    if not L.stacks[s]:
-        return False
-    start_reduction(L, s, cfg.assignment == "always")
-    moved = False
-    while L.sr is not None and (max_moves is None or len(L.moves) < max_moves):
-        m = reduction_move(L, cfg.assignment == "always")
-        if m is None:
-            break
-        L.move(*m)
-        moved = True
-        if not L.stacks[s] or stop_reduction(L, cfg.r):
-            break
-    L.reset_reduction()
-    return moved
+    if not L.stacks[st.sr] or stop_reduction(L, st.sr, cfg.r):
+        st.reset_reduction()
+    return m
 
 
 def default_max_moves(L: Layout) -> int:
@@ -360,32 +264,30 @@ def _run(L: Layout, cfg: FRGConfig, assignment: bool, limit: int) -> bool:
     """False si se traba, pasa el límite de movimientos o entra en ciclo: el mismo layout
     (con la misma pila en reducción) más de S veces. La rotación de la pila a reducir
     (§4.2) puede romper un ciclo, así que se toleran algunas repeticiones."""
+    st = FRGState()
     seen: dict = {}
     while not L.is_sorted():
-        k = L.key()
+        k = (L.state(), st.sr)
         seen[k] = seen.get(k, 0) + 1
-        if seen[k] > L.S or len(L.moves) >= limit or not frg_step(L, cfg, assignment):
+        if seen[k] > L.S or len(L.moves) >= limit or frg_step(L, st, cfg, assignment) is None:
             return False
     return True
 
 
-def frg(L: Layout, cfg: FRGConfig = DEFAULT, max_moves: int | None = None) -> Layout:
-    """Corre FRG desde L hasta ordenarlo y devuelve el layout final (L no se modifica). Si
-    no lo ordena, el resultado queda con `dead = True`. Con `assignment="fallback"` se
-    intenta primero sin asignación y, si falla, con ella desde L."""
+def frg(L: Layout, cfg: FRGConfig = DEFAULT, max_moves: int | None = None) -> tuple[Layout, bool]:
+    """Corre FRG desde L (sin modificarlo): (layout final, ¿quedó ordenado?). Con
+    `assignment="fallback"` se intenta primero sin asignación y, si falla, con ella desde L."""
     extra = default_max_moves(L) if max_moves is None else max_moves
     limit = len(L.moves) + extra
     modes = {"never": [False], "always": [True], "fallback": [False, True]}[cfg.assignment]
     q = L
     for use in modes:
-        q = L.copy()
-        q.dead = False
+        q = L.copy(track=False)
         if _run(q, cfg, use, limit):
-            return q
-    q.dead = True
-    return q
+            return q, True
+    return q, False
 
 
-__all__ = ["Layout", "FRGConfig", "DEFAULT", "FRG_MINUS", "destination_rank", "ranked_destinations", "select_destination", "select_bg_move",
-           "select_reduce_stack", "stop_reduction", "gen_seq", "unblocking_assignment", "reduction_move",
-           "frg_step", "reduce_stack", "frg", "default_max_moves"]
+__all__ = ["FRGConfig", "FRGState", "DEFAULT", "FRG_MINUS", "destination_rank", "ranked_destinations",
+           "select_destination", "select_bg_move", "select_reduce_stack", "stop_reduction", "gen_seq",
+           "unblocking_assignment", "start_reduction", "reduction_move", "frg_step", "frg", "default_max_moves"]

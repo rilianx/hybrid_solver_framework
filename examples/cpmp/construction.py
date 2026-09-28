@@ -1,21 +1,27 @@
-"""Vista constructiva del CPMP (`core.contracts.ConstructionView`).
+"""Vista constructiva del CPMP (`core.contracts.ConstructionView`) y componentes de referencia.
 
-Estado parcial: el `Layout` con los movimientos hechos y el estado de FRG. Acciones, como
-en BS*-FRG (Araya y Toledo 2023, §5):
+La vista es neutral: solo sabe del problema, no de ninguna heurística.
 
-- `Move(so, sd)`: movimiento simple. Por cada pila de origen solo los `k` mejores destinos
-  según `select_destination` (k = None: todos). No se ofrece deshacer el último movimiento.
-  Cancela la reducción en curso (sr ← ∅).
-- `FRGStep()`: una iteración de FRG, que conserva su estado (sr, A, Sd): no es lo mismo
-  que el movimiento simple equivalente.
-- `Reduce(s)` (con `compound=True`): movimiento compuesto R_s, reducir s hasta el criterio.
+- Estado parcial: el `Layout` (pilas, movimientos hechos, layouts ya recorridos).
+- Acción: `Move(so, sd)`, mover el tope de la pila so a la sd. Candidatos: todos los
+  movimientos válidos que no vuelven a un layout ya recorrido en esta construcción; así un
+  puntaje malo no puede ciclar, solo alargar la solución.
+- Completo: el layout está ordenado. A partir de `max_moves` movimientos no hay candidatos.
+- `complete` (respaldo): búsqueda best-first genérica sobre layouts (menos mal puestos
+  primero, sin repetir layouts; `best_first`), sin reglas de ninguna heurística publicada.
+  No garantiza calidad, y en instancias grandes se agota (5×7 y 10×10 al estilo CVS con
+  20 mil nodos): ahí la construcción queda infactible, sin ningún último recurso más fuerte.
+- `lower_bound` = movimientos hechos + mal puestos (cada uno se mueve al menos una vez);
+  `key` = el layout, para que la beam search descarte repetidos.
 
-Un parcial está completo cuando el layout está ordenado. `complete` corre FRG desde el
-parcial (y, si desde ahí no termina, desde el layout inicial): es el respaldo del bucle
-greedy y el rollout de la beam search (`rollout="complete"`), así que BS-FRG es
-`BeamSearchConstructor(P, rollout="complete")` sobre esta vista.
-`lower_bound` = movimientos hechos + mal puestos; `key` identifica layouts repetidos.
-A partir de `max_moves` movimientos no hay candidatos: el greedy termina con FRG.
+Lo que decide cómo construir es el puntaje (slot `greedy_score`), escrito a mano o generado
+por el LLM, y la estrategia que lo usa (`GreedyConstructor`, `BeamSearchConstructor`). De
+referencia, a mano:
+
+- `FRGPolicy`: FRG (Araya y Toledo 2023) como puntaje: 0 para el movimiento que haría FRG,
+  1 para el resto. El greedy con este puntaje es FRG; como rollout de la beam search da BS-FRG.
+- `DestinationRank`: la regla `select_destination` del mismo paper, miope (sin reducciones).
+- `FRGConstructor`: FRG completo, con la asignación de la §4.3.2 como respaldo.
 """
 
 from __future__ import annotations
@@ -24,7 +30,8 @@ from dataclasses import dataclass
 from random import Random
 from typing import TYPE_CHECKING
 
-from .frg import DEFAULT, FRGConfig, Layout, default_max_moves, destination_rank, frg, frg_step, ranked_destinations, reduce_stack
+from .frg import DEFAULT, FRGConfig, FRGState, destination_rank, frg, frg_step
+from .layout import Layout
 
 if TYPE_CHECKING:
     from .instance import CPMPInstance
@@ -32,60 +39,88 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class Move:
+    """Mover el contenedor del tope de la pila `so` a la pila `sd`."""
+
     so: int
     sd: int
 
 
-@dataclass(frozen=True)
-class FRGStep:
-    pass
+def _bad(stacks) -> int:
+    total = 0
+    for st in stacks:
+        n = 1 if st else 0
+        while n < len(st) and st[n] <= st[n - 1]:
+            n += 1
+        total += len(st) - n
+    return total
 
 
-@dataclass(frozen=True)
-class Reduce:
-    stack: int
+def best_first(L: Layout, rng: Random, max_nodes: int = 200_000) -> list[tuple[int, int]] | None:
+    """Búsqueda best-first desde L: expande primero el layout con menos mal puestos (empates:
+    menos movimientos, después al azar), sin repetir layouts. Devuelve los movimientos que
+    faltan para ordenar, o None si agota `max_nodes`. Es completa en un espacio finito: si
+    hay solución y alcanza el presupuesto, la encuentra."""
+    import heapq
+
+    H = L.H
+    start = L.state()
+    parent: dict = {start: None}
+    heap = [(_bad(start), 0, rng.random(), start)]
+    while heap and len(parent) <= max_nodes:
+        b, depth, _, state = heapq.heappop(heap)
+        if b == 0:
+            path = []
+            while parent[state] is not None:
+                state, m = parent[state]
+                path.append(m)
+            return path[::-1]
+        for so, src in enumerate(state):
+            if not src:
+                continue
+            for sd, dst in enumerate(state):
+                if sd == so or len(dst) >= H:
+                    continue
+                nxt = list(state)
+                nxt[so], nxt[sd] = src[:-1], dst + (src[-1],)
+                nxt = tuple(nxt)
+                if nxt not in parent:
+                    parent[nxt] = (state, (so, sd))
+                    heapq.heappush(heap, (_bad(nxt), depth + 1, rng.random(), nxt))
+    return None
+
+
+def _extend(L: Layout, moves) -> Layout:
+    q = L.copy(track=False)
+    for m in moves:
+        q.move(*m)
+    return q
 
 
 class CPMPConstructionView:
-    def __init__(self, problem, inst: "CPMPInstance", k: int | None = 3, compound: bool = True,
-                 frg_action: bool = True, frg_config: FRGConfig = DEFAULT, max_moves: int | None = None):
+    def __init__(self, problem, inst: "CPMPInstance", max_moves: int | None = None, fallback_nodes: int = 20_000):
         self.problem, self.inst = problem, inst
-        self.k, self.compound, self.frg_action = k, compound, frg_action
-        self.cfg = frg_config
         self.max_moves = max_moves
+        self.fallback_nodes = fallback_nodes
+        self.failures = 0
 
     def _limit(self, L: Layout) -> int:
-        return default_max_moves(L) if self.max_moves is None else self.max_moves
+        """Por defecto 4N + 10: FRG usa 1,3–1,6 N en las instancias al estilo CVS; un puntaje
+        que se pasa de eso está vagando y conviene cerrar con el respaldo."""
+        return 4 * L.N + 10 if self.max_moves is None else self.max_moves
 
     def empty(self) -> Layout:
-        return Layout.from_instance(self.inst)
+        return Layout.from_instance(self.inst, track=True)
 
     def candidates(self, L: Layout):
-        if L.is_sorted() or L.dead or len(L.moves) >= self._limit(L):
+        if L.is_sorted() or len(L.moves) >= self._limit(L):
             return []
-        out: list = [FRGStep()] if self.frg_action else []
-        last = L.moves[-1] if L.moves else None
-        for so in range(L.S):
-            if not L.stacks[so]:
-                continue
-            dests = [sd for sd in ranked_destinations(L, so) if (sd, so) != last]
-            out += [Move(so, sd) for sd in (dests if self.k is None else dests[: self.k])]
-        if self.compound:
-            out += [Reduce(s) for s in range(L.S) if L.stacks[s]]
-        return out
+        seen = L.visited or set()
+        return [Move(so, sd) for so in range(L.S) for sd in range(L.S)
+                if L.valid(so, sd) and L.after(so, sd) not in seen]
 
-    def apply(self, L: Layout, a) -> Layout:
+    def apply(self, L: Layout, a: Move) -> Layout:
         q = L.copy()
-        if isinstance(a, Move):
-            q.reset_reduction()
-            q.move(a.so, a.sd)
-        elif isinstance(a, FRGStep):
-            frg_step(q, self.cfg)
-        elif isinstance(a, Reduce):
-            if not reduce_stack(q, a.stack, self.cfg, self._limit(q)):
-                q.dead = True
-        else:
-            raise TypeError(f"acción desconocida {a!r}")
+        q.move(a.so, a.sd)
         return q
 
     def is_complete(self, L: Layout) -> bool:
@@ -97,63 +132,94 @@ class CPMPConstructionView:
         return CPMPSolution(tuple(L.moves))
 
     def complete(self, L: Layout, rng: Random):
-        q = frg(L, self.cfg)
-        if q.dead:  # desde este parcial FRG no termina (p.ej. un greedy que ciclaba): FRG desde el inicio
-            q = frg(self.empty(), self.cfg)
-        return self.to_solution(q)
+        """Best-first desde el parcial y, si agota `fallback_nodes`, desde el layout inicial.
+        Si tampoco encuentra, devuelve el parcial tal cual (infactible: el validador lo
+        rechaza y el tuner lo penaliza). No hay un último recurso más fuerte a propósito: si
+        lo hubiera, un puntaje malo heredaría su calidad en las instancias grandes."""
+        for start in (L, self.empty()):
+            rest = best_first(start, Random(rng.random()), self.fallback_nodes)
+            if rest is not None:
+                return self.to_solution(_extend(start, rest))
+        self.failures += 1
+        return self.to_solution(L)
 
     def lower_bound(self, L: Layout) -> int:
         return len(L.moves) + L.bad()
 
     def key(self, L: Layout):
-        return L.key()
+        return L.state()
+
+
+# --- componentes de referencia (a mano) -----------------------------------------------
+class FRGPolicy:
+    """Slot `greedy_score`: 0 para el movimiento que haría FRG desde este parcial, 1 para el
+    resto. FRG tiene estado (pila en reducción, asignación); se recuerda por parcial
+    (layout + cantidad de movimientos). Un parcial al que FRG no llegó por sí mismo (p.ej. un
+    hijo de la beam search) arranca con el estado limpio, como un movimiento simple en BS-FRG.
+    Si el movimiento de FRG vuelve a un layout ya recorrido, la vista no lo ofrece y todos
+    valen 1: decide el desempate del constructor."""
+
+    COMPONENT = {"name": "frg_policy", "slot": "greedy_score", "params": {"prevent": {"type": "bool"}}}
+    MAX_MEMO = 200_000
+
+    def __init__(self, problem=None, prevent: bool = True, r: int = 1):
+        self.cfg = FRGConfig(r=r, prevent=prevent, assignment="never")
+        self._state: dict = {}
+        self._next: dict = {}
+
+    def next_move(self, L: Layout) -> tuple[int, int] | None:
+        k = (L.state(), len(L.moves))
+        if k not in self._next:
+            if len(self._next) > self.MAX_MEMO:
+                self._state.clear()
+                self._next.clear()
+            st = self._state.get(k, FRGState()).copy()
+            q = L.copy(track=False)
+            m = frg_step(q, st, self.cfg)
+            self._next[k] = m
+            if m is not None:
+                self._state[(q.state(), len(q.moves))] = st
+        return self._next[k]
+
+    def score(self, L: Layout, a: Move) -> float:
+        return 0.0 if self.next_move(L) == (a.so, a.sd) else 1.0
+
+
+class DestinationRank:
+    """Slot `greedy_score`, miope: sacar un mal puesto antes que un bien puesto y, para el
+    destino, el orden de `select_destination` (Araya y Toledo 2023, Alg. 1): XG con la menor
+    diferencia de grupos, después XB a una desordenada de grupo menor, después el resto."""
+
+    COMPONENT = {"name": "destination_rank", "slot": "greedy_score", "params": {}}
+
+    def __init__(self, problem=None):
+        self.problem = problem
+
+    def score(self, L: Layout, a: Move) -> float:
+        cat, val, _ = destination_rank(L, L.g(a.so), a.sd)
+        return 1000.0 * (cat + 4 * L.is_sorted_stack(a.so)) + val
 
 
 class FRGConstructor:
-    """FRG completo como constructor (slot `constructor`): con `assignment="fallback"`
-    reintenta desde el layout inicial con la asignación si sin ella no termina."""
+    """Slot `constructor`: FRG completo. Con `assignment="fallback"` reintenta con la
+    asignación si sin ella no termina; si aun así no ordena, termina con el respaldo de la vista."""
 
     COMPONENT = {"name": "frg", "slot": "constructor",
                  "params": {"prevent": {"type": "bool"}, "assignment": {"type": "cat", "values": ["fallback", "always", "never"]}}}
 
     def __init__(self, problem=None, prevent: bool = True, assignment: str = "fallback", r: int = 1):
+        self.problem = problem
         self.cfg = FRGConfig(r=r, prevent=prevent, assignment=assignment)
 
     def build(self, inst: "CPMPInstance", rng: Random):
-        from .problem_model import CPMPSolution
+        from .problem_model import CPMPModel, CPMPSolution
 
-        return CPMPSolution(tuple(frg(Layout.from_instance(inst), self.cfg).moves))
-
-
-# --- puntajes de mano (slot greedy_score; MENOR es mejor) -----------------------------
-class FRGPolicy:
-    """Siempre la iteración de FRG: el greedy con este puntaje ES FRG."""
-
-    COMPONENT = {"name": "frg_policy", "slot": "greedy_score", "params": {}}
-
-    def __init__(self, problem):
-        self.problem = problem
-
-    def score(self, L: Layout, a) -> float:
-        return 0.0 if isinstance(a, FRGStep) else 1.0
+        q, ok = frg(Layout.from_instance(inst), self.cfg)
+        if ok:
+            return CPMPSolution(tuple(q.moves))
+        P = self.problem if self.problem is not None else CPMPModel(inst)
+        view = P.construction_view(inst)
+        return view.complete(view.empty(), rng)
 
 
-class FillFirst:
-    """Llenar antes que seguir reduciendo: el BG de menor g(sd) − g(so) apenas exista uno
-    (aunque corte la reducción en curso) y, si no hay, la iteración de FRG. Es la variante
-    más obvia de FRG como puntaje sobre acciones; sirve de segundo punto de comparación."""
-
-    COMPONENT = {"name": "fill_first", "slot": "greedy_score", "params": {}}
-
-    def __init__(self, problem):
-        self.problem = problem
-
-    def score(self, L: Layout, a) -> float:
-        if isinstance(a, FRGStep):
-            return 1e3
-        if isinstance(a, Move) and not L.is_sorted_stack(a.so) and L.is_sorted_stack(a.sd) and L.g(a.sd) >= L.g(a.so):
-            return float(L.g(a.sd) - L.g(a.so))
-        return 1e6
-
-
-__all__ = ["FRGConstructor", "Move", "FRGStep", "Reduce", "CPMPConstructionView", "FRGPolicy", "FillFirst"]
+__all__ = ["Move", "CPMPConstructionView", "FRGPolicy", "DestinationRank", "FRGConstructor", "DEFAULT"]

@@ -3,9 +3,9 @@ si cada movimiento es válido (origen con contenedores, destino con espacio) y e
 final está ordenado. Objetivo: cantidad de movimientos.
 
 Por ahora el CPMP entra al framework solo por el lado constructivo (`construction_view`:
-FRG, greedy con puntaje y beam search). No tiene vista MIP: `build_mip`, `to_assignment`,
-`from_assignment` y `variable_groups` avisan con `NotImplementedError`, así que los
-esqueletos matheurísticos no aplican todavía.
+greedy o beam search con un puntaje, a mano o generado). No tiene vista MIP: `build_mip`,
+`to_assignment`, `from_assignment` y `variable_groups` avisan con `NotImplementedError`, así
+que los esqueletos matheurísticos no aplican todavía.
 """
 
 from __future__ import annotations
@@ -13,8 +13,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .construction import CPMPConstructionView
-from .frg import Layout
 from .instance import CPMPInstance
+from .layout import Layout
 
 
 @dataclass(frozen=True)
