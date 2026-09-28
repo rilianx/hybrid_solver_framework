@@ -3,7 +3,7 @@ generados es genérico (`llm.catalog`); aquí solo se ata al pack del CPMP.
 
 Sin vecindarios ni vista MIP todavía, el único esqueleto es `CONSTRUCT` (solo el
 constructor): el tuner elige entre constructores (`best_first`, `frg`, `greedy_<puntaje>`,
-`beam_<puntaje>`, `greedy_phased`, `beam_phased`) y sus parámetros.
+`beam_<puntaje>`, `greedy_frg_machine`, `beam_frg_machine`) y sus parámetros.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from llm import catalog as _catalog
 from llm.generator import GeneratedComponent
 
 from .construction import DestinationRank, FRGConstructor, FRGPolicy
-from .phases import BGFill, ReduceStack
+from .machine import FRGMachine
 
 CONSTRUCTOR_SKELETONS = ["CONSTRUCT"]
 
@@ -47,10 +47,9 @@ HANDWRITTEN = [
      lambda problem, prevent=True: FRGPolicy(problem, prevent=prevent)),
     ({"name": "destination_rank", "slot": "greedy_score", "compatible_skeletons": CONSTRUCTOR_SKELETONS, "params": {}},
      lambda problem: DestinationRank(problem)),
-    # FRG como fases (`core.phases`): con `greedy_phased` / `beam_phased` el tuner elige cuántas y cuáles;
-    # por defecto las dos, en este orden, que es FRG sin asignación
-    (dict(BGFill.COMPONENT, compatible_skeletons=CONSTRUCTOR_SKELETONS), lambda problem, prevent=True: BGFill(problem, prevent)),
-    (dict(ReduceStack.COMPONENT, compatible_skeletons=CONSTRUCTOR_SKELETONS), lambda problem, r=1: ReduceStack(problem, r)),
+    # FRG como máquina de estados (`core.machine`): llenar ↔ reducir; entra como greedy_frg_machine / beam_frg_machine
+    (dict(FRGMachine.COMPONENT, compatible_skeletons=CONSTRUCTOR_SKELETONS),
+     lambda problem, prevent=True, r=1: FRGMachine(problem, prevent, r)),
 ]
 
 

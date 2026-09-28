@@ -186,58 +186,74 @@ def build_component(problem, switch_slack: float = 0.2):
     return FillThenTopUp(problem, switch_slack)
 '''
 
-FEWSHOT["phase"] = '''
+FEWSHOT["construction_machine"] = '''
 COMPONENT = {
-    "name": "finish_category",
-    "slot": "phase",
+    "name": "category_then_top_up",
+    "slot": "construction_machine",
     "compatible_skeletons": ["SA", "ILS", "LNS_MIP"],
     "requires": [],
-    "params": {"min_fit": {"type": "int", "range": [1, 5]}},
+    "params": {
+        "min_fit": {"type": "int", "range": [1, 5], "default": 2},
+        "top_up_slack": {"type": "float", "range": [0.05, 0.5], "default": 0.2},
+    },
 }
 
 
-class FinishCategory:
-    """Mochila con ítems por categoría (`inst.category[i]`): una FASE que elige una categoría y la
-    llena antes de pasar a otra. Aplica si alguna categoría tiene al menos `min_fit` ítems que aún
-    caben; al tomar el control elige la de mayor valor por peso medio (memoria: la categoría);
-    prefiere los ítems de esa categoría y suelta el control cuando ya no cabe ninguno de ellos.
-    La acción es `action.item`; el parcial expone `partial.remaining` y `partial.chosen`."""
+class CategoryThenTopUp:
+    """Mochila con ítems por categoría (`inst.category[i]`), como máquina de tres estados:
 
-    def __init__(self, problem, min_fit: int = 2):
+        fill_category --(ya no cabe ningún ítem de la categoría)--> fill_category (otra) o top_up
+        cualquiera    --(holgura < top_up_slack · capacidad)-->     top_up
+        top_up: el ítem de mayor valor que cabe
+
+    `fill_category` llena una categoría a la vez (memoria: la categoría); entra a una categoría solo
+    si le caben al menos `min_fit` ítems. La acción es `action.item`; el parcial expone
+    `partial.remaining` y `partial.chosen`. Los números que deciden van en COMPONENT["params"]."""
+
+    states = ("fill_category", "top_up")
+
+    def __init__(self, problem, min_fit: int = 2, top_up_slack: float = 0.2):
         self.inst = problem.inst
         self.min_fit = min_fit
+        self.threshold = top_up_slack * problem.inst.capacity
 
     def _fitting(self, partial, cat):
         return [i for i, c in enumerate(self.inst.category) if c == cat and i not in partial.chosen
                 and self.inst.weights[i] <= partial.remaining]
 
-    def init(self, partial):
-        return (None,)  # memoria: la categoría en curso
-
-    def applies(self, partial, memory):
-        return any(len(self._fitting(partial, c)) >= self.min_fit for c in set(self.inst.category))
-
-    def start(self, partial, memory):
+    def _next_category(self, partial):
+        cats = [c for c in sorted(set(self.inst.category)) if len(self._fitting(partial, c)) >= self.min_fit]
+        if not cats:
+            return None
         def density(c):
             items = self._fitting(partial, c)
-            return sum(self.inst.values[i] / max(self.inst.weights[i], 1e-9) for i in items) / max(1, len(items))
-        cats = [c for c in sorted(set(self.inst.category)) if len(self._fitting(partial, c)) >= self.min_fit]
-        return (max(cats, key=density),)
+            return sum(self.inst.values[i] / max(self.inst.weights[i], 1e-9) for i in items) / len(items)
+        return max(cats, key=density)
 
-    def score(self, partial, memory, action):
+    def initial(self, partial):
+        return "fill_category", (self._next_category(partial),)
+
+    def transition(self, partial, state, memory):
+        if partial.remaining < self.threshold:
+            return "top_up", ()
+        if state == "fill_category" and memory[0] is not None and self._fitting(partial, memory[0]):
+            return state, memory  # la categoría sigue
+        cat = self._next_category(partial)
+        return ("fill_category", (cat,)) if cat is not None else ("top_up", ())
+
+    def score(self, partial, state, memory, action):
         w, v = self.inst.weights[action.item], self.inst.values[action.item]
+        if state == "top_up":
+            return -v
         own = self.inst.category[action.item] == memory[0]
         return (0.0 if own else 1e6) - v / max(w, 1e-9)
 
-    def update(self, partial, memory, action):
+    def update(self, partial, state, memory, action):
         return memory
 
-    def done(self, partial, memory):
-        return memory[0] is None or not self._fitting(partial, memory[0])
 
-
-def build_component(problem, min_fit: int = 2):
-    return FinishCategory(problem, min_fit)
+def build_component(problem, min_fit: int = 2, top_up_slack: float = 0.2):
+    return CategoryThenTopUp(problem, min_fit, top_up_slack)
 '''
 
 FEWSHOT["greedy_score"] = '''

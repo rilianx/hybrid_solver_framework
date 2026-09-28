@@ -186,11 +186,11 @@ def check_component_memory(slot: str, make, problem_factory, inst, sol, n: int =
         elif slot == "destruction":
             for _ in range(min(n, 500)):
                 impl.destroy(sol, 0.3, rng)
-        elif slot in ("greedy_score", "construction_policy", "phase"):
+        elif slot in ("greedy_score", "construction_policy", "construction_machine"):
             from core.construction import GreedyConstructor
-            from core.phases import alone
+            from core.machine import MachinePolicy
 
-            impl = alone(impl) if slot == "phase" else impl
+            impl = MachinePolicy(impl) if slot == "construction_machine" else impl
             for k in range(5):
                 GreedyConstructor(problem, impl).build(inst, Random(100 * batch + k))
         del impl, problem

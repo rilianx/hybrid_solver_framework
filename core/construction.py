@@ -17,9 +17,11 @@
   y uno al azar entre ellos (α = 0 es greedy, α = 1 es al azar);
 - `roulette`: probabilidad proporcional a 1 / (puntaje − mín + ε).
 
-El criterio puede ser un `GreedyScore` (sin memoria) o una `ConstructionPolicy` (slot
+El criterio puede ser un `GreedyScore` (sin memoria), una `ConstructionPolicy` (slot
 `construction_policy`: `init`, `score(parcial, memoria, acción)`, `update`), que sostiene un
-plan de varios pasos; `as_policy` adapta el primero al segundo, así que el bucle es uno solo.
+plan de varios pasos, o una `ConstructionMachine` (slot `construction_machine`, `core.machine`:
+estados con su regla y transiciones); `as_policy` los lleva todos a política, así que el bucle
+es uno solo.
 
 La factibilidad es responsabilidad de la vista (`ConstructionView.candidates` y
 `complete`), no del puntaje: un puntaje malo da una solución mala, no una infactible
@@ -56,7 +58,17 @@ class _Stateless:
         return None
 
 
+def is_machine(obj: Any) -> bool:
+    return isinstance(getattr(obj, "states", None), tuple) and callable(getattr(obj, "transition", None))
+
+
 def as_policy(obj: Any) -> Any:
+    """Todo criterio como política: un `greedy_score` sin memoria, una `construction_policy` tal
+    cual, una `construction_machine` corrida por `core.machine.MachinePolicy`."""
+    if is_machine(obj):
+        from core.machine import MachinePolicy
+
+        return MachinePolicy(obj)
     return obj if is_policy(obj) else _Stateless(obj)
 
 

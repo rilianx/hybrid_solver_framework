@@ -124,26 +124,32 @@ class ConstructionPolicy(Protocol):
 
 
 @runtime_checkable
-class Phase(Protocol):
-    """Slot `phase`: un modo de una construcción por fases (`core.phases.PhasedPolicy`). Una
-    heurística constructiva con modos (FRG: "llenar" y "reducir una pila") se arma con varias
-    fases chicas en vez de un puntaje único; el tuner elige cuántas y en qué orden de prioridad.
+class ConstructionMachine(Protocol):
+    """Slot `construction_machine`: una máquina de estados constructiva (`core.machine`). En cada
+    estado se construye con una regla distinta, y bajo ciertas condiciones se pasa a otro (FRG en el
+    CPMP: "llenar" mientras haya un movimiento que deja bien puesto un contenedor; si no, "reducir"
+    una pila hasta un criterio de parada).
 
-    - `init(partial)`: la memoria propia de la fase (inmutable y hashable).
-    - `applies(partial, memory)`: ¿puede tomar el control ahora? Opcional (default: siempre).
-    - `start(partial, memory)`: al tomar el control, la memoria nueva (p.ej. qué pila reducir). Opcional.
-    - `score(partial, memory, action)`: MENOR = mejor, entre los candidatos de la vista.
-    - `update(partial, memory, action)`: la memoria tras hacer la acción que eligió.
-    - `done(partial, memory)`: ¿suelta el control? Se pregunta en el paso siguiente, sobre el parcial
-      nuevo. Opcional (default: tras cada paso, y en cada paso se vuelve a elegir fase).
+    - `states`: los nombres de los estados (tupla de str).
+    - `initial(partial)`: (estado inicial, memoria inicial).
+    - `transition(partial, state, memory)`: antes de cada paso, (estado, memoria) con los que se
+      elige la acción: el mismo estado o el siguiente, y la memoria al entrar (p.ej. el objetivo).
+    - `score(partial, state, memory, action)`: MENOR = mejor, entre los candidatos de la vista.
+    - `update(partial, state, memory, action)`: la memoria tras hacer la acción.
 
-    Ninguna modifica `partial` ni `memory`; todas son deterministas."""
+    La memoria es inmutable y hashable; nada modifica `partial` ni `memory`; todo es determinista.
+    Todo número que decide algo (umbral, peso, tope, desempate) va en `COMPONENT["params"]`, con
+    rango y default, y llega por `build_component(problem, **params)`: lo afina el tuner."""
 
-    def init(self, partial: Partial) -> Memory: ...
+    states: tuple
 
-    def score(self, partial: Partial, memory: Memory, action: Action) -> float: ...
+    def initial(self, partial: Partial) -> tuple: ...
 
-    def update(self, partial: Partial, memory: Memory, action: Action) -> Memory: ...
+    def transition(self, partial: Partial, state: str, memory: Memory) -> tuple: ...
+
+    def score(self, partial: Partial, state: str, memory: Memory, action: Action) -> float: ...
+
+    def update(self, partial: Partial, state: str, memory: Memory, action: Action) -> Memory: ...
 
 
 @runtime_checkable

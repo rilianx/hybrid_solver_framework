@@ -223,14 +223,14 @@ SIGNATURE["greedy_score"] = greedy_score_signature
 SIGNATURE["construction_policy"] = greedy_score_signature  # el greedy lleva la memoria de la política
 
 
-def phase_signature(impl, sol=None, problem=None) -> set:
-    """Una fase, por lo que elige el greedy con ella y el comodín nulo (`core.phases.alone`)."""
-    from core.phases import alone
+def machine_signature(impl, sol=None, problem=None) -> set:
+    """Una máquina de estados, por lo que elige el greedy que la corre (`core.machine.MachinePolicy`)."""
+    from core.machine import MachinePolicy
 
-    return greedy_score_signature(alone(impl), sol, problem)
+    return greedy_score_signature(MachinePolicy(impl), sol, problem)
 
 
-SIGNATURE["phase"] = phase_signature
+SIGNATURE["construction_machine"] = machine_signature
 
 
 def signature(slot: str, impl, sol, problem=None):

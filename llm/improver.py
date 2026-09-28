@@ -8,16 +8,16 @@
       → la aceptada pasa a ser la base; se itera
 
 Es búsqueda local sobre programas, con el LLM de operador: no reemplaza la generación desde cero
-sino que la continúa (desde una fase o una política generada se puede llegar a algo más fino).
-Una semilla escrita a mano (p.ej. las fases de FRG en el CPMP) es conocimiento publicado: queda
-registrado en `improve_stats.json` (`seed: true`) y las corridas desde cero siguen sin verla.
+sino que la continúa (desde una máquina o una política generada se puede llegar a algo más fino:
+cambiar la regla de un estado, una transición, agregar un estado). Una semilla escrita a mano
+(p.ej. FRG como máquina en el CPMP) es conocimiento publicado: queda registrado en
+`improve_stats.json` (`seed: true`) y las corridas desde cero siguen sin verla.
 
 Cómo se evalúa cada slot (`Harness`):
 - `constructor`: su `build`.
-- `greedy_score`, `construction_policy`: el greedy o la beam search (`--mode`) con ese criterio.
-- `phase`: la política por fases de la combinación (`--context`, p.ej. `bg_fill,*`: `*` es la
-  posición de la base; por defecto, todas las fases del catálogo en su orden, con la base en su
-  lugar), con greedy o beam search.
+- `greedy_score`, `construction_policy`, `construction_machine`: el greedy o la beam search
+  (`--mode`) con ese criterio. La traza de los diagnósticos muestra, para una máquina, el estado
+  en cada paso.
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ from .client import LLMClient, TokenUsage
 from .parser import extract_code_blocks
 from .prompts import SYSTEM_PROMPT, protocol_source, slot_hint
 
-IMPROVABLE = ("constructor", "greedy_score", "construction_policy", "phase")
+IMPROVABLE = ("constructor", "greedy_score", "construction_policy", "construction_machine")
 
 
 @dataclass
@@ -69,47 +69,24 @@ class ImproveResult:
 class Harness:
     """Arma el constructor con el que se juzga un componente del slot y lo corre en instancias."""
 
-    def __init__(self, pack, registry, slot: str, mode: str = "greedy", beam_width: int = 3,
-                 context: list[str] | None = None, max_seconds: float = 60.0):
+    def __init__(self, pack, registry, slot: str, mode: str = "greedy", beam_width: int = 3, max_seconds: float = 60.0):
         if slot not in IMPROVABLE:
             raise ValueError(f"slot {slot!r} no se puede mejorar aquí; opciones: {IMPROVABLE}")
         if mode not in ("greedy", "beam"):
             raise ValueError("mode debe ser greedy o beam")
         self.pack, self.registry, self.slot, self.mode = pack, registry, slot, mode
-        self.beam_width, self.context, self.max_seconds = beam_width, context, max_seconds
-
-    def fix_context(self, base_name: str) -> None:
-        """La combinación de fases donde se juzga la base (y después sus variantes, en la misma
-        posición): la de `--context` o todas las del catálogo en su orden, con la base en su lugar."""
-        if self.slot != "phase":
-            return
-        names = self.context or [s.name for s in self.registry.for_slot("phase")]
-        if "*" not in names:
-            names = [("*" if n == base_name else n) for n in names]
-        self.context = names if "*" in names else names + ["*"]
-
-    def _phases(self, problem, impl, base_name: str) -> tuple[list, list[str]]:
-        if self.context is None:
-            self.fix_context(base_name)
-        names = self.context
-        built = [impl if n == "*" else self.registry.get("phase", n).make(problem) for n in names]
-        return built, [base_name if n == "*" else n for n in names]
+        self.beam_width, self.max_seconds = beam_width, max_seconds
 
     def constructor(self, problem, impl, base_name: str = "base"):
         from core.beam_search import BeamSearchConstructor
         from core.construction import GreedyConstructor
-        from core.phases import PhasedPolicy
 
         if self.slot == "constructor":
             return impl
-        crit = impl
-        if self.slot == "phase":
-            phases, names = self._phases(problem, impl, base_name)
-            crit = PhasedPolicy(phases, names=names)
         if self.mode == "greedy":
-            return GreedyConstructor(problem, crit)
+            return GreedyConstructor(problem, impl)  # as_policy corre una máquina con MachinePolicy
         nb = self.beam_width
-        return BeamSearchConstructor(problem, crit, beam_width=nb, branching=2 * nb, max_seconds=self.max_seconds)
+        return BeamSearchConstructor(problem, impl, beam_width=nb, branching=2 * nb, max_seconds=self.max_seconds)
 
     def run(self, factory, inst, base_name: str = "base") -> tuple[float, Any, Any]:
         """(objetivo, solución, problema). Una excepción o una solución infactible cuentan como el
@@ -136,34 +113,37 @@ def _lower_bound(P, inst) -> float | None:
         return None
 
 
+class _OneState:
+    """Un puntaje o una política como máquina de un solo estado, para reutilizar `machine_trace`."""
+
+    def __init__(self, policy, name: str):
+        self.policy, self.states = policy, (name,)
+
+    def initial(self, partial):
+        return self.states[0], self.policy.init(partial)
+
+    def transition(self, partial, state, memory):
+        return state, memory
+
+    def score(self, partial, state, memory, action):
+        return self.policy.score(partial, memory, action)
+
+    def update(self, partial, state, memory, action):
+        return self.policy.update(partial, memory, action)
+
+
 def _trace(harness: Harness, factory, inst, base_name: str, max_steps: int = 60) -> str:
-    """Las acciones del greedy en una instancia (con la fase activa, si es una política por fases),
-    comprimidas por tramos de la misma fase."""
-    from core.phases import PhasedPolicy, phase_trace
+    """Las acciones del greedy en una instancia, por tramos del mismo estado (una máquina) o de
+    corrido (un puntaje o una política)."""
+    from core.construction import as_policy, is_machine
+    from core.machine import MachinePolicy, compress_trace, machine_trace
 
     P = harness.pack.problem_factory(inst)
     if harness.slot == "constructor" or not callable(getattr(P, "construction_view", None)):
         return ""
     impl = factory(P)
-    if harness.slot == "phase":
-        phases, names = harness._phases(P, impl, base_name)
-        policy = PhasedPolicy(phases, names=names)
-    else:
-        from core.construction import as_policy
-
-        policy = PhasedPolicy([as_policy(impl)], names=[base_name])
-    steps = phase_trace(policy, P.construction_view(inst))
-    lines, cur, run = [], None, []
-    for name, a in steps[:max_steps]:
-        if name != cur and run:
-            lines.append(f"{cur}: {', '.join(run)}")
-            run = []
-        cur = name
-        run.append(repr(a))
-    if run:
-        lines.append(f"{cur}: {', '.join(run)}")
-    more = f"\n… ({len(steps) - max_steps} pasos más)" if len(steps) > max_steps else ""
-    return "\n".join(lines) + more + f"\n(total: {len(steps)} pasos)"
+    machine = impl if is_machine(impl) else _OneState(as_policy(impl), base_name)
+    return compress_trace(machine_trace(MachinePolicy(machine), P.construction_view(inst), max_steps=20_000), max_steps)
 
 
 def diagnostics(harness: Harness, base: Base, factory, instances) -> str:
@@ -183,7 +163,7 @@ def diagnostics(harness: Harness, base: Base, factory, instances) -> str:
         trace = _trace(harness, factory, worst[2], base.name)
         out += f"\n\nLa peor (instancia {worst[1]}):\n```\n{text}\n```"
         if trace:
-            out += f"\nLo que hace la base ahí (greedy, acción por acción; `fase: acciones`):\n```\n{trace}\n```"
+            out += f"\nLo que hace la base ahí (greedy, acción por acción; `estado: acciones`):\n```\n{trace}\n```"
     return out
 
 
@@ -237,7 +217,7 @@ def improve_prompt(spec, base: Base, diag: str, previous: list[str], new_name: s
         f"# Tarea\nMejora el componente `{base.name}` (slot `{base.slot}`) del problema **{spec.name}**. {who} "
         "Propón UNA versión que construya mejores soluciones: mira los diagnósticos, en particular dónde la base pierde "
         "respecto de la cota inferior, y cambia la idea donde haga falta (una regla, una condición de entrada o de "
-        "término, un desempate, un plan de varios pasos), no solo un parámetro.",
+        "término, un desempate, un estado nuevo, una transición), no solo un parámetro: los parámetros los afina el tuner.",
         f"\nUsa `COMPONENT[\"name\"] = \"{new_name}\"` y el mismo slot. La versión se acepta solo si gana a la base en "
         "instancias que no ves (media menor y más victorias que derrotas) y pasa las mismas validaciones que cualquier "
         "componente nuevo.",
@@ -277,7 +257,6 @@ def improve_component(client: LLMClient, pack, registry, spec, base: Base, works
     out_dir = Path(workspace) / base.slot
     out_dir.mkdir(parents=True, exist_ok=True)
     res = ImproveResult(base=base.name, slot=base.slot, seed=base.seed)
-    harness.fix_context(base.name)
     cur, cur_factory = base, base.factory
     cur_scores = harness.scores(cur_factory, test, cur.name)
     version = 1 + max([int(m.group(1)) for p in out_dir.glob("*_v*_r*.py")
@@ -346,7 +325,7 @@ def save_stats(workspace: str | Path, res: ImproveResult, tokens: TokenUsage, mo
 
 
 def main(pack, argv: list[str] | None = None, workspace: str | None = None, registry=None, spec=None) -> ImproveResult:
-    """CLI genérico: `python -m examples.<problema>.improve --slot phase --base reduce_stack --seed`."""
+    """CLI genérico: `python -m examples.<problema>.improve --slot construction_machine --base frg_machine --seed`."""
     import argparse
 
     ap = argparse.ArgumentParser(description="Mejorar un componente desde una base, con diagnósticos (etapa improve)")
@@ -355,7 +334,6 @@ def main(pack, argv: list[str] | None = None, workspace: str | None = None, regi
     ap.add_argument("--seed", action="store_true", help="la base es un componente escrito a mano del pack (semilla)")
     ap.add_argument("--mode", choices=["greedy", "beam"], default="greedy")
     ap.add_argument("--beam-width", type=int, default=3)
-    ap.add_argument("--context", default="", help="fases de la combinación, separadas por coma; * = la base (slot phase)")
     ap.add_argument("--rounds", type=int, default=4)
     ap.add_argument("--train", type=int, default=4)
     ap.add_argument("--test", type=int, default=8)
@@ -379,8 +357,7 @@ def main(pack, argv: list[str] | None = None, workspace: str | None = None, regi
         from .client import OpenAIClient as Client
     inner = Client(model=args.model) if args.model else Client()
     client = TranscriptClient(inner, Path(args.workspace) / "transcript_improve")
-    context = [c.strip() for c in args.context.split(",") if c.strip()] or None
-    harness = Harness(pack, registry, args.slot, args.mode, args.beam_width, context)
+    harness = Harness(pack, registry, args.slot, args.mode, args.beam_width)
     tokens = TokenUsage()
     res = improve_component(client, pack, registry, spec, base, args.workspace, harness, rounds=args.rounds,
                             n_train=args.train, n_test=args.test, size=args.size, tokens=tokens,
@@ -391,7 +368,7 @@ def main(pack, argv: list[str] | None = None, workspace: str | None = None, regi
 
 
 def _module_main(argv: list[str] | None = None) -> None:
-    """`python -m llm.improver --problem cpmp --slot phase --base reduce_stack --seed ...`: con el pack
+    """`python -m llm.improver --problem cpmp --slot construction_machine --base frg_machine --seed ...`: con el pack
     de referencia del problema (el ciclo sobre un modelo generado usa `python -m llm.cycle improve`)."""
     import sys
 

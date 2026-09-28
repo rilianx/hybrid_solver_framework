@@ -32,7 +32,7 @@ KNOWN_SLOTS = {
     "constructor",
     "greedy_score",
     "construction_policy",
-    "phase",
+    "construction_machine",
     "neighborhood",
     "evaluator",
     "acceptance",
@@ -100,7 +100,7 @@ class ComponentSpec:
         for pname, pspec in params.items():
             _validate_param(pname, pspec)
             # `when`: {otro parámetro del mismo componente: [valores]}; el parámetro solo está activo si
-            # todos se cumplen (p.ej. los de la fase j de `greedy_phased`, si n_phases >= j)
+            # todos se cumplen (p.ej. un umbral que solo importa si un parámetro bool está encendido)
             for parent, values in (pspec.get("when") or {}).items():
                 if parent not in params or parent == pname:
                     raise ComponentSpecError(f"parámetro '{pname}': 'when' nombra '{parent}', que no es otro parámetro del componente")

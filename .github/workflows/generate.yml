@@ -82,7 +82,7 @@ on:
         default: "neighborhood greedy_score"
         type: string
       improve_args:
-        description: "Con target=improve: qué mejorar, p.ej. '--slot phase --base reduce_stack --seed --context bg_fill,* --mode greedy' (--seed = base escrita a mano del pack de referencia; sin variant usa ese pack, con variant el modelo generado del ciclo)"
+        description: "Con target=improve: qué mejorar, p.ej. '--slot construction_machine --base frg_machine --seed --mode greedy' (--seed = base escrita a mano del pack de referencia; sin variant usa ese pack, con variant el modelo generado del ciclo)"
         default: ""
         type: string
       workspace:
@@ -178,7 +178,7 @@ jobs:
         run: |
           set -o pipefail
           if [ "$TARGET" = "improve" ]; then
-            [ -z "$IMPROVE_ARGS" ] && { echo "::error::target=improve necesita improve_args (p.ej. --slot phase --base reduce_stack --seed)"; exit 1; }
+            [ -z "$IMPROVE_ARGS" ] && { echo "::error::target=improve necesita improve_args (p.ej. --slot construction_machine --base frg_machine --seed)"; exit 1; }
             IARGS="--rounds $ROUNDS --provider $PROVIDER"
             [ -n "$MODEL" ] && IARGS="$IARGS --model $MODEL"
             if [ -n "$VARIANT" ]; then

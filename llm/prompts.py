@@ -55,7 +55,7 @@ Formato de salida: cada componente en su propio bloque ```python ... ``` con el 
 salvo una línea breve antes de cada bloque. Nada más."""
 
 
-CONSTRUCTIVE_SLOTS = ("greedy_score", "construction_policy", "phase")  # los que reciben parciales de la vista constructiva
+CONSTRUCTIVE_SLOTS = ("greedy_score", "construction_policy", "construction_machine")  # los que reciben parciales de la vista constructiva
 
 
 def slot_hint(spec: "ProblemSpec", slot: str) -> str:
@@ -108,22 +108,22 @@ SLOT_HINTS = {
         "hashables y deterministas, score finito y determinista, ni score ni update modifican `partial` ni `memory`, y el "
         "constructor greedy que arma produce soluciones factibles, termina y no es mucho peor que la de referencia."
     ),
-    "phase": (
-        "Escribes UNA FASE de una construcción por fases: un modo de trabajo acotado, no un constructor completo. El framework "
-        "(`core.phases.PhasedPolicy`) combina varias fases en orden de prioridad y el tuner elige cuántas y cuáles: en cada paso "
-        "sigue la fase activa mientras `done` sea False; si terminó, toma el control la primera que `applies`, y si ninguna "
-        "aplica, la última. Así una heurística con modos es un conjunto de fases chicas en vez de un puntaje enorme (p.ej. un "
-        "modo que se reevalúa en cada paso y otro que sostiene una decisión durante varios pasos). Métodos: `init(partial)` (tu "
-        "memoria inicial, hashable), `applies(partial, memory)` (¿puedes tomar el control ahora? opcional, default siempre), "
-        "`start(partial, memory)` (al tomar el control: la memoria nueva, p.ej. el objetivo que eliges; opcional), "
-        "`score(partial, memory, action)` (MENOR = mejor, entre los candidatos de la vista), `update(partial, memory, action)` "
-        "(la memoria tras hacer la acción) y `done(partial, memory)` (¿sueltas el control? se pregunta en el paso siguiente; "
-        "opcional, default True: se vuelve a elegir fase en cada paso). Una fase buena hace UNA cosa bien y deja claro cuándo "
-        "aplica y cuándo termina; la combinación la busca el tuner. Si generas varias, piénsalas como un CONJUNTO que se "
-        "complementa: modos distintos, con condiciones de entrada distintas, y al menos una que aplique siempre (sirve de "
-        "comodín en la última posición). Se verificará: memorias hashables y deterministas, nada "
-        "modifica `partial` ni `memory`, la fase toma el control alguna vez y, con una fase nula de comodín para cuando no "
-        "aplica, construye mejor que la fase nula sola."
+    "construction_machine": (
+        "Escribes una MÁQUINA DE ESTADOS constructiva: en cada estado se construye con una regla distinta, y bajo ciertas "
+        "condiciones se pasa a otro estado. `states` es la tupla de nombres de los estados; `initial(partial)` devuelve "
+        "(estado, memoria); `transition(partial, state, memory)` se llama ANTES de cada paso y devuelve (estado, memoria) con "
+        "los que se elige la acción: el mismo estado o el siguiente, y la memoria al entrar (p.ej. el objetivo que el estado "
+        "va a trabajar); `score(partial, state, memory, action)` puntúa cada candidato de la vista con la regla del estado "
+        "(MENOR = mejor); `update(partial, state, memory, action)` da la memoria tras la acción. Diseña los estados y las "
+        "transiciones juntos: qué hace cada estado, cuándo deja de tener sentido y a cuál conviene pasar. El framework corre "
+        "la máquina con el greedy y con la beam search; la factibilidad es de la vista. PARÁMETROS: todo número que decide "
+        "algo (el umbral de una transición, un peso, un tope, un desempate) va en COMPONENT['params'] con 'range' y "
+        "'default' (el valor que propones) y llega por build_component(problem, **params); el tuner los afina junto con el "
+        "resto. No dejes números sueltos en el código (se permiten 0, ±1, 2, tolerancias < 1e-3 y potencias de 10 desde 100 "
+        "para ordenar lexicográficamente o como 'muy alto'), y no declares parámetros que no cambien nada. Se verificará: "
+        "memorias hashables y deterministas, transition devuelve un estado de `states`, nada modifica `partial` ni `memory`, "
+        "todos los estados se alcanzan en las micro-instancias, cada parámetro cambia alguna construcción, y el constructor "
+        "que arma es factible, termina y no es mucho peor que la referencia (como greedy o dentro de una beam search)."
     ),
     "destruction": (
         "`destroy(sol, ratio, rng)` devuelve `(partial, free_vars)`: `free_vars` es un set de NOMBRES de variables de la vista MIP "
@@ -143,7 +143,7 @@ SKELETONS_FOR_SLOT = {
     "constructor": ["SA", "ILS", "TS", "VNS", "GRASP", "LNS_MIP", "FIX_OPT", "LOCAL_BRANCH", "MIP_PERTURB"],
     "greedy_score": ["SA", "ILS", "TS", "VNS", "GRASP", "LNS_MIP", "FIX_OPT", "LOCAL_BRANCH", "MIP_PERTURB"],
     "construction_policy": ["SA", "ILS", "TS", "VNS", "GRASP", "LNS_MIP", "FIX_OPT", "LOCAL_BRANCH", "MIP_PERTURB"],
-    "phase": ["SA", "ILS", "TS", "VNS", "GRASP", "LNS_MIP", "FIX_OPT", "LOCAL_BRANCH", "MIP_PERTURB"],
+    "construction_machine": ["SA", "ILS", "TS", "VNS", "GRASP", "LNS_MIP", "FIX_OPT", "LOCAL_BRANCH", "MIP_PERTURB"],
     "neighborhood": ["SA", "ILS", "TS", "VNS", "GRASP", "MIP_PERTURB"],
     "perturbation": ["ILS"],
     "destruction": ["LNS_MIP", "MIP_PERTURB"],

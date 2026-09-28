@@ -388,65 +388,76 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
   termine. Entra al catálogo como `greedy_<nombre>` / `beam_<nombre>`, se genera con el LLM
   (prompt con su pista y un ejemplo de mochila en dos fases) y el ciclo sin vista MIP la pide
   junto a `greedy_score`.
-- **Construcción por fases** (slot `phase`, `core/phases.py`). Muchas heurísticas
-  constructivas son un programa chico con modos, no un puntaje. FRG alterna dos: *llenar*, que
-  hace un movimiento BG y se vuelve a elegir en cada paso, y *reducir*, que elige una pila y la
-  trabaja hasta un criterio de parada. Escribirlas como una sola `construction_policy` obliga a
-  meter todo en un puntaje y una tupla de memoria; así eran las políticas generadas en la
-  corrida 62, débiles como greedy. Una fase es una pieza chica:
-  - `init(parcial)`: su memoria;
-  - `applies(parcial, memoria)`: si puede tomar el control;
-  - `start(parcial, memoria)`: al tomarlo, p.ej. para elegir la pila;
-  - `score(parcial, memoria, acción)` y `update(parcial, memoria, acción)`, como una política;
-  - `done(parcial, memoria)`: cuándo suelta el control; por defecto, tras cada paso.
+- **Máquinas de estados constructivas** (slot `construction_machine`, `core/machine.py`).
+  Muchas heurísticas constructivas cambian su forma de construir según el estado de la
+  construcción. FRG en el CPMP tiene dos estados:
 
-  `PhasedPolicy([f1, …, fk])` es una `construction_policy`, así que la usan igual el greedy y
-  la beam search. La fase activa sigue hasta `done`. Después toma el control la primera que
-  `applies`, en orden de prioridad; si ninguna aplica, la última, que hace de comodín.
+  ```
+  fill   --(no queda movimiento BG)-->                         reduce(sr)   [al entrar: elegir sr]
+  reduce --(sr vacía, u ordenada y con el criterio de parada)-->  fill si hay BG, si no reduce(otra sr)
+  ```
 
-  **La cantidad de fases es variable.** `greedy_phased` y `beam_phased` (`llm.catalog`) tienen
-  `n_phases ∈ [1, K]` y `phase_1 … phase_K`, categóricos sobre las fases registradas, cada uno
-  activo solo si `n_phases ≥ j`. Los parámetros de la fase en la posición j van como
-  `p<j>.<fase>.<parámetro>`. Para eso, un parámetro de un componente puede declarar
-  `"when": {otro parámetro: [valores]}`, y el espacio de configuración lo traduce a una
-  condición.
+  Escribir eso como una sola `construction_policy` obliga a meter todo en un puntaje y una
+  tupla de memoria; así eran las políticas generadas en la corrida 62, débiles como greedy.
+  Una máquina declara:
+  - `states`: los nombres de los estados;
+  - `initial(parcial)`: (estado, memoria) de partida;
+  - `transition(parcial, estado, memoria)`: antes de cada paso, (estado, memoria) con los que se
+    elige la acción: sigue en el mismo estado o pasa a otro, con la memoria al entrar (p.ej. la
+    pila a reducir);
+  - `score(parcial, estado, memoria, acción)`: la regla del estado, menor es mejor;
+  - `update(parcial, estado, memoria, acción)`: la memoria tras la acción.
 
-  Una fase no es un constructor completo, así que se valida por lo que aporta. Se evalúa
-  junto a un comodín nulo (`alone`): tiene que tomar el control alguna vez y mejorar al
-  comodín solo, como greedy o dentro de una beam search chica.
+  `MachinePolicy` corre la máquina como una `construction_policy`, y `as_policy` la reconoce,
+  así que el greedy y la beam search la usan igual. El LLM escribe la máquina completa en un
+  solo módulo, porque estados, reglas y transiciones se diseñan juntos. Entra al catálogo como
+  `greedy_<nombre>` / `beam_<nombre>`.
 
-  FRG escrito a mano como dos fases (`examples/cpmp/phases.py`: `bg_fill`, `reduce_stack`)
-  hace los mismos movimientos que FRG sin asignación en 20 de 20 instancias de 5×5, y 19 de 20
-  en 6×6 y 5×7; las diferencias son el respaldo con asignación de FRG. Dentro de una beam search
-  de ancho 3 queda a la par de BS-FRG: 10,0 contra 9,8 movimientos en 5×5 y 31,8 contra 33,0 en
-  5×7. Es el default de `greedy_phased` en el catálogo del CPMP.
+  **Parámetros extraíbles** (`core/validation/params.py`). Todo número que decide algo (el
+  umbral de una transición, un peso, un tope, un desempate) va en `COMPONENT["params"]`, con
+  rango y `default`, y llega por `build_component(problem, **params)`. Entra al espacio del tuner
+  junto con la regla del greedy, α, `beam_width` y `branching`. Sobre el módulo generado, la
+  validación rechaza:
+  - números sueltos en el código, salvo 0, ±1, 2, tolerancias por debajo de 1e-3 y potencias de
+    10 desde 100, que sirven para ordenar lexicográficamente o como centinela;
+  - parámetros sin `default`;
+  - parámetros que `build_component` no acepta;
+  - parámetros inertes, que no cambian ninguna construcción ni en los extremos de su rango (en
+    las micro-instancias y la sonda).
 
-  El LLM genera fases con una pista que pide un conjunto complementario: modos con condiciones
-  de entrada distintas y al menos uno que aplique siempre. El few-shot es una mochila por
-  categorías que muestra `start` y `done`. El ciclo sin vista MIP pide `phase` junto a
-  `greedy_score` y `construction_policy`.
+  Además, cada estado tiene que alcanzarse con el greedy o la RCL: un estado que nunca se usa
+  es código muerto. La calidad se mide como la de una política: como greedy, o dentro de una
+  beam search contra el puntaje nulo. Un parámetro también puede declarar `"when": {otro
+  parámetro: [valores]}` para quedar activo solo bajo esa condición, p.ej. un umbral que importa
+  si un bool está encendido.
+
+  FRG escrito a mano como máquina (`examples/cpmp/machine.py`, `frg_machine`, con parámetros
+  `prevent` y `r`) hace los mismos movimientos que FRG sin asignación en 20 de 20 instancias de
+  5×5, y 19 de 20 en 6×6 y 5×7; las diferencias son el respaldo con asignación de FRG. El
+  few-shot del prompt es una mochila por categorías con tres estados y sus números como
+  parámetros. El ciclo sin vista MIP pide `construction_machine` junto a `greedy_score` y
+  `construction_policy`.
 - **Mejorar desde una base** (etapa `improve`, `llm/improver.py`). Es búsqueda local sobre
-  programas, con el LLM como operador:
+  programas, con el LLM como operador. Para una máquina, el operador cambia la regla de un
+  estado, una transición o agrega un estado; los números los afina después el tuner.
   1. se parte de una base: un componente generado o, con `--seed`, uno escrito a mano del pack
      de referencia;
   2. se calculan diagnósticos en instancias de entrenamiento: objetivo y cota inferior por
-     instancia, y la traza de la peor, acción por acción, con la fase activa;
+     instancia, y la traza de la peor, acción por acción, con el estado de la máquina;
   3. el LLM propone una variante con nombre nuevo (`<base>_v<k>`);
   4. la variante pasa las mismas validaciones que un componente nuevo y se acepta solo si gana
      a la base en instancias apartadas: media menor, más victorias que derrotas y sin fallar
      donde la base no falla;
   5. la aceptada pasa a ser la base y se itera. Los intentos rechazados vuelven al prompt.
 
-  Una fase se juzga dentro de su combinación (`--context bg_fill,*`, donde `*` marca su
-  posición); un puntaje o una política, con el greedy o la beam search (`--mode`).
-  `improve_stats.json` registra el linaje y si se partió de una semilla a mano. Las corridas
+  El componente se juzga con el greedy o la beam search (`--mode`). `improve_stats.json` registra el linaje y si se partió de una semilla a mano. Las corridas
   desde cero no ven esas semillas: la idea es que la generación llegue sola a algo como FRG y
   la mejora lo afine.
 
   ```bash
-  python -m llm.improver --problem cpmp --slot phase --base reduce_stack --seed --context bg_fill,*
+  python -m llm.improver --problem cpmp --slot construction_machine --base frg_machine --seed
   python -m llm.cycle improve --problem cpmp --variant moves --workspace generated/cpmp_moves_cycle \
-      -- --slot phase --base <fase generada> --mode beam
+      -- --slot construction_machine --base <máquina generada> --mode beam
   ```
 
   En Actions: `target=improve` con `improve_args`. Sin `variant` usa el pack de referencia;

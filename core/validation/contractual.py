@@ -446,25 +446,76 @@ def check_construction_policy(impl, ctx: ValidationContext) -> list[CheckResult]
     return _collapse(results)
 
 
-def check_phase(impl, ctx: ValidationContext) -> list[CheckResult]:
-    """Slot `phase`. Se valida como la política que arma con el comodín nulo (`core.phases.alone`):
-    lo mismo que una `construction_policy` (memorias hashables y deterministas, `score` finito,
-    nada modifica el parcial ni la memoria; `applies`, `start` y `done` corren dentro de la
-    política), y el constructor greedy resultante es factible, determinista y termina."""
-    from core.phases import alone
+def check_construction_machine(impl, ctx: ValidationContext) -> list[CheckResult]:
+    """Slot `construction_machine`. `states` es una tupla de nombres distintos; `initial` y
+    `transition` dan (estado de `states`, memoria hashable). Corrida como política
+    (`core.machine.MachinePolicy`) cumple lo mismo que una `construction_policy`: memorias
+    deterministas, score finito, nada modifica el parcial ni la memoria, y el greedy que arma es
+    factible, determinista y termina. Además cada estado se alcanza en alguna construcción (greedy
+    o con la RCL): un estado que nunca se usa es código muerto."""
+    from core.construction import GreedyConstructor
+    from core.machine import MachinePolicy, machine_trace
 
-    out = []
-    for r in check_construction_policy(alone(impl), ctx):
-        name = r.name.replace("construction_policy.", "phase.")
-        out.append(CheckResult(r.layer, name, r.passed, ("[fase con el comodín nulo] " + r.message) if r.message else r.message))
-    return out
+    L = "construction_machine"
+    states = getattr(impl, "states", None)
+    if not (isinstance(states, tuple) and states and all(isinstance(x, str) for x in states) and len(set(states)) == len(states)):
+        return [fail(LAYER, f"{L}.states", f"`states` debe ser una tupla no vacía de nombres distintos (str), no {states!r}")]
+    if not callable(getattr(ctx.problem, "construction_view", None)):
+        return [fail(LAYER, f"{L}.view", "el ProblemModel no expone `construction_view(inst)`: no hay dónde usar una máquina")]
+
+    def _initial():
+        view = ctx.problem.construction_view(ctx.instances[0])
+        out = impl.initial(view.empty())
+        if not (isinstance(out, tuple) and len(out) == 2 and out[0] in states):
+            return fail(LAYER, f"{L}.initial", f"initial debe devolver (estado de {states}, memoria), no {out!r}")
+        return ok(LAYER, f"{L}.initial")
+
+    results = guard(LAYER, f"{L}.initial", _initial)
+    if any(not r.passed for r in results):
+        return results
+    policy = MachinePolicy(impl)
+    for r in check_construction_policy(policy, ctx):
+        name = r.name.replace("construction_policy.", f"{L}.")
+        results.append(CheckResult(r.layer, name, r.passed, r.message))
+    if any(not r.passed for r in results):
+        return _collapse(results)
+
+    def _reach():
+        seen: set = set()
+        for k, inst in enumerate(ctx.instances):
+            view = ctx.problem.construction_view(inst)
+            seen |= {st for st, _ in machine_trace(policy, view, max_steps=20_000)}
+            for s in range(3):  # con la RCL se recorren otros caminos
+                g = GreedyConstructor(ctx.problem, policy, rule="rcl", alpha=0.5, max_steps=20_000)
+                partial = view.empty()
+                memory = policy.init(partial)
+                rng = Random(100 + s)
+                for _ in range(20_000):
+                    if view.is_complete(partial):
+                        break
+                    cands = list(view.candidates(partial))
+                    if not cands:
+                        break
+                    seen.add(policy.state_of(partial, memory))
+                    a = g._pick(cands, g.scores(partial, cands, memory), rng)
+                    memory = policy.update(partial, memory, a)
+                    partial = view.apply(partial, a)
+        missing = [x for x in states if x not in seen]
+        if missing:
+            return fail(LAYER, f"{L}.states_reachable",
+                        f"los estados {missing} nunca se alcanzan en las micro-instancias (greedy y RCL): revisa las condiciones "
+                        f"de transition que llevan a ellos, o quítalos")
+        return ok(LAYER, f"{L}.states_reachable", f"estados alcanzados: {sorted(seen)}")
+
+    results += guard(LAYER, f"{L}.states_reachable", _reach)
+    return _collapse(results)
 
 
 CHECKERS = {
     "constructor": check_constructor,
     "greedy_score": check_greedy_score,
     "construction_policy": check_construction_policy,
-    "phase": check_phase,
+    "construction_machine": check_construction_machine,
     "neighborhood": check_neighborhood,
     "evaluator": check_evaluator,
     "acceptance": check_acceptance,

@@ -129,6 +129,23 @@ def validate_generated_module(
     probe = contexts[0].diversity_probe if contexts else None
     slot_name = component.get("slot", "")
 
+    if slot_name == "construction_machine":
+        # parámetros extraíbles: nada de números sueltos, y cada parámetro declarado decide algo
+        from core.validation.params import constants_check, machine_signature, params_check
+
+        report.add(constants_check(module))
+        if report.passed:
+            where = [(ctx.instances[0], ctx.problem) for ctx in contexts if ctx.instances]
+            if probe is not None and getattr(probe.problem, "inst", None) is not None:
+                where.append((probe.problem.inst, probe.problem))
+            try:
+                report.extend(params_check(component, factory, where, machine_signature))
+            except Exception as exc:  # noqa: BLE001
+                report.add(fail("syntactic", "params_accepted", f"construir con otros valores de los parámetros lanzó "
+                                                                f"{type(exc).__name__}: {exc}"))
+        if not report.passed:
+            return report, module, component
+
     any_fails = [r for rep in reports for r in rep.failures() if r.name in AGGREGATE_ANY]
     if any_fails and len(any_fails) == len(reports):
         # Falló en todos los micro-contextos. Última oportunidad: la sonda grande. Corrida 7:

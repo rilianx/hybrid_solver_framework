@@ -1,7 +1,7 @@
-"""Etapa `improve` sobre el CPMP de referencia (`llm.improver`), p.ej. mejorar la reducción de FRG
-como fase, partiendo de la escrita a mano:
+"""Etapa `improve` sobre el CPMP de referencia (`llm.improver`), p.ej. mejorar FRG como máquina de
+estados, partiendo de la escrita a mano:
 
-    python -m examples.cpmp.improve --slot phase --base reduce_stack --seed --context bg_fill,* --rounds 4
+    python -m examples.cpmp.improve --slot construction_machine --base frg_machine --seed --rounds 4
 """
 
 from __future__ import annotations

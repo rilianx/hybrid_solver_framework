@@ -12,10 +12,13 @@ from pathlib import Path
 from core.component import ComponentRegistry, ComponentSpec
 from core.beam_search import BeamSearchConstructor
 from core.construction import RULES, GreedyConstructor
-from core.phases import PhasedPolicy
 from core.problem_pack import ProblemPack
 
 from .generator import GeneratedComponent, register_generated, validate_generated_module
+
+
+# criterios de construcción: cada uno entra además como constructor `greedy_<nombre>` (y `beam_<nombre>`)
+CRITERIA = ("greedy_score", "construction_policy", "construction_machine")
 
 
 def build_registry(pack: ProblemPack, generated: list[GeneratedComponent] | None = None, handwritten: bool = True,
@@ -25,29 +28,25 @@ def build_registry(pack: ProblemPack, generated: list[GeneratedComponent] | None
     esqueleto exista. Los puntajes (`greedy_score`) no los necesita ningún esqueleto, así
     que los de mano quedan fuera.
 
-    Cada `greedy_score` registrado (a mano o generado) se envuelve además como constructor
-    `greedy_<nombre>`: `GreedyConstructor` con ese puntaje, con la regla y α como
-    parámetros del tuner (más los parámetros propios del puntaje). Si el pack lo pide
-    (`beam_constructors`), también como `beam_<nombre>`: beam search con rollout greedy."""
+    Cada criterio registrado (`CRITERIA`: puntaje, política o máquina de estados; a mano o
+    generado) se envuelve además como constructor `greedy_<nombre>`: `GreedyConstructor` con ese
+    criterio, con la regla y α como parámetros del tuner, más los parámetros propios del
+    criterio (los umbrales y pesos de una máquina se afinan junto con los demás). Si el pack lo
+    pide (`beam_constructors`), también como `beam_<nombre>`: beam search con rollout greedy."""
     registry = ComponentRegistry()
     generated_slots = {c.slot for c in generated or []}
     for component, factory in pack.handwritten:
         if exclude_slots and component["slot"] in exclude_slots:
             continue
-        keep = component["slot"] not in generated_slots and component["slot"] not in ("greedy_score", "construction_policy", "phase")
+        keep = component["slot"] not in generated_slots and component["slot"] not in CRITERIA
         if handwritten or keep:
             registry.register(ComponentSpec.from_dict(component, factory))
     if generated:
         register_generated(registry, generated)
-    for spec in list(registry.for_slot("greedy_score")) + list(registry.for_slot("construction_policy")):
+    for spec in [s for slot in CRITERIA for s in registry.for_slot(slot)]:
         registry.register(greedy_constructor_spec(spec, pack.constructor_skeletons))
         if pack.beam_constructors:
             registry.register(beam_constructor_spec(spec, pack.constructor_skeletons))
-    phases = list(registry.for_slot("phase"))
-    if phases:
-        registry.register(phased_constructor_spec(phases, pack.constructor_skeletons))
-        if pack.beam_constructors:
-            registry.register(phased_constructor_spec(phases, pack.constructor_skeletons, beam=True))
     return registry
 
 
@@ -128,64 +127,4 @@ def beam_constructor_spec(score_spec: ComponentSpec, skeletons: list[str]) -> Co
     return ComponentSpec.from_dict(component, factory)
 
 
-MAX_PHASES = 4
-
-
-def phased_params(phases: list[ComponentSpec], max_phases: int = MAX_PHASES) -> dict:
-    """Parámetros de una construcción por fases con cantidad VARIABLE de fases: `n_phases` ∈ [1, K]
-    y `phase_1` … `phase_K` (categóricos sobre las fases registradas), cada uno activo solo si
-    n_phases ≥ j; los parámetros propios de la fase elegida en la posición j van como
-    `p<j>.<fase>.<parámetro>`. Por defecto, todas las fases en el orden del registro (con las de
-    FRG a mano, FRG). K = min(`max_phases`, fases registradas): repetir una fase no agrega nada."""
-    names = [s.name for s in phases]
-    K = max(1, min(max_phases, len(names)))
-    params: dict = {"n_phases": {"type": "int", "range": [1, K], "default": K}}
-    for j in range(1, K + 1):
-        active = {"n_phases": list(range(j, K + 1))} if j > 1 else {}
-        spec = {"type": "cat", "values": names, "default": names[j - 1]}
-        params[f"phase_{j}"] = dict(spec, when=active) if active else spec
-        for ph in phases:
-            for p, ps in ph.params.items():
-                params[f"p{j}.{ph.name}.{p}"] = dict(ps, when={**active, f"phase_{j}": [ph.name]})
-    return params
-
-
-def make_phased(problem, phases: list[ComponentSpec], kw: dict) -> PhasedPolicy:
-    """La `PhasedPolicy` de una configuración de `phased_params`."""
-    by_name = {s.name: s for s in phases}
-    names = [s.name for s in phases]
-    n = int(kw.get("n_phases", len(names)))
-    chosen, built = [], []
-    for j in range(1, n + 1):
-        name = kw.get(f"phase_{j}", names[min(j, len(names)) - 1])
-        spec = by_name[name]
-        own = {p: kw[f"p{j}.{name}.{p}"] for p in spec.params if f"p{j}.{name}.{p}" in kw}
-        chosen.append(name)
-        built.append(spec.make(problem, **own))
-    return PhasedPolicy(built, names=chosen)
-
-
-def phased_constructor_spec(phases: list[ComponentSpec], skeletons: list[str], beam: bool = False,
-                            max_phases: int = MAX_PHASES) -> ComponentSpec:
-    """`greedy_phased` / `beam_phased`: el greedy (con regla y α) o la beam search sobre la política
-    por fases que elija el tuner, con cantidad de fases variable (`phased_params`)."""
-    params = phased_params(phases, max_phases)
-    if beam:
-        params.update({"beam_width": {"type": "int", "range": [1, 32], "log": True, "default": 4},
-                       "branching": {"type": "int", "range": [1, 16], "log": True, "default": 4}})
-
-        def factory(problem, beam_width=4, branching=4, **kw):
-            return BeamSearchConstructor(problem, make_phased(problem, phases, kw), beam_width=beam_width, branching=branching)
-    else:
-        params.update({"rule": {"type": "cat", "values": list(RULES)}, "alpha": {"type": "float", "range": [0.0, 1.0]}})
-
-        def factory(problem, rule="greedy", alpha=0.2, **kw):
-            return GreedyConstructor(problem, make_phased(problem, phases, kw), rule=rule, alpha=alpha)
-
-    declared = [s for ph in phases for s in ph.compatible_skeletons]
-    component = {"name": "beam_phased" if beam else "greedy_phased", "slot": "constructor",
-                 "compatible_skeletons": _union(list(dict.fromkeys(declared)), skeletons), "params": params}
-    return ComponentSpec.from_dict(component, factory)
-
-
-__all__ = ["build_registry", "greedy_constructor_spec", "beam_constructor_spec", "phased_constructor_spec", "load_generated"]
+__all__ = ["build_registry", "greedy_constructor_spec", "beam_constructor_spec", "load_generated"]
