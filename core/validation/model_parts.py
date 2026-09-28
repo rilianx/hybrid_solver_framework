@@ -11,6 +11,9 @@ Tres etapas, cada una contra lo ya aceptado:
    exactamente cuando `violations` reporta esa familia, y cada término del objetivo tiene que
    coincidir con el de `cost_terms`. El reporte nombra la familia, la restricción y el punto.
 3. `check_mip_optimum`: el MIP completo con el solver, contra el óptimo esperado del caso.
+4. `check_construction_view` (si el modelo trae vista constructiva): recorridos de la
+   construcción en cada caso; termina, no modifica el parcial y llega a soluciones factibles
+   según la vista heurística. Las etapas 2 y 3 se omiten en un modelo sin vista MIP.
 
 Casos visibles y ocultos, como en Codeforces: los visibles se muestran en el prompt; de un
 caso oculto que falla el reporte dice qué se esperaba y qué se obtuvo, sin mostrar la
@@ -23,7 +26,7 @@ import math
 from random import Random
 from typing import Any
 
-from core.model_parts import HEURISTIC_PARTS, MIP_PARTS, TOL, LinearMIP, TestCase, family_of, lhs, violated
+from core.model_parts import CONSTRUCTION_PARTS, HEURISTIC_PARTS, MIP_PARTS, TOL, LinearMIP, TestCase, family_of, lhs, violated
 
 from .base import CheckResult, ValidationReport, fail, ok
 
@@ -307,6 +310,82 @@ def check_mip_optimum(parts, cases: list[TestCase], time_limit: float = 20.0) ->
     return report
 
 
+def check_construction_view(parts, cases: list[TestCase], n_walks: int = 4, max_steps: int = 5_000) -> ValidationReport:
+    """La vista constructiva contra la vista heurística ya aceptada, en los casos. Recorre
+    cada instancia con elecciones al azar (y con la primera acción de cada paso, que es lo
+    que haría un puntaje constante) y verifica que: la construcción termina (en `max_steps`
+    pasos); `apply` no modifica el parcial; la solución que sale (por `to_solution` al
+    completar o por `complete` en un callejón) está en forma canónica y es FACTIBLE según
+    `violations`; y, si la vista da `lower_bound`, que no supera el costo de la solución a la
+    que llega ni el óptimo del caso."""
+    import pickle
+
+    report = ValidationReport(subject="vista constructiva")
+    report.extend(_missing(parts, CONSTRUCTION_PARTS))
+    if not report.passed:
+        return report
+    L = "construction"
+    for case in cases:
+        inst, where = case.instance, _where(case)
+        try:
+            view = parts.construction_view(inst)
+        except Exception as exc:  # noqa: BLE001
+            report.add(fail(L, "runs", f"construction_view lanzó {type(exc).__name__}: {exc} en {where}"))
+            return report
+        bound = getattr(view, "lower_bound", None)
+        for walk in range(n_walks + 1):
+            rng = Random(walk)
+            label = f"{where}, recorrido {'con la primera acción' if walk == 0 else f'al azar {walk}'}"
+            try:
+                p = view.empty()
+                bounds = []
+                for step in range(max_steps + 1):
+                    if bound is not None:
+                        bounds.append(float(bound(p)))
+                    if view.is_complete(p):
+                        sol, how = view.to_solution(p), "to_solution"
+                        break
+                    cands = list(view.candidates(p))
+                    if not cands:
+                        sol, how = view.complete(p, Random(walk)), "complete (callejón sin salida)"
+                        break
+                    a = cands[0] if walk == 0 else cands[rng.randrange(len(cands))]
+                    before = pickle.dumps(p)
+                    q = view.apply(p, a)
+                    if pickle.dumps(p) != before:
+                        report.add(fail(L, "apply_pure", f"apply modificó el parcial al aplicar {_short(a)} en {label}: debe devolver uno nuevo"))
+                        return report
+                    p = q
+                else:
+                    report.add(fail(L, "terminates", f"la construcción no terminó en {max_steps} pasos en {label}: "
+                                                     "candidates debe acabarse o is_complete volverse verdadero"))
+                    return report
+            except Exception as exc:  # noqa: BLE001
+                report.add(fail(L, "runs", f"la vista constructiva lanzó {type(exc).__name__}: {exc} en {label}"))
+                return report
+            try:
+                if parts.canonical(sol) != sol:
+                    report.add(fail(L, "solution_canonical", f"{how} no devuelve la forma canónica en {label}: {_short(sol)}"))
+                v = _viol(parts, inst, sol)
+                cost = sum(parts.cost_terms(inst, sol).values())
+            except Exception as exc:  # noqa: BLE001
+                report.add(fail(L, "runs", f"la solución de {how} hace fallar violations/cost_terms ({type(exc).__name__}: {exc}) en {label}"))
+                return report
+            if v:
+                report.add(fail(L, "solution_feasible", f"{how} devuelve una solución que viola {v} en {label}: {_short(sol)}"))
+                return report
+            if bounds and max(bounds) > cost + TOL * max(1.0, abs(cost)):
+                report.add(fail(L, "lower_bound_valid", f"lower_bound llega a {max(bounds):g} y la solución construida cuesta "
+                                                        f"{cost:g} en {label}: una cota inferior no puede superar el costo alcanzado"))
+                return report
+        if bound is not None and case.optimum is not None and float(bound(view.empty())) > case.optimum + TOL:
+            report.add(fail(L, "lower_bound_valid", f"lower_bound del parcial vacío supera el óptimo del caso ({case.optimum:g}) en {where}"))
+            return report
+    if report.passed:
+        report.add(ok(L, "constructs_feasible", f"{len(cases)} casos × {n_walks + 1} recorridos terminan en soluciones factibles"))
+    return report
+
+
 def validate_parts(parts, cases: list[TestCase], mip_time_limit: float = 20.0, scale_instances: list | None = None) -> ValidationReport:
     """Las tres etapas en orden; se detiene en la primera que falla."""
     report = ValidationReport(subject="ProblemModel por piezas")
@@ -319,4 +398,4 @@ def validate_parts(parts, cases: list[TestCase], mip_time_limit: float = 20.0, s
     return report
 
 
-__all__ = ["check_heuristic_view", "check_mip_optimum", "check_mip_view", "validate_parts"]
+__all__ = ["check_construction_view", "check_heuristic_view", "check_mip_optimum", "check_mip_view", "validate_parts"]

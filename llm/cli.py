@@ -41,7 +41,9 @@ def main(pack: ProblemPack, argv: list[str] | None = None) -> None:
     ap.add_argument("--rounds", type=int, default=3, help="rondas máximas (1 generación + correcciones)")
     ap.add_argument("--provider", choices=["openai", "anthropic"], default="openai")
     ap.add_argument("--model", default=None)
-    ap.add_argument("--workspace", default=pack.default_workspace)
+    ap.add_argument("--workspace", default=None)
+    ap.add_argument("--problem-model", default=None,
+                    help="ProblemModel GENERADO (módulo de piezas de generate_model): se trabaja sobre él en vez del de referencia")
     ap.add_argument("--from-scratch", action="store_true",
                     help="sin componentes de referencia: ni diversidad contra el catálogo, ni nombres, ni vecindario de referencia")
     ap.add_argument("--catalog-diversity", choices=["annotate", "reject"], default="annotate",
@@ -52,6 +54,12 @@ def main(pack: ProblemPack, argv: list[str] | None = None) -> None:
     ap.add_argument("--workers", type=int, default=3, help="implementaciones en paralelo por slot (con --planner)")
     ap.add_argument("--replans", type=int, default=1, help="replaneos máximos si faltan componentes (con --planner)")
     args = ap.parse_args(argv)
+    if args.problem_model:
+        from llm.generated_pack import pack_from_generated_model
+
+        pack = pack_from_generated_model(pack, args.problem_model)
+    if args.workspace is None:
+        args.workspace = pack.default_workspace
 
     if args.provider == "openai":
         inner = OpenAIClient(model=args.model or "gpt-5.4-mini")

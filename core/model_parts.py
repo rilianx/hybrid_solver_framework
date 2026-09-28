@@ -27,6 +27,14 @@ Piezas (funciones de un módulo; `inst` es la instancia):
     objective_terms(inst) -> {término: ({variable: coeficiente}, constante)}   mismos nombres que cost_terms
     variable_groups(inst) -> {grupo: [estructurales]}    partición, para Relax-and-Fix / Fix-and-Optimize
 
+  Vista constructiva (opcional; la usan el constructor greedy y la beam search del framework)
+    construction_view(inst) -> objeto con empty(), candidates(p), apply(p, a) (sin modificar p),
+        is_complete(p), to_solution(p) (canónica) y complete(p, rng) (respaldo en un callejón
+        sin salida); opcionales lower_bound(p) y key(p)
+
+La vista MIP es opcional (`ModelSpec.mip`): sin ella el problema entra solo por el lado
+constructivo (esqueleto CONSTRUCT) y `build_mip` avisa con `NotImplementedError`.
+
 Por construcción desaparece una clase de errores: `objective` es la suma de `cost_terms` más
 una penalización por las violaciones, e `is_feasible` es "no hay violaciones" (`PartsModel`).
 """
@@ -40,6 +48,7 @@ from typing import Any
 HEURISTIC_PARTS = ("canonical", "trivial_solution", "random_solution", "from_answer", "violations", "cost_terms")
 MIP_PARTS = ("variables", "structural_variables", "to_assignment", "aux_values", "from_assignment",
              "constraint_families", "objective_terms", "variable_groups")
+CONSTRUCTION_PARTS = ("construction_view",)
 TOL = 1e-6
 CACHE_SIZE = 50_000
 
@@ -175,20 +184,38 @@ class PartsModel:
         v = self.violations(sol)
         return "; ".join(f"{k}: {m:g}" for k, m in v.items()) or "factible"
 
+    @property
+    def has_mip(self) -> bool:
+        return all(callable(getattr(self.parts, n, None)) for n in MIP_PARTS)
+
+    def _need_mip(self):
+        if not self.has_mip:
+            raise NotImplementedError("el modelo generado no tiene vista MIP")
+
     def build_mip(self, inst) -> LinearMIP:
+        self._need_mip()
         return LinearMIP(self.parts, inst)
 
+    def construction_view(self, inst, **params):
+        make = getattr(self.parts, "construction_view", None)
+        if not callable(make):
+            raise NotImplementedError("el modelo generado no tiene vista constructiva")
+        return make(inst)
+
     def to_assignment(self, sol) -> dict[str, float]:
+        self._need_mip()
         return self.parts.to_assignment(self.inst, sol)
 
     def from_assignment(self, x: dict[str, float]):
+        self._need_mip()
         return self.parts.from_assignment(self.inst, x)
 
     def variable_groups(self, inst) -> dict[str, list[str]]:
+        self._need_mip()
         return self.parts.variable_groups(inst)
 
     def random_solution(self, rng):
         return self.parts.random_solution(self.inst, rng)
 
 
-__all__ = ["HEURISTIC_PARTS", "MIP_PARTS", "LinearMIP", "PartsModel", "TestCase", "family_of", "lhs", "violated"]
+__all__ = ["HEURISTIC_PARTS", "MIP_PARTS", "CONSTRUCTION_PARTS", "LinearMIP", "PartsModel", "TestCase", "family_of", "lhs", "violated"]

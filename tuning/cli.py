@@ -121,10 +121,18 @@ def main(pack: ProblemPack, argv: list[str] | None = None) -> None:
                     help="en la selección final, el afinado tiene que ganarle a sus numéricos por defecto por más que esto (relativo) y que el ruido")
     ap.add_argument("--screen", type=int, default=-1,
                     help="variantes de un solo componente encoladas tras los defaults (-1 = un tercio de los trials; 0 = no)")
-    ap.add_argument("--generated", default=pack.default_workspace)
+    ap.add_argument("--generated", default=None)
+    ap.add_argument("--problem-model", default=None,
+                    help="ProblemModel GENERADO (módulo de piezas de generate_model): se trabaja sobre él en vez del de referencia")
     ap.add_argument("--out", default="tuning_out")
     ap.add_argument("--irace", default=None, help="directorio donde escribir un escenario irace (opcional)")
     args = ap.parse_args(argv)
+    if args.problem_model:
+        from llm.generated_pack import pack_from_generated_model
+
+        pack = pack_from_generated_model(pack, args.problem_model)
+    if args.generated is None:
+        args.generated = pack.default_workspace
     if args.tuner_seed is None:
         args.tuner_seed = args.seed
 

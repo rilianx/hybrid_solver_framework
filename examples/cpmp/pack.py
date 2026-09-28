@@ -1,5 +1,12 @@
 """`ProblemPack` del CPMP: lo que el framework recibe de este problema (ver `core.problem_pack`).
 
+La entrada de verdad es la instancia (`instance.py`), su generador, la descripción
+(`llm_spec.make_model_spec`) y los casos de prueba (`cases.json`). Con eso el LLM genera el
+modelo y la vista constructiva (`python -m examples.cpmp.generate_model`), y con `--model` los
+CLIs de generación de componentes y de tuning trabajan sobre el modelo generado
+(`llm.generated_pack`). El modelo, la vista y FRG escritos a mano (`problem_model.py`,
+`construction.py`, `frg.py`) son la referencia contra la que se compara.
+
 Solo el lado constructivo: el LLM genera puntajes (`--slots greedy_score`), cada uno entra
 como `greedy_<nombre>` y `beam_<nombre>`, y el tuner elige constructor en el esqueleto
 `CONSTRUCT`. Sin vista MIP, `--ref-time` del tuner no aplica.
@@ -13,7 +20,7 @@ from core.problem_pack import ProblemPack
 
 from .catalog import CONSTRUCTOR_SKELETONS, HANDWRITTEN, BestFirstConstructor
 from .instance import CPMPInstance
-from .llm_spec import make_contexts, make_spec
+from .llm_spec import make_contexts, make_model_spec, make_spec
 from .problem_model import CPMPModel
 
 
@@ -26,6 +33,12 @@ def parse_size(text: str) -> dict:
 def make_instances(n: int, seed0: int, size: dict):
     """Al estilo CVS: todas las pilas con H − 2 contenedores, grupos distintos."""
     return [CPMPInstance.cvs_like(size["S"], size["H"], Random(seed0 + k)) for k in range(n)]
+
+
+def _load_cases():
+    from .cases import load_cases
+
+    return load_cases()
 
 
 PACK = ProblemPack(
@@ -43,4 +56,7 @@ PACK = ProblemPack(
     constructor_skeletons=CONSTRUCTOR_SKELETONS,
     beam_constructors=True,
     skeletons=["CONSTRUCT"],
+    make_model_spec=make_model_spec,
+    micro_size="4x4",
+    load_cases=_load_cases,
 )

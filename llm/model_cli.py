@@ -70,14 +70,20 @@ def _parts(pack: ProblemPack, spec, client, inner, args) -> None:
              "cases": {"visible": sum(c.visible for c in cases), "hidden": sum(not c.visible for c in cases)},
              "heuristic": {"accepted": res.heuristic.accepted, "rounds": res.heuristic.rounds, "rejections": res.heuristic.reports},
              "mip": {"accepted": res.mip.accepted, "rounds": res.mip.rounds, "rejections": res.mip.reports},
+             "construction": {"requested": spec.construction, "accepted": res.construction.accepted,
+                              "rounds": res.construction.rounds, "rejections": res.construction.reports},
              "llm_calls": res.llm_calls, "seconds": round(res.seconds, 1), "tokens": res.tokens.as_dict(inner.model),
              "accepted_file": str(res.path) if res.path else None}
-    if res.path is not None:
+    if res.path is not None and spec.mip:
         from core.validation.syntactic import load_module
 
         module, _ = load_module(res.path)
         micro = pack.make_instances(3, 950, pack.parse_size(pack.micro_size))
         stats["cross_check"] = cross_check(types_namespace(module), pack.problem_factory, micro)
+    elif res.path is not None:
+        stats["cross_check"] = "sin vista MIP: el modelo se validó solo contra los casos de prueba"
+    if res.path is not None:
+        print(f"Modelo aceptado: {res.path}")
     out = Path(args.workspace) / "stats.json"
     out.write_text(json.dumps(stats, indent=2, ensure_ascii=False))
     print(f"Resumen guardado en {out}")

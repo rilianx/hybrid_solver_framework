@@ -178,8 +178,9 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   Fix-and-Optimize y el MIP completo.
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`examples/cpmp/`** — Piloto constructivo: CPMP con FRG y BS-FRG sobre la beam search
-  genérica (ver *Estrategias constructivas*).
+- **`examples/cpmp/`** — Piloto constructivo sin vista MIP: la entrada para generar el modelo
+  (instancia, descripción, casos con óptimo exacto) y, como referencia a mano, el modelo, la
+  vista neutral y FRG (ver *Estrategias constructivas*).
 - **`tests/`** — 213 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
@@ -200,7 +201,8 @@ python -m examples.knapsack.demo    # SA / ILS / LNS-MIP + export irace/Optuna
 python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~3 min)
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
-python -m examples.cpmp.demo --beam 5 20   # CPMP: FRG, greedy con puntajes y beam search (BS-FRG)
+python -m examples.cpmp.demo --beam 5     # CPMP: estrategias constructivas sobre la vista de referencia
+python -m examples.cpmp.generate_model     # CPMP: el modelo y su vista constructiva, generados desde la descripción y los casos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
 python -m pytest -q                 # 213 passed (~130 s)
 
@@ -342,7 +344,8 @@ esqueletos y, en GRASP, es el motor de cada reinicio.
 | Constructores monolíticos generados por el LLM | `generated/clsp*/constructor/` | slot `constructor` directo |
 | GRASP+LS (multiarranque) | `skeletons/grasp.py` | esqueleto; solo tiene sentido con un constructor que use `rng` |
 | **Beam search constructiva**: clásica (puntaje acumulado) o *greedy* (cada hijo se evalúa con un rollout hasta el final; `beam_width=1` es el *pilot method*) | `core/beam_search.py` (`BeamSearchConstructor`) | `beam_<puntaje>` con `beam_width` y `branching` como parámetros del tuner, si el pack pone `beam_constructors=True` |
-| **FRG y BS-FRG** para el CPMP (Araya y Toledo 2023) | `examples/cpmp/` | FRG como constructor, como puntaje (`frg_policy`) y como rollout de la beam search |
+| **Vista constructiva generada por el LLM** | `llm/parts_generator.py` (etapa 3), `core/validation/model_parts.py` (`check_construction_view`) | el greedy y la beam search corren sobre el modelo generado (`llm/generated_pack.py`, `--problem-model`) |
+| **FRG y BS-FRG** para el CPMP (Araya y Toledo 2023), como referencia a mano | `examples/cpmp/frg.py`, `construction.py` | FRG como constructor (`frg`) y como puntaje (`frg_policy`); BS-FRG = beam con rollout `frg_policy` |
 
 Validación específica: `check_greedy_score` (finito, determinista, no modifica el parcial),
 factibilidad del constructor en la sonda de tamaño realista, gate de calidad contra la
@@ -394,8 +397,7 @@ puntaje (acciones que elige el greedy, Jaccard; `diversity.greedy_score_signatur
    CVRP; exponerla en el workflow `benchmark`.
 2. ~~**Beam search sobre la vista existente**~~ — hecho: `BeamSearchConstructor`, constructor
    hermano de `GreedyConstructor`, con el CPMP como piloto (sección siguiente). Quedan
-   *look-ahead* de profundidad fija y *regret-k* como reglas del greedy, y un `ProblemPack`
-   del CPMP (vecindarios, micro-contextos) para generar puntajes con el LLM y afinar BS-FRG.
+   *look-ahead* de profundidad fija y *regret-k* como reglas del greedy.
 3. **Iterated Greedy**: operación opcional `ConstructionView.partial_from(sol, keep)` y un
    esqueleto `IG` (destruir d componentes, reconstruir con el greedy, aceptar) sobre
    `TrajectorySkeleton`.
@@ -412,64 +414,117 @@ cliente guionado.
 ### Beam search constructiva y el piloto CPMP
 
 `core/beam_search.py` (`BeamSearchConstructor`) es un constructor hermano de
-`GreedyConstructor` sobre la misma `ConstructionView`. En cada nivel se expanden los parciales
-del haz: todos los candidatos, o los `branching` de menor puntaje. De los hijos se conservan
-los `beam_width` de menor valor. Hay dos formas de dar el valor:
+`GreedyConstructor` sobre la misma `ConstructionView`, y usa el mismo `greedy_score`. En cada
+nivel se expanden los parciales del haz: todos los candidatos, o los `branching` de menor
+puntaje. De los hijos se conservan los `beam_width` de menor valor. Hay dos formas de dar el
+valor:
 
-- `evaluation="rollout"`, o **beam search greedy**: el hijo se completa con un greedy y vale
-  el objetivo de esa solución. Cada rollout es una solución candidata, así que el resultado
-  nunca es peor que el greedy desde la raíz. Con `beam_width=1` es el *pilot method*. El
-  rollout puede ser un `GreedyScore` o `"complete"`, que usa `view.complete`, el respaldo
-  del problema, cuando ese respaldo es una heurística completa.
+- `evaluation="rollout"`, o **beam search greedy**: el hijo se completa con el greedy de un
+  puntaje (`rollout`, por defecto el mismo) y vale el objetivo de esa solución. Cada rollout
+  es una solución candidata, así que el resultado nunca es peor que el greedy desde la raíz.
+  Con `beam_width=1` es el *pilot method*.
 - `evaluation="score"`, la beam search clásica: el valor es el puntaje acumulado, sin
   completar. Es más barata.
 
 Si la vista expone `lower_bound(parcial)`, se podan los parciales que no pueden mejorar a la
 mejor solución. Si expone `key(parcial)`, se descartan los repetidos dentro de un nivel.
-`llm.catalog.beam_constructor_spec` registra cada puntaje como `beam_<nombre>`, con
-`beam_width` y `branching` para el tuner. Esto solo ocurre si el pack pone
-`beam_constructors=True`; está apagado por defecto porque en el CLSP cada rollout cuesta LPs.
+`llm.catalog.beam_constructor_spec` registra cada puntaje (a mano o generado) como
+`beam_<nombre>`, junto a `greedy_<nombre>`, con `beam_width` y `branching` para el tuner.
+Solo ocurre si el pack pone `beam_constructors=True`; está apagado por defecto porque en el
+CLSP cada rollout cuesta LPs.
 
-**CPMP** (`examples/cpmp/`, sin vista MIP todavía). Se basa en *A fill-and-reduce greedy
-algorithm for the container pre-marshalling problem* (Araya y Toledo, Oper. Res. 23:51, 2023):
+**Esqueleto `CONSTRUCT`** (`core.assembler.CONSTRUCTIVE_SKELETONS`): solo el constructor,
+sin búsqueda encima, con `multistart` opcional. Sirve para comparar y afinar estrategias
+constructivas por sí solas, y para problemas sin vecindarios. No está en `SKELETONS`, así que
+el espacio de los packs existentes no cambia; un pack lo pide con `ProblemPack.skeletons`.
 
-- `frg.py` implementa FRG: movimientos BG que llenan pilas ordenadas y reducciones con su
-  criterio de parada, más las mejoras de la §4.3 (no crear pilas ordenadas llenas;
-  `unblocking_assignment` + `gen_seq`).
-- `construction.py` define la vista. Ofrece las acciones de BS*-FRG: movimientos simples con
-  los `k` mejores destinos de `select_destination` por pila, la iteración de FRG (que
-  conserva el estado sr/A/Sd) y las reducciones compuestas R_s. `complete` corre FRG, así
-  que **BS-FRG no necesita código propio**: es
-  `BeamSearchConstructor(P, rollout="complete", beam_width=nb)`.
-- FRG también entra como puntaje (`frg_policy`: el greedy del framework con ese puntaje
-  *es* FRG) y como constructor (`FRGConstructor`).
+**Del problema al constructor, sin código del problema a mano** (§6.1). El generador del
+modelo por piezas (`llm/parts_generator.py`) tiene ahora dos cambios:
 
-La asignación de la §4.3.2 está reconstruida desde el texto del paper y no reproduce su
-efecto. Evita que FRG no termine, pero cuesta movimientos donde FRG⁻ ya termina, así que se
-usa como respaldo (`assignment="fallback"`). Ver `examples/cpmp/frg.py`.
+- **La vista MIP es opcional** (`ModelSpec.mip = False`). El modelo queda con la vista
+  heurística y entra solo por el lado constructivo; `PartsModel.build_mip` avisa con
+  `NotImplementedError`.
+- **Hay una tercera etapa: la vista constructiva** (`ModelSpec.construction = True`). El LLM
+  escribe `construction_view(inst)` (parcial, acciones, aplicar, completo, respaldo, y
+  opcionalmente `lower_bound` y `key`) con el modelo ya aprobado a la vista.
+  `check_construction_view` la valida recorriendo los casos con la primera acción y con
+  acciones al azar: la construcción termina, `apply` no modifica el parcial, la solución es
+  canónica y factible según `violations`, y `lower_bound` nunca supera el costo alcanzado ni
+  el óptimo del caso. Hasta ahora esta vista se escribía a mano en cada problema; sin ella el
+  greedy y la beam search no eran automáticos para un problema nuevo.
 
-`python -m examples.cpmp.demo --beam 5 20` usa 10 instancias al estilo CVS por tamaño (S×H,
-N = S·(H−2)). La tabla da los movimientos medios (menor es mejor); FRG⁻ no termina en 2 de
-las 10 instancias de 3×5, y su media es sobre las 8 restantes:
+`llm/generated_pack.py` arma un `ProblemPack` sobre el modelo generado. Del pack base toma
+solo la instancia y los casos; el catálogo queda con la partida trivial del modelo y lo demás
+lo genera el LLM. Los CLIs de generación y de tuning lo usan con `--problem-model`:
 
-| Estrategia | 3×5 | 5×5 | 5×7 | 6×6 |
-|---|---|---|---|---|
-| cota inferior (mal puestos) | 4,4 | 6,7 | 15,9 | 13,9 |
-| FRG⁻ | 11,4 (2 fallas) | 11,9 | 39,3 | 24,6 |
-| FRG (asignación de respaldo) | 11,8 | 11,9 | 36,9 | 24,6 |
-| greedy `fill_first` | 11,3 | 11,9 | 41,6 | 25,5 |
-| beam clásica `fill_first`, nb = 20 | 9,3 | 11,2 | 32,4 | 22,6 |
-| BSs-FRG, nb = 5 | 9,1 | 10,3 | 29,5 | 21,8 |
-| BS*-FRG, nb = 5 | 9,3 | 10,2 | 30,0 | 21,3 |
-| BSs-FRG, nb = 20 | 9,1 | 10,1 | 28,7 | 20,9 |
-| BS*-FRG, nb = 20 | 9,1 | 10,1 | 28,4 | 20,9 |
+```bash
+python -m examples.cpmp.generate_model --provider anthropic     # descripción + casos → modelo + vista constructiva
+M=generated/cpmp_model/problem_model/model_constructive_r1.py   # el que se aceptó (lo imprime el paso anterior)
+python -m examples.cpmp.generate --problem-model $M --slots greedy_score --from-scratch
+python -m examples.cpmp.tune --problem-model $M --catalog all --size 5x5
+```
 
-Con haces pequeños, la beam search greedy baja los movimientos de FRG entre 13 y 21 % con
-nb = 5 y entre 15 y 23 % con nb = 20. A
-igual ancho, le gana a la beam clásica: evaluar un hijo por la solución completa que produce
-vale más que por el puntaje acumulado. El costo es un rollout por hijo: en 5×7, 0,5 s por
-instancia con nb = 5 y 1,5 s con nb = 20, en Python. En estos tamaños BS* y BSs quedan
-parejos; el paper reporta la ventaja de BS* con nb ≥ 100, que aquí no se probó.
+`tests/test_generated_model.py` recorre ese camino con un LLM guionado: modelo sin MIP, vista
+constructiva corregida en la segunda ronda, puntaje generado contra la vista generada, y
+`greedy_<puntaje>` / `beam_<puntaje>` evaluados en `CONSTRUCT`.
+
+**CPMP** (`examples/cpmp/`). Lo que el framework recibe del problema es la instancia
+(`instance.py`: clase, lector de los benchmarks CVS/BF y generadores), la descripción
+(`llm_spec.make_model_spec`) y `cases.json`. Son 6 micro-instancias con soluciones de ejemplo
+(óptima, alternativa, con un rodeo, infactibles por `orden` y por `movimiento`) y el óptimo
+EXACTO por búsqueda en anchura (`cases.py`). Todo lo demás es referencia escrita a mano, para
+comparar y para generar los casos:
+
+- `model_parts.py`: el modelo por piezas de referencia (lo que debería escribir el LLM), con
+  una vista constructiva neutral: todos los movimientos válidos que no vuelven a un layout ya
+  recorrido, y un respaldo best-first por mal puestos.
+- `problem_model.py`, `layout.py`, `construction.py` y `pack.py`: la misma idea como
+  `ProblemModel` de clase, con su pack. La vista es neutral y no tiene último recurso: si el
+  respaldo no ordena (pasa en 6×6 o más), la construcción queda infactible. Así un puntaje
+  malo no hereda la calidad de otro algoritmo.
+- `frg.py`: **FRG** (*A fill-and-reduce greedy algorithm for the container pre-marshalling
+  problem*, Araya y Toledo, Oper. Res. 23:51, 2023), como componente de referencia, igual que
+  `setup_flip` en el CLSP. Entra al catálogo como constructor (`frg`) y como puntaje
+  (`frg_policy`: 0 al movimiento que haría FRG). Con ese puntaje, el greedy del framework
+  reproduce FRG, y la beam search con `rollout=frg_policy` da BS-FRG sin código propio. La
+  asignación de la §4.3.2 está reconstruida desde el texto del paper y no reproduce su
+  efecto: evita que FRG no termine, pero cuesta movimientos donde FRG⁻ ya termina, así que se
+  usa como respaldo (`assignment="fallback"`). Las acciones compuestas de BS*-FRG (reducciones
+  R_s) no están en la vista: son una idea de diseño, candidata a un slot de macroacciones
+  generado.
+
+`python -m examples.cpmp.demo --beam 5` compara estrategias del framework sobre la vista de
+referencia, con 10 instancias al estilo CVS por tamaño. Movimientos medios (menor es mejor):
+
+| Estrategia | 3×5 | 5×5 |
+|---|---|---|
+| cota inferior (mal puestos) | 4,4 | 6,7 |
+| `best_first` (respaldo neutral, partida trivial) | 21,6 | 13,3 |
+| FRG (referencia a mano) | 11,8 | 11,9 |
+| greedy `frg_policy` | 16,7 | 11,9 |
+| greedy `destination_rank` (miope) | 53,1 | 75,8 |
+| beam clásica `destination_rank`, nb = 5 | 47,9 | 69,7 |
+| beam greedy `destination_rank`, nb = 5 | 12,0 | 13,7 |
+| BS-FRG (beam greedy, rollout `frg_policy`), nb = 5 | 9,2 | 10,2 |
+
+Qué muestra:
+
+- **La beam search greedy es la estrategia que más aporta, con cualquier puntaje.** Un
+  puntaje miope que por sí solo pasea contenedores (`destination_rank`) baja de 53 a 12
+  movimientos en 3×5. Con FRG de rollout, BS-FRG baja 22 % los movimientos de FRG en 3×5 y
+  14 % en 5×5.
+- **Los puntajes miopes de un solo movimiento son débiles en el CPMP.** Mueven los mismos mal
+  puestos entre pilas desordenadas hasta el límite de movimientos; FRG no lo hace porque
+  sostiene un plan (reducir una pila). El validador lo detecta: la capa de calidad rechaza
+  `destination_rank`, y también cuatro puntajes "tipo LLM" que probé (cuestan entre 2,7 y 9,7
+  veces la partida trivial en las micro-instancias). El prompt avisa que `partial.moves` permite
+  sostener un plan de varios pasos sin estado propio. Es la pregunta abierta de este
+  problema: si el LLM encuentra puntajes con plan, o si hace falta el slot de macroacciones.
+- `greedy frg_policy` queda peor que FRG en 3×5 (16,7 contra 11,8) porque la vista no deja
+  volver a un layout ya recorrido, y el FRG sin asignación a veces lo necesita (es su ciclo de
+  no terminación).
+- 5×7 y 6×6 no están en la tabla: con el respaldo neutral agotándose y rollouts que llegan al
+  límite de movimientos, la corrida en Python no terminó en 30 minutos.
 
 ## Correr en GitHub Actions
 
@@ -550,6 +605,8 @@ devolver la penalización por infactibilidad.
 4. ~~MIP-guided Perturbation~~ (`MIP_PERTURB`) y ~~generación LLM del `ProblemModel`
    completo~~ (§6.1, `llm/model_generator.py`): en el CVRP, aceptado en la ronda 2 y
    con el mismo óptimo MIP que el modelo escrito a mano en las micro-instancias.
-5. Pendiente: generar los componentes para un `ProblemModel` generado (hoy los
-   componentes se generan contra el modelo de referencia del pack), y más instancias o
-   presupuesto para que las comparaciones entre catálogos tengan potencia estadística.
+5. ~~Generar los componentes para un `ProblemModel` generado~~ — hecho para el lado
+   constructivo (`llm/generated_pack.py`, `--problem-model`; CPMP sin vista MIP). Pendiente:
+   probarlo con un LLM real, hacerlo con un modelo con vista MIP (vecindarios y destrucciones
+   contra la representación generada), y más instancias o presupuesto para que las
+   comparaciones entre catálogos tengan potencia estadística.

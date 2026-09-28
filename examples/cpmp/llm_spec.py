@@ -59,6 +59,43 @@ def make_spec() -> ProblemSpec:
     )
 
 
+def make_model_spec():
+    """Para generar el `ProblemModel` con LLM (§6.1): descripción, instancia y casos de prueba;
+    sin vista MIP y con vista constructiva. No ve el modelo de referencia ni ninguna heurística."""
+    from llm.model_generator import ModelSpec
+
+    from . import instance
+
+    return ModelSpec(
+        name="Container Pre-Marshalling Problem (CPMP)",
+        description=(
+            "Una bahía tiene S pilas de contenedores con altura máxima H (`inst.stacks`: una tupla por pila con los grupos "
+            "de sus contenedores, de abajo hacia arriba; `inst.H`, `inst.S`, `inst.N`, `inst.G` = grupo máximo). Grupo mayor = "
+            "se retira más tarde. Un movimiento saca el contenedor del tope de una pila y lo pone en el tope de otra que no "
+            "esté llena. Una pila está ordenada si sus grupos no crecen de abajo hacia arriba (cada contenedor está sobre uno "
+            "de grupo mayor o igual). Una solución es una secuencia de movimientos que deja todas las pilas ordenadas. "
+            "Objetivo: minimizar la cantidad de movimientos. Una solución con movimientos inválidos o que no ordena debe "
+            "reportarse en `violations` (no rechazarse)."
+        ),
+        instance_source=inspect.getsource(instance.CPMPInstance),
+        instance_import="examples.cpmp.instance",
+        notes=["La representación de la solución la eliges tú; debe ser hashable y comparable con ==.",
+               "`trivial_solution` tiene que ORDENAR el layout (no hay una solución factible sin movimientos en general): "
+               "escribe un procedimiento simple que siempre termine en las micro-instancias."],
+        forbidden_modules=["examples.cpmp.problem_model", "examples.cpmp.model_parts", "examples.cpmp.construction",
+                           "examples.cpmp.layout", "examples.cpmp.frg", "examples.cpmp.catalog", "examples.cpmp.cases"],
+        answer_format=("Lista de movimientos [so, sd] en orden, con índices de pila desde 0: mover el tope de la pila so a la "
+                       "pila sd. Ejemplo: [[0, 2], [1, 0]]. [] es no mover nada."),
+        families=("Familias de restricciones: `movimiento` (movimientos inválidos: origen vacío, destino lleno u origen = "
+                  "destino; magnitud = cuántos; un movimiento inválido no se aplica) y `orden` (magnitud = contenedores mal "
+                  "puestos en el layout final). Término del objetivo: `movimientos` (la cantidad de movimientos de la lista)."),
+        mip=False,
+        construction=True,
+        construction_notes=("Una acción natural es un movimiento (so, sd). Una construcción que solo mueve contenedores puede "
+                            "ciclar: evita volver a layouts ya recorridos, y usa un tope de movimientos."),
+    )
+
+
 def _construction_source() -> str:
     return "\n\n".join(inspect.getsource(o) for o in (c.Move, layout.Layout)) + (
         "\n\n# Candidatos en cada paso: todos los Move(so, sd) válidos (so con contenedores, sd no llena, so != sd)\n"

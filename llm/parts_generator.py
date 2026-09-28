@@ -1,6 +1,6 @@
 """Generación del `ProblemModel` por piezas con un LLM, validada con casos de prueba.
 
-Dos etapas, cada una con su ciclo de corrección y validada contra lo ya aceptado:
+Hasta tres etapas, cada una con su ciclo de corrección y validada contra lo ya aceptado:
 
 1. **Vista heurística** (`core.model_parts.HEURISTIC_PARTS`): el LLM ve la descripción, la
    instancia, el formato de respuesta y los casos VISIBLES; escribe la representación,
@@ -11,7 +11,15 @@ Dos etapas, cada una con su ciclo de corrección y validada contra lo ya aceptad
    punto contra la etapa 1 (`check_mip_view`) y después con el solver contra los óptimos
    esperados (`check_mip_optimum`).
 
-El módulo final es la concatenación de las dos etapas.
+3. **Vista constructiva** (`CONSTRUCTION_PARTS`, si `spec.construction`): con las etapas
+   anteriores congeladas, escribe `construction_view(inst)`: estado parcial, acciones, aplicar,
+   completo y respaldo. Se valida recorriendo los casos con elecciones al azar: termina, no
+   modifica el parcial y llega a soluciones factibles según la vista heurística
+   (`check_construction_view`). Es lo que usan el greedy y la beam search del framework, así
+   que con ella un problema nuevo entra al lado constructivo sin código escrito a mano.
+
+La vista MIP se omite con `spec.mip = False`: el problema queda solo con el lado constructivo.
+El módulo final es la concatenación de las etapas aceptadas.
 """
 
 from __future__ import annotations
@@ -24,7 +32,7 @@ from typing import Any
 
 from core.model_parts import TestCase
 from core.validation.base import ValidationReport, fail
-from core.validation.model_parts import check_heuristic_view, check_mip_optimum, check_mip_view
+from core.validation.model_parts import check_construction_view, check_heuristic_view, check_mip_optimum, check_mip_view
 from core.validation.syntactic import load_module
 
 from .client import LLMClient, TokenUsage
@@ -62,6 +70,27 @@ def variable_groups(inst) -> dict[str, list[str]]: ...   # partición de structu
     # libera de a 1 a 4 grupos por subproblema, y Relax-and-Fix fija un grupo por vez. Agrupa variables que
     # interactúan (elementos cercanos, el mismo período…): con todo lo demás fijo, liberar un grupo tiene que
     # dejar espacio para cambiar la solución
+'''
+
+
+CONSTRUCTION_CONTRACT = '''
+# Función a escribir: la vista constructiva (la usan el constructor greedy y la beam search del framework)
+
+def construction_view(inst): ...   # devuelve un objeto con estos métodos:
+    # empty() -> parcial                    el estado inicial de una construcción
+    # candidates(p) -> list[acción]         acciones posibles desde p; [] si p está completo o es un callejón sin salida
+    # apply(p, a) -> parcial                un parcial NUEVO; p no se modifica (se verificará)
+    # is_complete(p) -> bool                p ya describe una solución completa
+    # to_solution(p) -> sol                 la solución de un parcial completo, en forma CANÓNICA y FACTIBLE
+    # complete(p, rng) -> sol               respaldo: una solución factible desde un parcial sin candidatos
+    # opcionales: lower_bound(p) -> float (cota inferior del costo de cualquier solución que complete p; poda la
+    #             beam search) y key(p) -> hashable (dos parciales equivalentes dan la misma clave)
+# El framework elige la acción en cada paso con un puntaje `score(p, a)` (menor es mejor) que se escribe después,
+# así que el parcial y las acciones deben exponer atributos y métodos de consulta que un puntaje pueda leer.
+# La vista es NEUTRAL: ofrece todas las acciones razonables, no decide cuál conviene (eso es del puntaje).
+# Garantiza que toda construcción termina: si un puntaje puede hacer que se repita un estado o que la
+# construcción se alargue sin fin, evítalo en `candidates` (p.ej. no volver a un estado ya recorrido, o un
+# tope de pasos) y cierra con `complete`.
 '''
 
 
@@ -115,6 +144,24 @@ def mip_prompt(spec: ModelSpec, cases: list[TestCase], heuristic_source: str) ->
     ])
 
 
+def construction_prompt(spec: ModelSpec, cases: list[TestCase], approved_source: str) -> str:
+    return "\n".join([
+        f"# Tarea\nEscribe la vista constructiva del modelo del problema **{spec.name}**. El modelo ya está escrito y "
+        "aprobado contra los casos de prueba: NO lo cambies ni lo redefinas; tu código se concatena DESPUÉS de él, así que "
+        "puedes usar sus funciones (canonical, violations, cost_terms, trivial_solution…) directamente; no lo importes.",
+        f"\n# El problema\n{spec.description}",
+        f"\n# La instancia\n```python\n{spec.instance_source}\n```",
+        f"\n# Modelo aprobado (ya definido antes de tu código)\n```python\n{approved_source}\n```",
+        CONSTRUCTION_CONTRACT,
+        *([f"\n# Sobre las acciones de este problema\n{spec.construction_notes}"] if spec.construction_notes else []),
+        _cases_block(spec, cases),
+        "\n# Lo que se verificará\n- En cada caso, recorridos con la primera acción y con acciones al azar: la construcción "
+        "termina, apply no modifica el parcial y la solución (to_solution o complete) es canónica y FACTIBLE según "
+        "violations.\n- Si defines lower_bound: nunca supera el costo de la solución a la que se llega ni el óptimo del caso.",
+        "\nDevuelve UN solo bloque ```python``` solo con la vista constructiva (y sus imports).",
+    ])
+
+
 def correction_prompt(stage: str, source: str, feedback: str, context: str) -> str:
     return "\n".join([
         f"La {stage} fue RECHAZADA por el validador. Corrígela y devuelve el código completo de esa etapa en un único bloque "
@@ -139,21 +186,25 @@ class PartsGenerationResult:
     path: Path | None
     heuristic: StageResult
     mip: StageResult
+    construction: StageResult = field(default_factory=StageResult)
     llm_calls: int = 0
     tokens: TokenUsage = field(default_factory=TokenUsage)
     seconds: float = 0.0
 
 
-def _concat(heuristic: str, mip: str) -> str:
-    """Las dos etapas en un módulo. Los `from __future__ import` tienen que ir al principio del
-    archivo: se suben (el LLM los pone en ambas etapas)."""
+def _concat(heuristic: str, *later: tuple[str, str] | str) -> str:
+    """Las etapas en un módulo: la heurística y después cada `(título, código)` (un `str` suelto
+    es la vista MIP). Los `from __future__ import` tienen que ir al principio del archivo: se
+    suben (el LLM los pone en todas las etapas)."""
+    stages = [("", heuristic)] + [("vista MIP", x) if isinstance(x, str) else x for x in later]
     future, bodies = [], []
-    for src in (heuristic, mip):
+    for title, src in stages:
         lines = src.splitlines()
         future += [ln for ln in lines if ln.startswith("from __future__ import")]
-        bodies.append("\n".join(ln for ln in lines if not ln.startswith("from __future__ import")).strip("\n"))
+        body = "\n".join(ln for ln in lines if not ln.startswith("from __future__ import")).strip("\n")
+        bodies.append(body if not title else f"# ---- {title} ----\n{body}")
     head = "\n".join(dict.fromkeys(future))
-    return (head + "\n\n" if head else "") + bodies[0] + "\n\n\n# ---- vista MIP ----\n" + bodies[1] + "\n"
+    return (head + "\n\n" if head else "") + "\n\n\n".join(bodies) + "\n"
 
 
 def _top_level_defs(src: str) -> dict[str, str]:
@@ -182,9 +233,9 @@ def redefined_names(heuristic: str, mip: str) -> list[str]:
     return sorted(n for n in h.keys() & m.keys() if h[n] != m[n])
 
 
-def _run_checks(checks) -> ValidationReport:
+def _run_checks(checks, subject: str = "vista MIP") -> ValidationReport:
     """Los validadores en orden; una excepción del código generado es un rechazo, no una caída."""
-    report = ValidationReport(subject="vista MIP")
+    report = ValidationReport(subject=subject)
     for check in checks:
         try:
             r = check()
@@ -254,41 +305,87 @@ def generate_problem_model_parts(client: LLMClient, spec: ModelSpec, cases: list
         res.seconds = time.perf_counter() - t0
         return res
 
-    # etapa 2: vista MIP, concatenada después de la heurística
-    context2 = (f"\n# El problema\n{spec.description}\n\n# Vista heurística aprobada (no la cambies)\n```python\n"
-                f"{res.heuristic.source}\n```\n{MIP_CONTRACT}")
-    prompt = mip_prompt(spec, cases, res.heuristic.source)
-    for rnd in range(1, max_rounds + 1):
-        res.mip.rounds = rnd
-        src = ask(prompt)
-        if src is None:
-            res.mip.reports.append("sin bloque ```python```")
-            continue
-        path = ws / f"model_r{rnd}.py"
-        path.write_text(_concat(res.heuristic.source, src))
-        clash = redefined_names(res.heuristic.source, src)
-        if clash:
-            module, report = None, ValidationReport(subject=path.name)
-            report.add(fail("syntactic", "no_redefinition",
-                            f"la vista MIP vuelve a definir {clash}, que ya están en la vista heurística aprobada (tu código se "
-                            f"concatena después y los reemplaza): usa los de la vista heurística tal cual y ponle otro nombre "
-                            f"a tus funciones auxiliares"))
-        else:
-            module, report = _load(path, spec.forbidden_modules)
-        if module is not None:
-            report = _run_checks([lambda: check_mip_view(module, cases, scale_instances=scale_instances),
-                                  lambda: check_mip_optimum(module, cases, mip_time_limit)])
-        if report.passed:
-            res.mip.accepted, res.mip.source, res.path = True, src, path
+    # etapa 2: vista MIP, concatenada después de la heurística (opcional)
+    approved, later = res.heuristic.source, []
+    if spec.mip:
+        context2 = (f"\n# El problema\n{spec.description}\n\n# Vista heurística aprobada (no la cambies)\n```python\n"
+                    f"{res.heuristic.source}\n```\n{MIP_CONTRACT}")
+        prompt = mip_prompt(spec, cases, res.heuristic.source)
+        for rnd in range(1, max_rounds + 1):
+            res.mip.rounds = rnd
+            src = ask(prompt)
+            if src is None:
+                res.mip.reports.append("sin bloque ```python```")
+                continue
+            path = ws / f"model_r{rnd}.py"
+            path.write_text(_concat(res.heuristic.source, src))
+            clash = redefined_names(res.heuristic.source, src)
+            if clash:
+                module, report = None, ValidationReport(subject=path.name)
+                report.add(fail("syntactic", "no_redefinition",
+                                f"la vista MIP vuelve a definir {clash}, que ya están en la vista heurística aprobada (tu código se "
+                                f"concatena después y los reemplaza): usa los de la vista heurística tal cual y ponle otro nombre "
+                                f"a tus funciones auxiliares"))
+            else:
+                module, report = _load(path, spec.forbidden_modules)
+            if module is not None:
+                report = _run_checks([lambda: check_mip_view(module, cases, scale_instances=scale_instances),
+                                      lambda: check_mip_optimum(module, cases, mip_time_limit)])
+            if report.passed:
+                res.mip.accepted, res.mip.source, res.path = True, src, path
+                if verbose:
+                    print(f"[modelo/MIP] ✔ ronda {rnd}")
+                break
+            res.mip.reports.append(report.feedback())
             if verbose:
-                print(f"[modelo/MIP] ✔ ronda {rnd}")
-            break
-        res.mip.reports.append(report.feedback())
-        if verbose:
-            print(f"[modelo/MIP] ✘ ronda {rnd}: {report.failed_layer}")
-        prompt = correction_prompt("vista MIP", src, report.feedback(), context2)
+                print(f"[modelo/MIP] ✘ ronda {rnd}: {report.failed_layer}")
+            prompt = correction_prompt("vista MIP", src, report.feedback(), context2)
+        if not res.mip.accepted:
+            res.seconds = time.perf_counter() - t0
+            return res
+        later.append(("vista MIP", res.mip.source))
+        approved = _concat(res.heuristic.source, *later)
+    else:
+        path = ws / "model_heuristic.py"
+        path.write_text(_concat(res.heuristic.source))
+        res.path = path
+
+    # etapa 3: vista constructiva, concatenada al final (opcional)
+    if spec.construction:
+        res.path = None
+        context3 = (f"\n# El problema\n{spec.description}\n\n# Modelo aprobado (no lo cambies)\n```python\n"
+                    f"{approved}\n```\n{CONSTRUCTION_CONTRACT}")
+        prompt = construction_prompt(spec, cases, approved)
+        for rnd in range(1, max_rounds + 1):
+            res.construction.rounds = rnd
+            src = ask(prompt)
+            if src is None:
+                res.construction.reports.append("sin bloque ```python```")
+                continue
+            path = ws / f"model_constructive_r{rnd}.py"
+            path.write_text(_concat(res.heuristic.source, *later, ("vista constructiva", src)))
+            clash = redefined_names(approved, src)
+            if clash:
+                module, report = None, ValidationReport(subject=path.name)
+                report.add(fail("syntactic", "no_redefinition",
+                                f"la vista constructiva vuelve a definir {clash}, que ya están en el modelo aprobado: úsalos tal "
+                                f"cual y ponle otro nombre a tus funciones auxiliares"))
+            else:
+                module, report = _load(path, spec.forbidden_modules)
+            if module is not None:
+                report = _run_checks([lambda: check_construction_view(module, cases)], subject="vista constructiva")
+            if report.passed:
+                res.construction.accepted, res.construction.source, res.path = True, src, path
+                if verbose:
+                    print(f"[modelo/constructiva] ✔ ronda {rnd}")
+                break
+            res.construction.reports.append(report.feedback())
+            if verbose:
+                print(f"[modelo/constructiva] ✘ ronda {rnd}: {report.failed_layer}")
+            prompt = correction_prompt("vista constructiva", src, report.feedback(), context3)
     res.seconds = time.perf_counter() - t0
     return res
 
 
-__all__ = ["PartsGenerationResult", "generate_problem_model_parts", "heuristic_prompt", "mip_prompt", "redefined_names"]
+__all__ = ["PartsGenerationResult", "construction_prompt", "generate_problem_model_parts", "heuristic_prompt", "mip_prompt",
+           "redefined_names"]

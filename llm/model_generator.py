@@ -81,6 +81,11 @@ class ModelSpec:
     # nombres de las familias de restricciones y de los términos del objetivo
     answer_format: str = ""
     families: str = ""
+    # etapas de la generación por piezas: la vista MIP (se puede omitir en un problema sin
+    # formulación práctica, p.ej. CPMP) y la vista constructiva (para el greedy y la beam search)
+    mip: bool = True
+    construction: bool = False
+    construction_notes: str = ""  # qué es una acción natural del problema, si ayuda al LLM
 
 
 def model_prompt(spec: ModelSpec) -> str:
