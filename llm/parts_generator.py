@@ -88,6 +88,9 @@ def complete_partial(inst, partial, rng): ...       # callejón sin salida (cand
 #         if not C: return complete_partial(inst, partial, rng)
 #         partial = apply_action(inst, partial, elegido_por_el_puntaje(C))
 #     return to_solution(inst, partial)
+# El puntaje es DETERMINISTA: si desde una parcial se puede volver a otra ya recorrida (deshacer una acción, ir y
+# volver), un puntaje que elige siempre lo mismo cicla para siempre. candidates no debe ofrecer acciones que lleven a
+# una parcial ya visitada en la construcción (guárdalas en la parcial) o debe tener un tope de pasos.
 # Regla de oro: elegir CUALQUIER candidato en cada paso tiene que llevar a una solución factible. La calidad la pone
 # el puntaje; la factibilidad, tus candidatos. Las acciones deben llevar la información que un puntaje necesita para
 # comparar (p.ej. el aumento de costo que producen), porque el puntaje solo ve (partial, acción).

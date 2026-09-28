@@ -353,11 +353,25 @@ def _fingerprint(obj) -> str:
     return repr(sorted((k, repr(v)) for k, v in state.items()))
 
 
+def _no_end(which: str, steps: int, where: str, limit: str) -> str:
+    who = "el primer" if which == "first" else "el último"
+    return (f"eligiendo siempre {who} candidato (lo que hace un puntaje constante) la construcción no terminó en {limit} "
+            f"({steps} pasos) en {where}: casi seguro cicla (vuelve a estados ya recorridos). candidates no debe ofrecer "
+            f"acciones que lleven a un estado ya visitado en esta construcción (guárdalos en la parcial) o debe tener un "
+            f"tope de pasos que cierre con complete_partial")
+
+
 def check_construction_view(parts, cases: list[TestCase], scale_instances: list | None = None, n_random: int = 4,
                             max_seconds: float = 10.0, max_steps: int = 20_000) -> ValidationReport:
     """La vista constructiva: completar una parcial eligiendo candidatos AL AZAR tiene que terminar y
     dar siempre una solución canónica y factible según `violations` (en los casos y en las
-    instancias de tamaño realista), sin modificar las parciales, y en tiempo razonable."""
+    instancias de tamaño realista), sin modificar las parciales, y en tiempo razonable.
+
+    Además, con elecciones DETERMINISTAS (siempre el primer candidato, siempre el último: lo que
+    hace un puntaje constante) la construcción no puede volver a una parcial ya recorrida. Las
+    elecciones al azar escapan tarde o temprano de un ciclo; el greedy y la beam search, no
+    (corrida 58, CPMP: una vista que ofrecía movimientos que no empeoran el desorden pasó las
+    construcciones al azar y cicló para siempre con un puntaje constante)."""
     import time
 
     report = ValidationReport(subject="vista constructiva")
@@ -371,8 +385,14 @@ def check_construction_view(parts, cases: list[TestCase], scale_instances: list 
         sols = set()
         bound = getattr(parts, "partial_lower_bound", None)
         bound = bound if callable(bound) else None
-        for s in range(n_random):
-            rng, trail, bounds = Random(s), [], []
+        key = getattr(parts, "partial_key", None)
+        # el estado de la parcial: `partial_key` si la vista lo da (una parcial que guarda el camino nunca se repite
+        # aunque el estado sí)
+        state_of = (lambda p: repr(key(inst, p))) if callable(key) else _fingerprint
+        for s in ("first", "last", *range(n_random)):
+            deterministic = isinstance(s, str)
+            rng, trail, bounds = Random(0 if deterministic else s), [], []
+            visited: set = set()
             t0 = time.perf_counter()
             try:
                 partial = parts.empty_partial(inst)
@@ -386,7 +406,21 @@ def check_construction_view(parts, cases: list[TestCase], scale_instances: list 
                     if not cands:
                         sol, how = parts.complete_partial(inst, partial, rng), "complete_partial (sin candidatos)"
                         break
-                    action = cands[rng.randrange(len(cands))]
+                    if deterministic:
+                        fp = state_of(partial)
+                        if fp in visited:
+                            which = "el primer" if s == "first" else "el último"
+                            report.add(fail(L, "deterministic_no_cycle",
+                                            f"eligiendo siempre {which} candidato (lo que hace un puntaje constante) la "
+                                            f"construcción vuelve a una parcial ya recorrida tras {len(trail)} pasos en {where}: "
+                                            f"un puntaje determinista cicla para siempre. candidates no debe ofrecer acciones que "
+                                            f"lleven a una parcial ya visitada en esta construcción (o pon un tope de pasos y "
+                                            f"cierra con complete_partial)"))
+                            return report
+                        visited.add(fp)
+                        action = cands[0] if s == "first" else cands[-1]
+                    else:
+                        action = cands[rng.randrange(len(cands))]
                     before = _fingerprint(partial)
                     nxt = parts.apply_action(inst, partial, action)
                     if _fingerprint(partial) != before:
@@ -396,12 +430,18 @@ def check_construction_view(parts, cases: list[TestCase], scale_instances: list 
                     trail.append(action)
                     partial = nxt
                     if time.perf_counter() - t0 > max_seconds:
-                        report.add(fail(L, "construction_fast", f"una construcción no terminó en {max_seconds:g} s en {where} "
-                                                               f"({len(trail)} pasos): candidates o apply_action son demasiado caros"))
+                        if deterministic:
+                            report.add(fail(L, "deterministic_no_cycle", _no_end(s, len(trail), where, f"{max_seconds:g} s")))
+                        else:
+                            report.add(fail(L, "construction_fast", f"una construcción no terminó en {max_seconds:g} s en {where} "
+                                                                   f"({len(trail)} pasos): candidates o apply_action son demasiado caros"))
                         return report
                 else:
-                    report.add(fail(L, "construction_terminates", f"la construcción no terminó en {max_steps} pasos en {where}: "
-                                                                   f"is_complete nunca da True (¿apply_action no avanza?)"))
+                    if deterministic:
+                        report.add(fail(L, "deterministic_no_cycle", _no_end(s, len(trail), where, f"{max_steps} pasos")))
+                    else:
+                        report.add(fail(L, "construction_terminates", f"la construcción no terminó en {max_steps} pasos en {where}: "
+                                                                       f"is_complete nunca da True (¿apply_action no avanza?)"))
                     return report
                 hash(sol)
                 if parts.canonical(sol) != sol:
@@ -427,7 +467,8 @@ def check_construction_view(parts, cases: list[TestCase], scale_instances: list 
                                                             f"termina con costo {cost:g} en {where}: una cota inferior no puede "
                                                             f"superar el costo de una solución que completa la parcial"))
                     return report
-            sols.add(repr(sol))
+            if not deterministic:
+                sols.add(repr(sol))
         if len(sols) < 2 and n_random > 1 and "realista" in where:
             report.add(fail(L, "choices_matter", f"las {n_random} construcciones al azar dieron la misma solución en {where}: "
                                                  f"los candidatos no ofrecen decisiones reales, un puntaje no tendría qué elegir"))

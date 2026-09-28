@@ -140,3 +140,24 @@ def test_the_model_stage_without_mip_and_the_next_stages():
         assert b <= g
     finally:
         shutil.rmtree(ws, ignore_errors=True)
+
+
+def test_a_view_that_cycles_with_a_constant_score_is_rejected():
+    """Corrida 58: sin evitar layouts ya recorridos, las construcciones al azar terminan pero un
+    puntaje constante (siempre el primer candidato) va y vuelve para siempre."""
+    import types
+
+    from core.validation.model_parts import check_construction_view
+
+    m = types.SimpleNamespace(**{k: getattr(ref, k) for k in dir(ref) if not k.startswith("__")})
+
+    def candidates(inst, partial):
+        stacks, moves, _ = partial
+        if ref._bad(stacks) == 0 or len(moves) >= 4 * inst.N + 10:
+            return []
+        return [(so, sd) for so in range(inst.S) for sd in range(inst.S)
+                if so != sd and stacks[so] and len(stacks[sd]) < inst.H]
+
+    m.candidates = candidates
+    r = check_construction_view(m, load_cases())
+    assert not r.passed and "deterministic_no_cycle" in r.feedback()
