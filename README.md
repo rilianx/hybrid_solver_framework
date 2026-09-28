@@ -181,7 +181,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
 - **`examples/cpmp/`** — Piloto constructivo sin vista MIP: la entrada para generar el modelo
   (instancia, descripción, casos con óptimo exacto) y, como referencia a mano, el modelo, la
   vista neutral y FRG (ver *Estrategias constructivas*).
-- **`tests/`** — 213 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 229 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -204,7 +204,7 @@ python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.cpmp.demo --beam 5     # CPMP: estrategias constructivas sobre la vista de referencia
 python -m examples.cpmp.generate_model     # CPMP: el modelo y su vista constructiva, generados desde la descripción y los casos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 213 passed (~130 s)
+python -m pytest -q                 # 229 passed (~135 s)
 
 # segundo problema: CVRP con flota libre (mismos CLI, otro pack)
 python -m examples.cvrp.tune --catalog handwritten --size 30 --trials 30 --ref-time 60
