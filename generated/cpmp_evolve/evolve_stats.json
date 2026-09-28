@@ -273,5 +273,369 @@
       "cached_input_tokens": 11520,
       "reasoning_tokens": 7289
     }
+  },
+  {
+    "seed": false,
+    "rounds": 12,
+    "archive": [
+      "repair_priority_promote_sorted_dest_finish",
+      "repair_priority_promote_sorted_dest",
+      "repair_priority_promote_sorted_dest_transition",
+      "minimal"
+    ],
+    "written": [
+      {
+        "name": "repair_priority_promote_sorted_dest_finish",
+        "fitness": 19.25,
+        "rejected": "módulo 'repair_priority_promote_sorted_dest_finish_r1.py': rechazado en la capa 'quality'. Propiedades violadas:\n  - constructor.feasible_on_probe: factible en las micro-instancias pero NO en la instancia de tamaño realista (seed=2). Detalle: el layout final no está ordenado: pilas [0, 2, 3, 4] con 9 contenedores mal puestos"
+      },
+      {
+        "name": "repair_priority_promote_sorted_dest",
+        "fitness": 29.25,
+        "rejected": "módulo 'repair_priority_promote_sorted_dest_r1.py': rechazado en la capa 'quality'. Propiedades violadas:\n  - constructor.feasible_on_probe: factible en las micro-instancias pero NO en la instancia de tamaño realista (seed=2). Detalle: el layout final no está ordenado: pilas [0, 2, 3, 4] con 9 contenedores mal puestos"
+      },
+      {
+        "name": "repair_priority_promote_sorted_dest_transition",
+        "fitness": 29.25,
+        "rejected": "módulo 'repair_priority_promote_sorted_dest_transition_r1.py': rechazado en la capa 'quality'. Propiedades violadas:\n  - constructor.feasible_on_probe: factible en las micro-instancias pero NO en la instancia de tamaño realista (seed=2). Detalle: el layout final no está ordenado: pilas [0, 2, 3, 4] con 9 contenedores mal puestos"
+      }
+    ],
+    "individuals": [
+      {
+        "id": 0,
+        "name": "repair_priority_unlock_and_finish",
+        "parent": null,
+        "op": "add_state",
+        "target": null,
+        "states": [
+          "repair",
+          "finish"
+        ],
+        "params": {
+          "score_k4": 2.0,
+          "score_k5": 1.0,
+          "score_k6": 0.1,
+          "score_k7": 0.01,
+          "finish_bad_threshold": 4,
+          "finish_sorted_threshold": 1,
+          "score_k10": 0.5
+        },
+        "train": 49.25,
+        "fitness": 56.25,
+        "status": "retomado"
+      },
+      {
+        "id": 1,
+        "name": "repair_priority_promote_sorted_dest",
+        "parent": null,
+        "op": "refine_priority",
+        "target": "repair",
+        "states": [
+          "repair"
+        ],
+        "params": {
+          "score_k1": 80.0,
+          "score_k2": 20.0,
+          "score_k3": 15.0,
+          "score_k4": 3.0,
+          "score_k5": 0.5
+        },
+        "train": 36.5,
+        "fitness": 29.25,
+        "status": "retomado"
+      },
+      {
+        "id": 2,
+        "name": "repair_priority_promote_sorted_dest_transition",
+        "parent": null,
+        "op": "change_transition",
+        "target": null,
+        "states": [
+          "repair"
+        ],
+        "params": {
+          "score_k1": 80.0,
+          "score_k2": 20.0,
+          "score_k3": 15.0,
+          "score_k4": 3.0,
+          "score_k5": 0.5
+        },
+        "train": 36.5,
+        "fitness": 29.25,
+        "status": "retomado"
+      },
+      {
+        "id": 3,
+        "name": "minimal",
+        "parent": null,
+        "op": "base",
+        "target": null,
+        "states": [],
+        "params": {},
+        "train": 64.5,
+        "fitness": 44.0,
+        "status": "retomado"
+      },
+      {
+        "id": 4,
+        "name": "repair_priority_unlock_and_finish_transition_hysteresis",
+        "parent": 0,
+        "op": "change_transition",
+        "target": null,
+        "states": [
+          "repair",
+          "finish"
+        ],
+        "params": {
+          "score_k4": 2.0,
+          "score_k5": 1.0,
+          "score_k6": 0.1,
+          "score_k7": 0.01,
+          "finish_enter_bad_threshold": 4,
+          "finish_enter_sorted_threshold": 1,
+          "score_k10": 0.5
+        },
+        "train": 49.25,
+        "fitness": 56.25,
+        "round": 1,
+        "status": "no mejora su nicho"
+      },
+      {
+        "id": 5,
+        "name": "repair_priority_unlock_sorted_dest_balance",
+        "parent": 1,
+        "op": "refine_priority",
+        "target": "repair",
+        "states": [
+          "repair"
+        ],
+        "params": {
+          "score_k3": 28.023517391722585,
+          "score_k4": 5.4095370458906356,
+          "score_k5": 15.109095156296616,
+          "score_k6": 0.39378707084692377
+        },
+        "train": 34.75,
+        "fitness": 60.0,
+        "round": 2,
+        "status": "no mejora su nicho"
+      },
+      {
+        "id": 6,
+        "name": "repair_priority_promote_sorted_dest_finish",
+        "parent": 2,
+        "op": "add_state",
+        "target": null,
+        "states": [
+          "finish",
+          "repair"
+        ],
+        "params": {
+          "score_k1": 80.0,
+          "score_k2": 20.0,
+          "score_k3": 15.0,
+          "finish_bad_threshold": 2,
+          "finish_source_penalty": 4.0
+        },
+        "train": 25.5,
+        "fitness": 19.25,
+        "round": 3,
+        "status": "archivo"
+      },
+      {
+        "id": 7,
+        "name": "repair_priority_promote_sorted_dest_finish_state",
+        "parent": 2,
+        "op": "add_state",
+        "target": null,
+        "states": [
+          "repair",
+          "finish"
+        ],
+        "params": {
+          "score_k1": 189.38116713157822,
+          "score_k2": 50.699828179940205,
+          "score_k3": 49.68614764949338,
+          "finish_bad_threshold": 4,
+          "finish_bad_weight": 77.60344706250113,
+          "finish_ub_weight": 33.153439062179785,
+          "finish_dest_prefix_weight": 52.0666289810676
+        },
+        "train": 27.5,
+        "fitness": 26.75,
+        "round": 4,
+        "status": "no mejora su nicho"
+      },
+      {
+        "id": 8,
+        "parent": 1,
+        "op": "add_state",
+        "target": null,
+        "round": 5,
+        "repaired": false,
+        "normalized": [
+          "parámetros sin efecto sacados de COMPONENT (quedan fijos en su default): ['score_k4', 'score_k5', 'finish_dest_bonus']"
+        ],
+        "status": "rechazado",
+        "reason": "cand_8.py: rechazado en la capa 'contractual'. Propiedades violadas:\n  - construction_machine.states_reachable: los estados ['repair'] nunca se alcanzan en las micro-instancias (greedy y RCL): revisa las condiciones de transition que llevan a ellos, o quítalos"
+      },
+      {
+        "id": 8,
+        "name": "repair_priority_finish_source_unlock_dest_fit",
+        "parent": 6,
+        "op": "refine_priority",
+        "target": "finish",
+        "states": [
+          "finish",
+          "repair"
+        ],
+        "params": {
+          "score_k1": 150.95076412313813,
+          "score_k2": 78.41957141323769,
+          "score_k3": 54.06095178624747,
+          "finish_bad_threshold": 9,
+          "finish_source_penalty": 1.9556868360131863
+        },
+        "train": 33.0,
+        "fitness": 36.375,
+        "round": 6,
+        "status": "no mejora su nicho"
+      },
+      {
+        "id": 9,
+        "name": "repair_priority_promote_sorted_dest_transition_threshold",
+        "parent": 1,
+        "op": "change_transition",
+        "target": null,
+        "states": [
+          "repair"
+        ],
+        "params": {
+          "score_k1": 80.0,
+          "score_k2": 20.0,
+          "score_k3": 15.0,
+          "score_k4": 3.0,
+          "score_k5": 0.5
+        },
+        "train": 36.5,
+        "fitness": 29.25,
+        "round": 7,
+        "status": "no mejora su nicho"
+      },
+      {
+        "id": 10,
+        "name": "repair_priority_finish_unlock_dest_fit",
+        "parent": 6,
+        "op": "refine_priority",
+        "target": "finish",
+        "states": [
+          "finish",
+          "repair"
+        ],
+        "params": {
+          "score_k1": 80.0,
+          "score_k2": 20.0,
+          "score_k3": 15.0,
+          "score_k5": 0.5,
+          "finish_bad_threshold": 2,
+          "finish_source_penalty": 4.0
+        },
+        "train": 25.5,
+        "fitness": 19.25,
+        "round": 8,
+        "status": "no mejora su nicho"
+      },
+      {
+        "id": 11,
+        "name": "repair_priority_finish_unlock_dest_balance",
+        "parent": 6,
+        "op": "refine_priority",
+        "target": "finish",
+        "states": [
+          "finish",
+          "repair"
+        ],
+        "params": {
+          "score_k1": 103.80074574026585,
+          "score_k2": 35.883542847724364,
+          "score_k3": 39.089504354172206,
+          "finish_bad_threshold": 9,
+          "finish_source_penalty": 14.288127374545121,
+          "finish_unlock_bonus": 8.690141863536258,
+          "finish_dest_fit_bonus": 3.346529712775781
+        },
+        "train": 47.5,
+        "fitness": 57.125,
+        "round": 9,
+        "status": "no mejora su nicho"
+      },
+      {
+        "id": 12,
+        "parent": 2,
+        "op": "add_state",
+        "target": null,
+        "round": 10,
+        "repaired": false,
+        "normalized": [
+          "números sueltos extraídos como parámetros: ['score_k6']",
+          "parámetros sin efecto sacados de COMPONENT (quedan fijos en su default): ['score_k4']"
+        ],
+        "status": "rechazado",
+        "reason": "cand_12.py: rechazado en la capa 'contractual'. Propiedades violadas:\n  - construction_machine.states_reachable: los estados ['repair'] nunca se alcanzan en las micro-instancias (greedy y RCL): revisa las condiciones de transition que llevan a ellos, o quítalos"
+      },
+      {
+        "id": 12,
+        "name": "repair_priority_finish_dest_fit_source_relief",
+        "parent": 6,
+        "op": "refine_priority",
+        "target": "finish",
+        "states": [
+          "finish",
+          "repair"
+        ],
+        "params": {
+          "score_k1": 99.08118498223774,
+          "score_k2": 73.36373382078521,
+          "score_k3": 25.79682519050449,
+          "finish_bad_threshold": 7
+        },
+        "train": 21.5,
+        "fitness": 26.5,
+        "round": 11,
+        "status": "no mejora su nicho"
+      },
+      {
+        "id": 13,
+        "name": "repair_priority_finish_unlock_sorted_bias",
+        "parent": 6,
+        "op": "refine_priority",
+        "target": "finish",
+        "states": [
+          "finish",
+          "repair"
+        ],
+        "params": {
+          "score_k1": 80.0,
+          "score_k2": 20.0,
+          "score_k3": 15.0,
+          "finish_bad_threshold": 2,
+          "finish_source_penalty": 4.0,
+          "finish_dest_sorted_bonus": 14.0,
+          "finish_source_unlock_bonus": 10.0
+        },
+        "train": 23.25,
+        "fitness": 19.625,
+        "round": 12,
+        "status": "no mejora su nicho"
+      }
+    ],
+    "tokens": {
+      "calls": 17,
+      "input_tokens": 68800,
+      "output_tokens": 26614,
+      "total_tokens": 95414,
+      "cached_input_tokens": 25088,
+      "reasoning_tokens": 5269
+    }
   }
 ]
