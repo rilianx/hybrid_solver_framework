@@ -211,7 +211,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   constructivas*).
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 288 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 290 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -232,7 +232,7 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 288 passed (~270 s)
+python -m pytest -q                 # 290 passed (~270 s)
 
 # segundo problema: CVRP con flota libre (mismos CLI, otro pack)
 python -m examples.cvrp.tune --catalog handwritten --size 30 --trials 30 --ref-time 60
@@ -480,7 +480,7 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
     objetivo − cota inicial, es decir, cuánto de lo que se pierde se debe a cada estado. Va en
     el prompt con la traza de la peor instancia.
   - **Archivo con nichos.** La mejor máquina de cada cantidad de estados sobrevive aunque sea
-    peor que una más simple. Así un paso estructural que al principio empeora puede refinarse
+    peor que una más simple, y el padre se elige primero por nicho. Así un paso estructural que al principio empeora puede refinarse
     en las rondas siguientes.
   - **Validación liviana dentro del loop**: contrato del slot y parámetros extraíbles; la
     calidad la decide el fitness. Lo que sale al workspace pasa la validación completa, la
@@ -685,6 +685,31 @@ Ajustes:
 
 Dos de esas máquinas (`tests/fixtures/run65_good_placement_state.py` es una) pasan ahora la
 validación liviana.
+
+**Corrida 66: `evolve` desde la máquina mínima, 12 rondas, 88 mil tokens.** Referencias en los
+mismos 8 casos de test de 5×5: máquina mínima (solo el comodín) 44,0 movimientos, FRG como
+greedy 12,4, BS-FRG con nb = 3 10,9. El mejor camino:
+
+| paso | operador | estados | fitness |
+|---|---|---|---|
+| 1 | `add_state` | `repair` | 62,6 |
+| 2 | `refine_priority(repair)` | `repair` | 50,6 |
+| 3 | `refine_priority(repair)` | `repair` | **29,25** |
+
+La máquina resultante tiene un solo estado, que pondera rasgos del movimiento (mal puestos
+después, bloqueados en el origen, destino ordenado) con 5 parámetros que el framework extrajo
+de sus números sueltos. Es miope: no sostiene un plan, como FRG.
+
+Los intentos de dos estados (`repair + finish`, 56,25) entraron al archivo pero nunca se
+refinaron. El torneo sobre todo el archivo nunca los elegía como padre, así que el nicho que
+debía cruzar el valle no servía. Las dos máquinas de 29,25 son factibles en 5×5 pero no en la
+sonda de 6×6, donde el respaldo de la vista no alcanza a ordenar; no pasan la validación
+completa y no quedan en el catálogo.
+
+Ajustes:
+- el padre se elige por nicho: primero un nicho al azar, después un torneo dentro;
+- el archivo se guarda en `evolve_archive.json` tras cada ronda, con las fuentes;
+- `--resume` retoma desde ese archivo. El de la corrida 66 está en `generated/cpmp_evolve/`.
 
 **Validación de la vista constructiva generada: un puntaje constante no puede ciclar.** En la
 corrida 58 la vista del CPMP que escribió el LLM ofrecía movimientos que no empeoran el

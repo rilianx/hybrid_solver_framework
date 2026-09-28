@@ -343,6 +343,17 @@ def schedule(parent: Individual, rng: Random) -> tuple[str, str | None]:
     return op, target
 
 
+def select_parent(archive: list[Individual], rng: Random) -> Individual:
+    """Primero un nicho al azar (cantidad de estados; el de la máquina mínima solo si no hay otro),
+    después un torneo dentro del nicho. Con un torneo sobre todo el archivo, el nicho de dos
+    estados sobrevivía pero nunca se elegía como padre, así que nunca se refinaba (corrida 66)."""
+    niches = sorted({x.niche for x in archive})
+    if len(niches) > 1 and 0 in niches:
+        niches.remove(0)
+    niche = rng.choice(niches)
+    return tournament([x for x in archive if x.niche == niche], rng)
+
+
 def tournament(archive: list[Individual], rng: Random) -> Individual:
     if len(archive) == 1:
         return archive[0]
@@ -487,7 +498,9 @@ class EvolveResult:
 def evolve(client: LLMClient, pack, spec, workspace: str | Path, harness: Harness, rounds: int = 12, archive_size: int = 4,
            tune_samples: int = 6, n_train: int = 4, n_test: int = 8, size: str | None = None, seed: str | None = None,
            base: str | None = None, rng_seed: int = 0, tokens: TokenUsage | None = None, deadline: float | None = None,
-           verbose: bool = True) -> EvolveResult:
+           verbose: bool = True, resume: bool = False) -> EvolveResult:
+    """`resume`: seguir desde el archivo de una corrida anterior (`<workspace>/evolve_archive.json`),
+    reevaluado en las mismas instancias."""
     from .generator import validate_generated_module
 
     ws = Path(workspace)
@@ -497,13 +510,19 @@ def evolve(client: LLMClient, pack, spec, workspace: str | Path, harness: Harnes
     train = pack.make_instances(n_train, 9100, sz)
     test = pack.make_instances(n_test, 10100, sz)
     contexts = [c for c in pack.make_contexts(strict=False)]
-    root, is_seed = base_individual(pack, ws, seed, base)
-    res = EvolveResult(seed=is_seed)
-    root.params, root.train, root.fitness = tune(harness, root.factory, root.component, train, test, tune_samples, rng)
-    profile(harness, root, train)
-    archive, everyone = [root], [root]
-    res.individuals.append({**root.row(), "status": "base"})
     tmp = ws / SLOT / "_evolve"
+    saved = ws / "evolve_archive.json"
+    if resume and saved.exists():
+        archive, is_seed = load_archive(saved, tmp, contexts[0].problem)
+    else:
+        root, is_seed = base_individual(pack, ws, seed, base)
+        archive = [root]
+    res = EvolveResult(seed=is_seed)
+    for ind in archive:
+        ind.params, ind.train, ind.fitness = tune(harness, ind.factory, ind.component, train, test, tune_samples, rng)
+        profile(harness, ind, train)
+        res.individuals.append({**ind.row(), "status": "base" if not resume else "retomado"})
+    everyone = list(archive)
     last = 0.0
     for rnd in range(1, rounds + 1):
         if rnd > 1 and deadline is not None and deadline - time.monotonic() < last:
@@ -511,7 +530,7 @@ def evolve(client: LLMClient, pack, spec, workspace: str | Path, harness: Harnes
             break
         t0 = time.monotonic()
         res.rounds = rnd
-        parent = tournament(archive, rng)
+        parent = select_parent(archive, rng)
         op, target = schedule(parent, rng)
         prof, trace = profile(harness, parent, train)
         text = client.complete(SYSTEM_PROMPT, evolve_prompt(spec, parent, op, target, profile_text(prof), trace, archive, is_seed))
@@ -556,6 +575,7 @@ def evolve(client: LLMClient, pack, spec, workspace: str | Path, harness: Harnes
         profile(harness, child, train)
         everyone.append(child)
         admitted = admit(archive, child, archive_size)
+        save_archive(saved, archive, is_seed)  # un job cortado no pierde el archivo
         res.individuals.append({**child.row(), "round": rnd, "status": "archivo" if admitted else "no mejora su nicho"})
         if not admitted:
             parent.rejections.append(f"{op}{'(' + target + ')' if target else ''}: `{name}` ({', '.join(states)}) dio fitness "
@@ -564,7 +584,8 @@ def evolve(client: LLMClient, pack, spec, workspace: str | Path, harness: Harnes
         if verbose:
             print(f"[evolve] ronda {rnd}: {op}{'(' + target + ')' if target else ''} sobre {parent.name} → {name} "
                   f"({', '.join(states)}) fitness {child.fitness:.2f} {'✔' if admitted else '·'}")
-    # salida: el mejor de cada nicho que pase la validación completa (la del catálogo)
+    # salida: el archivo completo (para retomar con --resume) y, al workspace, las que pasen la validación completa
+    save_archive(saved, archive, is_seed)
     res.archive = [x.name for x in sorted(archive, key=lambda x: x.fitness)]
     out_dir = ws / SLOT
     for x in sorted(archive, key=lambda x: x.fitness):
@@ -581,6 +602,32 @@ def evolve(client: LLMClient, pack, spec, workspace: str | Path, harness: Harnes
     return res
 
 
+def save_archive(path: Path, archive: list[Individual], seed: bool) -> None:
+    rows = [{"name": x.name, "source": x.source, "component": x.component, "states": list(x.states), "params": x.params,
+             "fitness": _r(x.fitness), "op": x.op, "target": x.target, "todo": x.todo} for x in archive]
+    path.write_text(json.dumps({"seed": seed, "archive": rows}, indent=2, ensure_ascii=False, default=str))
+
+
+def load_archive(path: Path, tmp: Path, problem) -> tuple[list[Individual], bool]:
+    from core.validation.syntactic import load_module
+
+    data = json.loads(path.read_text())
+    tmp.mkdir(parents=True, exist_ok=True)
+    out = []
+    for i, row in enumerate(data["archive"]):
+        f = tmp / f"resume_{i}_{row['name']}.py"
+        f.write_text(row["source"])
+        module, r = load_module(f)
+        if module is None:
+            continue
+        out.append(Individual(i, row["name"], row["source"], module.build_component, module.COMPONENT,
+                              tuple(module.build_component(problem).states), op=row.get("op") or "base",
+                              target=row.get("target"), todo=list(row.get("todo") or [])))
+    if not out:
+        raise SystemExit(f"no se pudo retomar ninguna máquina de {path}")
+    return out, bool(data.get("seed"))
+
+
 def save_stats(workspace: str | Path, res: EvolveResult, tokens: TokenUsage, model: str = "") -> Path:
     path = Path(workspace) / "evolve_stats.json"
     runs = json.loads(path.read_text()) if path.exists() else []
@@ -595,6 +642,7 @@ def main(pack, argv: list[str] | None = None, workspace: str | None = None, spec
     ap = argparse.ArgumentParser(description="Evolucionar máquinas de estados constructivas (etapa evolve)")
     ap.add_argument("--seed", default=None, help="partir de una máquina escrita a mano del pack (p.ej. frg_machine)")
     ap.add_argument("--base", default=None, help="partir de una máquina generada del workspace")
+    ap.add_argument("--resume", action="store_true", help="seguir desde el archivo de la corrida anterior (evolve_archive.json)")
     ap.add_argument("--rounds", type=int, default=12)
     ap.add_argument("--archive", type=int, default=4)
     ap.add_argument("--tune-samples", type=int, default=6)
@@ -622,7 +670,7 @@ def main(pack, argv: list[str] | None = None, workspace: str | None = None, spec
     tokens = TokenUsage()
     res = evolve(client, pack, spec or pack.make_spec(), args.workspace, Harness(pack, args.mode, args.beam_width),
                  rounds=args.rounds, archive_size=args.archive, tune_samples=args.tune_samples, n_train=args.train,
-                 n_test=args.test, size=args.size, seed=args.seed, base=args.base, rng_seed=args.rng_seed, tokens=tokens,
+                 n_test=args.test, size=args.size, seed=args.seed, base=args.base, rng_seed=args.rng_seed, tokens=tokens, resume=args.resume,
                  deadline=time.monotonic() + 60 * args.max_minutes)
     print(json.dumps({k: v for k, v in res.as_dict().items() if k != "individuals"}, indent=2, ensure_ascii=False, default=str))
     save_stats(args.workspace, res, tokens, getattr(inner, "model", ""))

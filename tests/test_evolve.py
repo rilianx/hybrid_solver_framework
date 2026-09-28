@@ -138,3 +138,30 @@ def test_a_seed_and_the_minimal_machine_are_valid_starting_points(tmp_path):
     assert is_seed and seed.states == ("fill", "reduce") and "from examples.cpmp.frg import" in seed.source
     minimal, is_seed = base_individual(PACK, tmp_path, None, None)
     assert not is_seed and minimal.source == MINIMAL and minimal.states == ()
+
+
+def test_parents_come_from_every_niche():
+    """Corrida 66: el nicho de dos estados sobrevivía en el archivo pero el torneo global nunca lo
+    elegía. Ahora se elige primero el nicho y el de la máquina mínima solo si no hay otro."""
+    from llm.evolve import select_parent
+
+    def ind(i, n, f):
+        return Individual(i, f"m{i}", "", None, {}, tuple(f"s{k}" for k in range(n)), fitness=f)
+
+    archive = [ind(0, 0, 44.0), ind(1, 1, 29.0), ind(2, 1, 50.0), ind(3, 2, 56.0)]
+    rng = Random(0)
+    picked = [select_parent(archive, rng).id for _ in range(200)]
+    assert 0 not in picked and 3 in picked and picked.count(3) > 40
+
+
+def test_a_run_can_be_resumed_from_its_archive(tmp_path):
+    first = ScriptedClient(responses=[_fenced(BG_ONLY)])
+    evolve(first, PACK, PACK.make_spec(), tmp_path, Harness(PACK), rounds=1, tune_samples=2, n_train=2, n_test=3, size="4x4",
+           verbose=False)
+    assert (tmp_path / "evolve_archive.json").exists()
+    second = ScriptedClient(responses=[_fenced(BG_REFINED)])
+    res = evolve(second, PACK, PACK.make_spec(), tmp_path, Harness(PACK), rounds=1, tune_samples=2, n_train=2, n_test=3,
+                 size="4x4", verbose=False, resume=True)
+    retaken = [r["name"] for r in res.individuals if r.get("status") == "retomado"]
+    assert set(retaken) == {"minimal", "bg_only"}
+    assert "`bg`" in second.calls[0][1]  # el padre retomado sigue con su calendario (refinar bg)
