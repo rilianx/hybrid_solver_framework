@@ -189,14 +189,36 @@ def has_mip(parts) -> bool:
     return all(callable(getattr(parts, n, None)) for n in MIP_PARTS)
 
 
+_PENALTY_CACHE: dict = {}
+
+
+def _default_penalty(parts, inst) -> float:
+    """Cualquier violación peor que la solución trivial entera. Se recuerda por (piezas, instancia):
+    el ensamblador crea un `PartsModel` por instancia en cada evaluación, y en un modelo cuya
+    `trivial_solution` es una búsqueda (CPMP, corrida 61: 10–12 s en 5×5) recalcularla dominaba."""
+    try:
+        key = (id(parts), inst)
+        hash(key)
+    except TypeError:
+        key = None
+    if key is not None and key in _PENALTY_CACHE:
+        return _PENALTY_CACHE[key]
+    triv = sum(parts.cost_terms(inst, parts.trivial_solution(inst)).values())
+    penalty = 10.0 * (abs(triv) + 1.0)
+    if key is not None:
+        if len(_PENALTY_CACHE) > 1024:
+            _PENALTY_CACHE.clear()
+        _PENALTY_CACHE[key] = penalty
+    return penalty
+
+
 class PartsModel:
     """`ProblemModel` ensamblado a partir de las piezas, ligado a una instancia."""
 
     def __init__(self, parts, inst, penalty: float | None = None):
         self.parts, self.inst = parts, inst
-        if penalty is None:  # cualquier violación peor que la solución trivial entera
-            triv = sum(parts.cost_terms(inst, parts.trivial_solution(inst)).values())
-            penalty = 10.0 * (abs(triv) + 1.0)
+        if penalty is None:
+            penalty = _default_penalty(parts, inst)
         self.penalty = penalty
         self.validation_hints = getattr(parts, "VALIDATION_HINTS", {})
         # en el CLSP cada evaluación es un LP: las heurísticas reevalúan las mismas soluciones

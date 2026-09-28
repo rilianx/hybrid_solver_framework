@@ -179,3 +179,41 @@ def test_prompt_and_generation_of_a_policy(contexts, tmp_path):
     assert [c.name for c in accepted] == ["empty_target_then_fill"], stats.rejections_by_layer
     assert stats.rounds_per_accepted == {"empty_target_then_fill": 2}
     assert "memory_hashable" in client.calls[1][1]
+
+
+def test_the_optimizer_measures_constructive_work_on_a_model_without_mip():
+    """Sin vista MIP, la velocidad que se optimiza es la del trabajo constructivo (trivial_solution,
+    construcciones y evaluaciones), y el perfil dice dónde está el tiempo."""
+    from core.validation.equivalence import model_speed, parts_profile
+    from examples.cpmp import model_parts as ref
+    from examples.cvrp import model_parts as cvrp_ref
+
+    inst = CPMPInstance.cvs_like(4, 4, Random(3))
+    speed, unit = model_speed(ref, inst)
+    assert unit == "unidades de trabajo constructivo/s" and speed > 0
+    prof = parts_profile(ref, inst)
+    assert set(prof) == {"trivial_solution (s)", "una construcción al azar, con complete_partial si hace falta (s)",
+                         "200 evaluaciones violations + cost_terms (s)"}
+    from examples.cvrp.instance import CVRPInstance
+
+    assert model_speed(cvrp_ref, CVRPInstance.random(6, Random(0)))[1] == "evaluaciones/s"  # con vista MIP, como antes
+
+
+def test_the_penalty_of_a_parts_model_is_computed_once_per_instance():
+    from core.model_parts import PartsModel
+    from examples.cpmp import model_parts as ref
+
+    calls = {"n": 0}
+
+    class Counting:
+        def __getattr__(self, name):
+            return getattr(ref, name)
+
+        def trivial_solution(self, inst):
+            calls["n"] += 1
+            return ref.trivial_solution(inst)
+
+    parts, inst = Counting(), CPMPInstance.cvs_like(4, 4, Random(5))
+    PartsModel(parts, inst)
+    PartsModel(parts, inst)
+    assert calls["n"] == 1

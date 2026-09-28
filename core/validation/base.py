@@ -120,6 +120,11 @@ class ValidationContext:
     # es infactible, así que exigir cerca de ella es exigirle calidad de matheurística a
     # un greedy: el constructor solo tiene que ser un punto de partida usable.
     constructor_max_relative_gap: float = 1.0
+    # Ancho de haz con el que se juzga también la calidad de un puntaje o una política constructiva
+    # (0 = solo el greedy). Solo tiene sentido si el pack registra `beam_<nombre>`: ahí un componente
+    # débil como greedy y bueno dentro de una beam search entra al catálogo por la segunda vía
+    # (corrida 62, CPMP: puntajes rechazados por el greedy daban 5,5 movimientos con beam, cerca de FRG).
+    constructive_beam: int = 0
     # Componentes del mismo slot YA aceptados, como (nombre, impl). El gate de diversidad
     # rechaza un componente estructuralmente equivalente a uno de estos: exigir mejora
     # desde la partida embudona al modelo hacia el único operador que funciona

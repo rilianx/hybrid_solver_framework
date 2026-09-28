@@ -513,14 +513,24 @@ Lo que muestra:
 - Las políticas superan a los puntajes sin memoria sobre todo como greedy. Con beam, la ventaja
   es menor: un puntaje rechazado da 5,5, a la par de ellas.
 
-Dos pendientes que salen de aquí:
+Dos ajustes que salieron de aquí:
 
-1. **El gate de calidad juzga solo el greedy.** Rechaza componentes que con beam search son
-   buenos; convendría medirlos con la mejor estrategia constructiva disponible.
-2. **El modelo generado es lento en 5×5.** Su `trivial_solution` es una A* de 10 a 12 s por
-   instancia, que también usan el respaldo de la vista y `PartsModel` para fijar la
-   penalización. La etapa `optimize` del ciclo es la que debería acelerarlo; falta ver si
-   soporta modelos sin vista MIP.
+1. **Calidad por greedy o por beam search** (`ValidationContext.constructive_beam`). En un
+   pack que registra `beam_<nombre>` (el CPMP de mano y el ciclo sin vista MIP), un puntaje o
+   una política débil como greedy igual entra si pasa dos condiciones dentro de una beam search
+   de ancho 3: queda cerca de la partida trivial y mejora a la misma beam search con un puntaje
+   constante. La segunda condición hace falta porque en micro-instancias la beam search sola ya
+   hace mucho: con un puntaje constante baja de 56 a 9,5 movimientos. Con esto la política
+   simple con plan y `destination_rank` entran por la vía de la beam search, y el puntaje
+   constante se rechaza.
+2. **Optimización de un modelo sin vista MIP.** `optimize` medía solo evaluaciones de
+   `violations` + `cost_terms` por segundo, que en el CPMP generado son baratas (200 en 4 ms).
+   Lo lento es `trivial_solution`: 30,8 s en una instancia de 5×5, y también la usa el respaldo
+   de la vista. Sin vista MIP, ahora se optimiza una unidad de trabajo constructivo:
+   `trivial_solution`, 2 construcciones al azar y 200 evaluaciones (`model_speed`). El prompt
+   muestra el perfil de tiempos por pieza (`parts_profile`). Además, `PartsModel` recuerda la
+   penalización por modelo e instancia: el ensamblador crea uno por instancia en cada
+   evaluación, y recalcular la partida trivial dominaba el tiempo.
 
 **Validación de la vista constructiva generada: un puntaje constante no puede ciclar.** En la
 corrida 58 la vista del CPMP que escribió el LLM ofrecía movimientos que no empeoran el

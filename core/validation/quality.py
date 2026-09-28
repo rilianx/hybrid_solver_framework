@@ -217,6 +217,13 @@ def _short(obj, n: int = 300) -> str:
     return text if len(text) <= n else text[:n] + "…"
 
 
+class _NullScore:
+    """Puntaje constante: la beam search sin criterio, contra la que se mide lo que aporta un componente."""
+
+    def score(self, partial, action) -> float:
+        return 0.0
+
+
 def check_component_quality(slot: str, impl, ctx: ValidationContext) -> list[CheckResult]:
     P = ctx.problem
     if slot in ("greedy_score", "construction_policy"):
@@ -225,7 +232,35 @@ def check_component_quality(slot: str, impl, ctx: ValidationContext) -> list[Che
 
         results = [] if ctx.diversity_probe is not None else list(
             diversity_check(slot, impl, ctx.accepted_peers, ctx.trivial_solutions[0], P, ctx.max_similarity_to_peers))
-        return results + check_component_quality("constructor", GreedyConstructor(P, impl), replace(ctx, accepted_peers=[]))
+        plain = replace(ctx, accepted_peers=[])
+        greedy = check_component_quality("constructor", GreedyConstructor(P, impl), plain)
+        if all(r.passed for r in greedy) or not ctx.constructive_beam:
+            return results + greedy
+        # débil como greedy: se juzga también dentro de una beam search chica, que es como entra al
+        # catálogo (`beam_<nombre>`); si ahí pasa, se acepta y el reporte dice por qué vía
+        from core.beam_search import BeamSearchConstructor
+
+        def make_beam(score):
+            return BeamSearchConstructor(P, score, beam_width=ctx.constructive_beam, branching=2 * ctx.constructive_beam,
+                                         max_seconds=10.0)
+
+        by_beam = check_component_quality("constructor", make_beam(impl), plain)
+        if not all(r.passed for r in by_beam):
+            return results + greedy
+        # la beam search sola hace mucho trabajo (con un puntaje constante ya baja de 56 a 9,5 movimientos
+        # en 4×4, corrida 61): por esta vía el componente tiene que mejorar a la misma beam search con un
+        # puntaje nulo, es decir, aportar algo propio
+        null = _NullScore()
+        own = sum(P.objective(make_beam(impl).build(inst, Random(0))) for inst in ctx.instances)
+        base = sum(P.objective(make_beam(null).build(inst, Random(0))) for inst in ctx.instances)
+        why = next((r.message for r in greedy if not r.passed), "")
+        if own >= base:
+            return results + greedy + [fail(LAYER, "constructor.beam_adds_value",
+                f"dentro de una beam search (nb = {ctx.constructive_beam}) el componente no mejora a la misma beam search con un "
+                f"puntaje constante ({own:.0f} contra {base:.0f} en las micro-instancias): no aporta criterio propio")]
+        return results + [ok(LAYER, "constructor.not_much_worse_than_trivial",
+                             f"como beam search (nb = {ctx.constructive_beam}): {by_beam[-1].message}, y mejora a la beam search con "
+                             f"un puntaje constante ({own:.0f} contra {base:.0f}). Como greedy solo no alcanza ({why[:160]})")]
     # Si el contexto trae una sonda de diversidad, la comparación se hace allí (instancia
     # grande, componente reconstruido) desde `llm.generator`, no aquí con la micro-instancia.
     results: list[CheckResult] = [] if ctx.diversity_probe is not None else list(

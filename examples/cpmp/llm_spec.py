@@ -132,6 +132,7 @@ def make_contexts(n_contexts: int = 2, seed: int = 7, strict: bool = True, refer
             trivial_solutions=[BestFirstConstructor(problem).build(inst, Random(0))],
             baseline_constructor=BestFirstConstructor(problem),
             diversity_probe=probe,
+            constructive_beam=3,  # el pack registra beam_<nombre>
         ))
     return contexts
 

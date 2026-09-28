@@ -149,6 +149,70 @@ def parts_speed(parts, inst, n: int = 2000, seconds: float = 0.5) -> float:
     return rate(one, seconds, n)
 
 
+def _construct(parts, inst, rng: Random, max_steps: int = 20_000):
+    p = parts.empty_partial(inst)
+    for _ in range(max_steps):
+        if parts.is_complete(inst, p):
+            return parts.to_solution(inst, p)
+        cands = list(parts.candidates(inst, p))
+        if not cands:
+            return parts.complete_partial(inst, p, rng)
+        p = parts.apply_action(inst, p, cands[rng.randrange(len(cands))])
+    return None
+
+
+def constructive_workload_speed(parts, inst, seconds: float = 3.0, n_constructions: int = 2, n_evals: int = 200) -> float:
+    """Unidades de trabajo por segundo en un modelo SIN vista MIP, que las heurísticas usan solo por el
+    lado constructivo: una unidad = `trivial_solution` + `n_constructions` construcciones al azar +
+    `n_evals` evaluaciones (violations + cost_terms). En el CPMP de la corrida 61 las evaluaciones
+    eran baratas y lo lento era la búsqueda de `trivial_solution`, que usa también el respaldo de la
+    vista: medir solo evaluaciones no veía el cuello de botella."""
+    sols = [parts.random_solution(inst, Random(10_000 + s)) for s in range(n_evals)]
+    state = {"k": 0}
+
+    def one():
+        k = state["k"]
+        state["k"] += 1
+        parts.trivial_solution(inst)
+        for c in range(n_constructions):
+            _construct(parts, inst, Random(1000 * k + c))
+        for sol in sols:
+            parts.violations(inst, sol)
+            parts.cost_terms(inst, sol)
+
+    return rate(one, seconds, 1000)
+
+
+def parts_profile(parts, inst) -> dict[str, float]:
+    """Segundos por pieza en una instancia de tamaño realista, para decirle al LLM dónde está el tiempo."""
+    import time
+
+    out: dict[str, float] = {}
+    t0 = time.perf_counter()
+    parts.trivial_solution(inst)
+    out["trivial_solution (s)"] = time.perf_counter() - t0
+    if has_construction(parts):
+        t0 = time.perf_counter()
+        _construct(parts, inst, Random(0))
+        out["una construcción al azar, con complete_partial si hace falta (s)"] = time.perf_counter() - t0
+    sols = [parts.random_solution(inst, Random(10_000 + s)) for s in range(200)]
+    t0 = time.perf_counter()
+    for sol in sols:
+        parts.violations(inst, sol)
+        parts.cost_terms(inst, sol)
+    out["200 evaluaciones violations + cost_terms (s)"] = time.perf_counter() - t0
+    return out
+
+
+def model_speed(parts, inst) -> tuple[float, str]:
+    """(velocidad, unidad) con la que se optimiza un modelo: evaluaciones por segundo si tiene vista
+    MIP (las heurísticas de trayectoria lo evalúan millones de veces), unidades de trabajo
+    constructivo por segundo si no la tiene."""
+    if not all(callable(getattr(parts, n, None)) for n in MIP_PARTS) and has_construction(parts):
+        return constructive_workload_speed(parts, inst), "unidades de trabajo constructivo/s"
+    return parts_speed(parts, inst), "evaluaciones/s"
+
+
 # ---------------------------------------------------------------- componentes
 def check_component_equivalent(slot: str, old, new, problem, sols: list, n_moves: int = 200) -> ValidationReport:
     """Mismas salidas que el componente aceptado, sobre las mismas soluciones y semillas."""
@@ -232,4 +296,5 @@ def component_speed(slot: str, make, problem_factory, inst, sol, seconds: float 
     return n / max(time.perf_counter() - t0, 1e-9)
 
 
-__all__ = ["check_component_equivalent", "check_parts_equivalent", "component_speed", "parts_speed", "rate"]
+__all__ = ["check_component_equivalent", "check_parts_equivalent", "component_speed", "constructive_workload_speed",
+           "model_speed", "parts_profile", "parts_speed", "rate"]

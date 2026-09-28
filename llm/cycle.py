@@ -172,6 +172,7 @@ def parts_contexts(base: ProblemPack, parts, n_contexts: int = 2, strict: bool =
             require_improving_from_start=strict,
             diversity_probe=probe,
             combination=combo,
+            constructive_beam=3 if pack is not None and pack.beam_constructors else 0,
         ))
     return contexts
 

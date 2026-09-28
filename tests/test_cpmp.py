@@ -182,18 +182,33 @@ def test_construct_skeleton_evaluates_constructors():
     assert run(insts[0], Random(0), 0.2).iterations > 1
 
 
-def test_validation_accepts_frg_policy_and_rejects_a_myopic_score():
+def test_validation_judges_constructive_components_by_greedy_or_by_beam():
+    """El pack del CPMP registra beam_<nombre>: un puntaje débil como greedy entra si dentro de una
+    beam search chica mejora a la misma beam con un puntaje constante; el constante no entra."""
+    from dataclasses import replace
+
     from core.validation import validate_component
     from examples.cpmp.pack import PACK
 
     comp = lambda name, slot="greedy_score": {"name": name, "slot": slot, "compatible_skeletons": ["CONSTRUCT"], "params": {}}  # noqa: E731
+
+    class Constant:
+        def score(self, partial, action):
+            return 0.0
+
     ctxs = PACK.make_contexts()
     for c in ctxs:
         r = validate_component(comp("frg_policy", "construction_policy"), FRGPolicy(c.problem), c)
         assert r.passed, r.feedback()
-    reports = [validate_component(comp("destination_rank"), DestinationRank(c.problem), c) for c in ctxs]
-    assert not all(r.passed for r in reports)
-    assert any("not_much_worse_than_trivial" in r.feedback() for r in reports if not r.passed)
+        assert validate_component(comp("destination_rank"), DestinationRank(c.problem), c).passed
+        r = validate_component(comp("constant"), Constant(), c)
+        assert not r.passed and "not_much_worse_than_trivial" in r.feedback()
+    # solo con el greedy (sin beam en el pack), el miope se rechaza en alguna micro-instancia
+    greedy_only = [validate_component(comp("destination_rank"), DestinationRank(c.problem), replace(c, constructive_beam=0))
+                   for c in ctxs]
+    assert not all(r.passed for r in greedy_only)
+    by_beam = validate_component(comp("destination_rank"), DestinationRank(ctxs[1].problem), ctxs[1])
+    assert "como beam search" in " ".join(x.message for x in by_beam.results)
 
 
 def test_prompt_describes_the_neutral_view_without_frg():

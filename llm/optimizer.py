@@ -30,7 +30,8 @@ from typing import Any, Callable
 from core.model_parts import CONSTRUCTION_PARTS, HEURISTIC_PARTS, MIP_PARTS
 from core.validation.base import ValidationReport, fail, ok
 from core.validation.resources import MAX_CACHE, check_component_memory, check_parts_memory, static_cache_check
-from core.validation.equivalence import check_component_equivalent, check_parts_equivalent, component_speed, parts_speed
+from core.validation.equivalence import (check_component_equivalent, check_parts_equivalent, component_speed, model_speed,
+                                         parts_profile, parts_speed)
 from core.validation.syntactic import load_module
 
 from .client import LLMClient, TokenUsage
@@ -92,16 +93,25 @@ def _unchanged_note(previous: str | None, current: str) -> str:
 
 
 # ---------------------------------------------------------------- modelo
-def model_prompt(source: str, speed: float, spec) -> str:
+def model_prompt(source: str, speed: float, spec, unit: str = "evaluaciones/s", profile: dict | None = None) -> str:
+    if unit == "evaluaciones/s":
+        what = (f"Evalúa {speed:,.0f} soluciones por segundo (violations + cost_terms) en una instancia de tamaño realista, y "
+                "las heurísticas lo llaman millones de veces.")
+    else:
+        what = (f"No tiene vista MIP: las heurísticas lo usan por el lado constructivo (trivial_solution, la vista "
+                f"constructiva y su complete_partial, y las evaluaciones). Hace {speed:,.2f} {unit} en una instancia de "
+                "tamaño realista (una unidad = trivial_solution + 2 construcciones al azar + 200 evaluaciones).")
+    prof = ("\n# Dónde está el tiempo (instancia de tamaño realista)\n" + "\n".join(f"- {k}: {v:.3f}" for k, v in profile.items())
+            if profile else "")
     return "\n".join([
-        f"# Tarea\nEste es el modelo por piezas del problema **{spec.name}**, ya validado contra los casos de prueba. Evalúa "
-        f"{speed:,.0f} soluciones por segundo (violations + cost_terms) en una instancia de tamaño realista, y las "
-        "heurísticas lo llaman millones de veces. Reescríbelo para que sea bastante más rápido SIN cambiar ninguna salida.",
+        f"# Tarea\nEste es el modelo por piezas del problema **{spec.name}**, ya validado contra los casos de prueba. {what} "
+        "Reescríbelo para que sea bastante más rápido SIN cambiar ninguna salida.",
+        prof,
         f"\n# Módulo actual\n```python\n{source}\n```",
         f"\n# Técnicas\n{MODEL_TECHNIQUES}",
         "\n# Lo que se verificará\n- Mismas salidas que el módulo actual, función por función, en soluciones al azar, triviales "
         "y de los casos (incluidas vista MIP y vista constructiva), y las validaciones contra los casos de prueba.\n"
-        "- Al menos 1,5 veces más evaluaciones por segundo.\n- Memoria acotada: la retenida no crece al evaluar soluciones nuevas.",
+        f"- Al menos 1,5 veces más {unit}.\n- Memoria acotada: la retenida no crece al evaluar soluciones nuevas.",
         "\nDevuelve UN solo bloque ```python``` con el módulo COMPLETO (mismos nombres de funciones).",
     ])
 
@@ -116,10 +126,11 @@ def optimize_model(client: LLMClient, workspace: str | Path, spec, cases: list, 
     if old is None:
         raise SystemExit(f"no se pudo cargar {path}: {r.message}")
     inst = scale_instances[0]
-    res = OptimizationResult(speed_before=parts_speed(old, inst))
+    speed0, unit = model_speed(old, inst)
+    res = OptimizationResult(speed_before=speed0)
     instances = [(c.instance, [s["answer"] for s in c.solutions]) for c in cases] + [(i, []) for i in scale_instances]
     source = path.read_text()
-    prompt = model_prompt(source, res.speed_before, spec)
+    prompt = model_prompt(source, res.speed_before, spec, unit, parts_profile(old, inst) if unit != "evaluaciones/s" else None)
     leak = static_cache_check(old, "modelo aceptado")
     if not leak.passed:
         # corrida 52: el modelo del CLSP se aceptó (antes de la revisión estática) con cachés sin límite;
@@ -152,13 +163,16 @@ def optimize_model(client: LLMClient, workspace: str | Path, spec, cases: list, 
             if report.passed:
                 report = validate_parts(new, cases, scale_instances=scale_instances, decoder=spec.decoder)
             if report.passed:
-                speed = parts_speed(new, inst)
+                speed = model_speed(new, inst)[0]
                 if speed < min_speedup * res.speed_before:
-                    report.add(fail("speed", "faster", f"{speed:,.0f} evaluaciones/s contra {res.speed_before:,.0f}: se pide al menos "
-                                                       f"{min_speedup:g} veces más"))
+                    extra = ""
+                    if unit != "evaluaciones/s":
+                        extra = " Perfil de tu versión: " + "; ".join(f"{k} {v:.3f}" for k, v in parts_profile(new, inst).items())
+                    report.add(fail("speed", "faster", f"{speed:,.2f} {unit} contra {res.speed_before:,.2f}: se pide al menos "
+                                                       f"{min_speedup:g} veces más.{extra}"))
                 else:
                     res.speed_after = speed
-                    report.add(ok("speed", "faster", f"{speed:,.0f} contra {res.speed_before:,.0f} evaluaciones/s"))
+                    report.add(ok("speed", "faster", f"{speed:,.2f} contra {res.speed_before:,.2f} {unit}"))
                     report.add(check_parts_memory(new, inst))
         if report.passed:
             path.with_name("parts_slow.py").write_text(source)
