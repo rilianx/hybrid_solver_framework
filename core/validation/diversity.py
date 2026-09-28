@@ -227,7 +227,7 @@ def machine_signature(impl, sol=None, problem=None) -> set:
     """Una máquina de estados, por lo que elige el greedy que la corre (`core.machine.MachinePolicy`)."""
     from core.machine import MachinePolicy
 
-    return greedy_score_signature(MachinePolicy(impl), sol, problem)
+    return greedy_score_signature(MachinePolicy(impl, problem), sol, problem)
 
 
 SIGNATURE["construction_machine"] = machine_signature

@@ -63,7 +63,7 @@ class BeamSearchConstructor:
             raise ValueError("branching necesita un puntaje para elegir los hijos")
         self.problem = problem
         self.score = score
-        self._policy = as_policy(score) if score is not None else None
+        self._policy = as_policy(score, problem) if score is not None else None
         self.evaluation = evaluation
         self.beam_width = max(1, int(beam_width))
         self.branching = None if branching is None else max(1, int(branching))

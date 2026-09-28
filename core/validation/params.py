@@ -121,7 +121,7 @@ def params_check(component: dict, factory: Callable, instances_problems: list[tu
 def machine_signature(impl, problem, inst):
     from core.machine import MachinePolicy, machine_trace
 
-    return [(s, repr(a)) for s, a in machine_trace(MachinePolicy(impl), problem.construction_view(inst), max_steps=20_000)]
+    return [(s, repr(a)) for s, a in machine_trace(MachinePolicy(impl, problem), problem.construction_view(inst), max_steps=20_000)]
 
 
 __all__ = ["loose_constants", "constants_check", "params_check", "machine_signature"]

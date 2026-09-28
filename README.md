@@ -211,7 +211,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   constructivas*).
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 285 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 286 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -232,7 +232,7 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 285 passed (~260 s)
+python -m pytest -q                 # 286 passed (~270 s)
 
 # segundo problema: CVRP con flota libre (mismos CLI, otro pack)
 python -m examples.cvrp.tune --catalog handwritten --size 30 --trials 30 --ref-time 60
@@ -437,31 +437,60 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
   few-shot del prompt es una mochila por categorías con tres estados y sus números como
   parámetros. El ciclo sin vista MIP pide `construction_machine` junto a `greedy_score` y
   `construction_policy`.
-- **Mejorar desde una base** (etapa `improve`, `llm/improver.py`). Es búsqueda local sobre
-  programas, con el LLM como operador. Para una máquina, el operador cambia la regla de un
-  estado, una transición o agrega un estado; los números los afina después el tuner.
-  1. se parte de una base: un componente generado o, con `--seed`, uno escrito a mano del pack
-     de referencia;
-  2. se calculan diagnósticos en instancias de entrenamiento: objetivo y cota inferior por
-     instancia, y la traza de la peor, acción por acción, con el estado de la máquina;
-  3. el LLM propone una variante con nombre nuevo (`<base>_v<k>`);
-  4. la variante pasa las mismas validaciones que un componente nuevo y se acepta solo si gana
-     a la base en instancias apartadas: media menor, más victorias que derrotas y sin fallar
-     donde la base no falla;
-  5. la aceptada pasa a ser la base y se itera. Los intentos rechazados vuelven al prompt.
+- **Un algoritmo de optimización de greedies** (etapa `evolve`, `llm/evolve.py`). Un greedy como
+  FRG no sale de una vez; se llega por pasos: primero solo movimientos BG, después la prioridad
+  dentro de ese estado, después un estado de vaciado que vuelve al inicial, y otra vez las
+  prioridades. `evolve` hace esa búsqueda con el LLM como operador:
 
-  El componente se juzga con el greedy o la beam search (`--mode`). `improve_stats.json` registra el linaje y si se partió de una semilla a mano. Las corridas
-  desde cero no ven esas semillas: la idea es que la generación llegue sola a algo como FRG y
-  la mejora lo afine.
-
-  ```bash
-  python -m llm.improver --problem cpmp --slot construction_machine --base frg_machine --seed
-  python -m llm.cycle improve --problem cpmp --variant moves --workspace generated/cpmp_moves_cycle \
-      -- --slot construction_machine --base <máquina generada> --mode beam
+  ```
+  archivo ← {base}                        # máquina mínima (sin estados), semilla a mano o generada
+  repetir:
+      padre    ← torneo en el archivo
+      operador ← calendario(padre)        # add_state | refine_priority(s) | change_transition | simplify
+      hijo     ← LLM(padre, operador, diagnóstico por estado, archivo)
+      validación liviana + alcance del operador
+      fitness  ← tuning corto de sus parámetros en train, media en test
+      el hijo entra si mejora a su nicho (nicho = cantidad de estados)
+  salida: las mejores del archivo que pasen la validación completa
   ```
 
-  En Actions: `target=improve` con `improve_args`. Sin `variant` usa el pack de referencia;
-  con `variant`, el modelo generado del ciclo.
+  - **Operadores tipados, con alcance verificado sobre el AST.** `add_state` agrega
+    exactamente un estado. `refine_priority(s)` cambia la regla y no `transition`.
+    `change_transition` cambia `transition` y no `score`. `simplify` no agrega estados.
+    Así cada paso es chico y evaluable.
+  - **Calendario.** Si la máquina todavía no actúa (todo cae en el comodín), agrega un estado.
+    Tras agregarlo, refina su prioridad. Si no, elige al azar, y `refine_priority` apunta al
+    estado que más cota pierde.
+  - **Comodín del framework** (`core.machine.FALLBACK`). Cuando ningún estado sabe qué hacer,
+    elige la acción que menos sube la cota inferior de la vista. Por eso una máquina a medio
+    hacer ya es un constructor completo: en 5×5, el comodín solo da 62,8 movimientos, un estado
+    BG más el comodín 47,2, y FRG 10,8. La máquina mínima no tiene estados.
+  - **Tuning dentro del loop.** Padre e hijo se comparan con sus parámetros afinados: los
+    defaults más unas pocas muestras en train, y la media en test. Si no, un estado nuevo con
+    un umbral mal elegido se descartaría aunque la estructura sea mejor.
+  - **Diagnóstico por estado** (`core.machine.machine_profile`): pasos, cota perdida y pasos
+    que suben la cota, por estado. Con una cota exacta al completar, la suma es
+    objetivo − cota inicial, es decir, cuánto de lo que se pierde se debe a cada estado. Va en
+    el prompt con la traza de la peor instancia.
+  - **Archivo con nichos.** La mejor máquina de cada cantidad de estados sobrevive aunque sea
+    peor que una más simple. Así un paso estructural que al principio empeora puede refinarse
+    en las rondas siguientes.
+  - **Validación liviana dentro del loop**: contrato del slot y parámetros extraíbles; la
+    calidad la decide el fitness. Lo que sale al workspace pasa la validación completa, la
+    misma del catálogo.
+
+  `evolve_stats.json` guarda el árbol completo: cada intento con su padre, operador, estado,
+  parámetros afinados, fitness y el motivo de rechazo. Una semilla a mano (`--seed
+  frg_machine`) queda registrada como tal; desde la máquina mínima, el LLM no ve FRG.
+
+  ```bash
+  python -m llm.evolve --problem cpmp --rounds 12                 # desde la máquina mínima
+  python -m llm.evolve --problem cpmp --seed frg_machine          # mejorar FRG
+  python -m llm.cycle evolve --problem cpmp --variant moves --workspace generated/cpmp_moves_cycle -- --mode beam
+  ```
+
+  En Actions: `target=evolve`, con `evolve_args` opcional. Sin `variant` usa el pack de
+  referencia; con `variant`, el modelo generado del ciclo.
 - **Esqueleto `CONSTRUCT`** (`core.assembler.CONSTRUCTIVE_SKELETONS`): solo el constructor,
   sin búsqueda, con `multistart` opcional. Sirve para comparar y afinar estrategias
   constructivas por sí solas, y para problemas sin vecindarios ni MIP. No está en `SKELETONS`,

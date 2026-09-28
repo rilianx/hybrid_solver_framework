@@ -62,13 +62,13 @@ def is_machine(obj: Any) -> bool:
     return isinstance(getattr(obj, "states", None), tuple) and callable(getattr(obj, "transition", None))
 
 
-def as_policy(obj: Any) -> Any:
+def as_policy(obj: Any, problem: Any = None) -> Any:
     """Todo criterio como política: un `greedy_score` sin memoria, una `construction_policy` tal
     cual, una `construction_machine` corrida por `core.machine.MachinePolicy`."""
     if is_machine(obj):
         from core.machine import MachinePolicy
 
-        return MachinePolicy(obj)
+        return MachinePolicy(obj, problem)
     return obj if is_policy(obj) else _Stateless(obj)
 
 
@@ -78,7 +78,7 @@ class GreedyConstructor:
             raise ValueError(f"regla desconocida {rule!r}; opciones: {RULES}")
         self.problem = problem
         self.score = score
-        self.policy = as_policy(score)
+        self.policy = as_policy(score, problem)
         self.rule = rule
         self.alpha = float(alpha)
         self.max_steps = max_steps

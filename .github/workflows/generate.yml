@@ -14,7 +14,7 @@ on:
         description: "Qué generar: componentes (slots) o el ProblemModel completo (§6.1)"
         default: components
         type: choice
-        options: [components, problem_model, optimize, improve]
+        options: [components, problem_model, optimize, evolve]
       model_mode:
         description: "Con target=problem_model: por piezas validadas con casos de prueba, o en un solo módulo"
         default: parts
@@ -81,8 +81,8 @@ on:
         description: "Con target=optimize: slots cuyos componentes se aceleran (none = solo el modelo)"
         default: "neighborhood greedy_score"
         type: string
-      improve_args:
-        description: "Con target=improve: qué mejorar, p.ej. '--slot construction_machine --base frg_machine --seed --mode greedy' (--seed = base escrita a mano del pack de referencia; sin variant usa ese pack, con variant el modelo generado del ciclo)"
+      evolve_args:
+        description: "Con target=evolve: argumentos de llm.evolve, p.ej. '--seed frg_machine' o '--base <máquina>' (vacío = desde la máquina mínima), '--mode beam', '--archive 4', '--tune-samples 6'. Sin variant usa el pack de referencia; con variant, el modelo generado del ciclo"
         default: ""
         type: string
       workspace:
@@ -99,7 +99,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      WS: ${{ inputs.workspace || (inputs.variant == '' && inputs.target == 'improve' && format('generated/{0}_improve', inputs.problem)) || (inputs.variant != '' && format('generated/{0}_{1}_cycle{2}', inputs.problem, inputs.variant, inputs.reference && '_ref' || '')) || (inputs.target == 'problem_model' && format('generated/{0}_model{1}', inputs.problem, inputs.model_mode == 'parts' && '_parts' || '')) || format('generated/{0}{1}{2}', inputs.problem, inputs.from_scratch && '_scratch' || '', inputs.planner && '_planner' || '') }}
+      WS: ${{ inputs.workspace || (inputs.variant == '' && inputs.target == 'evolve' && format('generated/{0}_evolve', inputs.problem)) || (inputs.variant != '' && format('generated/{0}_{1}_cycle{2}', inputs.problem, inputs.variant, inputs.reference && '_ref' || '')) || (inputs.target == 'problem_model' && format('generated/{0}_model{1}', inputs.problem, inputs.model_mode == 'parts' && '_parts' || '')) || format('generated/{0}{1}{2}', inputs.problem, inputs.from_scratch && '_scratch' || '', inputs.planner && '_planner' || '') }}
       TARGET: ${{ inputs.target }}
       MODEL_MODE: ${{ inputs.model_mode }}
       PKG: ${{ inputs.problem == 'cvrp' && 'cvrp' || inputs.problem == 'cpmp' && 'cpmp' || 'lotsizing' }}
@@ -152,8 +152,8 @@ jobs:
         working-directory: ${{ env.ROOT }}
         run: |
           # en el ciclo, la etapa de componentes conserva el modelo que generó la etapa anterior
-          if [ "$TARGET" = "improve" ] || { [ -n "$VARIANT" ] && { [ "$TARGET" = "optimize" ] || [ "$CONSTRUCTION_ONLY" = "true" ]; }; }; then
-            echo "improve, optimize y --construction-only trabajan sobre el workspace existente: no se limpia"
+          if [ "$TARGET" = "evolve" ] || { [ -n "$VARIANT" ] && { [ "$TARGET" = "optimize" ] || [ "$CONSTRUCTION_ONLY" = "true" ]; }; }; then
+            echo "evolve, optimize y --construction-only trabajan sobre el workspace existente: no se limpia"
           elif [ -n "$VARIANT" ] && [ "$TARGET" = "components" ] && [ -d "$WS" ]; then
             find "$WS" -mindepth 1 -maxdepth 1 ! -name model ! -name model_stats.json -exec rm -rf {} +
           else
@@ -171,22 +171,21 @@ jobs:
           PROVIDER: ${{ inputs.provider }}
           MODEL: ${{ inputs.model }}
           PROBLEM: ${{ inputs.problem }}
-          IMPROVE_ARGS: ${{ inputs.improve_args }}
+          EVOLVE_ARGS: ${{ inputs.evolve_args }}
           LLM_PRICE_IN: ${{ inputs.price_in || vars.LLM_PRICE_IN }}
           LLM_PRICE_OUT: ${{ inputs.price_out || vars.LLM_PRICE_OUT }}
         working-directory: ${{ env.ROOT }}
         run: |
           set -o pipefail
-          if [ "$TARGET" = "improve" ]; then
-            [ -z "$IMPROVE_ARGS" ] && { echo "::error::target=improve necesita improve_args (p.ej. --slot construction_machine --base frg_machine --seed)"; exit 1; }
-            IARGS="--rounds $ROUNDS --provider $PROVIDER"
-            [ -n "$MODEL" ] && IARGS="$IARGS --model $MODEL"
+          if [ "$TARGET" = "evolve" ]; then
+            EARGS="--rounds $ROUNDS --provider $PROVIDER"
+            [ -n "$MODEL" ] && EARGS="$EARGS --model $MODEL"
             if [ -n "$VARIANT" ]; then
-              echo "python -m llm.cycle improve --problem $PROBLEM --variant $VARIANT --workspace $WS -- $IARGS $IMPROVE_ARGS"
-              python -u -W ignore -m llm.cycle improve --problem "$PROBLEM" --variant "$VARIANT" --workspace "$WS" -- $IARGS $IMPROVE_ARGS 2>&1 | tee generate.log
+              echo "python -m llm.cycle evolve --problem $PROBLEM --variant $VARIANT --workspace $WS -- $EARGS $EVOLVE_ARGS"
+              python -u -W ignore -m llm.cycle evolve --problem "$PROBLEM" --variant "$VARIANT" --workspace "$WS" -- $EARGS $EVOLVE_ARGS 2>&1 | tee generate.log
             else
-              echo "python -m llm.improver --problem $PROBLEM --workspace $WS $IARGS $IMPROVE_ARGS"
-              python -u -W ignore -m llm.improver --problem "$PROBLEM" --workspace "$WS" $IARGS $IMPROVE_ARGS 2>&1 | tee generate.log
+              echo "python -m llm.evolve --problem $PROBLEM --workspace $WS $EARGS $EVOLVE_ARGS"
+              python -u -W ignore -m llm.evolve --problem "$PROBLEM" --workspace "$WS" $EARGS $EVOLVE_ARGS 2>&1 | tee generate.log
             fi
             exit 0
           fi
@@ -243,7 +242,7 @@ jobs:
             echo "Proveedor \`$PROVIDER\` · modelo \`$MODEL\` · \`$N\` variantes por slot · hasta \`$ROUNDS\` rondas"
             if [ "$SCRATCH" = "true" ]; then echo ""; echo "**Desde cero**: sin componentes de referencia, en \`$WS\`."; fi
             echo ""
-            if [ "$TARGET" = "improve" ]; then echo '```json'; cat "$WS/improve_stats.json" 2>/dev/null; echo '```'; elif [ -f "$WS/model_stats.json" ] && [ "$TARGET" = "problem_model" ]; then echo '```json'; cat "$WS/model_stats.json"; echo '```'; elif [ "$TARGET" = "problem_model" ]; then echo '```json'; cat "$WS/stats.json" 2>/dev/null; echo '```'; else python -m scripts.stats_summary "$WS/stats.json"; fi
+            if [ "$TARGET" = "evolve" ]; then echo '```json'; python -c "import json,sys; r=json.load(open(sys.argv[1]))[-1]; r.pop('individuals',None); print(json.dumps(r,indent=2,ensure_ascii=False))" "$WS/evolve_stats.json" 2>/dev/null; echo '```'; elif [ -f "$WS/model_stats.json" ] && [ "$TARGET" = "problem_model" ]; then echo '```json'; cat "$WS/model_stats.json"; echo '```'; elif [ "$TARGET" = "problem_model" ]; then echo '```json'; cat "$WS/stats.json" 2>/dev/null; echo '```'; else python -m scripts.stats_summary "$WS/stats.json"; fi
             echo ""
             if [ -f generate.log ]; then
               echo "<details><summary>Log completo de la generación</summary>"
@@ -342,7 +341,7 @@ jobs:
             echo "- Slots: \`$SLOTS\`, \`$N\` variantes, hasta \`$ROUNDS\` rondas"
             if [ "$SCRATCH" = "true" ]; then echo "- **Desde cero**: sin componentes de referencia, en \`$WS\`"; fi
             echo ""
-            if [ "$TARGET" = "improve" ]; then echo '```json'; cat "$WS/improve_stats.json"; echo '```'; elif [ -f "$WS/model_stats.json" ] && [ "$TARGET" = "problem_model" ]; then echo '```json'; cat "$WS/model_stats.json"; echo '```'; elif [ "$TARGET" = "problem_model" ]; then echo '```json'; cat "$WS/stats.json"; echo '```'; else python -m scripts.stats_summary "$WS/stats.json"; fi
+            if [ "$TARGET" = "evolve" ]; then echo '```json'; python -c "import json,sys; r=json.load(open(sys.argv[1]))[-1]; r.pop('individuals',None); print(json.dumps(r,indent=2,ensure_ascii=False))" "$WS/evolve_stats.json"; echo '```'; elif [ -f "$WS/model_stats.json" ] && [ "$TARGET" = "problem_model" ]; then echo '```json'; cat "$WS/model_stats.json"; echo '```'; elif [ "$TARGET" = "problem_model" ]; then echo '```json'; cat "$WS/stats.json"; echo '```'; else python -m scripts.stats_summary "$WS/stats.json"; fi
             echo ""
             echo "Antes de mezclar: corre \`benchmark_components\` para ver si estos componentes"
             echo "además de válidos son útiles y distintos entre sí."

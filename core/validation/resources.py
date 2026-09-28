@@ -190,7 +190,7 @@ def check_component_memory(slot: str, make, problem_factory, inst, sol, n: int =
             from core.construction import GreedyConstructor
             from core.machine import MachinePolicy
 
-            impl = MachinePolicy(impl) if slot == "construction_machine" else impl
+            impl = MachinePolicy(impl, problem) if slot == "construction_machine" else impl
             for k in range(5):
                 GreedyConstructor(problem, impl).build(inst, Random(100 * batch + k))
         del impl, problem

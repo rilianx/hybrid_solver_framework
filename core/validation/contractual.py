@@ -466,14 +466,14 @@ def check_construction_machine(impl, ctx: ValidationContext) -> list[CheckResult
     def _initial():
         view = ctx.problem.construction_view(ctx.instances[0])
         out = impl.initial(view.empty())
-        if not (isinstance(out, tuple) and len(out) == 2 and out[0] in states):
+        if not (isinstance(out, tuple) and len(out) == 2 and out[0] in states):  # se parte de un estado propio
             return fail(LAYER, f"{L}.initial", f"initial debe devolver (estado de {states}, memoria), no {out!r}")
         return ok(LAYER, f"{L}.initial")
 
     results = guard(LAYER, f"{L}.initial", _initial)
     if any(not r.passed for r in results):
         return results
-    policy = MachinePolicy(impl)
+    policy = MachinePolicy(impl, ctx.problem)
     for r in check_construction_policy(policy, ctx):
         name = r.name.replace("construction_policy.", f"{L}.")
         results.append(CheckResult(r.layer, name, r.passed, r.message))

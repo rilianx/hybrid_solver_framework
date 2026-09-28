@@ -10,7 +10,7 @@
 Memoria: (pila en reducción o None, veces que se redujo cada pila). El greedy con esta máquina
 hace los mismos movimientos que FRG sin la asignación de la §4.3.2 (`FRGConfig(assignment="never")`).
 Es un componente de referencia escrito a mano, como `frg` y `frg_policy`: entra al catálogo y
-sirve de semilla para la etapa `improve`, pero el LLM no lo ve cuando genera máquinas desde cero.
+sirve de semilla para la etapa `evolve`, pero el LLM no lo ve cuando genera máquinas desde cero.
 """
 
 from __future__ import annotations

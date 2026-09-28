@@ -167,7 +167,7 @@ def probe_checks(slot: str, impl, probe) -> list[CheckResult]:
         from core.construction import GreedyConstructor
         from core.machine import MachinePolicy
 
-        impl, slot = GreedyConstructor(P, MachinePolicy(impl) if slot == "construction_machine" else impl), "constructor"
+        impl, slot = GreedyConstructor(P, MachinePolicy(impl, P) if slot == "construction_machine" else impl), "constructor"
     if slot != "constructor" or inst is None:
         return []
     explain = getattr(P, "explain_infeasibility", None)
@@ -231,7 +231,7 @@ def check_component_quality(slot: str, impl, ctx: ValidationContext) -> list[Che
     if slot == "construction_machine":  # se juzga como la política que arma (greedy, o beam contra el puntaje nulo)
         from core.machine import MachinePolicy
 
-        return check_component_quality("construction_policy", MachinePolicy(impl), ctx)
+        return check_component_quality("construction_policy", MachinePolicy(impl, P), ctx)
     if slot in ("greedy_score", "construction_policy"):
         # Diversidad como puntaje (qué acciones elige); calidad como el constructor que arma.
         from core.construction import GreedyConstructor

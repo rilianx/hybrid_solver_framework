@@ -360,7 +360,7 @@ def main(argv: list[str] | None = None) -> None:
         k = argv.index("--")
         argv, rest = argv[:k], argv[k + 1:]
     ap = argparse.ArgumentParser(prog="python -m llm.cycle")
-    ap.add_argument("stage", choices=["model", "components", "optimize", "tune", "improve"])
+    ap.add_argument("stage", choices=["model", "components", "optimize", "tune", "evolve"])
     ap.add_argument("--problem", choices=["clsp", "cvrp", "cpmp"], required=True)
     ap.add_argument("--variant", required=True)
     ap.add_argument("--workspace", required=True)
@@ -390,10 +390,10 @@ def main(argv: list[str] | None = None) -> None:
         else:
             slots = CYCLE_SLOTS_NO_MIP if has_construction(parts) else CYCLE_SLOTS_NO_MIP_NO_VIEW
         return generate(pack, ["--from-scratch", "--workspace", args.workspace, "--slots", *slots, *rest])
-    if args.stage == "improve":  # mejorar un componente generado desde una base (llm.improver); args tras `--`
-        from .improver import main as improve
+    if args.stage == "evolve":  # evolucionar máquinas de estados constructivas (llm.evolve); args tras `--`
+        from .evolve import main as evolve
 
-        return improve(pack, ["--workspace", args.workspace, *(["--model", args.model] if args.model else []),
+        return evolve(pack, ["--workspace", args.workspace, *(["--model", args.model] if args.model else []),
                               "--max-minutes", str(args.max_minutes), *rest])
     from tuning.cli import main as tune
 
