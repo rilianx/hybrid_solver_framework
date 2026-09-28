@@ -478,7 +478,7 @@ La memoria reduce a la mitad los movimientos del greedy en 3×5 y 5×5, pero no 
 beam search, la política queda a la par de FRG en 5×5 y le gana en 6×6. Como constructor greedy
 por sí sola sigue siendo débil, y la capa de calidad la rechaza (2,5 veces la partida trivial).
 
-**Corridas reales del ciclo en el CPMP (58–63, OpenAI).**
+**Corridas reales del ciclo en el CPMP (58–64, OpenAI).**
 
 - **58:** modelo aceptado a la primera, pero la vista ciclaba con un puntaje constante (ver
   abajo).
@@ -551,6 +551,15 @@ incluidos, y la salida es idéntica (0,14 s contra 35 s, 0,32 s contra 145 s). A
 - **Prompt.** Si una pieza se lleva el 70 % del tiempo o más, el prompt lo dice. Las técnicas
   incluyen la cola de prioridad con desempate por inserción. Las velocidades bajo 1/s se
   muestran también en segundos por unidad (el prompt decía "0.00 unidades/s").
+
+**Corrida 64: la misma optimización, con esos ajustes.** Se aceptó en la ronda 3, en 15 min y
+con unos 23 mil tokens. Las rondas 1 y 2 se rechazaron en la prueba diferencial porque
+`violations` contaba distinto los movimientos inválidos. La versión aceptada usa un heapq con
+un contador de nodo, la técnica del prompt. Pasó de 0,0013 a 6,2 unidades de trabajo
+constructivo/s en el runner. Localmente, en otras 3 instancias de 5×5, `trivial_solution` da la
+misma salida en 0,14 s contra 31 s y en 0,2 s contra 124 s. El modelo optimizado reemplaza al
+de la corrida 61 en `generated/cpmp_moves_cycle/model/parts.py`; el anterior queda en
+`parts_slow.py`.
 
 **Validación de la vista constructiva generada: un puntaje constante no puede ciclar.** En la
 corrida 58 la vista del CPMP que escribió el LLM ofrecía movimientos que no empeoran el
