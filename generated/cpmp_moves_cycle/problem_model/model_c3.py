@@ -176,175 +176,143 @@ def cost_terms(inst, sol) -> dict[str, float]:
 
 
 # ---- vista constructiva ----
-from typing import Any
+from dataclasses import dataclass
+from typing import Tuple
+from random import Random
 
 from examples.cpmp.instance import CPMPInstance
-from collections import deque
+
+
+@dataclass(frozen=True)
+class CPMPPartial:
+    stacks: tuple[tuple[int, ...], ...]
+    moves: tuple[tuple[int, int], ...]
+    seen: frozenset[tuple[tuple[int, ...], ...]]
 
 
 def _ordered_stack(stack: tuple[int, ...]) -> bool:
     return all(stack[i] >= stack[i + 1] for i in range(len(stack) - 1))
 
 
-def _ordered_layout(stacks: tuple[tuple[int, ...], ...]) -> bool:
+def _is_ordered(stacks: tuple[tuple[int, ...], ...]) -> bool:
     return all(_ordered_stack(s) for s in stacks)
 
 
-def _apply_move(stacks: tuple[tuple[int, ...], ...], so: int, sd: int) -> tuple[tuple[int, ...], ...] | None:
-    if so == sd:
-        return None
-    if not (0 <= so < len(stacks) and 0 <= sd < len(stacks)):
-        return None
-    if not stacks[so]:
-        return None
-    if len(stacks[sd]) >= len(stacks[sd]) + 1:  # placeholder, overwritten below
-        return None
-    # capacity check is done outside because we only know H via the instance
+def _apply_move(stacks: tuple[tuple[int, ...], ...], so: int, sd: int) -> tuple[tuple[int, ...], ...]:
     lst = [list(s) for s in stacks]
     x = lst[so].pop()
     lst[sd].append(x)
     return tuple(tuple(s) for s in lst)
 
 
-def _simulate_move(inst: CPMPInstance, stacks: tuple[tuple[int, ...], ...], action: tuple[int, int]) -> tuple[tuple[int, ...], ...] | None:
-    so, sd = action
-    if so == sd:
-        return None
-    if not (0 <= so < inst.S and 0 <= sd < inst.S):
-        return None
-    if not stacks[so]:
-        return None
-    if len(stacks[sd]) >= inst.H:
-        return None
-    lst = [list(s) for s in stacks]
-    x = lst[so].pop()
-    lst[sd].append(x)
-    return tuple(tuple(s) for s in lst)
+def _safe_completion(inst: CPMPInstance, stacks: tuple[tuple[int, ...], ...]) -> tuple[tuple[int, int], ...] | None:
+    tmp = CPMPInstance(stacks, inst.H, name=inst.name)
+    sol = trivial_solution(tmp)
+    final_stacks, invalid = _simulate(tmp, sol)
+    if invalid == 0 and _is_ordered(final_stacks):
+        return canonical(sol)
+    return None
 
 
-def empty_partial(inst):
+def empty_partial(inst: CPMPInstance):
     stacks = tuple(tuple(s) for s in inst.stacks)
-    return {
-        "stacks": stacks,
-        "moves": (),
-        "visited": frozenset({stacks}),
-    }
+    return CPMPPartial(stacks=stacks, moves=(), seen=frozenset({stacks}))
 
 
-def candidates(inst, partial) -> list:
-    stacks = partial["stacks"]
-    visited = partial["visited"]
-    scored = []
+def candidates(inst: CPMPInstance, partial) -> list:
+    p = partial if isinstance(partial, CPMPPartial) else CPMPPartial(
+        stacks=tuple(tuple(s) for s in partial.stacks),  # type: ignore[attr-defined]
+        moves=tuple(getattr(partial, "moves", ())),
+        seen=frozenset(getattr(partial, "seen", {tuple(tuple(s) for s in partial.stacks)})),  # type: ignore[attr-defined]
+    )
 
-    def disorder(sts):
-        return sum(1 for s in sts for i in range(len(s) - 1) if s[i] < s[i + 1])
-
-    before = disorder(stacks)
-
-    for so in range(inst.S):
-        if not stacks[so]:
-            continue
-        x = stacks[so][-1]
-        for sd in range(inst.S):
-            if so == sd or len(stacks[sd]) >= inst.H:
-                continue
-            nxt = _simulate_move(inst, stacks, (so, sd))
-            if nxt is None or nxt in visited:
-                continue
-
-            after = disorder(nxt)
-            compatible = 0 if (not stacks[sd] or stacks[sd][-1] >= x) else 1
-            # Keep several alternatives; the greedy score can choose among them.
-            score = (
-                after - before,
-                compatible,
-                len(nxt[sd]),
-                len(nxt[so]),
-                sd,
-                so,
-            )
-            scored.append((score, (so, sd)))
-
-    scored.sort(key=lambda t: t[0])
-    if not scored:
+    if _is_ordered(p.stacks):
         return []
 
-    # Offer a small set of distinct choices so the scorer can matter.
-    # Deterministically keep the best few moves.
-    return [mv for _, mv in scored[: min(6, len(scored))]]
-
-
-def apply_action(inst, partial, action):
-    stacks = partial["stacks"]
-    nxt = _simulate_move(inst, stacks, action)
-    if nxt is None:
-        return {
-            "stacks": stacks,
-            "moves": partial["moves"],
-            "visited": partial["visited"],
-        }
-    return {
-        "stacks": nxt,
-        "moves": partial["moves"] + (tuple(action),),
-        "visited": partial["visited"] | {nxt},
-    }
-
-
-def is_complete(inst, partial) -> bool:
-    return _ordered_layout(partial["stacks"])
-
-
-def to_solution(inst, partial):
-    return tuple((int(a), int(b)) for a, b in partial["moves"])
-
-
-def complete_partial(inst, partial, rng):
-    start = partial["stacks"]
-    if _ordered_layout(start):
-        return tuple((int(a), int(b)) for a, b in partial["moves"])
-
-    q = deque([start])
-    parent: dict[tuple[tuple[int, ...], ...], tuple[tuple[tuple[int, ...], ...], tuple[int, int]]] = {}
-    seen = {start}
-    limit = 50000
-    explored = 0
-
-    while q and explored < limit:
-        cur = q.popleft()
-        explored += 1
-        if _ordered_layout(cur):
-            rev = []
-            while cur != start:
-                prev, mv = parent[cur]
-                rev.append(mv)
-                cur = prev
-            rev.reverse()
-            return tuple((int(a), int(b)) for a, b in partial["moves"] + tuple(rev))
-
-        for so in range(inst.S):
-            if not cur[so]:
-                continue
-            for sd in range(inst.S):
-                if so == sd or len(cur[sd]) >= inst.H:
-                    continue
-                nxt = _simulate_move(inst, cur, (so, sd))
-                if nxt is None or nxt in seen:
-                    continue
-                seen.add(nxt)
-                parent[nxt] = (cur, (so, sd))
-                q.append(nxt)
-
-    # Greedy fallback: always take the best valid move until ordered or capped.
-    stacks = [list(s) for s in start]
-    moves = list(partial["moves"])
-    cap = 10 * max(1, inst.N) * max(1, inst.H) + 100
-
-    def disorder(sts):
+    def disorder(sts: tuple[tuple[int, ...], ...]) -> int:
         return sum(1 for s in sts for i in range(len(s) - 1) if s[i] < s[i + 1])
 
-    for _ in range(cap):
+    base_dis = disorder(p.stacks)
+    out = []
+    for so in range(inst.S):
+        if not p.stacks[so]:
+            continue
+        for sd in range(inst.S):
+            if so == sd or len(p.stacks[sd]) >= inst.H:
+                continue
+            nxt = _apply_move(p.stacks, so, sd)
+            if nxt in p.seen:
+                continue
+            # Only offer moves that strictly decrease the local disorder and are completable.
+            if disorder(nxt) >= base_dis:
+                continue
+            if _safe_completion(inst, nxt) is None:
+                continue
+            out.append((so, sd))
+    return out
+
+
+def apply_action(inst: CPMPInstance, partial, action):
+    p = partial if isinstance(partial, CPMPPartial) else CPMPPartial(
+        stacks=tuple(tuple(s) for s in partial.stacks),  # type: ignore[attr-defined]
+        moves=tuple(getattr(partial, "moves", ())),
+        seen=frozenset(getattr(partial, "seen", {tuple(tuple(s) for s in partial.stacks)})),  # type: ignore[attr-defined]
+    )
+    so, sd = action
+    nxt = _apply_move(p.stacks, so, sd)
+    return CPMPPartial(
+        stacks=nxt,
+        moves=p.moves + ((int(so), int(sd)),),
+        seen=frozenset(set(p.seen) | {nxt}),
+    )
+
+
+def is_complete(inst: CPMPInstance, partial) -> bool:
+    p = partial if isinstance(partial, CPMPPartial) else CPMPPartial(
+        stacks=tuple(tuple(s) for s in partial.stacks),  # type: ignore[attr-defined]
+        moves=tuple(getattr(partial, "moves", ())),
+        seen=frozenset(getattr(partial, "seen", {tuple(tuple(s) for s in partial.stacks)})),  # type: ignore[attr-defined]
+    )
+    return _is_ordered(p.stacks)
+
+
+def to_solution(inst: CPMPInstance, partial):
+    p = partial if isinstance(partial, CPMPPartial) else CPMPPartial(
+        stacks=tuple(tuple(s) for s in partial.stacks),  # type: ignore[attr-defined]
+        moves=tuple(getattr(partial, "moves", ())),
+        seen=frozenset(getattr(partial, "seen", {tuple(tuple(s) for s in partial.stacks)})),  # type: ignore[attr-defined]
+    )
+    return canonical(p.moves)
+
+
+def complete_partial(inst: CPMPInstance, partial, rng: Random):
+    p = partial if isinstance(partial, CPMPPartial) else CPMPPartial(
+        stacks=tuple(tuple(s) for s in partial.stacks),  # type: ignore[attr-defined]
+        moves=tuple(getattr(partial, "moves", ())),
+        seen=frozenset(getattr(partial, "seen", {tuple(tuple(s) for s in partial.stacks)})),  # type: ignore[attr-defined]
+    )
+
+    if _is_ordered(p.stacks):
+        return canonical(p.moves)
+
+    # Directly finish from the current state using the approved heuristic.
+    tmp = CPMPInstance(tuple(tuple(s) for s in p.stacks), inst.H, name=inst.name)
+    tail = trivial_solution(tmp)
+    final_stacks, invalid = _simulate(tmp, tail)
+    if invalid == 0 and _is_ordered(final_stacks):
+        return canonical(p.moves + canonical(tail))
+
+    # If the heuristic somehow fails, use a bounded greedy repair and then retry.
+    stacks = [list(s) for s in p.stacks]
+    moves = list(p.moves)
+    limit = 10 * inst.N * max(1, inst.H) + 100
+
+    def disorder(sts: list[list[int]]) -> int:
+        return sum(1 for s in sts for i in range(len(s) - 1) if s[i] < s[i + 1])
+
+    for _ in range(limit):
         if all(_ordered_stack(tuple(s)) for s in stacks):
-            return tuple((int(a), int(b)) for a, b in moves)
+            return canonical(moves)
 
         base = disorder(stacks)
         best = None
@@ -356,28 +324,42 @@ def complete_partial(inst, partial, rng):
             for sd in range(inst.S):
                 if so == sd or len(stacks[sd]) >= inst.H:
                     continue
-                if stacks[sd] and stacks[sd][-1] < x:
-                    continue
                 nxt = [list(s) for s in stacks]
                 nxt[so].pop()
                 nxt[sd].append(x)
-                key = (disorder(nxt), len(nxt[sd]), sd, so)
+                d = disorder(nxt)
+                if d >= base:
+                    continue
+                ok = (not stacks[sd]) or stacks[sd][-1] >= x
+                key = (0 if ok else 1, d, rng.random())
                 if best is None or key < best_key:
-                    best = nxt
+                    best = (so, sd, nxt)
                     best_key = key
-                    best_move = (so, sd)
         if best is None:
             break
-        stacks = best
-        moves.append(best_move)
+        so, sd, nxt = best
+        stacks = nxt
+        moves.append((so, sd))
 
-    return tuple((int(a), int(b)) for a, b in moves)
-
-
-def partial_lower_bound(inst, partial) -> float:
-    # At least the number of moves already committed.
-    return float(len(partial["moves"]))
+    tmp = CPMPInstance(tuple(tuple(s) for s in stacks), inst.H, name=inst.name)
+    tail = trivial_solution(tmp)
+    return canonical(moves + canonical(tail))
 
 
-def partial_key(inst, partial):
-    return partial["stacks"]
+def partial_lower_bound(inst: CPMPInstance, partial) -> float:
+    p = partial if isinstance(partial, CPMPPartial) else CPMPPartial(
+        stacks=tuple(tuple(s) for s in partial.stacks),  # type: ignore[attr-defined]
+        moves=tuple(getattr(partial, "moves", ())),
+        seen=frozenset(getattr(partial, "seen", {tuple(tuple(s) for s in partial.stacks)})),  # type: ignore[attr-defined]
+    )
+    # At least the current number of inversions must be resolved somehow.
+    return float(sum(1 for s in p.stacks for i in range(len(s) - 1) if s[i] < s[i + 1]))
+
+
+def partial_key(inst: CPMPInstance, partial):
+    p = partial if isinstance(partial, CPMPPartial) else CPMPPartial(
+        stacks=tuple(tuple(s) for s in partial.stacks),  # type: ignore[attr-defined]
+        moves=tuple(getattr(partial, "moves", ())),
+        seen=frozenset(getattr(partial, "seen", {tuple(tuple(s) for s in partial.stacks)})),  # type: ignore[attr-defined]
+    )
+    return p.stacks
