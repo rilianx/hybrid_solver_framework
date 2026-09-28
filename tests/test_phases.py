@@ -129,3 +129,58 @@ def test_alone_uses_the_null_phase_when_the_phase_does_not_apply():
     P = CPMPModel(inst)
     names = {n for n, _ in phase_trace(alone(BGFill(P)), P.construction_view(inst))}
     assert names == {"fase", "null_phase"}
+
+
+PHASE_MODULE = '''
+COMPONENT = {"name": "unblock_lowest", "slot": "phase", "compatible_skeletons": ["CONSTRUCT"], "requires": [], "params": {}}
+
+
+class UnblockLowest:
+    """Elige la pila desordenada con el mal puesto más bajo y le saca contenedores de encima,
+    cada uno al destino menos malo, hasta que esa pila quede ordenada."""
+
+    def __init__(self, problem):
+        self.problem = problem
+
+    def init(self, partial):
+        return (None,)
+
+    def applies(self, partial, memory):
+        return any(partial.stacks[s] and not partial.is_sorted_stack(s) for s in range(partial.S))
+
+    def start(self, partial, memory):
+        cands = [s for s in range(partial.S) if partial.stacks[s] and not partial.is_sorted_stack(s)]
+        return (min(cands, key=lambda s: (partial.sorted_n[s], s)),)
+
+    def score(self, partial, memory, action):
+        if action.so != memory[0]:
+            return 1e6
+        c, sd = partial.g(action.so), action.sd
+        ok = partial.is_sorted_stack(sd) and partial.g(sd) >= c
+        return (0 if ok else 100) + partial.h(sd)
+
+    def update(self, partial, memory, action):
+        return memory
+
+    def done(self, partial, memory):
+        s = memory[0]
+        return s is None or not partial.stacks[s] or partial.is_sorted_stack(s)
+
+
+def build_component(problem):
+    return UnblockLowest(problem)
+'''
+
+
+def test_prompt_and_generation_of_a_phase(contexts, tmp_path):
+    from examples.cpmp.pack import PACK
+    from llm import ScriptedClient, generate_slot
+    from llm.prompts import generation_prompt
+
+    p = generation_prompt(PACK.make_spec(), "phase", 2)
+    assert "class Phase(Protocol)" in p and "finish_category" in p and "CONJUNTO" in p and "class Layout" in p
+    broken = PHASE_MODULE.replace("return (min(cands", "return [min(cands").replace("s)),)", "s))]")  # memoria no hashable
+    client = ScriptedClient(responses=[f"```python\n{broken}\n```", f"```python\n{PHASE_MODULE}\n```"])
+    accepted, stats = generate_slot(client, PACK.make_spec(), "phase", 1, contexts[:1], tmp_path, max_rounds=2, verbose=False)
+    assert [c.name for c in accepted] == ["unblock_lowest"], stats.rejections_by_layer
+    assert "memory_hashable" in client.calls[1][1]

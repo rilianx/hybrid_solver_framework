@@ -44,7 +44,7 @@ from core.problem_pack import ProblemPack
 CYCLE_SLOTS = ["greedy_score", "neighborhood", "perturbation", "destruction"]  # si el modelo tiene vista constructiva
 CYCLE_SLOTS_NO_VIEW = ["constructor", "neighborhood", "perturbation", "destruction"]
 # sin vista MIP (`ModelSpec.mip = False`, p.ej. el CPMP): solo el lado constructivo, en el esqueleto CONSTRUCT
-CYCLE_SLOTS_NO_MIP = ["greedy_score", "construction_policy"]
+CYCLE_SLOTS_NO_MIP = ["greedy_score", "construction_policy", "phase"]
 CYCLE_SLOTS_NO_MIP_NO_VIEW = ["constructor"]
 LOCAL_SEARCH_SKELETONS = ["SA", "ILS", "TS", "VNS", "GRASP", "MIP_PERTURB"]
 
@@ -113,7 +113,8 @@ def construction_source(parts) -> str | None:
         return None
     return body + ("\n\n# El constructor greedy del framework recorre esta vista; el puntaje (slot greedy_score) es "
                    "score(partial, action) -> float, menor = mejor, y elige entre candidates(inst, partial). Una política "
-                   "(slot construction_policy) es lo mismo con memoria: score(partial, memory, action).")
+                   "(slot construction_policy) es lo mismo con memoria: score(partial, memory, action). Una fase (slot phase) es un "
+                   "modo de una política por fases: además applies, start y done.")
 
 
 def parts_problem_spec(model_spec, parts_import: str, parts_source: str, parts=None):
