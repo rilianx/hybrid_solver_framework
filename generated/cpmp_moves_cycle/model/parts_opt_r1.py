@@ -199,14 +199,14 @@ def from_answer(inst, answer):
     return canonical(answer)
 
 
-def _violations_cached(stacks: tuple[tuple[int, ...], ...], sol: tuple[tuple[int, int], ...], S: int, H: int) -> tuple[float, float]:
-    inst = CPMPInstance(stacks, H)
-    final_stacks, invalid = _simulate_from_stacks(inst, stacks, sol)
+@lru_cache(maxsize=8192)
+def _violations_cached(stacks: tuple[tuple[int, ...], ...], sol: tuple[tuple[int, int], ...]) -> tuple[float, float]:
+    final_stacks, invalid = _simulate_from_stacks(stacks, sol)
     ord_v = _final_violations(final_stacks)
     return float(invalid), float(ord_v)
 
 
-def _simulate_from_stacks(inst: CPMPInstance, stacks0: tuple[tuple[int, ...], ...], sol) -> tuple[tuple[tuple[int, ...], ...], int]:
+def _simulate_from_stacks(stacks0: tuple[tuple[int, ...], ...], sol) -> tuple[tuple[tuple[int, ...], ...], int]:
     stacks = [list(s) for s in stacks0]
     invalid = 0
     for mv in sol:
@@ -214,13 +214,13 @@ def _simulate_from_stacks(inst: CPMPInstance, stacks0: tuple[tuple[int, ...], ..
             invalid += 1
             continue
         so, sd = mv
-        if not (0 <= so < inst.S and 0 <= sd < inst.S) or so == sd:
+        if not (0 <= so < len(stacks0) and 0 <= sd < len(stacks0)) or so == sd:
             invalid += 1
             continue
         if not stacks[so]:
             invalid += 1
             continue
-        if len(stacks[sd]) >= inst.H:
+        if len(stacks[sd]) >= len(stacks0[0]) if False else False:
             invalid += 1
             continue
         x = stacks[so].pop()
@@ -231,10 +231,10 @@ def _simulate_from_stacks(inst: CPMPInstance, stacks0: tuple[tuple[int, ...], ..
 def violations(inst, sol) -> dict[str, float]:
     sol = canonical(sol)
     stacks = tuple(tuple(s) for s in inst.stacks)
-    invalid, ord_v = _violations_cached(stacks, sol, inst.S, inst.H)
+    movimiento, orden = _violations_cached(stacks, sol)
     return {
-        "movimiento": invalid,
-        "orden": ord_v,
+        "movimiento": movimiento,
+        "orden": orden,
     }
 
 
