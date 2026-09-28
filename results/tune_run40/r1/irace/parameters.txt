@@ -1,0 +1,47 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("SA", "ILS", "VNS", "LNS_MIP")
+constructor "--constructor=" c ("trivial", "random", "greedy_capacity_pressure_with_demand_horizon", "greedy_immediate_setup_cost_first", "greedy_inventory_balance_and_setup_sparsity") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP")
+greedy_capacity_pressure_with_demand_horizon.rule "--greedy_capacity_pressure_with_demand_horizon.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_capacity_pressure_with_demand_horizon"
+greedy_capacity_pressure_with_demand_horizon.alpha "--greedy_capacity_pressure_with_demand_horizon.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_capacity_pressure_with_demand_horizon"
+greedy_capacity_pressure_with_demand_horizon.capacity_weight "--greedy_capacity_pressure_with_demand_horizon.capacity_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_capacity_pressure_with_demand_horizon"
+greedy_capacity_pressure_with_demand_horizon.demand_weight "--greedy_capacity_pressure_with_demand_horizon.demand_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_capacity_pressure_with_demand_horizon"
+greedy_capacity_pressure_with_demand_horizon.setup_weight "--greedy_capacity_pressure_with_demand_horizon.setup_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_capacity_pressure_with_demand_horizon"
+greedy_immediate_setup_cost_first.rule "--greedy_immediate_setup_cost_first.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_immediate_setup_cost_first"
+greedy_immediate_setup_cost_first.alpha "--greedy_immediate_setup_cost_first.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_immediate_setup_cost_first"
+greedy_immediate_setup_cost_first.true_bias "--greedy_immediate_setup_cost_first.true_bias=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_immediate_setup_cost_first"
+greedy_immediate_setup_cost_first.false_bias "--greedy_immediate_setup_cost_first.false_bias=" r (-10.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_immediate_setup_cost_first"
+greedy_immediate_setup_cost_first.setup_cost_weight "--greedy_immediate_setup_cost_first.setup_cost_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_immediate_setup_cost_first"
+greedy_inventory_balance_and_setup_sparsity.rule "--greedy_inventory_balance_and_setup_sparsity.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_inventory_balance_and_setup_sparsity"
+greedy_inventory_balance_and_setup_sparsity.alpha "--greedy_inventory_balance_and_setup_sparsity.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_inventory_balance_and_setup_sparsity"
+greedy_inventory_balance_and_setup_sparsity.inventory_weight "--greedy_inventory_balance_and_setup_sparsity.inventory_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_inventory_balance_and_setup_sparsity"
+greedy_inventory_balance_and_setup_sparsity.sparsity_weight "--greedy_inventory_balance_and_setup_sparsity.sparsity_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_inventory_balance_and_setup_sparsity"
+greedy_inventory_balance_and_setup_sparsity.early_setup_weight "--greedy_inventory_balance_and_setup_sparsity.early_setup_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_inventory_balance_and_setup_sparsity"
+neighborhood "--neighborhood=" c ("single_setup_flip") | skeleton %in% c("SA", "ILS", "VNS")
+perturbation "--perturbation=" c ("biased_ruin_and_repair_kick", "column_shuffle_kick", "period_block_complement_kick") | skeleton %in% c("ILS")
+biased_ruin_and_repair_kick.strength "--biased_ruin_and_repair_kick.strength=" r (1.0, 10.0) | skeleton %in% c("ILS") & perturbation == "biased_ruin_and_repair_kick"
+biased_ruin_and_repair_kick.ruin_fraction "--biased_ruin_and_repair_kick.ruin_fraction=" r (0.05, 0.8) | skeleton %in% c("ILS") & perturbation == "biased_ruin_and_repair_kick"
+column_shuffle_kick.strength "--column_shuffle_kick.strength=" r (1.0, 10.0) | skeleton %in% c("ILS") & perturbation == "column_shuffle_kick"
+column_shuffle_kick.window "--column_shuffle_kick.window=" i (1, 10) | skeleton %in% c("ILS") & perturbation == "column_shuffle_kick"
+period_block_complement_kick.strength "--period_block_complement_kick.strength=" r (1.0, 10.0) | skeleton %in% c("ILS") & perturbation == "period_block_complement_kick"
+period_block_complement_kick.block_len "--period_block_complement_kick.block_len=" i (1, 10) | skeleton %in% c("ILS") & perturbation == "period_block_complement_kick"
+destruction "--destruction=" c ("period_chunk_destruction", "setup_intensity_destruction", "uniform_random_destruction") | skeleton %in% c("LNS_MIP")
+period_chunk_destruction.ratio "--period_chunk_destruction.ratio=" r (0.05, 0.8) | skeleton %in% c("LNS_MIP") & destruction == "period_chunk_destruction"
+period_chunk_destruction.window_bias "--period_chunk_destruction.window_bias=" r (0.0, 1.0) | skeleton %in% c("LNS_MIP") & destruction == "period_chunk_destruction"
+setup_intensity_destruction.ratio "--setup_intensity_destruction.ratio=" r (0.05, 0.8) | skeleton %in% c("LNS_MIP") & destruction == "setup_intensity_destruction"
+setup_intensity_destruction.focus_setup_cost "--setup_intensity_destruction.focus_setup_cost=" c ("TRUE", "FALSE") | skeleton %in% c("LNS_MIP") & destruction == "setup_intensity_destruction"
+uniform_random_destruction.ratio "--uniform_random_destruction.ratio=" r (0.05, 0.8) | skeleton %in% c("LNS_MIP") & destruction == "uniform_random_destruction"
+SA.T0 "--SA.T0=" r (1.0, 1000.0) | skeleton == "SA"  # log-scale
+SA.cooling "--SA.cooling=" c ("time", "iterations") | skeleton == "SA"
+SA.T_end "--SA.T_end=" r (1e-05, 0.1) | skeleton == "SA"  # log-scale
+SA.alpha "--SA.alpha=" r (0.8, 0.999) | skeleton == "SA"
+SA.iters_per_T "--SA.iters_per_T=" i (1, 50) | skeleton == "SA"
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+ILS.ls_sample "--ILS.ls_sample=" i (4, 256) | skeleton == "ILS"  # log-scale
+VNS.shake_strength "--VNS.shake_strength=" i (1, 4) | skeleton == "VNS"
+VNS.ls_time_share "--VNS.ls_time_share=" r (0.02, 0.3) | skeleton == "VNS"
+VNS.ls_sample "--VNS.ls_sample=" i (4, 256) | skeleton == "VNS"  # log-scale
+LNS_MIP.destroy_ratio "--LNS_MIP.destroy_ratio=" r (0.05, 0.6) | skeleton == "LNS_MIP"
+LNS_MIP.mip_time_share "--LNS_MIP.mip_time_share=" r (0.04, 1.0) | skeleton == "LNS_MIP"  # log-scale
