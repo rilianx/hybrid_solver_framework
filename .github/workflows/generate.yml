@@ -9,7 +9,7 @@ on:
         description: "Problema"
         default: clsp
         type: choice
-        options: [clsp, cvrp]
+        options: [clsp, cvrp, cpmp]
       target:
         description: "Qué generar: componentes (slots) o el ProblemModel completo (§6.1)"
         default: components
@@ -65,6 +65,10 @@ on:
         description: "Planificador de ideas + implementación en paralelo (escribe en <dir>_planner)"
         default: false
         type: boolean
+      problem_model:
+        description: "Con target=components: ProblemModel GENERADO sobre el que trabajar (ruta al .py aceptado; vacío = el de referencia)"
+        default: ""
+        type: string
       workspace:
         description: "Directorio de salida (vacío = según from_scratch/planner); úsalo para no pisar una corrida anterior"
         default: ""
@@ -82,7 +86,7 @@ jobs:
       WS: ${{ inputs.workspace || (inputs.target == 'problem_model' && format('generated/{0}_model{1}', inputs.problem, inputs.model_mode == 'parts' && '_parts' || '')) || format('generated/{0}{1}{2}', inputs.problem, inputs.from_scratch && '_scratch' || '', inputs.planner && '_planner' || '') }}
       TARGET: ${{ inputs.target }}
       MODEL_MODE: ${{ inputs.model_mode }}
-      PKG: ${{ inputs.problem == 'cvrp' && 'cvrp' || 'lotsizing' }}
+      PKG: ${{ inputs.problem == 'cvrp' && 'cvrp' || inputs.problem == 'cpmp' && 'cpmp' || 'lotsizing' }}
       SCRATCH: ${{ inputs.from_scratch && 'true' || 'false' }}
       PLANNER: ${{ inputs.planner && 'true' || 'false' }}
     steps:
@@ -138,6 +142,7 @@ jobs:
           ROUNDS: ${{ inputs.rounds }}
           PROVIDER: ${{ inputs.provider }}
           MODEL: ${{ inputs.model }}
+          PROBLEM_MODEL: ${{ inputs.problem_model }}
           LLM_PRICE_IN: ${{ inputs.price_in || vars.LLM_PRICE_IN }}
           LLM_PRICE_OUT: ${{ inputs.price_out || vars.LLM_PRICE_OUT }}
         working-directory: ${{ env.ROOT }}
@@ -155,6 +160,7 @@ jobs:
           if [ -n "$MODEL" ]; then ARGS="$ARGS --model $MODEL"; fi
           if [ "$SCRATCH" = "true" ]; then ARGS="$ARGS --from-scratch"; fi
           if [ "$PLANNER" = "true" ]; then ARGS="$ARGS --planner"; fi
+          if [ -n "$PROBLEM_MODEL" ]; then ARGS="$ARGS --problem-model $PROBLEM_MODEL"; fi
           echo "python -m examples.$PKG.generate $ARGS"
           python -W ignore -m "examples.$PKG.generate" $ARGS 2>&1 | tee generate.log
 
