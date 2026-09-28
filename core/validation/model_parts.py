@@ -430,7 +430,8 @@ def check_construction_view(parts, cases: list[TestCase], scale_instances: list 
                     trail.append(action)
                     partial = nxt
                     if time.perf_counter() - t0 > max_seconds:
-                        if deterministic:
+                        # pocos pasos en el tiempo límite es lentitud, no un ciclo (corrida 61: "1 paso en 10 s")
+                        if deterministic and len(trail) >= 50:
                             report.add(fail(L, "deterministic_no_cycle", _no_end(s, len(trail), where, f"{max_seconds:g} s")))
                         else:
                             report.add(fail(L, "construction_fast", f"una construcción no terminó en {max_seconds:g} s en {where} "
