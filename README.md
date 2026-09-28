@@ -211,7 +211,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   constructivas*).
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 273 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 285 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -232,7 +232,7 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 273 passed (~265 s)
+python -m pytest -q                 # 285 passed (~260 s)
 
 # segundo problema: CVRP con flota libre (mismos CLI, otro pack)
 python -m examples.cvrp.tune --catalog handwritten --size 30 --trials 30 --ref-time 60
@@ -388,6 +388,69 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
   termine. Entra al catálogo como `greedy_<nombre>` / `beam_<nombre>`, se genera con el LLM
   (prompt con su pista y un ejemplo de mochila en dos fases) y el ciclo sin vista MIP la pide
   junto a `greedy_score`.
+- **Construcción por fases** (slot `phase`, `core/phases.py`). Muchas heurísticas
+  constructivas son un programa chico con modos, no un puntaje. FRG alterna dos: *llenar*, que
+  hace un movimiento BG y se vuelve a elegir en cada paso, y *reducir*, que elige una pila y la
+  trabaja hasta un criterio de parada. Escribirlas como una sola `construction_policy` obliga a
+  meter todo en un puntaje y una tupla de memoria; así eran las políticas generadas en la
+  corrida 62, débiles como greedy. Una fase es una pieza chica:
+  - `init(parcial)`: su memoria;
+  - `applies(parcial, memoria)`: si puede tomar el control;
+  - `start(parcial, memoria)`: al tomarlo, p.ej. para elegir la pila;
+  - `score(parcial, memoria, acción)` y `update(parcial, memoria, acción)`, como una política;
+  - `done(parcial, memoria)`: cuándo suelta el control; por defecto, tras cada paso.
+
+  `PhasedPolicy([f1, …, fk])` es una `construction_policy`, así que la usan igual el greedy y
+  la beam search. La fase activa sigue hasta `done`. Después toma el control la primera que
+  `applies`, en orden de prioridad; si ninguna aplica, la última, que hace de comodín.
+
+  **La cantidad de fases es variable.** `greedy_phased` y `beam_phased` (`llm.catalog`) tienen
+  `n_phases ∈ [1, K]` y `phase_1 … phase_K`, categóricos sobre las fases registradas, cada uno
+  activo solo si `n_phases ≥ j`. Los parámetros de la fase en la posición j van como
+  `p<j>.<fase>.<parámetro>`. Para eso, un parámetro de un componente puede declarar
+  `"when": {otro parámetro: [valores]}`, y el espacio de configuración lo traduce a una
+  condición.
+
+  Una fase no es un constructor completo, así que se valida por lo que aporta. Se evalúa
+  junto a un comodín nulo (`alone`): tiene que tomar el control alguna vez y mejorar al
+  comodín solo, como greedy o dentro de una beam search chica.
+
+  FRG escrito a mano como dos fases (`examples/cpmp/phases.py`: `bg_fill`, `reduce_stack`)
+  hace los mismos movimientos que FRG sin asignación en 20 de 20 instancias de 5×5, y 19 de 20
+  en 6×6 y 5×7; las diferencias son el respaldo con asignación de FRG. Dentro de una beam search
+  de ancho 3 queda a la par de BS-FRG: 10,0 contra 9,8 movimientos en 5×5 y 31,8 contra 33,0 en
+  5×7. Es el default de `greedy_phased` en el catálogo del CPMP.
+
+  El LLM genera fases con una pista que pide un conjunto complementario: modos con condiciones
+  de entrada distintas y al menos uno que aplique siempre. El few-shot es una mochila por
+  categorías que muestra `start` y `done`. El ciclo sin vista MIP pide `phase` junto a
+  `greedy_score` y `construction_policy`.
+- **Mejorar desde una base** (etapa `improve`, `llm/improver.py`). Es búsqueda local sobre
+  programas, con el LLM como operador:
+  1. se parte de una base: un componente generado o, con `--seed`, uno escrito a mano del pack
+     de referencia;
+  2. se calculan diagnósticos en instancias de entrenamiento: objetivo y cota inferior por
+     instancia, y la traza de la peor, acción por acción, con la fase activa;
+  3. el LLM propone una variante con nombre nuevo (`<base>_v<k>`);
+  4. la variante pasa las mismas validaciones que un componente nuevo y se acepta solo si gana
+     a la base en instancias apartadas: media menor, más victorias que derrotas y sin fallar
+     donde la base no falla;
+  5. la aceptada pasa a ser la base y se itera. Los intentos rechazados vuelven al prompt.
+
+  Una fase se juzga dentro de su combinación (`--context bg_fill,*`, donde `*` marca su
+  posición); un puntaje o una política, con el greedy o la beam search (`--mode`).
+  `improve_stats.json` registra el linaje y si se partió de una semilla a mano. Las corridas
+  desde cero no ven esas semillas: la idea es que la generación llegue sola a algo como FRG y
+  la mejora lo afine.
+
+  ```bash
+  python -m llm.improver --problem cpmp --slot phase --base reduce_stack --seed --context bg_fill,*
+  python -m llm.cycle improve --problem cpmp --variant moves --workspace generated/cpmp_moves_cycle \
+      -- --slot phase --base <fase generada> --mode beam
+  ```
+
+  En Actions: `target=improve` con `improve_args`. Sin `variant` usa el pack de referencia;
+  con `variant`, el modelo generado del ciclo.
 - **Esqueleto `CONSTRUCT`** (`core.assembler.CONSTRUCTIVE_SKELETONS`): solo el constructor,
   sin búsqueda, con `multistart` opcional. Sirve para comparar y afinar estrategias
   constructivas por sí solas, y para problemas sin vecindarios ni MIP. No está en `SKELETONS`,
