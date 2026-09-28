@@ -5,6 +5,13 @@ Implementación del ítem 1 del plan de trabajo de la propuesta
 los slots, el esqueleto genérico y tres especializaciones (SA, ILS,
 LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
 
+> **Rama `claude/readme-estrategias-constructivas-*`.** Esta rama se enfoca en las
+> **estrategias constructivas**: el slot `constructor`, el constructor modular con
+> `greedy_score` y los esqueletos que dependen de la construcción (GRASP, Relax-and-Fix).
+> La sección [Estrategias constructivas](#estrategias-constructivas) reúne lo que hay,
+> lo que muestran los resultados, los huecos detectados al revisar este README y el plan
+> de trabajo de la rama.
+
 ## Qué hay implementado
 
 - **`core/contracts.py`** — Protocols de `ProblemModel` (§3, el puente
@@ -138,7 +145,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   clase + `build_component(problem, **params)`.
 - **`core/assembler.py`** — El pegamento de §8: `Assembler(problem_factory,
   registry)` conoce qué slots y parámetros propios tiene cada esqueleto
-  (`SKELETONS`: SA, ILS, LNS_MIP, FIX_OPT, TS, VNS, GRASP, LOCAL_BRANCH), construye el `ConfigSpace`
+  (`SKELETONS`: SA, ILS, LNS_MIP, FIX_OPT, TS, VNS, GRASP, LOCAL_BRANCH, MIP_PERTURB), construye el `ConfigSpace`
   completo a partir del catálogo, y dado un punto del espacio
   (`{"skeleton": ..., "<slot>": <componente>, "<componente>.<param>": ...}`)
   instancia los componentes con `ComponentSpec.make(problem, **params)` y
@@ -312,6 +319,89 @@ implementó en Python plano. Si más adelante el flujo se vuelve un grafo
 checkpoints de sesiones caras, paso humano), cada función de `llm/generator.py`
 es directamente un nodo y `GenerationStats` el estado: migrar a LangGraph
 sería mecánico.
+
+## Estrategias constructivas
+
+Foco de esta rama. Un constructor es cualquier objeto con `build(inst, rng) -> Solution`
+(`Protocol` `Constructor` de `core/contracts.py`): ocupa el slot `constructor` de los nueve
+esqueletos y, en GRASP, es el motor de cada reinicio.
+
+### Qué hay hoy
+
+| Estrategia | Dónde | Cómo entra al espacio de diseño |
+|---|---|---|
+| Trivial (lot-for-lot en CLSP, `singleton_routes` en CVRP) | `examples/lotsizing/components.py`, `examples/cvrp/catalog.py` | constructor de mano; también es la partida trivial del pack |
+| **Greedy modular**: bucle del framework + `greedy_score` del problema o del LLM | `core/construction.py` (`GreedyConstructor`) | cada puntaje se registra como constructor `greedy_<nombre>` (`llm.catalog.greedy_constructor_spec`) |
+| Reglas de selección `greedy`, `rcl` (RCL-α de GRASP) y `roulette` | `core/construction.py` (`RULES`) | parámetros `rule` y `alpha` del constructor, los elige el tuner |
+| Puntajes de mano: `unit_marginal_cost`, `latest_source` (CLSP); `cheapest_insertion`, `nearest_from_depot` (CVRP) | `examples/*/construction.py` | slot `greedy_score` |
+| Vista constructiva (`ConstructionView`: parcial, candidatos, aplicar, completo, respaldo) | `examples/lotsizing/construction.py`, `examples/cvrp/construction.py` | la escribe el problema; la factibilidad vive aquí, no en el puntaje |
+| **Relax-and-Fix** (matheurístico) | `skeletons/relax_and_fix.py` + `core/fixing_policies.py` | constructor con `fallback`; da el híbrido Relax-and-Fix → Fix-and-Optimize |
+| Constructores monolíticos generados por el LLM | `generated/clsp*/constructor/` | slot `constructor` directo |
+| GRASP+LS (multiarranque) | `skeletons/grasp.py` | esqueleto; solo tiene sentido con un constructor que use `rng` |
+
+Validación específica: `check_greedy_score` (finito, determinista, no modifica el parcial),
+factibilidad del constructor en la sonda de tamaño realista, gate de calidad contra la
+solución trivial (`constructor_max_relative_gap`, default 1,0) y firma de diversidad del
+puntaje (acciones que elige el greedy, Jaccard; `diversity.greedy_score_signature`).
+
+### Qué dicen los resultados
+
+- **Los puntajes ganan a los constructores monolíticos** (run 6, SA + `setup_flip` fijos,
+  `results/README.md`): los tres puntajes generados (7,1–9,6 % de gap) superan a los tres
+  monolíticos generados (11,3–15,9 %), ninguno de los cuales mejora a lot-for-lot (11,3 %).
+  El puntaje de mano `unit_marginal_cost` sigue primero (6,5 %).
+- **El monolítico es caro e irregular de generar**: en la corrida 9 se llevó 65 mil de 99 mil
+  tokens con 11 rechazos, casi todos por factibilidad. Con el modular la factibilidad es de la
+  vista: 0 respaldos en 360 construcciones de prueba.
+- **La partida importa más que el vecindario en varios esqueletos**: desde el greedy, ILS/VNS
+  quedan en 6,9–9,3 % con o sin muestreo; desde lot-for-lot, 18–39 %. Un mismo vecindario
+  (`merge_with_previous_setup`) es inerte desde lot-for-lot y parte de la mejor configuración
+  desde el greedy.
+- **GRASP es débil con constructores deterministas** (219–222 k en la tabla de los esqueletos):
+  degenera en "construir una vez + LS".
+
+### Huecos detectados al revisar
+
+1. **El puntaje no tiene memoria ni mirada adelante**: la única estrategia constructiva
+   genérica es greedy de un paso. No hay *look-ahead*, *pilot method*, *beam search* ni
+   *regret-k*, aunque la `ConstructionView` (con `copy` del parcial) ya permite simularlos.
+2. **No hay reconstrucción parcial**: *Iterated Greedy* (destruir parte y reconstruir con el
+   mismo greedy) no existe; hoy "destruir" solo se usa hacia el sub-MIP (LNS-MIP). La vista
+   no tiene una operación para volver de una solución completa a un parcial.
+3. **La RCL es estática**: `alpha` lo fija el tuner para toda la corrida; no hay GRASP
+   reactivo (α adaptativo según calidad) ni sesgo aprendido entre reinicios (memoria tipo
+   ACO / *path relinking*).
+4. **El gate y la firma de diversidad del puntaje usan solo la regla `greedy`**: un puntaje
+   útil únicamente con `rcl` o `roulette` (p. ej. uno casi plano) no se evalúa en su uso
+   real; tampoco se mide la diversidad de las soluciones que produce con `rng`, que es lo
+   que GRASP necesita.
+5. **Relax-and-Fix no se genera ni se afina como estrategia constructiva**: la política de
+   ventana (`SlidingWindowPolicy`) es de mano y su tamaño/solapamiento no se cruza con los
+   puntajes greedy en una misma comparación de constructores.
+6. **La comparación aislada de constructores es parcial**: `benchmark_components` ya mide la
+   solución sin búsqueda (costo y factibilidad, semilla 0), pero solo en el CLSP, sin tiempo
+   de construcción, sin respaldos (`fallbacks`) y sin variar la regla ni la semilla.
+
+### Plan de la rama
+
+1. **Benchmark de constructores**: ampliar la tabla sin búsqueda de `benchmark_components`
+   (gap de la partida, tiempo, respaldos, diversidad entre semillas, por regla) y llevarla al
+   CVRP; exponerla en el workflow `benchmark`.
+2. **Estrategias sobre la vista existente** (framework, sin tocar los problemas):
+   `rule="pilot"`/*look-ahead* de profundidad 1 y *beam search* de ancho `beam` en
+   `GreedyConstructor`, como nuevas reglas o un constructor hermano; parámetros del tuner.
+3. **Iterated Greedy**: operación opcional `ConstructionView.partial_from(sol, keep)` y un
+   esqueleto `IG` (destruir d componentes, reconstruir con el greedy, aceptar) sobre
+   `TrajectorySkeleton`.
+4. **GRASP reactivo**: α elegido de un conjunto con probabilidades actualizadas por la calidad
+   media de cada α, dentro de `build_grasp`.
+5. **Validación acorde al uso**: gate y firma del puntaje también con `rcl`, y diversidad
+   entre semillas para constructores declarados compatibles con GRASP.
+6. **Generación**: el prompt de `greedy_score` pide puntajes pensados para cada estrategia
+   (un paso, *look-ahead*, reconstrucción) y el planificador reparte las ideas entre ellas.
+
+Cada punto entra con tests en `tests/` y, si cambia prompts o validación, con un caso del
+cliente guionado.
 
 ## Correr en GitHub Actions
 
