@@ -39,6 +39,7 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run37/`](tune_run37/) | 27 sep | ciclo CVRP gran tour: modelo de la corrida 50, SA por tiempo, carrera | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | todos los arreglos juntos |
 | [`tune_run38/`](tune_run38/) | 27 sep | ciclo CVRP rutas: modelo de la corrida 51, SA por tiempo, carrera | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | todos los arreglos juntos |
 | [`tune_run39/`](tune_run39/) | 27 sep | CLSP escrito a mano | SA, ILS, VNS, LNS_MIP | 10+10, 10×15 | 5 s | 40 × 3 réplicas | referencia para el ciclo del CLSP |
+| [`tune_run40/`](tune_run40/) | 28 sep | ciclo CLSP setups: modelo 52 (+54 constructiva, 57 memoria), componentes 55 | SA, ILS, VNS, LNS_MIP | 10+10, 10×15 | 5 s | 40 × 3 réplicas | ciclo completo en el segundo problema |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -418,6 +419,23 @@ misma velocidad (43 → 40 evaluaciones/s). La optimización de componentes volv
 45 min (cada `delta` resuelve LP) y, como las estadísticas se escribían al final, no quedó
 registro; sus archivos a medio validar no se usan. Ahora la etapa guarda las estadísticas a medida
 que avanza, no empieza componentes después de `--max-minutes` (35) y el log sale sin buffer.
+
+**Tuning del ciclo contra lo escrito a mano** (runs 40 y 39, mismas instancias, presupuesto y tuner):
+
+| | Escrito a mano (39) | Ciclo completo (40) |
+|---|---|---|
+| Elegido | LNS_MIP, `greedy_unit_marginal_cost` + `period_window` (las 3) | LNS_MIP con puntajes y destrucciones generados (2 elecciones distintas) |
+| Gap afinado (mejor conocido común) | 0,68 % | 1,02 % |
+| Diferencia por instancia | | +0,34 [+0,15, +0,53] |
+| Desvío entre réplicas | 0,03 | 0,38 |
+
+- **El ciclo completo queda a 0,34 puntos de lo escrito a mano en el CLSP**: modelo, vista
+  constructiva, puntajes, destrucciones, todo generado. Dos de las tres réplicas (0,90 y 0,62 %)
+  están a la par de la referencia; la tercera eligió otra destrucción y queda en 1,54 %.
+- Los dos lados eligen LNS_MIP en todas las réplicas: con 10×15 el MIP de la vecindad es lo que
+  manda, y ahí pesan la destrucción y el constructor inicial, no la velocidad del modelo (el LP por
+  evaluación lo pagan los dos).
+- El afinado no le gana al mejor no afinado del catálogo generado (−0,11 [−0,51, +0,27]).
 
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 
