@@ -375,6 +375,19 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
   costo alcanzado. Con `ProblemPack.beam_constructors=True`, cada puntaje entra además como
   `beam_<nombre>`, con `beam_width` y `branching` para el tuner. Está apagado en el CLSP y el
   CVRP, donde un rollout cuesta LPs.
+- **Políticas constructivas: puntajes con memoria** (slot `construction_policy`,
+  `core.contracts.ConstructionPolicy`: `init(parcial)`, `score(parcial, memoria, acción)`,
+  `update(parcial, memoria, acción)`). Un `greedy_score` solo ve (parcial, acción) y no puede
+  sostener un plan. Muchas heurísticas constructivas sí lo hacen: FRG sabe "estoy vaciando la
+  pila s y cada contenedor ya tiene destino". La memoria viaja junto al parcial. El greedy la
+  actualiza con la acción elegida; la beam search lleva una por nodo (la del puntaje que ordena
+  y la del rollout), actualizada con la acción de ese hijo aunque la política no la hubiera
+  elegido: ahí la política decide si abandona su plan. `as_policy` adapta un `greedy_score`,
+  así que el bucle es uno solo. Se valida que la memoria sea inmutable y hashable, que `score`
+  y `update` sean deterministas y no modifiquen nada, y que el greedy que arman sea factible y
+  termine. Entra al catálogo como `greedy_<nombre>` / `beam_<nombre>`, se genera con el LLM
+  (prompt con su pista y un ejemplo de mochila en dos fases) y el ciclo sin vista MIP la pide
+  junto a `greedy_score`.
 - **Esqueleto `CONSTRUCT`** (`core.assembler.CONSTRUCTIVE_SKELETONS`): solo el constructor,
   sin búsqueda, con `multistart` opcional. Sirve para comparar y afinar estrategias
   constructivas por sí solas, y para problemas sin vecindarios ni MIP. No está en `SKELETONS`,
@@ -413,9 +426,11 @@ escrita a mano (`--reference`):
   la calidad de otro algoritmo.
 - `frg.py`: **FRG** (*A fill-and-reduce greedy algorithm for the container pre-marshalling
   problem*, Araya y Toledo, Oper. Res. 23:51, 2023), como componente de referencia, igual que
-  `setup_flip` en el CLSP. Entra como constructor (`frg`) y como puntaje (`frg_policy`: 0 al
-  movimiento que haría FRG). El greedy del framework con ese puntaje reproduce FRG, y la beam
-  search con `rollout=frg_policy` es BS-FRG, sin código propio. La asignación de la §4.3.2
+  `setup_flip` en el CLSP. Entra como constructor (`frg`) y como política con memoria
+  (`frg_policy`, slot `construction_policy`). Su memoria es el estado de FRG congelado (sr, A,
+  Sd, veces que se redujo cada pila) y da 0 al movimiento que haría FRG. El greedy del
+  framework con esa política reproduce FRG, y la beam search con `rollout=frg_policy` es
+  BS-FRG, sin código propio. La asignación de la §4.3.2
   está reconstruida desde el texto del paper y no reproduce su efecto: se usa solo como
   respaldo cuando FRG sin ella no termina (`assignment="fallback"`). Las reducciones
   compuestas de BS*-FRG no están en la vista: son una idea de diseño, candidata a un slot de
@@ -446,6 +461,32 @@ escrita a mano (`--reference`):
 - `greedy frg_policy` queda peor que FRG en 3×5 porque la vista no deja volver a un layout ya
   recorrido, y FRG sin asignación a veces lo necesita (es su ciclo de no terminación).
 - 5×7 y 6×6 no están en la tabla: la corrida en Python no terminó en 30 minutos.
+
+**Una política simple con plan** (la de `tests/test_construction_policy.py`: dejar bien
+puesto lo que se pueda y, si no, vaciar la pila desordenada más baja, que la memoria recuerda;
+8 instancias al estilo CVS por tamaño):
+
+| | 3×5 | 5×5 | 6×6 |
+|---|---|---|---|
+| greedy `destination_rank` (miope) | 51,6 | 75,1 | 82,3 |
+| greedy con la política | 31,6 | 37,9 | 90,1 |
+| beam con la política, nb = 5 | 12,3 | 12,0 | 23,3 |
+| FRG | 9,8 | 11,9 | 24,0 |
+| BS-FRG, nb = 5 | 8,8 | 10,1 | 21,8 |
+
+La memoria reduce a la mitad los movimientos del greedy en 3×5 y 5×5, pero no en 6×6. Con
+beam search, la política queda a la par de FRG en 5×5 y le gana en 6×6. Como constructor greedy
+por sí sola sigue siendo débil, y la capa de calidad la rechaza (2,5 veces la partida trivial).
+
+**Validación de la vista constructiva generada: un puntaje constante no puede ciclar.** En la
+corrida 58 la vista del CPMP que escribió el LLM ofrecía movimientos que no empeoran el
+desorden. Pasó las construcciones al azar (que escapan de un ciclo tarde o temprano), pero con
+un puntaje constante iba y volvía para siempre. `check_construction_view` recorre además
+eligiendo siempre el primer y el último candidato, y rechaza volver a un estado ya visitado
+(según `partial_key`, si la vista lo da). Las vistas ya aceptadas del CLSP (corrida 54) y del
+CVRP (33 y 34) siguen pasando. En la corrida 60, con el chequeo, la vista del CPMP se rechazó
+en las 4 rondas: el LLM oscila entre ciclar, recortar tanto los candidatos que no queda qué
+elegir, y un respaldo infactible.
 
 ## Correr en GitHub Actions
 

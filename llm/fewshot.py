@@ -148,6 +148,44 @@ def build_component(problem):
     return WorstRatioDestruction(problem, problem.inst)
 '''
 
+FEWSHOT["construction_policy"] = '''
+COMPONENT = {
+    "name": "fill_then_top_up",
+    "slot": "construction_policy",
+    "compatible_skeletons": ["SA", "ILS", "LNS_MIP"],
+    "requires": [],
+    "params": {"switch_slack": {"type": "float", "range": [0.05, 0.5]}},
+}
+
+
+class FillThenTopUp:
+    """Mochila, en dos fases que recuerda la memoria: primero LLENAR con los ítems de mayor valor
+    por unidad de peso; cuando la holgura cae bajo `switch_slack` de la capacidad, pasa a COMPLETAR
+    con el ítem que mejor aprovecha lo que queda (el de mayor valor que cabe). La acción es
+    `action.item`; el parcial expone `partial.remaining` (capacidad libre). Menor = mejor."""
+
+    def __init__(self, problem, switch_slack: float = 0.2):
+        self.inst = problem.inst
+        self.threshold = switch_slack * problem.inst.capacity
+
+    def init(self, partial):
+        return ("fill",)  # memoria: la fase del plan (tupla: inmutable y hashable)
+
+    def score(self, partial, memory, action):
+        w, v = self.inst.weights[action.item], self.inst.values[action.item]
+        if memory[0] == "fill":
+            return -v / max(w, 1e-9)
+        return -v + 1e-6 * (partial.remaining - w)
+
+    def update(self, partial, memory, action):
+        left = partial.remaining - self.inst.weights[action.item]
+        return ("top_up",) if memory[0] == "fill" and left < self.threshold else memory
+
+
+def build_component(problem, switch_slack: float = 0.2):
+    return FillThenTopUp(problem, switch_slack)
+'''
+
 FEWSHOT["greedy_score"] = '''
 COMPONENT = {
     "name": "value_density_with_slack",

@@ -376,9 +376,80 @@ def check_greedy_score(impl, ctx: ValidationContext) -> list[CheckResult]:
     return _collapse(results)
 
 
+def check_construction_policy(impl, ctx: ValidationContext) -> list[CheckResult]:
+    """Slot `construction_policy` (puntaje con memoria). Sobre construcciones reales con
+    elección al azar: `init` y `update` dan memorias hashables y deterministas, `score` es finito
+    y determinista, y ninguno modifica el parcial ni la memoria que recibe. Después, el
+    constructor greedy que arma cumple lo mismo que cualquier constructor, con la regla greedy y
+    con la RCL: factible, determinista y termina."""
+    import pickle
+
+    from core.construction import GreedyConstructor
+
+    L = "construction_policy"
+    if not callable(getattr(ctx.problem, "construction_view", None)):
+        return [fail(LAYER, f"{L}.view", "el ProblemModel no expone `construction_view(inst)`: no hay dónde usar una política")]
+
+    def _hashable(m, what, k):
+        try:
+            hash(m)
+        except TypeError:
+            return fail(LAYER, f"{L}.memory_hashable", f"{what} devolvió una memoria no hashable ({type(m).__name__}) en inst_{k}: "
+                                                      f"usa tuplas, frozensets o un dataclass(frozen=True)")
+        return None
+
+    results: list[CheckResult] = []
+    for k, inst in enumerate(ctx.instances):
+        def _props(k=k, inst=inst):
+            view = ctx.problem.construction_view(inst)
+            partial, rng = view.empty(), Random(k)
+            m0, m1 = impl.init(partial), impl.init(partial)
+            bad = _hashable(m0, "init", k)
+            if bad:
+                return bad
+            if m0 != m1:
+                return fail(LAYER, f"{L}.deterministic", f"dos llamadas a init con el mismo parcial dan memorias distintas (inst_{k})")
+            memory = m0
+            for _ in range(60):
+                if view.is_complete(partial):
+                    break
+                cands = list(view.candidates(partial))
+                if not cands:
+                    break
+                for c in cands[:15]:
+                    before = (pickle.dumps(partial), pickle.dumps(memory))
+                    a, b = impl.score(partial, memory, c), impl.score(partial, memory, c)
+                    if not isinstance(a, (int, float)) or math.isnan(a) or math.isinf(a):
+                        return fail(LAYER, f"{L}.finite", f"score devolvió {a!r} para la acción {c!r} en inst_{k}: debe ser un número finito")
+                    if a != b:
+                        return fail(LAYER, f"{L}.deterministic", f"dos llamadas a score con el mismo parcial, memoria y acción {c!r} dan {a} y {b} (inst_{k})")
+                    u, v = impl.update(partial, memory, c), impl.update(partial, memory, c)
+                    bad = _hashable(u, "update", k)
+                    if bad:
+                        return bad
+                    if u != v:
+                        return fail(LAYER, f"{L}.deterministic", f"dos llamadas a update con la acción {c!r} dan memorias distintas (inst_{k})")
+                    if (pickle.dumps(partial), pickle.dumps(memory)) != before:
+                        return fail(LAYER, f"{L}.pure", f"score o update modificó el parcial o la memoria al procesar {c!r} (inst_{k}): "
+                                                        f"deben solo leerlos (update devuelve una memoria NUEVA)")
+                action = cands[rng.randrange(len(cands))]
+                memory = impl.update(partial, memory, action)
+                partial = view.apply(partial, action)
+            return ok(LAYER, f"{L}.finite")
+
+        results += guard(LAYER, f"{L}.finite", _props)
+    if any(not r.passed for r in results):
+        return _collapse(results)
+    for rule in ("greedy", "rcl"):
+        for r in check_constructor(GreedyConstructor(ctx.problem, impl, rule=rule, alpha=0.3, max_steps=20_000), ctx):
+            results.append(CheckResult(r.layer, r.name, r.passed, (f"[constructor greedy, regla {rule}] " + r.message) if r.message else r.message))
+    return _collapse(results)
+
+
 CHECKERS = {
     "constructor": check_constructor,
     "greedy_score": check_greedy_score,
+    "construction_policy": check_construction_policy,
     "neighborhood": check_neighborhood,
     "evaluator": check_evaluator,
     "acceptance": check_acceptance,

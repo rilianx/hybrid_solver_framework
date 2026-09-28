@@ -100,6 +100,29 @@ class GreedyScore(Protocol):
     def score(self, partial: Partial, action: Action) -> float: ...
 
 
+Memory = Any  # memoria de una política constructiva (inmutable y hashable)
+
+
+@runtime_checkable
+class ConstructionPolicy(Protocol):
+    """Slot `construction_policy`: un puntaje CON MEMORIA. Un `greedy_score` solo ve
+    (parcial, acción) y no puede sostener un plan de varios pasos; muchas heurísticas
+    constructivas sí lo hacen (FRG en el CPMP: "estoy vaciando la pila s y cada contenedor ya
+    tiene destino asignado"). La memoria viaja junto al parcial: el greedy la actualiza con la
+    acción elegida y la beam search, en cada hijo, con la acción de ese hijo (aunque la
+    política no la hubiera elegido: ahí la política decide si abandona su plan).
+
+    `score` es MENOR = mejor, determinista, y no modifica ni `partial` ni `memory`; `update`
+    devuelve la memoria nueva sin modificar la anterior. La memoria debe ser inmutable y
+    hashable (una tupla, un frozenset, un dataclass frozen)."""
+
+    def init(self, partial: Partial) -> Memory: ...
+
+    def score(self, partial: Partial, memory: Memory, action: Action) -> float: ...
+
+    def update(self, partial: Partial, memory: Memory, action: Action) -> Memory: ...
+
+
 @runtime_checkable
 class Neighborhood(Protocol):
     """Slot `neighborhood`: movimientos locales con delta incremental.

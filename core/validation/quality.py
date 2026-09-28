@@ -98,6 +98,7 @@ _WHAT = {
     "destruction": "la forma de los conjuntos que libera (tamaño, concentración y contigüidad por coordenada de las variables)",
     "perturbation": "la forma del conjunto de variables que cambia (cuántas, concentración por coordenada, si enciende o apaga)",
     "greedy_score": "las acciones que elige el constructor greedy al construir la misma instancia",
+    "construction_policy": "las acciones que elige el constructor greedy al construir la misma instancia",
 }
 
 
@@ -161,7 +162,7 @@ def probe_checks(slot: str, impl, probe) -> list[CheckResult]:
             return [fail(LAYER, "destruction.ratio_monotone",
                          f"en la instancia de tamaño realista, |free_vars| con ratio=0.5 ({mean(n_hi):.1f}) no supera a ratio=0.1 ({mean(n_lo):.1f})")]
         return [ok(LAYER, "destruction.ratio_monotone", f"|free_vars|: ratio 0.1 → {mean(n_lo):.1f}, ratio 0.5 → {mean(n_hi):.1f}")]
-    if slot == "greedy_score":  # un puntaje se juzga por el constructor greedy que arma
+    if slot in ("greedy_score", "construction_policy"):  # un puntaje se juzga por el constructor greedy que arma
         from core.construction import GreedyConstructor
 
         impl, slot = GreedyConstructor(P, impl), "constructor"
@@ -218,7 +219,7 @@ def _short(obj, n: int = 300) -> str:
 
 def check_component_quality(slot: str, impl, ctx: ValidationContext) -> list[CheckResult]:
     P = ctx.problem
-    if slot == "greedy_score":
+    if slot in ("greedy_score", "construction_policy"):
         # Diversidad como puntaje (qué acciones elige); calidad como el constructor que arma.
         from core.construction import GreedyConstructor
 

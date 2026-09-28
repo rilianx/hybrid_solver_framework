@@ -39,7 +39,7 @@ import time
 from random import Random
 from typing import Any
 
-from core.construction import GreedyConstructor
+from core.construction import GreedyConstructor, as_policy
 
 EVALUATIONS = ("rollout", "score")
 
@@ -49,8 +49,10 @@ class BeamSearchConstructor:
                  branching: int | None = None, evaluation: str = "rollout", max_depth: int = 100_000,
                  max_seconds: float | None = None, dedup: bool = True, view_params: dict | None = None):
         """`score`: puntaje que ordena los hijos para `branching` y que suma `evaluation="score"`.
-        `rollout`: `GreedyScore`, `"complete"` o None (el greedy de `score`, o `"complete"`
-        si no hay puntaje). `branching`: hijos por parcial (None = todos los candidatos).
+        `rollout`: `GreedyScore` o `ConstructionPolicy`, `"complete"` o None (el greedy de
+        `score`, o `"complete"` si no hay puntaje). Con una política (puntaje con memoria),
+        cada nodo del haz lleva su memoria: la del puntaje que ordena y la del rollout, cada
+        una actualizada con la acción que llevó a ese nodo. `branching`: hijos por parcial (None = todos los candidatos).
         `view_params`: se pasan a `problem.construction_view(inst, **view_params)` (p.ej. qué
         acciones ofrece la vista)."""
         if evaluation not in EVALUATIONS:
@@ -61,6 +63,7 @@ class BeamSearchConstructor:
             raise ValueError("branching necesita un puntaje para elegir los hijos")
         self.problem = problem
         self.score = score
+        self._policy = as_policy(score) if score is not None else None
         self.evaluation = evaluation
         self.beam_width = max(1, int(beam_width))
         self.branching = None if branching is None else max(1, int(branching))
@@ -77,11 +80,24 @@ class BeamSearchConstructor:
         self.levels = 0
 
     # --- evaluación -------------------------------------------------------------------
-    def _complete(self, view, partial, rng: Random):
+    def _complete(self, view, partial, rng: Random, memory=None, fresh: bool = True):
         self.rollouts += 1
         if self._greedy is None:
             return view.complete(partial, rng)
-        return self._greedy.complete_from(view, partial, rng)[0]
+        return self._greedy.complete_from(view, partial, rng, memory=memory, fresh=fresh)[0]
+
+    def _init(self, root):
+        ms = self._policy.init(root) if self._policy is not None else None
+        mr = self._greedy.policy.init(root) if self._greedy is not None else None
+        return ms, mr
+
+    def _update(self, p, mem, a):
+        ms, mr = mem
+        if self._policy is not None:
+            ms = self._policy.update(p, ms, a)
+        if self._greedy is not None:
+            mr = self._greedy.policy.update(p, mr, a)
+        return ms, mr
 
     def _value(self, sol) -> float:
         P = self.problem
@@ -98,22 +114,23 @@ class BeamSearchConstructor:
         root = view.empty()
         if view.is_complete(root):
             return view.to_solution(root)
-        best = self._complete(view, root, rng) if self.evaluation == "rollout" else None
+        mem0 = self._init(root)
+        best = self._complete(view, root, rng, mem0[1], fresh=False) if self.evaluation == "rollout" else None
         best_v = self._value(best) if best is not None else math.inf
-        beam = [(0.0, root)]  # (puntaje acumulado, parcial)
+        beam = [(0.0, root, mem0)]  # (puntaje acumulado, parcial, (memoria del puntaje, memoria del rollout))
 
         for depth in range(self.max_depth):
             if not beam or (self.max_seconds is not None and time.perf_counter() - t0 > self.max_seconds):
                 break
             self.levels = depth + 1
-            children: list[tuple[float, int, float, Any]] = []  # (valor, orden, acumulado, parcial)
+            children: list[tuple[float, int, float, Any, Any]] = []  # (valor, orden, acumulado, parcial, memoria)
             seen: set = set()
-            for acc, p in beam:
+            for acc, p, mem in beam:
                 cands = list(view.candidates(p))
                 if not cands:
                     continue
                 if self.score is not None:
-                    scores = [float(self.score.score(p, c)) for c in cands]
+                    scores = [float(self._policy.score(p, mem[0], c)) for c in cands]
                     order = sorted(range(len(cands)), key=scores.__getitem__)
                     if self.branching is not None:
                         order = order[: self.branching]
@@ -122,8 +139,9 @@ class BeamSearchConstructor:
                     expand = [(c, 0.0) for c in cands]
                 for a, s in expand:
                     q = view.apply(p, a)
+                    qmem = self._update(p, mem, a)
                     if key is not None:
-                        k = key(q)
+                        k = (key(q), qmem)
                         if k in seen:
                             continue
                         seen.add(k)
@@ -136,19 +154,20 @@ class BeamSearchConstructor:
                     if bound is not None and bound(q) >= best_v:
                         continue
                     if self.evaluation == "rollout":
-                        sol = self._complete(view, q, rng)
+                        sol = self._complete(view, q, rng, qmem[1], fresh=False)
                         v = self._value(sol)
                         if v < best_v:
                             best, best_v = sol, v
                     else:
                         v = acc + s
-                    children.append((v, len(children), acc + s, q))
+                    children.append((v, len(children), acc + s, q, qmem))
             children.sort(key=lambda c: (c[0], c[1]))
-            beam = [(acc, q) for _, _, acc, q in children[: self.beam_width]]
+            beam = [(acc, q, m) for _, _, acc, q, m in children[: self.beam_width]]
 
         if best is None:  # evaluation="score" sin llegar a ninguna hoja: se completa el mejor del haz
-            start = beam[0][1] if beam else root
-            best = self._greedy.complete_from(view, start, rng)[0] if self._greedy else view.complete(start, rng)
+            start, smem = (beam[0][1], beam[0][2]) if beam else (root, mem0)
+            best = (self._greedy.complete_from(view, start, rng, memory=smem[1], fresh=False)[0] if self._greedy
+                    else view.complete(start, rng))
         return best
 
 

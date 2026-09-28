@@ -70,6 +70,16 @@ class FRGState:
     def reset_reduction(self) -> None:
         self.sr, self.A, self.Sd = None, {}, None
 
+    def freeze(self) -> tuple:
+        """Como memoria de una política (inmutable y hashable)."""
+        return (self.sr, tuple(sorted(self.A.items())), None if self.Sd is None else frozenset(self.Sd),
+                tuple(self.reduced), self.dead)
+
+    @classmethod
+    def thaw(cls, frozen: tuple) -> "FRGState":
+        sr, A, Sd, reduced, dead = frozen
+        return cls(sr, dict(A), None if Sd is None else set(Sd), list(reduced), dead)
+
 
 # --- reglas de la §3 ------------------------------------------------------------------
 def destination_rank(L: Layout, c: int, sd: int) -> tuple:

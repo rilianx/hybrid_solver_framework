@@ -220,6 +220,7 @@ def greedy_score_signature(impl, sol=None, problem=None) -> set:
 
 
 SIGNATURE["greedy_score"] = greedy_score_signature
+SIGNATURE["construction_policy"] = greedy_score_signature  # el greedy lleva la memoria de la política
 
 
 def signature(slot: str, impl, sol, problem=None):

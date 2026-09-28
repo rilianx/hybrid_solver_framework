@@ -18,8 +18,9 @@ Lo que decide cómo construir es el puntaje (slot `greedy_score`), escrito a man
 por el LLM, y la estrategia que lo usa (`GreedyConstructor`, `BeamSearchConstructor`). De
 referencia, a mano:
 
-- `FRGPolicy`: FRG (Araya y Toledo 2023) como puntaje: 0 para el movimiento que haría FRG,
-  1 para el resto. El greedy con este puntaje es FRG; como rollout de la beam search da BS-FRG.
+- `FRGPolicy`: FRG (Araya y Toledo 2023) como política con memoria (slot
+  `construction_policy`): 0 para el movimiento que haría FRG, 1 para el resto. El greedy con
+  esta política es FRG; como rollout de la beam search da BS-FRG.
 - `DestinationRank`: la regla `select_destination` del mismo paper, miope (sin reducciones).
 - `FRGConstructor`: FRG completo, con la asignación de la §4.3.2 como respaldo.
 """
@@ -152,37 +153,45 @@ class CPMPConstructionView:
 
 # --- componentes de referencia (a mano) -----------------------------------------------
 class FRGPolicy:
-    """Slot `greedy_score`: 0 para el movimiento que haría FRG desde este parcial, 1 para el
-    resto. FRG tiene estado (pila en reducción, asignación); se recuerda por parcial
-    (layout + cantidad de movimientos). Un parcial al que FRG no llegó por sí mismo (p.ej. un
-    hijo de la beam search) arranca con el estado limpio, como un movimiento simple en BS-FRG.
-    Si el movimiento de FRG vuelve a un layout ya recorrido, la vista no lo ofrece y todos
-    valen 1: decide el desempate del constructor."""
+    """Slot `construction_policy`: FRG (Araya y Toledo 2023) como política con memoria. La
+    memoria es el estado de FRG congelado (pila en reducción sr, asignación A, destinos Sd,
+    veces que se redujo cada pila); `score` da 0 al movimiento que haría FRG desde (parcial,
+    memoria) y 1 al resto; `update` avanza el estado si la acción es la de FRG y, si no, abandona
+    la reducción en curso (como un movimiento simple en BS-FRG). El greedy con esta política es
+    FRG paso a paso; como rollout de la beam search, BS-FRG. Si el movimiento de FRG vuelve a un
+    layout ya recorrido, la vista no lo ofrece y todos valen 1: decide el desempate."""
 
-    COMPONENT = {"name": "frg_policy", "slot": "greedy_score", "params": {"prevent": {"type": "bool"}}}
-    MAX_MEMO = 200_000
+    COMPONENT = {"name": "frg_policy", "slot": "construction_policy", "params": {"prevent": {"type": "bool"}}}
+    CACHE = 4096
 
     def __init__(self, problem=None, prevent: bool = True, r: int = 1):
         self.cfg = FRGConfig(r=r, prevent=prevent, assignment="never")
-        self._state: dict = {}
-        self._next: dict = {}
+        self._step: dict = {}  # (layout, memoria) → (movimiento de FRG, memoria siguiente); acotado
 
-    def next_move(self, L: Layout) -> tuple[int, int] | None:
-        k = (L.state(), len(L.moves))
-        if k not in self._next:
-            if len(self._next) > self.MAX_MEMO:
-                self._state.clear()
-                self._next.clear()
-            st = self._state.get(k, FRGState()).copy()
+    def _frg(self, L: Layout, memory: tuple):
+        k = (L.state(), memory)
+        if k not in self._step:
+            if len(self._step) > self.CACHE:
+                self._step.clear()
+            st = FRGState.thaw(memory)
             q = L.copy(track=False)
             m = frg_step(q, st, self.cfg)
-            self._next[k] = m
-            if m is not None:
-                self._state[(q.state(), len(q.moves))] = st
-        return self._next[k]
+            self._step[k] = (m, st.freeze())
+        return self._step[k]
 
-    def score(self, L: Layout, a: Move) -> float:
-        return 0.0 if self.next_move(L) == (a.so, a.sd) else 1.0
+    def init(self, L: Layout):
+        return FRGState(reduced=[0] * L.S).freeze()
+
+    def score(self, L: Layout, memory: tuple, a: Move) -> float:
+        return 0.0 if self._frg(L, memory)[0] == (a.so, a.sd) else 1.0
+
+    def update(self, L: Layout, memory: tuple, a: Move):
+        m, nxt = self._frg(L, memory)
+        if m == (a.so, a.sd):
+            return nxt
+        st = FRGState.thaw(memory)
+        st.reset_reduction()
+        return st.freeze()
 
 
 class DestinationRank:

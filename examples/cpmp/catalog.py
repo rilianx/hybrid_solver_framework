@@ -41,7 +41,7 @@ HANDWRITTEN = [
     ({"name": "frg", "slot": "constructor", "compatible_skeletons": CONSTRUCTOR_SKELETONS,
       "params": {"prevent": {"type": "bool"}, "assignment": {"type": "cat", "values": ["fallback", "always", "never"]}}},
      lambda problem, prevent=True, assignment="fallback": FRGConstructor(problem, prevent=prevent, assignment=assignment)),
-    ({"name": "frg_policy", "slot": "greedy_score", "compatible_skeletons": CONSTRUCTOR_SKELETONS,
+    ({"name": "frg_policy", "slot": "construction_policy", "compatible_skeletons": CONSTRUCTOR_SKELETONS,
       "params": {"prevent": {"type": "bool"}}},
      lambda problem, prevent=True: FRGPolicy(problem, prevent=prevent)),
     ({"name": "destination_rank", "slot": "greedy_score", "compatible_skeletons": CONSTRUCTOR_SKELETONS, "params": {}},

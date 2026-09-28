@@ -55,6 +55,9 @@ Formato de salida: cada componente en su propio bloque ```python ... ``` con el 
 salvo una línea breve antes de cada bloque. Nada más."""
 
 
+CONSTRUCTIVE_SLOTS = ("greedy_score", "construction_policy")  # los que reciben parciales de la vista constructiva
+
+
 def slot_hint(spec: "ProblemSpec", slot: str) -> str:
     """Pista genérica del slot más la propia del problema, si la hay."""
     return " ".join(h for h in (SLOT_HINTS.get(slot, ""), spec.slot_hints.get(slot, "")) if h)
@@ -93,6 +96,18 @@ SLOT_HINTS = {
         "soluciones factibles y no mucho peores que la de referencia. Distintos puntajes = distintas ideas sobre qué conviene "
         "elegir primero (costo, urgencia, holgura, balance...)."
     ),
+    "construction_policy": (
+        "Escribes el criterio de un constructor greedy CON MEMORIA: puedes sostener un plan de varios pasos (elegir un objetivo, "
+        "perseguirlo durante varias acciones y cambiarlo cuando se cumple o deja de tener sentido). `init(partial)` da la memoria "
+        "inicial; `score(partial, memory, action)` devuelve un número, MENOR es mejor; `update(partial, memory, action)` devuelve "
+        "la memoria NUEVA después de aplicar `action` a `partial`. La memoria es tuya: una tupla, un frozenset o un "
+        "dataclass(frozen=True) con lo que el plan necesite (p.ej. qué elemento estás atendiendo, en qué fase estás, qué "
+        "asignaste). `update` se llama con la acción que se aplica aunque no sea la que tú preferías (dentro de una beam search): "
+        "ahí decides si sigues con el plan o lo abandonas. El bucle, la regla de selección y la factibilidad son del framework; "
+        "los candidatos ya vienen filtrados. Debe ser BARATO: se llama para cada candidato en cada paso. Se verificará: memorias "
+        "hashables y deterministas, score finito y determinista, ni score ni update modifican `partial` ni `memory`, y el "
+        "constructor greedy que arma produce soluciones factibles, termina y no es mucho peor que la de referencia."
+    ),
     "destruction": (
         "`destroy(sol, ratio, rng)` devuelve `(partial, free_vars)`: `free_vars` es un set de NOMBRES de variables de la vista MIP "
         "(exactamente los que produce `problem.to_assignment(sol)`), y `partial` es el dict de las variables NO liberadas con su valor "
@@ -110,6 +125,7 @@ SLOT_HINTS = {
 SKELETONS_FOR_SLOT = {
     "constructor": ["SA", "ILS", "TS", "VNS", "GRASP", "LNS_MIP", "FIX_OPT", "LOCAL_BRANCH", "MIP_PERTURB"],
     "greedy_score": ["SA", "ILS", "TS", "VNS", "GRASP", "LNS_MIP", "FIX_OPT", "LOCAL_BRANCH", "MIP_PERTURB"],
+    "construction_policy": ["SA", "ILS", "TS", "VNS", "GRASP", "LNS_MIP", "FIX_OPT", "LOCAL_BRANCH", "MIP_PERTURB"],
     "neighborhood": ["SA", "ILS", "TS", "VNS", "GRASP", "MIP_PERTURB"],
     "perturbation": ["ILS"],
     "destruction": ["LNS_MIP", "MIP_PERTURB"],
@@ -159,7 +175,7 @@ def generation_prompt(spec: ProblemSpec, slot: str, n_variants: int, avoid_names
     )
     if spec.notes:
         parts.append("\n## Avisos\n" + "\n".join(f"- {n}" for n in spec.notes))
-    if spec.construction_source and slot == "greedy_score":
+    if spec.construction_source and slot in CONSTRUCTIVE_SLOTS:
         parts.append("\n## Vista constructiva: el estado parcial y la acción que recibe `score`\n"
                      f"```python\n{spec.construction_source}\n```")
     if spec.starting_solution and slot in ("neighborhood", "perturbation"):
@@ -209,7 +225,7 @@ def planning_prompt(spec: ProblemSpec, slot: str, n_ideas: int, avoid_names: lis
     parts.append(f"\n## Representación de la solución\n{spec.solution_representation}")
     if spec.notes:
         parts.append("\n## Avisos\n" + "\n".join(f"- {n}" for n in spec.notes))
-    if spec.construction_source and slot == "greedy_score":
+    if spec.construction_source and slot in CONSTRUCTIVE_SLOTS:
         parts.append(f"\n## Vista constructiva (estado parcial y acción)\n```python\n{spec.construction_source}\n```")
     if spec.starting_solution and slot in ("neighborhood", "perturbation"):
         parts.append(f"\n## Desde dónde arranca el esqueleto\n```\n{spec.starting_solution}\n```")

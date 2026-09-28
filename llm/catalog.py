@@ -33,12 +33,12 @@ def build_registry(pack: ProblemPack, generated: list[GeneratedComponent] | None
     for component, factory in pack.handwritten:
         if exclude_slots and component["slot"] in exclude_slots:
             continue
-        keep = component["slot"] not in generated_slots and component["slot"] != "greedy_score"
+        keep = component["slot"] not in generated_slots and component["slot"] not in ("greedy_score", "construction_policy")
         if handwritten or keep:
             registry.register(ComponentSpec.from_dict(component, factory))
     if generated:
         register_generated(registry, generated)
-    for spec in list(registry.for_slot("greedy_score")):
+    for spec in list(registry.for_slot("greedy_score")) + list(registry.for_slot("construction_policy")):
         registry.register(greedy_constructor_spec(spec, pack.constructor_skeletons))
         if pack.beam_constructors:
             registry.register(beam_constructor_spec(spec, pack.constructor_skeletons))

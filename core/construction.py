@@ -17,6 +17,10 @@
   y uno al azar entre ellos (α = 0 es greedy, α = 1 es al azar);
 - `roulette`: probabilidad proporcional a 1 / (puntaje − mín + ε).
 
+El criterio puede ser un `GreedyScore` (sin memoria) o una `ConstructionPolicy` (slot
+`construction_policy`: `init`, `score(parcial, memoria, acción)`, `update`), que sostiene un
+plan de varios pasos; `as_policy` adapta el primero al segundo, así que el bucle es uno solo.
+
 La factibilidad es responsabilidad de la vista (`ConstructionView.candidates` y
 `complete`), no del puntaje: un puntaje malo da una solución mala, no una infactible
 hasta donde la vista la pueda garantizar. `fallbacks` cuenta cuántas construcciones
@@ -32,12 +36,37 @@ from typing import Any
 RULES = ("greedy", "rcl", "roulette")
 
 
+def is_policy(obj: Any) -> bool:
+    return callable(getattr(obj, "init", None)) and callable(getattr(obj, "update", None))
+
+
+class _Stateless:
+    """Un `GreedyScore` visto como política sin memoria."""
+
+    def __init__(self, score: Any):
+        self.inner = score
+
+    def init(self, partial: Any):
+        return None
+
+    def score(self, partial: Any, memory: Any, action: Any) -> float:
+        return self.inner.score(partial, action)
+
+    def update(self, partial: Any, memory: Any, action: Any):
+        return None
+
+
+def as_policy(obj: Any) -> Any:
+    return obj if is_policy(obj) else _Stateless(obj)
+
+
 class GreedyConstructor:
     def __init__(self, problem: Any, score: Any, rule: str = "greedy", alpha: float = 0.2, max_steps: int = 100_000):
         if rule not in RULES:
             raise ValueError(f"regla desconocida {rule!r}; opciones: {RULES}")
         self.problem = problem
         self.score = score
+        self.policy = as_policy(score)
         self.rule = rule
         self.alpha = float(alpha)
         self.max_steps = max_steps
@@ -73,9 +102,13 @@ class GreedyConstructor:
         self.fallbacks += fell_back
         return sol, chosen
 
-    def complete_from(self, view: Any, partial: Any, rng: Random) -> tuple[Any, list, bool]:
+    def complete_from(self, view: Any, partial: Any, rng: Random, memory: Any = None,
+                      fresh: bool = True) -> tuple[Any, list, bool]:
         """Completa `partial` con el bucle greedy: (solución, acciones, ¿terminó en el
-        respaldo?). Es el *rollout* que usa la beam search para evaluar un parcial."""
+        respaldo?). Es el *rollout* que usa la beam search para evaluar un parcial. `memory`:
+        la de la política en `partial` (con `fresh`, se empieza con `policy.init(partial)`)."""
+        if fresh:
+            memory = self.policy.init(partial)
         chosen: list = []
         for _ in range(self.max_steps):
             if view.is_complete(partial):
@@ -83,13 +116,14 @@ class GreedyConstructor:
             cands = list(view.candidates(partial))
             if not cands:
                 return view.complete(partial, rng), chosen, True
-            action = self._pick(cands, self.scores(partial, cands), rng)
+            action = self._pick(cands, self.scores(partial, cands, memory), rng)
             chosen.append(action)
+            memory = self.policy.update(partial, memory, action)
             partial = view.apply(partial, action)
         raise RuntimeError(f"la construcción no terminó en {self.max_steps} pasos")
 
-    def scores(self, partial: Any, cands: list) -> list[float]:
-        scores = [float(self.score.score(partial, c)) for c in cands]
+    def scores(self, partial: Any, cands: list, memory: Any = None) -> list[float]:
+        scores = [float(self.policy.score(partial, memory, c)) for c in cands]
         if any(math.isnan(s) or math.isinf(s) for s in scores):
             raise ValueError("el puntaje devolvió NaN o infinito")
         return scores

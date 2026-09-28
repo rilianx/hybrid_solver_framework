@@ -186,9 +186,11 @@ def test_validation_accepts_frg_policy_and_rejects_a_myopic_score():
     from core.validation import validate_component
     from examples.cpmp.pack import PACK
 
-    comp = lambda name: {"name": name, "slot": "greedy_score", "compatible_skeletons": ["CONSTRUCT"], "params": {}}  # noqa: E731
+    comp = lambda name, slot="greedy_score": {"name": name, "slot": slot, "compatible_skeletons": ["CONSTRUCT"], "params": {}}  # noqa: E731
     ctxs = PACK.make_contexts()
-    assert all(validate_component(comp("frg_policy"), FRGPolicy(c.problem), c).passed for c in ctxs)
+    for c in ctxs:
+        r = validate_component(comp("frg_policy", "construction_policy"), FRGPolicy(c.problem), c)
+        assert r.passed, r.feedback()
     reports = [validate_component(comp("destination_rank"), DestinationRank(c.problem), c) for c in ctxs]
     assert not all(r.passed for r in reports)
     assert any("not_much_worse_than_trivial" in r.feedback() for r in reports if not r.passed)

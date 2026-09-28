@@ -31,6 +31,7 @@ VALID_PARAM_TYPES = {"int", "float", "cat", "bool"}
 KNOWN_SLOTS = {
     "constructor",
     "greedy_score",
+    "construction_policy",
     "neighborhood",
     "evaluator",
     "acceptance",
