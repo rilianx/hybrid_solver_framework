@@ -211,7 +211,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   constructivas*).
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 270 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 273 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -232,7 +232,7 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 270 passed (~220 s)
+python -m pytest -q                 # 273 passed (~265 s)
 
 # segundo problema: CVRP con flota libre (mismos CLI, otro pack)
 python -m examples.cvrp.tune --catalog handwritten --size 30 --trials 30 --ref-time 60
@@ -478,7 +478,7 @@ La memoria reduce a la mitad los movimientos del greedy en 3×5 y 5×5, pero no 
 beam search, la política queda a la par de FRG en 5×5 y le gana en 6×6. Como constructor greedy
 por sí sola sigue siendo débil, y la capa de calidad la rechaza (2,5 veces la partida trivial).
 
-**Corridas reales del ciclo en el CPMP (58–62, OpenAI).**
+**Corridas reales del ciclo en el CPMP (58–63, OpenAI).**
 
 - **58:** modelo aceptado a la primera, pero la vista ciclaba con un puntaje constante (ver
   abajo).
@@ -531,6 +531,26 @@ Dos ajustes que salieron de aquí:
    muestra el perfil de tiempos por pieza (`parts_profile`). Además, `PartsModel` recuerda la
    penalización por modelo e instancia: el ensamblador crea uno por instancia en cada
    evaluación, y recalcular la partida trivial dominaba el tiempo.
+
+**Corrida 63: `optimize` del modelo CPMP generado.** El job se cortó a los 45 min con una sola
+versión propuesta. Esa versión agregaba `lru_cache` y copias más baratas: `trivial_solution`
+bajó de 34 a 26 s en 5×5 (1,3×, bajo el 1,5× pedido). Casi todo ese tiempo se iba en validarla
+contra los casos antes de medir su velocidad: la vista constructiva completa con
+`trivial_solution`, y en una instancia de 5×5 una sola llamada llega a 145 s. El cuello de
+botella real era de complejidad: una best-first que toma `min(frontera)` y lo quita con `remove`
+en cada expansión. Con un heapq y un contador de inserción el orden es el mismo, empates
+incluidos, y la salida es idéntica (0,14 s contra 35 s, 0,32 s contra 145 s). Ajustes:
+
+- **Primero lo barato.** El orden de las pruebas es equivalencia, después velocidad y al final
+  la validación contra los casos. Una versión que no es más rápida se rechaza sin llegar a la
+  validación.
+- **El oráculo no se recalcula.** `_Oracle` memoriza la `trivial_solution` del modelo aceptado
+  por instancia; la prueba diferencial la pedía varias veces por instancia y ronda.
+- **Presupuesto.** `optimize_model(deadline=...)` usa el de la etapa (`--max-minutes`). La
+  primera ronda corre siempre; las siguientes, solo si queda al menos lo que tardó la anterior.
+- **Prompt.** Si una pieza se lleva el 70 % del tiempo o más, el prompt lo dice. Las técnicas
+  incluyen la cola de prioridad con desempate por inserción. Las velocidades bajo 1/s se
+  muestran también en segundos por unidad (el prompt decía "0.00 unidades/s").
 
 **Validación de la vista constructiva generada: un puntaje constante no puede ciclar.** En la
 corrida 58 la vista del CPMP que escribió el LLM ofrecía movimientos que no empeoran el

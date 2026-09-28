@@ -330,9 +330,11 @@ def _stage_optimize(args) -> None:
         stats["tokens"] = tokens.as_dict(inner.model)
         out.write_text(json.dumps(stats, indent=2, ensure_ascii=False))
 
-    m = optimize_model(client, args.workspace, pack.make_model_spec(), pack.load_cases(), scale, rounds=args.rounds, tokens=tokens)
-    stats["model"] = {"accepted": m.accepted, "rounds": m.rounds, "before": round(m.speed_before, 1),
-                      "after": round(m.speed_after, 1), "rejections": m.reports}
+    m = optimize_model(client, args.workspace, pack.make_model_spec(), pack.load_cases(), scale, rounds=args.rounds, tokens=tokens,
+                       deadline=deadline)
+    # 4 cifras significativas: un modelo sin vista MIP puede hacer 0,04 unidades/s (corrida 63)
+    stats["model"] = {"accepted": m.accepted, "rounds": m.rounds, "before": float(f"{m.speed_before:.4g}"),
+                      "after": float(f"{m.speed_after:.4g}"), "rejections": m.reports}
     save()
     for mod in [k for k in sys.modules if k.startswith(import_name(model_path(args.workspace)))]:
         del sys.modules[mod]  # el modelo pudo cambiar: recargarlo antes de optimizar los componentes

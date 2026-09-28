@@ -217,3 +217,52 @@ def test_the_penalty_of_a_parts_model_is_computed_once_per_instance():
     PartsModel(parts, inst)
     PartsModel(parts, inst)
     assert calls["n"] == 1
+
+
+def test_the_optimizer_prompt_points_at_the_dominant_piece_and_reads_slow_rates():
+    from examples.cpmp.pack import PACK
+    from llm.optimizer import MODEL_TECHNIQUES, _rate, model_prompt
+
+    prof = {"trivial_solution (s)": 24.5, "una construcción (s)": 0.3, "200 evaluaciones (s)": 0.003}
+    p = model_prompt("def f(): pass", 0.04, PACK.make_model_spec(), "unidades de trabajo constructivo/s", prof)
+    assert "«trivial_solution (s)»" in p and "25.0 s por unidad" in p and "heapq" in MODEL_TECHNIQUES
+    assert _rate(3.0, "u/s") == "3.00 u/s"
+
+
+def test_the_oracle_computes_the_trivial_solution_once_per_instance():
+    from examples.cpmp import model_parts as ref
+    from llm.optimizer import _Oracle
+
+    calls = {"n": 0}
+
+    def trivial(inst):
+        calls["n"] += 1
+        return ref.trivial_solution(inst)
+
+    import types
+
+    parts = types.SimpleNamespace(**{k: getattr(ref, k) for k in dir(ref) if not k.startswith("_")})
+    parts.trivial_solution = trivial
+    oracle, inst = _Oracle(parts), CPMPInstance.cvs_like(4, 4, Random(5))
+    assert oracle.trivial_solution(inst) == oracle.trivial_solution(inst) and calls["n"] == 1
+    assert oracle.cost_terms is ref.cost_terms
+
+
+def test_the_model_optimizer_stops_before_a_round_that_does_not_fit(tmp_path):
+    """Una ronda rechazada que tardó más de lo que queda: no se empieza la siguiente."""
+    import time
+
+    from examples.cpmp import model_parts as ref
+    from examples.cpmp.pack import PACK
+    from llm import ScriptedClient
+    from llm.optimizer import optimize_model
+
+    (tmp_path / "model").mkdir()
+    src = Path(ref.__file__).read_text()
+    (tmp_path / "model" / "parts.py").write_text(src)
+    client = ScriptedClient(responses=[f"```python\n{src}\n```"] * 3)  # igual: no es más rápido
+    scale = [CPMPInstance.cvs_like(4, 4, Random(3))]
+    res = optimize_model(client, tmp_path, PACK.make_model_spec(), PACK.load_cases()[:2], scale, rounds=3, verbose=False,
+                         deadline=time.monotonic() + 0.01)
+    assert not res.accepted and res.rounds == 1 and "sin tiempo para la ronda 2" in res.reports[-1]
+    assert "capa 'speed'" in res.reports[0]  # rechazada por velocidad, antes de la validación completa

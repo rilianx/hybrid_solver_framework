@@ -50,6 +50,12 @@ MODEL_TECHNIQUES = """- Evita recalcular lo mismo: memoriza por (instancia, solu
   O(n·L). Las salidas tienen que seguir siendo las mismas (se comparan una por una).
 - Usa estructuras simples en los bucles internos (listas e índices en vez de dicts y objetos; evita crear tuplas o
   dicts por cada paso).
+- En una búsqueda (best-first, A*, BFS con prioridad) la frontera es una cola de prioridad: tomar `min(frontera)` y
+  quitarlo con `remove` en cada expansión es cuadrático. Un heapq con (prioridad, contador de inserción) expande en el
+  MISMO orden, empates incluidos (entre iguales sale primero el insertado antes, como con min sobre una lista en orden
+  de inserción), y es O(log n) por expansión. Lo mismo para `x in lista` en un bucle: usa un set.
+- Si casi todo el tiempo está en una función, busca primero una mejora de complejidad en ella (estructura de datos,
+  trabajo repetido entre iteraciones); las micro-optimizaciones rara vez llegan al 1,5×.
 - Mantén exactamente los mismos resultados, incluidos los empates y el orden: se comparan salida por salida.
 - Toda caché que dependa de la solución tiene que estar ACOTADA (functools.lru_cache(maxsize=<= {MAX_CACHE})): el tuner evalúa
   millones de soluciones distintas durante horas, y una caché sin límite (maxsize=None, functools.cache, un dict global
@@ -93,16 +99,29 @@ def _unchanged_note(previous: str | None, current: str) -> str:
 
 
 # ---------------------------------------------------------------- modelo
+def _rate(speed: float, unit: str) -> str:
+    """Una velocidad legible: por debajo de 1/s, en segundos por unidad (corrida 63: "0.00 unidades/s")."""
+    if speed >= 1 or speed <= 0:
+        return f"{speed:,.2f} {unit}"
+    return f"{speed:.4f} {unit} ({1 / speed:,.1f} s por unidad)"
+
+
 def model_prompt(source: str, speed: float, spec, unit: str = "evaluaciones/s", profile: dict | None = None) -> str:
     if unit == "evaluaciones/s":
         what = (f"Evalúa {speed:,.0f} soluciones por segundo (violations + cost_terms) en una instancia de tamaño realista, y "
                 "las heurísticas lo llaman millones de veces.")
     else:
         what = (f"No tiene vista MIP: las heurísticas lo usan por el lado constructivo (trivial_solution, la vista "
-                f"constructiva y su complete_partial, y las evaluaciones). Hace {speed:,.2f} {unit} en una instancia de "
+                f"constructiva y su complete_partial, y las evaluaciones). Hace {_rate(speed, unit)} en una instancia de "
                 "tamaño realista (una unidad = trivial_solution + 2 construcciones al azar + 200 evaluaciones).")
-    prof = ("\n# Dónde está el tiempo (instancia de tamaño realista)\n" + "\n".join(f"- {k}: {v:.3f}" for k, v in profile.items())
-            if profile else "")
+    prof = ""
+    if profile:
+        prof = "\n# Dónde está el tiempo (instancia de tamaño realista)\n" + "\n".join(f"- {k}: {v:.3f}" for k, v in profile.items())
+        total = sum(profile.values())
+        top = max(profile, key=profile.get)
+        if total > 0 and profile[top] >= 0.7 * total:
+            prof += (f"\n\nEl {100 * profile[top] / total:.0f} % del tiempo está en «{top}»: optimiza eso primero, con una mejora "
+                     "de complejidad que conserve exactamente el mismo resultado (ver Técnicas).")
     return "\n".join([
         f"# Tarea\nEste es el modelo por piezas del problema **{spec.name}**, ya validado contra los casos de prueba. {what} "
         "Reescríbelo para que sea bastante más rápido SIN cambiar ninguna salida.",
@@ -116,8 +135,31 @@ def model_prompt(source: str, speed: float, spec, unit: str = "evaluaciones/s", 
     ])
 
 
+class _Oracle:
+    """El modelo aceptado, con `trivial_solution` memorizada por instancia: la prueba diferencial la pide
+    varias veces por instancia y ronda, y en un modelo lento es lo más caro (corrida 63, CPMP: 30 s cada
+    una en 5×5). Las demás piezas pasan tal cual."""
+
+    def __init__(self, parts):
+        self._parts, self._trivial = parts, {}
+
+    def __getattr__(self, name):
+        return getattr(self._parts, name)
+
+    def trivial_solution(self, inst):
+        k = id(inst)
+        if k not in self._trivial:
+            self._trivial[k] = (inst, self._parts.trivial_solution(inst))
+        return self._trivial[k][1]
+
+
 def optimize_model(client: LLMClient, workspace: str | Path, spec, cases: list, scale_instances: list, rounds: int = 3,
-                   min_speedup: float = 1.5, tokens: TokenUsage | None = None, verbose: bool = True) -> OptimizationResult:
+                   min_speedup: float = 1.5, tokens: TokenUsage | None = None, verbose: bool = True,
+                   deadline: float | None = None) -> OptimizationResult:
+    """`deadline` (time.monotonic): no empieza una ronda si lo que queda es menos de lo que tardó la
+    anterior (corrida 63: la validación de una ronda en un modelo lento se comió el job de 45 min)."""
+    import time
+
     from core.validation.model_parts import validate_parts
 
     tokens = tokens if tokens is not None else TokenUsage()
@@ -126,6 +168,7 @@ def optimize_model(client: LLMClient, workspace: str | Path, spec, cases: list, 
     if old is None:
         raise SystemExit(f"no se pudo cargar {path}: {r.message}")
     inst = scale_instances[0]
+    oracle = _Oracle(old)
     speed0, unit = model_speed(old, inst)
     res = OptimizationResult(speed_before=speed0)
     instances = [(c.instance, [s["answer"] for s in c.solutions]) for c in cases] + [(i, []) for i in scale_instances]
@@ -140,7 +183,12 @@ def optimize_model(client: LLMClient, workspace: str | Path, spec, cases: list, 
                    f"basta que no sea más lento (al menos {min_speedup:g} veces la velocidad actual), aunque si puedes "
                    f"acelerarlo, mejor.")
     prev = None  # la primera versión optimizada es un módulo completo
+    last = 0.0  # segundos de la ronda anterior
     for rnd in range(1, rounds + 1):
+        if rnd > 1 and deadline is not None and deadline - time.monotonic() < last:
+            res.reports.append(f"sin tiempo para la ronda {rnd} (la anterior tardó {last:,.0f} s)")
+            break
+        t0 = time.monotonic()
         res.rounds = rnd
         src = _ask(client, MODEL_SYSTEM_PROMPT, prompt, tokens)
         if src is None:
@@ -159,31 +207,35 @@ def optimize_model(client: LLMClient, workspace: str | Path, spec, cases: list, 
             # primero la prueba diferencial: nombra la función que cambió y la solución donde cambia
             # (corrida 48: con solo "costo equivocado en un caso oculto" el LLM corrigió cost_terms,
             # que estaba bien, en vez del Split)
-            report = check_parts_equivalent(old, new, instances)
-            if report.passed:
-                report = validate_parts(new, cases, scale_instances=scale_instances, decoder=spec.decoder)
+            report = check_parts_equivalent(oracle, new, instances)
+            # después la velocidad, que es barata si la versión es rápida; la validación completa contra los
+            # casos, que en un modelo lento tarda minutos, solo para una versión que ya es más rápida
             if report.passed:
                 speed = model_speed(new, inst)[0]
                 if speed < min_speedup * res.speed_before:
                     extra = ""
                     if unit != "evaluaciones/s":
                         extra = " Perfil de tu versión: " + "; ".join(f"{k} {v:.3f}" for k, v in parts_profile(new, inst).items())
-                    report.add(fail("speed", "faster", f"{speed:,.2f} {unit} contra {res.speed_before:,.2f}: se pide al menos "
-                                                       f"{min_speedup:g} veces más.{extra}"))
+                    report.add(fail("speed", "faster", f"{_rate(speed, unit)} contra {_rate(res.speed_before, unit)}: se pide "
+                                                       f"al menos {min_speedup:g} veces más.{extra}"))
                 else:
                     res.speed_after = speed
-                    report.add(ok("speed", "faster", f"{speed:,.2f} contra {res.speed_before:,.2f} {unit}"))
-                    report.add(check_parts_memory(new, inst))
+                    report.add(ok("speed", "faster", f"{_rate(speed, unit)} contra {_rate(res.speed_before, unit)}"))
+            if report.passed:
+                report.extend(validate_parts(new, cases, scale_instances=scale_instances, decoder=spec.decoder).results)
+            if report.passed:
+                report.add(check_parts_memory(new, inst))
         if report.passed:
             path.with_name("parts_slow.py").write_text(source)
             path.write_text(src)
             res.accepted = True
             if verbose:
-                print(f"[optimizar/modelo] ✔ ronda {rnd}: {res.speed_before:,.0f} → {res.speed_after:,.0f} evaluaciones/s")
+                print(f"[optimizar/modelo] ✔ ronda {rnd}: {_rate(res.speed_before, unit)} → {_rate(res.speed_after, unit)}")
             return res
         res.reports.append(report.feedback())
+        last = time.monotonic() - t0
         if verbose:
-            print(f"[optimizar/modelo] ✘ ronda {rnd}: {report.failed_layer}")
+            print(f"[optimizar/modelo] ✘ ronda {rnd}: {report.failed_layer} ({last:,.0f} s)")
         same = _unchanged_note(prev, src)
         prev = src
         prompt = (f"La versión optimizada fue RECHAZADA. Corrígela. {same}{PATCH_INSTRUCTIONS}"
