@@ -1,0 +1,2168 @@
+{
+  "catalog": "generated",
+  "generated_components": [
+    "customer_star_destruction",
+    "expensive_edge_destruction",
+    "route_removal_destruction",
+    "high_demand_urgent_score",
+    "nearest_extension_score",
+    "route_save_ratio_score",
+    "swap_customers_across_routes",
+    "customer_relocation_perturbation",
+    "route_split_merge_perturbation",
+    "segment_reversal_perturbation"
+  ],
+  "settings": {
+    "trials": 40,
+    "budget": 5.0,
+    "train": 10,
+    "test": 10,
+    "problem": "cvrp_routes",
+    "size": "30",
+    "seed": 0,
+    "tuner_seed": 2,
+    "seeds_test": 3,
+    "objective": "ratio",
+    "skeletons": [
+      "SA",
+      "ILS",
+      "VNS",
+      "LNS_MIP"
+    ],
+    "ref_time": 60.0,
+    "reeval_top": 5,
+    "reeval_seeds": 2,
+    "screen": -1,
+    "defaults_margin": 0.005
+  },
+  "tuning": {
+    "best_config": {
+      "skeleton": "ILS",
+      "constructor": "greedy_route_save_ratio_score",
+      "greedy_route_save_ratio_score.rule": "greedy",
+      "greedy_route_save_ratio_score.alpha": 0.5,
+      "greedy_route_save_ratio_score.join_weight": 2.5,
+      "greedy_route_save_ratio_score.opening_penalty": 2.5,
+      "neighborhood": "swap_customers_across_routes",
+      "swap_customers_across_routes.allow_within_route": true,
+      "perturbation": "segment_reversal_perturbation",
+      "segment_reversal_perturbation.strength": 5.5,
+      "ILS.strength": 4,
+      "ILS.ls_strategy": "first",
+      "ILS.ls_time_share": 0.16,
+      "ILS.ls_sample": 32
+    },
+    "best_cost": 0.3485922604260337,
+    "best_summary": "ILS[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes, perturbation=segment_reversal_perturbation]",
+    "best_default_cost": 0.4744995784958907,
+    "best_default_summary": "ILS[constructor=trivial, neighborhood=swap_customers_across_routes, perturbation=customer_relocation_perturbation]",
+    "n_trials": 40,
+    "n_failed": 3,
+    "seconds": 3240.9,
+    "skeleton_usage": {
+      "ILS": 19,
+      "SA": 8,
+      "LNS_MIP": 7,
+      "VNS": 6
+    },
+    "best_trial_number": 24,
+    "reevaluated": [
+      {
+        "number": 24,
+        "enqueued": false,
+        "twin": false,
+        "summary": "ILS[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes, perturbation=segment_reversal_perturbation]",
+        "costs": [
+          0.34715324922559426,
+          0.3485435307893969,
+          0.3405944623861696
+        ],
+        "mean": 0.3454304141337203
+      },
+      {
+        "number": 16,
+        "enqueued": false,
+        "twin": false,
+        "summary": "SA[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes]",
+        "costs": [
+          0.3581912626918848,
+          0.35484228629967307,
+          0.3558827356891971
+        ],
+        "mean": 0.3563054282269183
+      },
+      {
+        "number": 37,
+        "enqueued": false,
+        "twin": false,
+        "summary": "ILS[constructor=greedy_nearest_extension_score, neighborhood=swap_customers_across_routes, perturbation=segment_reversal_perturbation]",
+        "costs": [
+          0.35989697453060004,
+          0.36266125667705895,
+          0.36362062086132335
+        ],
+        "mean": 0.36205961735632747
+      },
+      {
+        "number": 34,
+        "enqueued": false,
+        "twin": false,
+        "summary": "ILS[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes, perturbation=route_split_merge_perturbation]",
+        "costs": [
+          0.36177362621103465,
+          0.35235940194966364,
+          0.35715233861467466
+        ],
+        "mean": 0.3570951222584577
+      },
+      {
+        "number": 39,
+        "enqueued": false,
+        "twin": false,
+        "summary": "LNS_MIP[constructor=greedy_route_save_ratio_score, destruction=route_removal_destruction]",
+        "costs": [
+          0.3639612672688519,
+          0.3642141273002355,
+          0.36247237270231514
+        ],
+        "mean": 0.3635492557571342
+      },
+      {
+        "number": 24,
+        "enqueued": false,
+        "twin": true,
+        "summary": "ILS[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes, perturbation=segment_reversal_perturbation]",
+        "costs": [
+          0.3489844882984621,
+          0.3489870774486415,
+          0.34780521553099747
+        ],
+        "mean": 0.3485922604260337,
+        "preferred_defaults": true
+      },
+      {
+        "number": 37,
+        "enqueued": false,
+        "twin": true,
+        "summary": "ILS[constructor=greedy_nearest_extension_score, neighborhood=swap_customers_across_routes, perturbation=segment_reversal_perturbation]",
+        "costs": [
+          0.35926601736700553,
+          0.36216019900475893,
+          0.3595487070180451
+        ],
+        "mean": 0.3603249744632699
+      },
+      {
+        "number": 34,
+        "enqueued": false,
+        "twin": true,
+        "summary": "ILS[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes, perturbation=route_split_merge_perturbation]",
+        "costs": [
+          0.37002573384231696,
+          0.3726268807516118,
+          0.3722939900969998
+        ],
+        "mean": 0.37164886823030957
+      },
+      {
+        "number": 39,
+        "enqueued": false,
+        "twin": true,
+        "summary": "LNS_MIP[constructor=greedy_route_save_ratio_score, destruction=route_removal_destruction]",
+        "costs": [
+          0.36746582943765105,
+          0.37002800411363856,
+          0.36793718490594446
+        ],
+        "mean": 0.36847700615241136
+      },
+      {
+        "number": 1,
+        "enqueued": true,
+        "twin": false,
+        "summary": "ILS[constructor=trivial, neighborhood=swap_customers_across_routes, perturbation=customer_relocation_perturbation]",
+        "costs": [
+          0.4744995784958907,
+          0.4691274141535838,
+          0.4828688341329263
+        ],
+        "mean": 0.4754986089274669
+      }
+    ],
+    "best_is_twin": true,
+    "incumbent_curve": [
+      1.0,
+      0.4744995784958907,
+      0.4744995784958907,
+      0.4744995784958907,
+      0.4744995784958907,
+      0.424911054019748,
+      0.424911054019748,
+      0.424911054019748,
+      0.4185991477381423,
+      0.4185991477381423,
+      0.4185991477381423,
+      0.4185991477381423,
+      0.36764260091089085,
+      0.36764260091089085,
+      0.36764260091089085,
+      0.36764260091089085,
+      0.3581912626918848,
+      0.3581912626918848,
+      0.3581912626918848,
+      0.3581912626918848,
+      0.3535980456808976,
+      0.3496586847085956,
+      0.3496586847085956,
+      0.34803045178330383,
+      0.34715324922559426,
+      0.34715324922559426,
+      0.34715324922559426,
+      0.34715324922559426,
+      0.34715324922559426,
+      0.34715324922559426,
+      0.34715324922559426,
+      0.34715324922559426,
+      0.34715324922559426,
+      0.34715324922559426,
+      0.34715324922559426,
+      0.34715324922559426,
+      0.34715324922559426,
+      0.34715324922559426,
+      0.34715324922559426,
+      0.34715324922559426
+    ],
+    "trials": [
+      {
+        "number": 0,
+        "cost": 1.0,
+        "seconds": 50.01,
+        "enqueued": true,
+        "summary": "SA[constructor=trivial, neighborhood=swap_customers_across_routes]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "trivial",
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 1,
+        "cost": 0.4744995784958907,
+        "seconds": 50.11,
+        "enqueued": true,
+        "summary": "ILS[constructor=trivial, neighborhood=swap_customers_across_routes, perturbation=customer_relocation_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "trivial",
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "perturbation": "customer_relocation_perturbation",
+          "customer_relocation_perturbation.strength": 5.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 2,
+        "cost": 1.0,
+        "seconds": 50.02,
+        "enqueued": true,
+        "summary": "VNS[constructor=trivial, neighborhood=swap_customers_across_routes]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "trivial",
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 3,
+        "cost": 0.4938096262226539,
+        "seconds": 54.04,
+        "enqueued": true,
+        "summary": "LNS_MIP[constructor=trivial, destruction=customer_star_destruction]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "trivial",
+          "destruction": "customer_star_destruction",
+          "customer_star_destruction.ratio": 0.42500000000000004,
+          "customer_star_destruction.radius": 0.5,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        }
+      },
+      {
+        "number": 4,
+        "cost": 1000000000000.0,
+        "seconds": 5.0,
+        "enqueued": false,
+        "summary": "SA[constructor=random, neighborhood=swap_customers_across_routes]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "random",
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 5,
+        "cost": 0.424911054019748,
+        "seconds": 50.21,
+        "enqueued": false,
+        "summary": "ILS[constructor=random, neighborhood=swap_customers_across_routes, perturbation=customer_relocation_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "random",
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "perturbation": "customer_relocation_perturbation",
+          "customer_relocation_perturbation.strength": 5.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 6,
+        "cost": 1000000000000.0,
+        "seconds": 5.02,
+        "enqueued": false,
+        "summary": "VNS[constructor=random, neighborhood=swap_customers_across_routes]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "random",
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 7,
+        "cost": 0.6036653750437226,
+        "seconds": 55.07,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=random, destruction=customer_star_destruction]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "random",
+          "destruction": "customer_star_destruction",
+          "customer_star_destruction.ratio": 0.42500000000000004,
+          "customer_star_destruction.radius": 0.5,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        }
+      },
+      {
+        "number": 8,
+        "cost": 0.4185991477381423,
+        "seconds": 50.02,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_high_demand_urgent_score, neighborhood=swap_customers_across_routes]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_high_demand_urgent_score",
+          "greedy_high_demand_urgent_score.rule": "greedy",
+          "greedy_high_demand_urgent_score.alpha": 0.5,
+          "greedy_high_demand_urgent_score.demand_weight": 5.0,
+          "greedy_high_demand_urgent_score.balance_weight": 5.0,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 9,
+        "cost": 1.0,
+        "seconds": 50.02,
+        "enqueued": false,
+        "summary": "ILS[constructor=trivial, neighborhood=swap_customers_across_routes, perturbation=route_split_merge_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "trivial",
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "perturbation": "route_split_merge_perturbation",
+          "route_split_merge_perturbation.strength": 5.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 10,
+        "cost": 0.4192402859429232,
+        "seconds": 50.24,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_high_demand_urgent_score, neighborhood=swap_customers_across_routes]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_high_demand_urgent_score",
+          "greedy_high_demand_urgent_score.rule": "greedy",
+          "greedy_high_demand_urgent_score.alpha": 0.5,
+          "greedy_high_demand_urgent_score.demand_weight": 5.0,
+          "greedy_high_demand_urgent_score.balance_weight": 5.0,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 11,
+        "cost": 0.545068916997848,
+        "seconds": 55.5,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=trivial, destruction=expensive_edge_destruction]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "trivial",
+          "destruction": "expensive_edge_destruction",
+          "expensive_edge_destruction.ratio": 0.42500000000000004,
+          "expensive_edge_destruction.mix_randomness": 0.5,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        }
+      },
+      {
+        "number": 12,
+        "cost": 0.36764260091089085,
+        "seconds": 50.02,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_nearest_extension_score, neighborhood=swap_customers_across_routes]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_nearest_extension_score",
+          "greedy_nearest_extension_score.rule": "greedy",
+          "greedy_nearest_extension_score.alpha": 0.5,
+          "greedy_nearest_extension_score.distance_weight": 2.5,
+          "greedy_nearest_extension_score.depot_bias": 2.5,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 13,
+        "cost": 0.43219622296292437,
+        "seconds": 50.24,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_high_demand_urgent_score, neighborhood=swap_customers_across_routes, perturbation=customer_relocation_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_high_demand_urgent_score",
+          "greedy_high_demand_urgent_score.rule": "greedy",
+          "greedy_high_demand_urgent_score.alpha": 0.5,
+          "greedy_high_demand_urgent_score.demand_weight": 5.0,
+          "greedy_high_demand_urgent_score.balance_weight": 5.0,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "perturbation": "customer_relocation_perturbation",
+          "customer_relocation_perturbation.strength": 5.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 14,
+        "cost": 0.37182817629631026,
+        "seconds": 50.24,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_nearest_extension_score, neighborhood=swap_customers_across_routes]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_nearest_extension_score",
+          "greedy_nearest_extension_score.rule": "greedy",
+          "greedy_nearest_extension_score.alpha": 0.5,
+          "greedy_nearest_extension_score.distance_weight": 2.5,
+          "greedy_nearest_extension_score.depot_bias": 2.5,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 15,
+        "cost": 0.5989329864812583,
+        "seconds": 55.66,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_high_demand_urgent_score, destruction=customer_star_destruction]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_high_demand_urgent_score",
+          "greedy_high_demand_urgent_score.rule": "greedy",
+          "greedy_high_demand_urgent_score.alpha": 0.5,
+          "greedy_high_demand_urgent_score.demand_weight": 5.0,
+          "greedy_high_demand_urgent_score.balance_weight": 5.0,
+          "destruction": "customer_star_destruction",
+          "customer_star_destruction.ratio": 0.42500000000000004,
+          "customer_star_destruction.radius": 0.5,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        }
+      },
+      {
+        "number": 16,
+        "cost": 0.3581912626918848,
+        "seconds": 50.02,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_route_save_ratio_score",
+          "greedy_route_save_ratio_score.rule": "greedy",
+          "greedy_route_save_ratio_score.alpha": 0.5,
+          "greedy_route_save_ratio_score.join_weight": 2.5,
+          "greedy_route_save_ratio_score.opening_penalty": 2.5,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 17,
+        "cost": 0.3611219308716939,
+        "seconds": 50.03,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_route_save_ratio_score",
+          "greedy_route_save_ratio_score.rule": "greedy",
+          "greedy_route_save_ratio_score.alpha": 0.45008117861252284,
+          "greedy_route_save_ratio_score.join_weight": 2.505838059749313,
+          "greedy_route_save_ratio_score.opening_penalty": 2.3666061800072575,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": false,
+          "SA.T0": 1.0753722097835403,
+          "SA.alpha": 0.804039776487703,
+          "SA.iters_per_T": 49
+        }
+      },
+      {
+        "number": 18,
+        "cost": 0.3611219308716939,
+        "seconds": 50.03,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_route_save_ratio_score",
+          "greedy_route_save_ratio_score.rule": "greedy",
+          "greedy_route_save_ratio_score.alpha": 0.4854289784070028,
+          "greedy_route_save_ratio_score.join_weight": 2.5334024512276203,
+          "greedy_route_save_ratio_score.opening_penalty": 2.3992485007941444,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": false,
+          "SA.T0": 1.4445644176396701,
+          "SA.alpha": 0.8002625669056748,
+          "SA.iters_per_T": 50
+        }
+      },
+      {
+        "number": 19,
+        "cost": 0.37552053064546664,
+        "seconds": 50.06,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_route_save_ratio_score",
+          "greedy_route_save_ratio_score.rule": "greedy",
+          "greedy_route_save_ratio_score.alpha": 0.471982175522997,
+          "greedy_route_save_ratio_score.join_weight": 2.4707432696670764,
+          "greedy_route_save_ratio_score.opening_penalty": 2.4535609489593058,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": false,
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.29912827416410104,
+          "VNS.ls_sample": 5
+        }
+      },
+      {
+        "number": 20,
+        "cost": 0.3535980456808976,
+        "seconds": 50.03,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes, perturbation=segment_reversal_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_route_save_ratio_score",
+          "greedy_route_save_ratio_score.rule": "rcl",
+          "greedy_route_save_ratio_score.alpha": 0.11671527490233263,
+          "greedy_route_save_ratio_score.join_weight": 3.4519631901935997,
+          "greedy_route_save_ratio_score.opening_penalty": 4.314272958060528,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": false,
+          "perturbation": "segment_reversal_perturbation",
+          "segment_reversal_perturbation.strength": 8.03623431685203,
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.021293219371721572,
+          "ILS.ls_sample": 4
+        }
+      },
+      {
+        "number": 21,
+        "cost": 0.3496586847085956,
+        "seconds": 50.03,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes, perturbation=segment_reversal_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_route_save_ratio_score",
+          "greedy_route_save_ratio_score.rule": "rcl",
+          "greedy_route_save_ratio_score.alpha": 0.007633168262480172,
+          "greedy_route_save_ratio_score.join_weight": 3.456034976636591,
+          "greedy_route_save_ratio_score.opening_penalty": 4.874164408336851,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": false,
+          "perturbation": "segment_reversal_perturbation",
+          "segment_reversal_perturbation.strength": 8.88352722265802,
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.026875085997065826,
+          "ILS.ls_sample": 4
+        }
+      },
+      {
+        "number": 22,
+        "cost": 0.3510105800181814,
+        "seconds": 50.03,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes, perturbation=segment_reversal_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_route_save_ratio_score",
+          "greedy_route_save_ratio_score.rule": "rcl",
+          "greedy_route_save_ratio_score.alpha": 0.030032815700581944,
+          "greedy_route_save_ratio_score.join_weight": 4.386749682748896,
+          "greedy_route_save_ratio_score.opening_penalty": 4.862897384336089,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": false,
+          "perturbation": "segment_reversal_perturbation",
+          "segment_reversal_perturbation.strength": 8.890779199300926,
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.024050337578259313,
+          "ILS.ls_sample": 4
+        }
+      },
+      {
+        "number": 23,
+        "cost": 0.34803045178330383,
+        "seconds": 50.03,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes, perturbation=segment_reversal_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_route_save_ratio_score",
+          "greedy_route_save_ratio_score.rule": "rcl",
+          "greedy_route_save_ratio_score.alpha": 0.001542601427676843,
+          "greedy_route_save_ratio_score.join_weight": 4.76396997791689,
+          "greedy_route_save_ratio_score.opening_penalty": 4.996665568789028,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": false,
+          "perturbation": "segment_reversal_perturbation",
+          "segment_reversal_perturbation.strength": 8.809546048880634,
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.020452043422565083,
+          "ILS.ls_sample": 4
+        }
+      },
+      {
+        "number": 24,
+        "cost": 0.34715324922559426,
+        "seconds": 50.03,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes, perturbation=segment_reversal_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_route_save_ratio_score",
+          "greedy_route_save_ratio_score.rule": "rcl",
+          "greedy_route_save_ratio_score.alpha": 0.018482118888186835,
+          "greedy_route_save_ratio_score.join_weight": 4.926461153000708,
+          "greedy_route_save_ratio_score.opening_penalty": 4.927069473108794,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": false,
+          "perturbation": "segment_reversal_perturbation",
+          "segment_reversal_perturbation.strength": 8.97538168126766,
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.029110274936516058,
+          "ILS.ls_sample": 4
+        }
+      },
+      {
+        "number": 25,
+        "cost": 0.3608102997761102,
+        "seconds": 50.03,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_extension_score, neighborhood=swap_customers_across_routes, perturbation=segment_reversal_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_extension_score",
+          "greedy_nearest_extension_score.rule": "roulette",
+          "greedy_nearest_extension_score.alpha": 0.9902448667071801,
+          "greedy_nearest_extension_score.distance_weight": 0.07500870877619148,
+          "greedy_nearest_extension_score.depot_bias": 0.009794141638471476,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": false,
+          "perturbation": "segment_reversal_perturbation",
+          "segment_reversal_perturbation.strength": 9.498708101888747,
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.06976242083919548,
+          "ILS.ls_sample": 7
+        }
+      },
+      {
+        "number": 26,
+        "cost": 0.34908581994941745,
+        "seconds": 50.03,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes, perturbation=segment_reversal_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_route_save_ratio_score",
+          "greedy_route_save_ratio_score.rule": "rcl",
+          "greedy_route_save_ratio_score.alpha": 0.04239737681547689,
+          "greedy_route_save_ratio_score.join_weight": 4.760670979821244,
+          "greedy_route_save_ratio_score.opening_penalty": 4.952980526137267,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": false,
+          "perturbation": "segment_reversal_perturbation",
+          "segment_reversal_perturbation.strength": 8.847997628746374,
+          "ILS.strength": 2,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.07845920288061249,
+          "ILS.ls_sample": 9
+        }
+      },
+      {
+        "number": 27,
+        "cost": 0.3748081880446446,
+        "seconds": 50.44,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_route_save_ratio_score, destruction=route_removal_destruction]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_route_save_ratio_score",
+          "greedy_route_save_ratio_score.rule": "roulette",
+          "greedy_route_save_ratio_score.alpha": 0.22157066721871727,
+          "greedy_route_save_ratio_score.join_weight": 4.928172937778284,
+          "greedy_route_save_ratio_score.opening_penalty": 3.7894360582707693,
+          "destruction": "route_removal_destruction",
+          "route_removal_destruction.ratio": 0.48060958464072584,
+          "route_removal_destruction.bias_long_routes": true,
+          "LNS_MIP.destroy_ratio": 0.07687483412927709,
+          "LNS_MIP.mip_time_share": 0.9889409150396994
+        }
+      },
+      {
+        "number": 28,
+        "cost": 0.3613519057487846,
+        "seconds": 50.05,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes, perturbation=segment_reversal_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_route_save_ratio_score",
+          "greedy_route_save_ratio_score.rule": "rcl",
+          "greedy_route_save_ratio_score.alpha": 0.976503795534857,
+          "greedy_route_save_ratio_score.join_weight": 4.811253944453162,
+          "greedy_route_save_ratio_score.opening_penalty": 3.743546197165382,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": false,
+          "perturbation": "segment_reversal_perturbation",
+          "segment_reversal_perturbation.strength": 4.813407944506475,
+          "ILS.strength": 2,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.08494809533366873,
+          "ILS.ls_sample": 11
+        }
+      },
+      {
+        "number": 29,
+        "cost": 0.3564575263702652,
+        "seconds": 50.04,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes, perturbation=segment_reversal_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_route_save_ratio_score",
+          "greedy_route_save_ratio_score.rule": "rcl",
+          "greedy_route_save_ratio_score.alpha": 0.23367122637221,
+          "greedy_route_save_ratio_score.join_weight": 0.3539891237198258,
+          "greedy_route_save_ratio_score.opening_penalty": 0.023718097378711,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": false,
+          "perturbation": "segment_reversal_perturbation",
+          "segment_reversal_perturbation.strength": 6.7214727580257705,
+          "ILS.strength": 2,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.08562497564125099,
+          "ILS.ls_sample": 11
+        }
+      },
+      {
+        "number": 30,
+        "cost": 0.4034518384073132,
+        "seconds": 50.45,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_nearest_extension_score, destruction=expensive_edge_destruction]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_nearest_extension_score",
+          "greedy_nearest_extension_score.rule": "rcl",
+          "greedy_nearest_extension_score.alpha": 0.01126528773844665,
+          "greedy_nearest_extension_score.distance_weight": 4.8995953862873165,
+          "greedy_nearest_extension_score.depot_bias": 4.9979020624775,
+          "destruction": "expensive_edge_destruction",
+          "expensive_edge_destruction.ratio": 0.05330195620057343,
+          "expensive_edge_destruction.mix_randomness": 0.006591756772259649,
+          "LNS_MIP.destroy_ratio": 0.5753311997248048,
+          "LNS_MIP.mip_time_share": 0.057317247328302116
+        }
+      },
+      {
+        "number": 31,
+        "cost": 0.35701179602755734,
+        "seconds": 50.03,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes, perturbation=segment_reversal_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_route_save_ratio_score",
+          "greedy_route_save_ratio_score.rule": "rcl",
+          "greedy_route_save_ratio_score.alpha": 0.010992365903027167,
+          "greedy_route_save_ratio_score.join_weight": 3.962065970942786,
+          "greedy_route_save_ratio_score.opening_penalty": 4.959999605131621,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": false,
+          "perturbation": "segment_reversal_perturbation",
+          "segment_reversal_perturbation.strength": 9.81678759436975,
+          "ILS.strength": 2,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.04955711988321579,
+          "ILS.ls_sample": 4
+        }
+      },
+      {
+        "number": 32,
+        "cost": 0.354015174916639,
+        "seconds": 50.04,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes, perturbation=segment_reversal_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_route_save_ratio_score",
+          "greedy_route_save_ratio_score.rule": "rcl",
+          "greedy_route_save_ratio_score.alpha": 0.007533257947666145,
+          "greedy_route_save_ratio_score.join_weight": 3.830948227382855,
+          "greedy_route_save_ratio_score.opening_penalty": 4.940186352858017,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": false,
+          "perturbation": "segment_reversal_perturbation",
+          "segment_reversal_perturbation.strength": 7.794571481273175,
+          "ILS.strength": 2,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.2980503634046686,
+          "ILS.ls_sample": 7
+        }
+      },
+      {
+        "number": 33,
+        "cost": 0.3522221807298796,
+        "seconds": 50.03,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes, perturbation=segment_reversal_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_route_save_ratio_score",
+          "greedy_route_save_ratio_score.rule": "rcl",
+          "greedy_route_save_ratio_score.alpha": 0.1964086341123036,
+          "greedy_route_save_ratio_score.join_weight": 4.9965798337026515,
+          "greedy_route_save_ratio_score.opening_penalty": 4.12729056933872,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": false,
+          "perturbation": "segment_reversal_perturbation",
+          "segment_reversal_perturbation.strength": 7.9874019232984725,
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.050830999493928164,
+          "ILS.ls_sample": 8
+        }
+      },
+      {
+        "number": 34,
+        "cost": 0.36177362621103465,
+        "seconds": 50.04,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes, perturbation=route_split_merge_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_route_save_ratio_score",
+          "greedy_route_save_ratio_score.rule": "rcl",
+          "greedy_route_save_ratio_score.alpha": 0.12013104183229181,
+          "greedy_route_save_ratio_score.join_weight": 4.234531234906969,
+          "greedy_route_save_ratio_score.opening_penalty": 4.450244902124809,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": false,
+          "perturbation": "route_split_merge_perturbation",
+          "route_split_merge_perturbation.strength": 9.880704271306811,
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.11247573291137011,
+          "ILS.ls_sample": 4
+        }
+      },
+      {
+        "number": 35,
+        "cost": 1000000000000.0,
+        "seconds": 5.04,
+        "enqueued": false,
+        "summary": "ILS[constructor=random, neighborhood=swap_customers_across_routes, perturbation=segment_reversal_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "random",
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": false,
+          "perturbation": "segment_reversal_perturbation",
+          "segment_reversal_perturbation.strength": 9.867752989371644,
+          "ILS.strength": 2,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.020358220173277694,
+          "ILS.ls_sample": 170
+        }
+      },
+      {
+        "number": 36,
+        "cost": 1.0,
+        "seconds": 50.03,
+        "enqueued": false,
+        "summary": "SA[constructor=trivial, neighborhood=swap_customers_across_routes]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "trivial",
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": false,
+          "SA.T0": 765.7075866058213,
+          "SA.alpha": 0.993535889159335,
+          "SA.iters_per_T": 1
+        }
+      },
+      {
+        "number": 37,
+        "cost": 0.35989697453060004,
+        "seconds": 50.04,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_nearest_extension_score, neighborhood=swap_customers_across_routes, perturbation=segment_reversal_perturbation]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_extension_score",
+          "greedy_nearest_extension_score.rule": "roulette",
+          "greedy_nearest_extension_score.alpha": 0.0012627717200019983,
+          "greedy_nearest_extension_score.distance_weight": 4.501080028341461,
+          "greedy_nearest_extension_score.depot_bias": 0.01995808313411862,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": false,
+          "perturbation": "segment_reversal_perturbation",
+          "segment_reversal_perturbation.strength": 1.7795040198898024,
+          "ILS.strength": 3,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.0528995156341035,
+          "ILS.ls_sample": 7
+        }
+      },
+      {
+        "number": 38,
+        "cost": 0.37150263930004146,
+        "seconds": 50.96,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_route_save_ratio_score",
+          "greedy_route_save_ratio_score.rule": "roulette",
+          "greedy_route_save_ratio_score.alpha": 0.10331848537654992,
+          "greedy_route_save_ratio_score.join_weight": 3.198414405505259,
+          "greedy_route_save_ratio_score.opening_penalty": 4.998503672604066,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": false,
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.025234407517469526,
+          "VNS.ls_sample": 224
+        }
+      },
+      {
+        "number": 39,
+        "cost": 0.3639612672688519,
+        "seconds": 93.77,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_route_save_ratio_score, destruction=route_removal_destruction]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_route_save_ratio_score",
+          "greedy_route_save_ratio_score.rule": "rcl",
+          "greedy_route_save_ratio_score.alpha": 0.0040492728671020165,
+          "greedy_route_save_ratio_score.join_weight": 4.408195103203242,
+          "greedy_route_save_ratio_score.opening_penalty": 4.271042804274013,
+          "destruction": "route_removal_destruction",
+          "route_removal_destruction.ratio": 0.07180516626863087,
+          "route_removal_destruction.bias_long_routes": false,
+          "LNS_MIP.destroy_ratio": 0.5991572411596309,
+          "LNS_MIP.mip_time_share": 0.9168730616841185
+        }
+      }
+    ]
+  },
+  "test": {
+    "tuned": {
+      "label": "tuned",
+      "summary": "ILS[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes, perturbation=segment_reversal_perturbation]",
+      "mean": 735.5908592092584,
+      "std": 169.5100826757782,
+      "per_instance": [
+        923.2580606349009,
+        534.0704288188899,
+        937.2445330997397,
+        694.7922632708048,
+        837.8121956854545,
+        405.1721602991656,
+        811.9233848818384,
+        664.4081079929227,
+        906.0170837940432,
+        641.2103736148246
+      ],
+      "config": {
+        "skeleton": "ILS",
+        "constructor": "greedy_route_save_ratio_score",
+        "greedy_route_save_ratio_score.rule": "greedy",
+        "greedy_route_save_ratio_score.alpha": 0.5,
+        "greedy_route_save_ratio_score.join_weight": 2.5,
+        "greedy_route_save_ratio_score.opening_penalty": 2.5,
+        "neighborhood": "swap_customers_across_routes",
+        "swap_customers_across_routes.allow_within_route": true,
+        "perturbation": "segment_reversal_perturbation",
+        "segment_reversal_perturbation.strength": 5.5,
+        "ILS.strength": 4,
+        "ILS.ls_strategy": "first",
+        "ILS.ls_time_share": 0.16,
+        "ILS.ls_sample": 32
+      },
+      "gap_per_instance": [
+        0.060428279413187604,
+        0.03398772880069477,
+        0.13160482592103884,
+        0.052097714488746144,
+        0.039699573837789486,
+        0.03826155369420036,
+        0.006181357336473942,
+        0.017694786305914298,
+        0.048483396562040336,
+        0.09326194028930895
+      ],
+      "mean_gap": 0.052170115664939475
+    },
+    "baselines": [
+      {
+        "label": "LNS_MIP:constructor=greedy_route_save_ratio_score",
+        "summary": "LNS_MIP[constructor=greedy_route_save_ratio_score, destruction=customer_star_destruction]",
+        "mean": 732.3028850540362,
+        "std": 166.61813612388895,
+        "per_instance": [
+          918.8165249813114,
+          540.0476165242887,
+          895.9297094574339,
+          731.8275922055907,
+          838.3829085370173,
+          391.8166389219368,
+          810.62919751097,
+          673.0915013692239,
+          894.1505422209735,
+          628.336618811616
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_route_save_ratio_score",
+          "greedy_route_save_ratio_score.rule": "greedy",
+          "greedy_route_save_ratio_score.alpha": 0.5,
+          "greedy_route_save_ratio_score.join_weight": 2.5,
+          "greedy_route_save_ratio_score.opening_penalty": 2.5,
+          "destruction": "customer_star_destruction",
+          "customer_star_destruction.ratio": 0.42500000000000004,
+          "customer_star_destruction.radius": 0.5,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.055326856298777684,
+          0.04555987061313088,
+          0.08172237564833652,
+          0.10817891600385295,
+          0.04040781121080616,
+          0.004037769993762757,
+          0.004577527184867246,
+          0.030995412924093912,
+          0.034750905159256794,
+          0.07131222341928971
+        ],
+        "mean_gap": 0.04768696684561746
+      },
+      {
+        "label": "SA:constructor=greedy_route_save_ratio_score",
+        "summary": "SA[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes]",
+        "mean": 751.9564591052863,
+        "std": 167.87476027563432,
+        "per_instance": [
+          942.093098192447,
+          542.9717965773319,
+          939.0520889518059,
+          711.0351411844846,
+          847.4331373030461,
+          418.71684710360626,
+          830.3635731672832,
+          701.651338507107,
+          918.6071391509709,
+          667.6404309147799
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_route_save_ratio_score",
+          "greedy_route_save_ratio_score.rule": "greedy",
+          "greedy_route_save_ratio_score.alpha": 0.5,
+          "greedy_route_save_ratio_score.join_weight": 2.5,
+          "greedy_route_save_ratio_score.opening_penalty": 2.5,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.08206167458343538,
+          0.05122123310110295,
+          0.13378722214004382,
+          0.07669369178022255,
+          0.051638871154349064,
+          0.07297007748689201,
+          0.029033481100946217,
+          0.0747414133164901,
+          0.06305317039925905,
+          0.13832511598749883
+        ],
+        "mean_gap": 0.077352595105024
+      },
+      {
+        "label": "VNS:constructor=greedy_route_save_ratio_score",
+        "summary": "VNS[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes]",
+        "mean": 756.6058977071414,
+        "std": 174.84534706070374,
+        "per_instance": [
+          941.1300844563619,
+          549.2093974955404,
+          980.8776363983692,
+          701.0291541375041,
+          864.4609353904358,
+          415.46012513875,
+          830.6274220652543,
+          695.7832807950883,
+          925.8183938275267,
+          661.6625473665828
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_route_save_ratio_score",
+          "greedy_route_save_ratio_score.rule": "greedy",
+          "greedy_route_save_ratio_score.alpha": 0.5,
+          "greedy_route_save_ratio_score.join_weight": 2.5,
+          "greedy_route_save_ratio_score.opening_penalty": 2.5,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.08095558405170945,
+          0.06329754824337172,
+          0.184286307134209,
+          0.06154200305275459,
+          0.07276985314055737,
+          0.06462466400960619,
+          0.029360457570937835,
+          0.06575312484225132,
+          0.0713983560828305,
+          0.12813284082220125
+        ],
+        "mean_gap": 0.08221207389504293
+      },
+      {
+        "label": "LNS_MIP:constructor=greedy_nearest_extension_score",
+        "summary": "LNS_MIP[constructor=greedy_nearest_extension_score, destruction=customer_star_destruction]",
+        "mean": 761.5088583136388,
+        "std": 176.00920474038128,
+        "per_instance": [
+          954.7251275489308,
+          582.7428483068546,
+          985.0756861268096,
+          673.3008984079677,
+          874.7732096453861,
+          420.14356135188365,
+          881.6119452039729,
+          669.7631328442308,
+          885.9738844214253,
+          686.978289278927
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_nearest_extension_score",
+          "greedy_nearest_extension_score.rule": "greedy",
+          "greedy_nearest_extension_score.alpha": 0.5,
+          "greedy_nearest_extension_score.distance_weight": 2.5,
+          "greedy_nearest_extension_score.depot_bias": 2.5,
+          "destruction": "customer_star_destruction",
+          "customer_star_destruction.ratio": 0.42500000000000004,
+          "customer_star_destruction.radius": 0.5,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.09657046874092302,
+          0.1282200280742082,
+          0.1893549238765743,
+          0.019554151399843768,
+          0.0855670733330832,
+          0.07662606054110875,
+          0.09254336084737756,
+          0.025897246218960446,
+          0.025288511904711174,
+          0.1712961118200256
+        ],
+        "mean_gap": 0.0910917936756816
+      },
+      {
+        "label": "VNS:constructor=greedy_nearest_extension_score",
+        "summary": "VNS[constructor=greedy_nearest_extension_score, neighborhood=swap_customers_across_routes]",
+        "mean": 767.7273250026101,
+        "std": 188.21779409080526,
+        "per_instance": [
+          993.3954645213911,
+          544.745492268053,
+          989.3758036562205,
+          677.2502096852314,
+          905.3056852896977,
+          420.5130566509853,
+          897.908729629109,
+          685.2429398754668,
+          904.3993561911308,
+          659.1365122588153
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_nearest_extension_score",
+          "greedy_nearest_extension_score.rule": "greedy",
+          "greedy_nearest_extension_score.alpha": 0.5,
+          "greedy_nearest_extension_score.distance_weight": 2.5,
+          "greedy_nearest_extension_score.depot_bias": 2.5,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.14098613175916377,
+          0.05465519888514411,
+          0.19454677464386078,
+          0.025534444486375055,
+          0.12345695137386735,
+          0.07757289944298369,
+          0.11273925737952346,
+          0.04960815329428229,
+          0.04661128999567086,
+          0.12382595784464091
+        ],
+        "mean_gap": 0.09495370591055123
+      },
+      {
+        "label": "SA:constructor=greedy_nearest_extension_score",
+        "summary": "SA[constructor=greedy_nearest_extension_score, neighborhood=swap_customers_across_routes]",
+        "mean": 768.6722494232313,
+        "std": 192.3122682390146,
+        "per_instance": [
+          976.6241018068544,
+          542.353822357027,
+          1014.8424020430198,
+          676.3264373622529,
+          918.3497262957796,
+          415.46591926076263,
+          887.5792002883558,
+          677.9527764360737,
+          909.5780373305514,
+          667.6500710516359
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_nearest_extension_score",
+          "greedy_nearest_extension_score.rule": "greedy",
+          "greedy_nearest_extension_score.alpha": 0.5,
+          "greedy_nearest_extension_score.distance_weight": 2.5,
+          "greedy_nearest_extension_score.depot_bias": 2.5,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.12172301555678748,
+          0.05002480333073796,
+          0.22529448734481958,
+          0.024135610905329806,
+          0.139644211412557,
+          0.06463951156013549,
+          0.09993832068247469,
+          0.0384415807700538,
+          0.052604290887037955,
+          0.13834155239457754
+        ],
+        "mean_gap": 0.09547873848445113
+      },
+      {
+        "label": "ILS:constructor=greedy_route_save_ratio_score",
+        "summary": "ILS[constructor=greedy_route_save_ratio_score, neighborhood=swap_customers_across_routes, perturbation=customer_relocation_perturbation]",
+        "mean": 773.6707444176024,
+        "std": 171.6204703463324,
+        "per_instance": [
+          953.0622720307244,
+          550.0798629149865,
+          983.2507401232649,
+          754.5211847211109,
+          870.8209423867104,
+          421.1057683129956,
+          835.425092389217,
+          744.940302784802,
+          926.8505210667779,
+          696.6507574454339
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_route_save_ratio_score",
+          "greedy_route_save_ratio_score.rule": "greedy",
+          "greedy_route_save_ratio_score.alpha": 0.5,
+          "greedy_route_save_ratio_score.join_weight": 2.5,
+          "greedy_route_save_ratio_score.opening_penalty": 2.5,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "perturbation": "customer_relocation_perturbation",
+          "customer_relocation_perturbation.strength": 5.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.09466055959280067,
+          0.06498281391899259,
+          0.18715153123812744,
+          0.14254296707534822,
+          0.08066242930223767,
+          0.07909173462316278,
+          0.03530600185319812,
+          0.14104848079505633,
+          0.07259277977842195,
+          0.1877876436951072
+        ],
+        "mean_gap": 0.1085826941872453
+      },
+      {
+        "label": "ILS:constructor=greedy_nearest_extension_score",
+        "summary": "ILS[constructor=greedy_nearest_extension_score, neighborhood=swap_customers_across_routes, perturbation=customer_relocation_perturbation]",
+        "mean": 811.7838434414839,
+        "std": 201.0880354169871,
+        "per_instance": [
+          1034.9357831143257,
+          586.3179780085891,
+          1093.7782623039589,
+          680.0414769838004,
+          959.497578415524,
+          451.20483585709485,
+          933.4170079608107,
+          704.6842588609765,
+          951.4012591066628,
+          722.5599938030958
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_nearest_extension_score",
+          "greedy_nearest_extension_score.rule": "greedy",
+          "greedy_nearest_extension_score.alpha": 0.5,
+          "greedy_nearest_extension_score.distance_weight": 2.5,
+          "greedy_nearest_extension_score.depot_bias": 2.5,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "perturbation": "customer_relocation_perturbation",
+          "customer_relocation_perturbation.strength": 5.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.18869817506533196,
+          0.1351416624523548,
+          0.32059960490478695,
+          0.029761155261084686,
+          0.1907074503264249,
+          0.15622118154767176,
+          0.15674312320446518,
+          0.0793870327697779,
+          0.10100398931143655,
+          0.23196282110545738
+        ],
+        "mean_gap": 0.1590226195948792
+      },
+      {
+        "label": "SA:constructor=greedy_high_demand_urgent_score",
+        "summary": "SA[constructor=greedy_high_demand_urgent_score, neighborhood=swap_customers_across_routes]",
+        "mean": 832.5509347834309,
+        "std": 218.2820005572978,
+        "per_instance": [
+          1095.1397006931577,
+          598.4304012980417,
+          1045.4567414145768,
+          715.3753883521335,
+          932.9425503614507,
+          437.5432120098831,
+          1048.8318959707742,
+          782.7992882352389,
+          1007.822311189729,
+          661.1678583093232
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_high_demand_urgent_score",
+          "greedy_high_demand_urgent_score.rule": "greedy",
+          "greedy_high_demand_urgent_score.alpha": 0.5,
+          "greedy_high_demand_urgent_score.demand_weight": 5.0,
+          "greedy_high_demand_urgent_score.balance_weight": 5.0,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.2578467040130801,
+          0.15859193487247572,
+          0.2622574494659885,
+          0.08326596433821434,
+          0.1577534643457337,
+          0.1212130043048954,
+          0.2997717769383427,
+          0.19903827899925206,
+          0.16629694833372424,
+          0.12728939732715822
+        ],
+        "mean_gap": 0.18333249229388648
+      },
+      {
+        "label": "VNS:constructor=greedy_high_demand_urgent_score",
+        "summary": "VNS[constructor=greedy_high_demand_urgent_score, neighborhood=swap_customers_across_routes]",
+        "mean": 840.360776841753,
+        "std": 217.4452213139629,
+        "per_instance": [
+          1057.2790881966794,
+          584.931181309993,
+          1149.9791166490575,
+          728.8880073809936,
+          923.3735355224189,
+          462.94545608995406,
+          1055.6620483886604,
+          769.1146848576741,
+          986.1910449949337,
+          685.2436050271658
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_high_demand_urgent_score",
+          "greedy_high_demand_urgent_score.rule": "greedy",
+          "greedy_high_demand_urgent_score.alpha": 0.5,
+          "greedy_high_demand_urgent_score.demand_weight": 5.0,
+          "greedy_high_demand_urgent_score.balance_weight": 5.0,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.21436106778742842,
+          0.13245675295107268,
+          0.38845506391447004,
+          0.10372761359448951,
+          0.14587860658951649,
+          0.18630674960669488,
+          0.3082360879295133,
+          0.17807714179687406,
+          0.14126428188897946,
+          0.16833847989623363
+        ],
+        "mean_gap": 0.19671018459552725
+      },
+      {
+        "label": "ILS:constructor=greedy_high_demand_urgent_score",
+        "summary": "ILS[constructor=greedy_high_demand_urgent_score, neighborhood=swap_customers_across_routes, perturbation=customer_relocation_perturbation]",
+        "mean": 891.2560810151235,
+        "std": 222.70489677517966,
+        "per_instance": [
+          1153.3082327196282,
+          622.7011212993901,
+          1142.4503204160576,
+          805.5236796148598,
+          1015.8181001925461,
+          474.56600514748766,
+          1044.9074406947361,
+          843.7187299895182,
+          1079.8907287934805,
+          729.6764512835304
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_high_demand_urgent_score",
+          "greedy_high_demand_urgent_score.rule": "greedy",
+          "greedy_high_demand_urgent_score.alpha": 0.5,
+          "greedy_high_demand_urgent_score.demand_weight": 5.0,
+          "greedy_high_demand_urgent_score.balance_weight": 5.0,
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "perturbation": "customer_relocation_perturbation",
+          "customer_relocation_perturbation.strength": 5.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.32465744627771065,
+          0.20558129301022443,
+          0.3793649899265622,
+          0.21977412111602385,
+          0.2605995130004279,
+          0.21608463293990807,
+          0.29490837010713666,
+          0.29235050308586313,
+          0.24969773693431746,
+          0.24409636172362548
+        ],
+        "mean_gap": 0.26871149681218
+      },
+      {
+        "label": "ILS:constructor=random",
+        "summary": "ILS[constructor=random, neighborhood=swap_customers_across_routes, perturbation=customer_relocation_perturbation]",
+        "mean": 893.3803408049125,
+        "std": 217.54508781564166,
+        "per_instance": [
+          1085.2764608573455,
+          612.0356629647914,
+          1132.8770386364167,
+          856.0574312640965,
+          1089.2009425801123,
+          478.0357909050061,
+          1009.8448074648178,
+          800.112015290512,
+          1092.932283328783,
+          777.430974757244
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "random",
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "perturbation": "customer_relocation_perturbation",
+          "customer_relocation_perturbation.strength": 5.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.24651806373959312,
+          0.18493241891996864,
+          0.36780645692993313,
+          0.29629547494402625,
+          0.3516653990668591,
+          0.22497602653646487,
+          0.2514567728850607,
+          0.22555672729771323,
+          0.2647900057670001,
+          0.32551769415800225
+        ],
+        "mean_gap": 0.27395150402446217
+      },
+      {
+        "label": "default:ILS",
+        "summary": "ILS[constructor=trivial, neighborhood=swap_customers_across_routes, perturbation=customer_relocation_perturbation]",
+        "mean": 971.3500911432128,
+        "std": 243.69832147206296,
+        "per_instance": [
+          1202.6524334184187,
+          635.3974733208414,
+          1264.6188073194119,
+          917.9633609703512,
+          1127.2289023519086,
+          507.66706329769386,
+          1117.4328561594482,
+          905.8722671499587,
+          1187.5306846905482,
+          847.1370627535476
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "trivial",
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "perturbation": "customer_relocation_perturbation",
+          "customer_relocation_perturbation.strength": 5.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.38133280940430403,
+          0.23016208139004007,
+          0.5268680635354163,
+          0.39003728900891,
+          0.39885694601767613,
+          0.3009067392726317,
+          0.3847859648808058,
+          0.3875530299028973,
+          0.3742634968779798,
+          0.4443663843050425
+        ],
+        "mean_gap": 0.38191328045957035
+      },
+      {
+        "label": "default:LNS_MIP",
+        "summary": "LNS_MIP[constructor=trivial, destruction=customer_star_destruction]",
+        "mean": 1020.9474951519204,
+        "std": 292.5423622612272,
+        "per_instance": [
+          1202.73822015197,
+          794.1078941378489,
+          1139.6665338653586,
+          993.2920050553566,
+          1250.803858154375,
+          653.402206377045,
+          1342.8032086555286,
+          741.1482472223566,
+          1207.1037245276539,
+          884.4090533717117
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "trivial",
+          "destruction": "customer_star_destruction",
+          "customer_star_destruction.ratio": 0.42500000000000004,
+          "customer_star_destruction.radius": 0.5,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.3814313416372029,
+          0.5374335922289786,
+          0.3760039179929798,
+          0.5041046131098987,
+          0.5522097254908032,
+          0.6743558823966078,
+          0.6640776460914748,
+          0.13524007007752165,
+          0.3969142919419255,
+          0.5079150267762205
+        ],
+        "mean_gap": 0.47296861077436136
+      },
+      {
+        "label": "LNS_MIP:destruction=expensive_edge_destruction",
+        "summary": "LNS_MIP[constructor=trivial, destruction=expensive_edge_destruction]",
+        "mean": 1174.2453342981562,
+        "std": 430.3226876308343,
+        "per_instance": [
+          1269.8513287073679,
+          719.2363366121097,
+          1238.0489707635438,
+          1367.0951646906442,
+          1157.1722125065892,
+          712.0966477709303,
+          1100.9396294524201,
+          2086.951047489001,
+          1261.1049156015083,
+          829.957089387448
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "trivial",
+          "destruction": "expensive_edge_destruction",
+          "expensive_edge_destruction.ratio": 0.42500000000000004,
+          "expensive_edge_destruction.mix_randomness": 0.5,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.45851557330102427,
+          0.3924784186406979,
+          0.49478832958261876,
+          1.0701406366970996,
+          0.43601568752017184,
+          0.8247615318613498,
+          0.36434662596787276,
+          2.196648527847054,
+          0.45940687982824996,
+          0.4150745765158828
+        ],
+        "mean_gap": 0.7112176787762022
+      },
+      {
+        "label": "LNS_MIP:constructor=greedy_high_demand_urgent_score",
+        "summary": "LNS_MIP[constructor=greedy_high_demand_urgent_score, destruction=customer_star_destruction]",
+        "mean": 1197.661088353525,
+        "std": 329.36179683063386,
+        "per_instance": [
+          1331.4310455261582,
+          736.4576536015719,
+          1689.5286696341177,
+          1237.4533789576217,
+          1448.0436274870176,
+          721.8998346523101,
+          1490.9205314327537,
+          1040.409109472266,
+          1234.2664095818845,
+          1046.2006231895487
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_high_demand_urgent_score",
+          "greedy_high_demand_urgent_score.rule": "greedy",
+          "greedy_high_demand_urgent_score.alpha": 0.5,
+          "greedy_high_demand_urgent_score.demand_weight": 5.0,
+          "greedy_high_demand_urgent_score.balance_weight": 5.0,
+          "destruction": "customer_star_destruction",
+          "customer_star_destruction.ratio": 0.42500000000000004,
+          "customer_star_destruction.radius": 0.5,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.529244306617466,
+          0.42581977116656367,
+          1.0398932493815483,
+          0.8738289710636115,
+          0.7969783086829287,
+          0.8498823892151737,
+          0.84763300568827,
+          0.5936273407825162,
+          0.4283481631070732,
+          0.7837692125785136
+        ],
+        "mean_gap": 0.7169024718283665
+      },
+      {
+        "label": "LNS_MIP:constructor=random",
+        "summary": "LNS_MIP[constructor=random, destruction=customer_star_destruction]",
+        "mean": 1223.814475503557,
+        "std": 329.9974910075841,
+        "per_instance": [
+          1486.8950213503413,
+          865.5971513317126,
+          1624.8904181192145,
+          1389.9123105333629,
+          1331.9237987983224,
+          587.6243968752239,
+          1349.394598772304,
+          1118.4611737015207,
+          1358.336157129152,
+          1125.1097284244177
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "random",
+          "destruction": "customer_star_destruction",
+          "customer_star_destruction.ratio": 0.42500000000000004,
+          "customer_star_destruction.radius": 0.5,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.707805863156277,
+          0.6758404589843718,
+          0.9618506950959013,
+          1.1046917799111455,
+          0.6528771162874436,
+          0.5057989641682292,
+          0.6722460693416521,
+          0.7131821413199187,
+          0.5719272110585851,
+          0.9183090220473286
+        ],
+        "mean_gap": 0.7484529321370853
+      },
+      {
+        "label": "LNS_MIP:destruction=route_removal_destruction",
+        "summary": "LNS_MIP[constructor=trivial, destruction=route_removal_destruction]",
+        "mean": 1215.7531908638477,
+        "std": 509.5953513704186,
+        "per_instance": [
+          1020.8586398668498,
+          1420.5238080083886,
+          1028.6348637860117,
+          1226.7879666288634,
+          990.8930969903699,
+          649.0105210214583,
+          1343.3447606856287,
+          1187.6464039591374,
+          1493.9938861323376,
+          1795.8379615594324
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "trivial",
+          "destruction": "route_removal_destruction",
+          "route_removal_destruction.ratio": 0.42500000000000004,
+          "route_removal_destruction.bias_long_routes": true,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.1725295636776249,
+          1.75020691409222,
+          0.2419471491833283,
+          0.8576787395075742,
+          0.22966833851924692,
+          0.6631021031210013,
+          0.6647487679816194,
+          0.8191553335123607,
+          0.728916388215741,
+          2.0618988324088323
+        ],
+        "mean_gap": 0.8189852130219549
+      },
+      {
+        "label": "ILS:perturbation=segment_reversal_perturbation",
+        "summary": "ILS[constructor=trivial, neighborhood=swap_customers_across_routes, perturbation=segment_reversal_perturbation]",
+        "mean": 1930.8553544131237,
+        "std": 428.6493800229767,
+        "per_instance": [
+          2317.426661069516,
+          1348.4537960830244,
+          2388.1413597911533,
+          2089.4967045837325,
+          2095.309504192588,
+          989.0824295338499,
+          2065.0685631088772,
+          2000.8509089210952,
+          2294.2489040503247,
+          1720.474712797075
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "trivial",
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "perturbation": "segment_reversal_perturbation",
+          "segment_reversal_perturbation.strength": 5.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          1.6617311796598444,
+          1.6106756764048085,
+          1.8833801556393965,
+          2.1640460372649155,
+          1.6002156686021671,
+          1.5345429934307464,
+          1.5591497036683644,
+          2.0647662388342476,
+          1.655007202959365,
+          1.9334046985663667
+        ],
+        "mean_gap": 1.7666919555030223
+      },
+      {
+        "label": "default:SA",
+        "summary": "SA[constructor=trivial, neighborhood=swap_customers_across_routes]",
+        "mean": 2013.6181654122934,
+        "std": 442.46850412899767,
+        "per_instance": [
+          2410.086259688992,
+          1420.5238080083886,
+          2479.855146355543,
+          2186.428317170531,
+          2174.3328308347964,
+          1033.0543556369164,
+          2162.1325513117845,
+          2086.951047489001,
+          2386.9793760675475,
+          1795.8379615594324
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "trivial",
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          1.7681573923566472,
+          1.75020691409222,
+          1.994113011169119,
+          2.310825921635232,
+          1.6982812248882377,
+          1.647221910661848,
+          1.6794368849677501,
+          2.196648527847054,
+          1.762319042884362,
+          2.0618988324088323
+        ],
+        "mean_gap": 1.8869109662911303
+      },
+      {
+        "label": "ILS:perturbation=route_split_merge_perturbation",
+        "summary": "ILS[constructor=trivial, neighborhood=swap_customers_across_routes, perturbation=route_split_merge_perturbation]",
+        "mean": 2013.6181654122934,
+        "std": 442.46850412899767,
+        "per_instance": [
+          2410.086259688992,
+          1420.5238080083886,
+          2479.855146355543,
+          2186.428317170531,
+          2174.3328308347964,
+          1033.0543556369164,
+          2162.1325513117845,
+          2086.951047489001,
+          2386.9793760675475,
+          1795.8379615594324
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "trivial",
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "perturbation": "route_split_merge_perturbation",
+          "route_split_merge_perturbation.strength": 5.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          1.7681573923566472,
+          1.75020691409222,
+          1.994113011169119,
+          2.310825921635232,
+          1.6982812248882377,
+          1.647221910661848,
+          1.6794368849677501,
+          2.196648527847054,
+          1.762319042884362,
+          2.0618988324088323
+        ],
+        "mean_gap": 1.8869109662911303
+      },
+      {
+        "label": "default:VNS",
+        "summary": "VNS[constructor=trivial, neighborhood=swap_customers_across_routes]",
+        "mean": 2013.6181654122934,
+        "std": 442.46850412899767,
+        "per_instance": [
+          2410.086259688992,
+          1420.5238080083886,
+          2479.855146355543,
+          2186.428317170531,
+          2174.3328308347964,
+          1033.0543556369164,
+          2162.1325513117845,
+          2086.951047489001,
+          2386.9793760675475,
+          1795.8379615594324
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "trivial",
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          1.7681573923566472,
+          1.75020691409222,
+          1.994113011169119,
+          2.310825921635232,
+          1.6982812248882377,
+          1.647221910661848,
+          1.6794368849677501,
+          2.196648527847054,
+          1.762319042884362,
+          2.0618988324088323
+        ],
+        "mean_gap": 1.8869109662911303
+      },
+      {
+        "label": "VNS:constructor=random",
+        "summary": "VNS[constructor=random, neighborhood=swap_customers_across_routes]",
+        "mean": 166666667335.9713,
+        "std": 372677995950.6428,
+        "per_instance": [
+          1100.9163171581051,
+          569.675715434162,
+          333333333975.4128,
+          333333333789.996,
+          998.6314580616231,
+          448.67528218575177,
+          666666666968.3539,
+          729.435952432923,
+          333333334017.82196,
+          760.7938276050795
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "random",
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.2644815634526409,
+          0.10292138895866539,
+          402458051.3499148,
+          504754091.9607031,
+          0.2392714103644859,
+          0.1497391509880639,
+          826171019.9995036,
+          0.11729997994392644,
+          385748206.7212162,
+          0.2971514035848866
+        ],
+        "mean_gap": 211913137.12022024
+      },
+      {
+        "label": "SA:constructor=random",
+        "summary": "SA[constructor=random, neighborhood=swap_customers_across_routes]",
+        "mean": 166666667343.6225,
+        "std": 372677995947.22107,
+        "per_instance": [
+          1047.163652035135,
+          582.1100834096657,
+          333333334007.651,
+          333333333823.69147,
+          1006.6460406666126,
+          464.25269744372855,
+          666666667009.3542,
+          750.8226681975398,
+          333333333979.82654,
+          764.7065111242131
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "random",
+          "neighborhood": "swap_customers_across_routes",
+          "swap_customers_across_routes.allow_within_route": true,
+          "SA.T0": 31.622776601683793,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.2027427618969563,
+          0.12699496279516598,
+          402458051.3888384,
+          504754092.0117269,
+          0.24921726477172326,
+          0.18965658104136465,
+          826171020.0503136,
+          0.15005868482428408,
+          385748206.67724615,
+          0.3038225183264512
+        ],
+        "mean_gap": 211913137.13506177
+      }
+    ],
+    "best_baseline": "LNS_MIP:constructor=greedy_route_save_ratio_score",
+    "gain_vs_best_baseline": -0.004489910148284552,
+    "wins_per_instance": "4/10",
+    "reference": 2013.6181654122934,
+    "best_known": [
+      870.6463968933448,
+      516.5152486271277,
+      828.2436691951142,
+      660.3875796920921,
+      805.8214283890504,
+      390.240935781102,
+      806.9354286498926,
+      652.8559612697129,
+      864.1215366546177,
+      586.5112010074563
+    ],
+    "best_baseline_by_gap": "LNS_MIP:constructor=greedy_route_save_ratio_score",
+    "tuned_vs_best_baseline": {
+      "a": "tuned",
+      "b": "LNS_MIP:constructor=greedy_route_save_ratio_score",
+      "mean_diff": -0.004483148819322012,
+      "ci95": [
+        -0.021285577653063242,
+        0.013055059247606174
+      ],
+      "wins_a": 4,
+      "n": 10,
+      "significant": false
+    },
+    "mip_reference": [
+      870.6463968933448,
+      516.5152486271277,
+      918.7937864558506,
+      674.6788789422478,
+      879.4305807347789,
+      397.42199910218886,
+      811.3981632926534,
+      671.1042273950072,
+      936.0292921889559,
+      597.3087684931404
+    ]
+  }
+}

@@ -104,15 +104,17 @@ class GreedyScore(Protocol):
 class Neighborhood(Protocol):
     """Slot `neighborhood`: movimientos locales con delta incremental.
 
-    Propiedad verificable: ``undo(apply(sol, m)) == sol`` y
-    ``delta(sol, m) == f(apply(sol, m)) - f(sol)``.
+    Propiedad verificable: ``delta(sol, m) == f(apply(sol, m)) - f(sol)``.
+
+    Sin `undo`: las soluciones son inmutables, así que el esqueleto conserva la anterior y ningún
+    esqueleto deshace movimientos. Era la mayor fuente de rechazos de los vecindarios generados
+    (corridas 36, 37 y 39) sin que se usara en ningún lado; si un componente lo define, se verifica
+    ``undo(apply(sol, m), m) == sol``.
     """
 
     def moves(self, sol: Solution) -> Iterable[Move]: ...
 
     def apply(self, sol: Solution, m: Move) -> Solution: ...
-
-    def undo(self, sol: Solution, m: Move) -> Solution: ...
 
     def delta(self, sol: Solution, m: Move) -> float: ...
 

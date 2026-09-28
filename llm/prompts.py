@@ -14,6 +14,7 @@ from core import contracts
 from core.validation.syntactic import PROTOCOL_FOR_SLOT
 
 from .fewshot import FEWSHOT
+from .patching import PATCH_INSTRUCTIONS
 
 
 @dataclass
@@ -65,8 +66,8 @@ def protocol_source(slot: str) -> str:
 
 SLOT_HINTS = {
     "neighborhood": (
-        "Un movimiento `m` debe ser un objeto pequeño y hashable (tupla). Propiedades que se verificarán automáticamente: "
-        "`undo(apply(sol, m), m) == sol` (cuidado con movimientos compuestos: la inversa debe restaurar TODAS las celdas tocadas); "
+        "Un movimiento `m` debe ser un objeto pequeño y hashable (tupla). No escribas `undo`: las soluciones son inmutables y el "
+        "esqueleto conserva la anterior. Propiedades que se verificarán automáticamente: "
         "`delta(sol, m) == objective(apply(sol, m)) - objective(sol)` (puedes implementarlo literalmente así si no hay forma "
         "incremental barata); `moves(sol)` no vacío; y al menos un movimiento debe MEJORAR la solución de partida del esqueleto "
         "(no basta con que mejore soluciones aleatorias). Un vecindario con 6 movimientos que nunca mejoran es inútil aunque sea correcto. "
@@ -267,15 +268,16 @@ def correction_prompt(spec: ProblemSpec, slot: str, module_source: str, feedback
     return "\n".join(
         [
             f"El siguiente componente para el slot `{slot}` del problema '{spec.name}' fue RECHAZADO por el validador automático.",
-            "Corrígelo manteniendo la misma idea algorítmica y el mismo `COMPONENT['name']`. Devuelve el módulo completo corregido "
-            "en un único bloque ```python```.",
+            "Corrígelo manteniendo la misma idea algorítmica y el mismo `COMPONENT['name']`. El reporte dice qué método falla: "
+            "corrige ese.",
+            PATCH_INSTRUCTIONS,
             *pinned,
             "Importante: arregla SOLO lo que el reporte señala y no rompas lo que ya pasaba. Si el problema es que el operador no "
-            "mejora, NO agregues movimientos compuestos (dos cambios a la vez, mover+quitar): mantén movimientos elementales con "
-            "`undo` exacto y usa las pistas del reporte sobre qué movimientos concretos sí mejoran.",
+            "mejora, NO agregues movimientos compuestos (dos cambios a la vez, mover+quitar): mantén movimientos elementales "
+            "y usa las pistas del reporte sobre qué movimientos concretos sí mejoran.",
             f"\n# Reporte del validador\n{feedback}",
             f"\n# Contrato del slot (Protocol exacto)\n```python\n{protocol_source(slot)}```",
-            f"\n# Módulo rechazado\n```python\n{module_source}\n```",
+            f"\n# Módulo rechazado (se mantiene salvo lo que devuelvas)\n```python\n{module_source}\n```",
             f"\n# Recordatorio del problema\n{spec.solution_representation}\n{spec.variable_naming}",
         ]
     )
@@ -300,5 +302,7 @@ Reglas:
    explícitamente (p.ej. PuLP para un LP auxiliar). Nada de I/O ni prints.
 3. Las funciones no modifican sus argumentos y dan siempre el mismo resultado para la misma entrada.
 4. El objetivo se MINIMIZA.
+5. Toda caché que dependa de la solución va acotada: functools.lru_cache(maxsize=<= 8192), nunca maxsize=None ni
+   functools.cache ni un dict global que solo crece (el tuner evalúa millones de soluciones distintas durante horas).
 
 Formato de salida: un único bloque ```python ... ``` con el módulo completo. Sin texto fuera del bloque salvo una línea breve."""

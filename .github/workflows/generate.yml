@@ -14,7 +14,7 @@ on:
         description: "Qué generar: componentes (slots) o el ProblemModel completo (§6.1)"
         default: components
         type: choice
-        options: [components, problem_model]
+        options: [components, problem_model, optimize]
       model_mode:
         description: "Con target=problem_model: por piezas validadas con casos de prueba, o en un solo módulo"
         default: parts
@@ -65,6 +65,22 @@ on:
         description: "Planificador de ideas + implementación en paralelo (escribe en <dir>_planner)"
         default: false
         type: boolean
+      variant:
+        description: "Ciclo completo (llm.cycle): representación (cvrp: routes | tour; clsp: setups). Con target=problem_model genera el modelo por piezas del ciclo; con target=components, los componentes desde cero sobre ese modelo"
+        default: ""
+        type: string
+      reference:
+        description: "Ciclo completo, target=components: usar las piezas de referencia de la variante en vez del modelo generado"
+        default: false
+        type: boolean
+      construction_only:
+        description: "Ciclo, target=problem_model: solo la vista constructiva, sobre el modelo ya aceptado del workspace"
+        default: false
+        type: boolean
+      opt_slots:
+        description: "Con target=optimize: slots cuyos componentes se aceleran (none = solo el modelo)"
+        default: "neighborhood greedy_score"
+        type: string
       workspace:
         description: "Directorio de salida (vacío = según from_scratch/planner); úsalo para no pisar una corrida anterior"
         default: ""
@@ -79,12 +95,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      WS: ${{ inputs.workspace || (inputs.target == 'problem_model' && format('generated/{0}_model{1}', inputs.problem, inputs.model_mode == 'parts' && '_parts' || '')) || format('generated/{0}{1}{2}', inputs.problem, inputs.from_scratch && '_scratch' || '', inputs.planner && '_planner' || '') }}
+      WS: ${{ inputs.workspace || (inputs.variant != '' && format('generated/{0}_{1}_cycle{2}', inputs.problem, inputs.variant, inputs.reference && '_ref' || '')) || (inputs.target == 'problem_model' && format('generated/{0}_model{1}', inputs.problem, inputs.model_mode == 'parts' && '_parts' || '')) || format('generated/{0}{1}{2}', inputs.problem, inputs.from_scratch && '_scratch' || '', inputs.planner && '_planner' || '') }}
       TARGET: ${{ inputs.target }}
       MODEL_MODE: ${{ inputs.model_mode }}
       PKG: ${{ inputs.problem == 'cvrp' && 'cvrp' || 'lotsizing' }}
       SCRATCH: ${{ inputs.from_scratch && 'true' || 'false' }}
       PLANNER: ${{ inputs.planner && 'true' || 'false' }}
+      VARIANT: ${{ inputs.variant }}
+      REFERENCE: ${{ inputs.reference && 'true' || 'false' }}
+      CONSTRUCTION_ONLY: ${{ inputs.construction_only && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -127,22 +146,54 @@ jobs:
       - name: Limpiar corrida anterior
         if: ${{ inputs.fresh }}
         working-directory: ${{ env.ROOT }}
-        run: rm -rf "$WS"
+        run: |
+          # en el ciclo, la etapa de componentes conserva el modelo que generó la etapa anterior
+          if [ -n "$VARIANT" ] && { [ "$TARGET" = "optimize" ] || [ "$CONSTRUCTION_ONLY" = "true" ]; }; then
+            echo "optimize y --construction-only trabajan sobre el workspace existente: no se limpia"
+          elif [ -n "$VARIANT" ] && [ "$TARGET" = "components" ] && [ -d "$WS" ]; then
+            find "$WS" -mindepth 1 -maxdepth 1 ! -name model ! -name model_stats.json -exec rm -rf {} +
+          else
+            rm -rf "$WS"
+          fi
 
       - name: Generar y validar
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           SLOTS: ${{ inputs.slots }}
+          OPT_SLOTS: ${{ inputs.opt_slots }}
           N: ${{ inputs.n }}
           ROUNDS: ${{ inputs.rounds }}
           PROVIDER: ${{ inputs.provider }}
           MODEL: ${{ inputs.model }}
+          PROBLEM: ${{ inputs.problem }}
           LLM_PRICE_IN: ${{ inputs.price_in || vars.LLM_PRICE_IN }}
           LLM_PRICE_OUT: ${{ inputs.price_out || vars.LLM_PRICE_OUT }}
         working-directory: ${{ env.ROOT }}
         run: |
           set -o pipefail
+          if [ -n "$VARIANT" ]; then
+            STAGE=model; [ "$TARGET" = "components" ] && STAGE=components; [ "$TARGET" = "optimize" ] && STAGE=optimize
+            CARGS="--problem $PROBLEM --variant $VARIANT --workspace $WS"
+            [ "$REFERENCE" = "true" ] && CARGS="$CARGS --reference"
+            if [ "$STAGE" = "optimize" ]; then
+              [ -n "$MODEL" ] && CARGS="$CARGS --model $MODEL"
+              OPT="${OPT_SLOTS:-neighborhood greedy_score}"; [ "$OPT" = "none" ] && OPT=""
+              echo "python -m llm.cycle optimize $CARGS --rounds $ROUNDS --slots $OPT"
+              python -u -W ignore -m llm.cycle optimize $CARGS --rounds "$ROUNDS" --slots $OPT 2>&1 | tee generate.log
+            elif [ "$STAGE" = "model" ]; then
+              [ -n "$MODEL" ] && CARGS="$CARGS --model $MODEL"
+              [ "$CONSTRUCTION_ONLY" = "true" ] && CARGS="$CARGS --construction-only"
+              echo "python -m llm.cycle model $CARGS --rounds $ROUNDS"
+              python -W ignore -m llm.cycle model $CARGS --rounds "$ROUNDS" 2>&1 | tee generate.log
+            else
+              REST="--n $N --rounds $ROUNDS --provider $PROVIDER"
+              [ -n "$MODEL" ] && REST="$REST --model $MODEL"
+              echo "python -m llm.cycle components $CARGS -- $REST"
+              python -W ignore -m llm.cycle components $CARGS -- $REST 2>&1 | tee generate.log
+            fi
+            exit 0
+          fi
           if [ "$TARGET" = "problem_model" ]; then
             ARGS="--rounds $ROUNDS --provider $PROVIDER --workspace $WS"
             if [ -n "$MODEL" ]; then ARGS="$ARGS --model $MODEL"; fi
@@ -174,7 +225,7 @@ jobs:
             echo "Proveedor \`$PROVIDER\` · modelo \`$MODEL\` · \`$N\` variantes por slot · hasta \`$ROUNDS\` rondas"
             if [ "$SCRATCH" = "true" ]; then echo ""; echo "**Desde cero**: sin componentes de referencia, en \`$WS\`."; fi
             echo ""
-            if [ "$TARGET" = "problem_model" ]; then echo '```json'; cat "$WS/stats.json" 2>/dev/null; echo '```'; else python -m scripts.stats_summary "$WS/stats.json"; fi
+            if [ -f "$WS/model_stats.json" ] && [ "$TARGET" = "problem_model" ]; then echo '```json'; cat "$WS/model_stats.json"; echo '```'; elif [ "$TARGET" = "problem_model" ]; then echo '```json'; cat "$WS/stats.json" 2>/dev/null; echo '```'; else python -m scripts.stats_summary "$WS/stats.json"; fi
             echo ""
             if [ -f generate.log ]; then
               echo "<details><summary>Log completo de la generación</summary>"
@@ -226,10 +277,11 @@ jobs:
       # La rama se empuja siempre (el artefacto expira y no siempre se puede descargar); el PR,
       # solo con open_pr.
       - name: Guardar en la rama llm-generated/… y abrir PR
-        if: ${{ success() }}
+        if: ${{ always() }}
         env:
           GH_TOKEN: ${{ github.token }}
           OPEN_PR: ${{ inputs.open_pr }}
+          JOB_STATUS: ${{ job.status }}
           PROVIDER: ${{ inputs.provider }}
           MODEL: ${{ inputs.model }}
           SLOTS: ${{ inputs.slots }}
@@ -248,6 +300,7 @@ jobs:
           [ "$SCRATCH" = "true" ] && BRANCH="llm-generated/$PFX-scratch-run$RUN"
           [ "$PLANNER" = "true" ] && BRANCH="$BRANCH-planner"
           [ "$TARGET" = "problem_model" ] && BRANCH="llm-generated/$PROBLEM-$PROVIDER-model-run$RUN"
+          [ -n "$VARIANT" ] && BRANCH="llm-generated/$PROBLEM-$VARIANT-cycle-$TARGET-run$RUN"
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
@@ -258,10 +311,12 @@ jobs:
           [ "$PLANNER" = "true" ] && TAG="$TAG, con planificador"
           [ "$PROBLEM" != "clsp" ] && TAG="$TAG, $PROBLEM"
           [ "$TARGET" = "problem_model" ] && TAG="$TAG, ProblemModel"
+          [ -n "$VARIANT" ] && TAG="$TAG, ciclo $VARIANT"
           git commit -m "Componentes generados por $PROVIDER (corrida $RUN$TAG)" || { echo "Sin cambios."; exit 0; }
           git push -u origin "$BRANCH"
           echo "Resultados en la rama \`$BRANCH\`." >> "$GITHUB_STEP_SUMMARY"
-          if [ "$OPEN_PR" != "true" ]; then exit 0; fi
+          # una corrida que falló se guarda para ver sus rechazos, pero no abre PR
+          if [ "$OPEN_PR" != "true" ] || [ "$JOB_STATUS" != "success" ]; then exit 0; fi
           {
             echo "Corrida manual del workflow \`generar componentes con LLM\`."
             echo ""
@@ -269,7 +324,7 @@ jobs:
             echo "- Slots: \`$SLOTS\`, \`$N\` variantes, hasta \`$ROUNDS\` rondas"
             if [ "$SCRATCH" = "true" ]; then echo "- **Desde cero**: sin componentes de referencia, en \`$WS\`"; fi
             echo ""
-            if [ "$TARGET" = "problem_model" ]; then echo '```json'; cat "$WS/stats.json"; echo '```'; else python -m scripts.stats_summary "$WS/stats.json"; fi
+            if [ -f "$WS/model_stats.json" ] && [ "$TARGET" = "problem_model" ]; then echo '```json'; cat "$WS/model_stats.json"; echo '```'; elif [ "$TARGET" = "problem_model" ]; then echo '```json'; cat "$WS/stats.json"; echo '```'; else python -m scripts.stats_summary "$WS/stats.json"; fi
             echo ""
             echo "Antes de mezclar: corre \`benchmark_components\` para ver si estos componentes"
             echo "además de válidos son útiles y distintos entre sí."

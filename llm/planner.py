@@ -37,7 +37,8 @@ from core.validation.quality import diversity_check
 
 from .client import LLMClient, TokenUsage
 from .generator import GeneratedComponent, GenerationStats, annotate_overlap, validate_generated_module
-from .parser import materialize, parse_response
+from .parser import ParsedModule, component_name, materialize, parse_response
+from .patching import merge_reply
 from .prompts import SYSTEM_PROMPT, Idea, ProblemSpec, correction_prompt, generation_prompt, parse_ideas, planning_prompt
 
 
@@ -53,6 +54,7 @@ class ComponentOutcome:
     tokens: TokenUsage = field(default_factory=TokenUsage)
     rejections_by_layer: Counter = field(default_factory=Counter)
     reason: str = ""  # por qué no se aceptó ("" si se aceptó)
+    patches: int = 0  # correcciones aplicadas como parche
 
 
 @dataclass
@@ -115,6 +117,7 @@ def implement_one(state: GenerationState, client: LLMClient, idea: Idea) -> Comp
         return text
 
     prompt = generation_prompt(state.spec, state.slot, 1, state.avoid_names or None, idea=idea, avoid_ideas=state.avoid_ideas)
+    previous = None
     for round_no in range(1, state.max_rounds + 1):
         out.rounds = round_no
         modules = parse_response(ask(prompt))[:1]
@@ -122,6 +125,11 @@ def implement_one(state: GenerationState, client: LLMClient, idea: Idea) -> Comp
             out.reason = f"ronda {round_no}: la respuesta no trajo un bloque ```python```"
             return out
         m = modules[0]
+        if previous is not None:  # reparación localizada sobre el módulo rechazado
+            merged = merge_reply(previous, m.source, required=("COMPONENT", "build_component"))
+            if merged.mode == "patch":
+                out.patches += 1
+                m = ParsedModule(source=merged.source, name=component_name(merged.source))
         m.name = idea.name  # archivo por idea: dos ideas nunca se pisan
         materialize([m], state.workspace, state.slot, round_no)
         report, module, component = validate_generated_module(m.path, state.contexts, peers=state.catalog_peers or None)
@@ -134,6 +142,7 @@ def implement_one(state: GenerationState, client: LLMClient, idea: Idea) -> Comp
         out.rejections_by_layer[report.failed_layer or "?"] += 1
         out.reason = f"no pasó la capa '{report.failed_layer}' en {round_no} ronda(s)"
         prompt = correction_prompt(state.spec, state.slot, m.source, report.feedback(), idea=idea)
+        previous = m.source
     return out
 
 
@@ -209,6 +218,7 @@ def generate_slot_planned(
             st.llm_seconds += o.llm_seconds
             st.tokens.add(o.tokens)
             st.rejections_by_layer.update(o.rejections_by_layer)
+            st.patches += o.patches
             if o.rounds:
                 st.parsed += 1
             if o.component is None:

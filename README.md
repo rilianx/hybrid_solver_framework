@@ -169,9 +169,46 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   presupuesto de tiempo de pared por variante, lot-for-lot, Relax-and-Fix,
   SA, ILS, LNS-MIP (destrucción aleatoria vs por ventana), Relax-and-Fix →
   Fix-and-Optimize y el MIP completo.
+- **Representaciones alternativas** — cada representación de la solución es
+  un problema distinto para el framework (su pack, sus componentes, su
+  tuning), descrita en `ModelSpec.representation`; las variantes de un
+  problema comparten instancia y casos de prueba, así que sus costos se
+  comparan directamente (`scripts/compare_packs.py`). Primera variante:
+  `examples/cvrp/tour_parts.py`, el CVRP como gran tour + Split (Prins), una
+  representación con decodificador (`ModelSpec.decoder`): el validador exige
+  que la decodificación no sea peor que la respuesta del caso y acepta que
+  una respuesta infactible no sea representable.
+- **Ciclo completo** (`llm/cycle.py`; diagrama de estados en
+  [`docs/ciclo_completo.md`](docs/ciclo_completo.md)) — de la descripción y los casos a un
+  solver afinado, por representación: `model` genera el ProblemModel por
+  piezas, `components` genera desde cero constructores, vecindarios,
+  perturbaciones y destrucciones sobre ese modelo (el LLM ve el código de las
+  piezas), `tune` afina con el tuner de siempre. El pack de cada variante se
+  arma sobre las piezas (`parts_pack`) con las instancias y casos del pack base
+  (`ProblemPack.variants`); `--reference` usa las piezas de referencia. En
+  Actions: input `variant` de `generate.yml` y `tune.yml`. La vista
+  constructiva es la tercera etapa de la generación del modelo por piezas
+  (`empty_partial`, `candidates`, `apply_action`, …; validada con
+  construcciones al azar que deben dar siempre soluciones factibles): con ella
+  el ciclo genera puntajes para el constructor greedy modular. Etapa opcional
+  `optimize` (`llm/optimizer.py`): versiones más rápidas del modelo y de los
+  componentes aceptados, que se aceptan solo si dan las mismas salidas que la
+  versión aceptada (pruebas diferenciales, `core/validation/equivalence.py`) y
+  son al menos 1,5 veces más rápidas. `scripts/throughput.py` mide la velocidad
+  de un catálogo; `scripts/reevaluate_configs.py` reevalúa en test lo que eligió
+  una corrida de tuning con el catálogo actual, sin volver a afinar.
+  Reparación localizada (`llm/patching.py`): en cada corrección (componentes,
+  etapas del modelo por piezas, optimización) el LLM devuelve solo las
+  funciones o métodos que cambia; se reemplazan por nombre en el módulo
+  rechazado (los métodos dentro de su clase, las definiciones nuevas se
+  agregan) y el módulo entero se vuelve a validar. Una respuesta que trae el
+  módulo completo lo reemplaza. El `undo` de los vecindarios es opcional.
+  La optimización exige además memoria acotada (`core/validation/resources.py`):
+  la memoria retenida no puede crecer al evaluar soluciones nuevas (una caché
+  `lru_cache(maxsize=None)` de módulo agotó los runners en la run 34).
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 190 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 225 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -192,7 +229,7 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 190 passed (~110 s)
+python -m pytest -q                 # 225 passed (~200 s)
 
 # segundo problema: CVRP con flota libre (mismos CLI, otro pack)
 python -m examples.cvrp.tune --catalog handwritten --size 30 --trials 30 --ref-time 60

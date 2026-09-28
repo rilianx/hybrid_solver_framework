@@ -153,3 +153,35 @@ def variable_groups(inst: CVRPInstance):
         _, a, b = v.split("_")
         groups[f"s{sector[int(a) if int(a) else int(b)]}"].append(v)
     return groups
+
+
+# ---------------------------------------------------------------- vista constructiva
+# La de `construction.py` (inserción de un cliente en una ruta donde cabe, o ruta nueva).
+def _view(inst: CVRPInstance):
+    from .construction import CVRPConstructionView
+
+    return CVRPConstructionView(None, inst)
+
+
+def empty_partial(inst: CVRPInstance):
+    return _view(inst).empty()
+
+
+def candidates(inst: CVRPInstance, partial):
+    return _view(inst).candidates(partial)
+
+
+def apply_action(inst: CVRPInstance, partial, action):
+    return _view(inst).apply(partial, action)
+
+
+def is_complete(inst: CVRPInstance, partial) -> bool:
+    return _view(inst).is_complete(partial)
+
+
+def to_solution(inst: CVRPInstance, partial):
+    return canonical(partial.routes)
+
+
+def complete_partial(inst: CVRPInstance, partial, rng):
+    return canonical([*partial.routes, *([c] for c in sorted(partial.pending))])

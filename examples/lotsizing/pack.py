@@ -44,4 +44,5 @@ PACK = ProblemPack(
     make_model_spec=make_model_spec,
     micro_size="3x4",
     load_cases=_load_cases,
+    variants={"setups": (make_model_spec, "examples.lotsizing.model_parts")},
 )

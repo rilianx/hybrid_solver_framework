@@ -42,6 +42,9 @@ class ProblemPack:
     make_model_spec: Callable[[], Any] | None = None
     micro_size: str = ""
     load_cases: Callable[[], list] | None = None  # casos de prueba al estilo Codeforces (core.model_parts.TestCase)
+    # representaciones del problema para el ciclo completo (`llm.cycle`): {nombre: (make_model_spec, piezas de
+    # referencia importables)}. Cada una es un problema distinto con las mismas instancias y casos.
+    variants: dict[str, tuple[Callable[[], Any], str]] = field(default_factory=dict)
     # esqueletos que puede usar un constructor (los greedy_<puntaje> se registran con estos)
     constructor_skeletons: list[str] = field(
         default_factory=lambda: ["SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH", "MIP_PERTURB"])

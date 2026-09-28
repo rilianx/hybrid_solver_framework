@@ -1,0 +1,39 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("SA", "ILS", "VNS", "LNS_MIP")
+constructor "--constructor=" c ("trivial", "random", "greedy_cheapest_incremental_distance", "greedy_demand_aware_urgency", "greedy_route_utilization_balance") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP")
+greedy_cheapest_incremental_distance.rule "--greedy_cheapest_incremental_distance.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_cheapest_incremental_distance"
+greedy_cheapest_incremental_distance.alpha "--greedy_cheapest_incremental_distance.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_cheapest_incremental_distance"
+greedy_cheapest_incremental_distance.distance_weight "--greedy_cheapest_incremental_distance.distance_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_cheapest_incremental_distance"
+greedy_cheapest_incremental_distance.route_open_penalty "--greedy_cheapest_incremental_distance.route_open_penalty=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_cheapest_incremental_distance"
+greedy_demand_aware_urgency.rule "--greedy_demand_aware_urgency.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_demand_aware_urgency"
+greedy_demand_aware_urgency.alpha "--greedy_demand_aware_urgency.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_demand_aware_urgency"
+greedy_demand_aware_urgency.distance_weight "--greedy_demand_aware_urgency.distance_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_demand_aware_urgency"
+greedy_demand_aware_urgency.urgency_weight "--greedy_demand_aware_urgency.urgency_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_demand_aware_urgency"
+greedy_demand_aware_urgency.slack_weight "--greedy_demand_aware_urgency.slack_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_demand_aware_urgency"
+greedy_route_utilization_balance.rule "--greedy_route_utilization_balance.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_route_utilization_balance"
+greedy_route_utilization_balance.alpha "--greedy_route_utilization_balance.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_route_utilization_balance"
+greedy_route_utilization_balance.distance_weight "--greedy_route_utilization_balance.distance_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_route_utilization_balance"
+greedy_route_utilization_balance.utilization_weight "--greedy_route_utilization_balance.utilization_weight=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_route_utilization_balance"
+greedy_route_utilization_balance.open_route_penalty "--greedy_route_utilization_balance.open_route_penalty=" r (0.0, 10.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_route_utilization_balance"
+neighborhood "--neighborhood=" c ("customer_swap_neighborhood", "relocate_customer_neighborhood", "two_opt_reversal_neighborhood") | skeleton %in% c("SA", "ILS", "VNS")
+customer_swap_neighborhood.sample_size "--customer_swap_neighborhood.sample_size=" i (1, 100) | skeleton %in% c("SA", "ILS", "VNS") & neighborhood == "customer_swap_neighborhood"
+relocate_customer_neighborhood.sample_size "--relocate_customer_neighborhood.sample_size=" i (1, 100) | skeleton %in% c("SA", "ILS", "VNS") & neighborhood == "relocate_customer_neighborhood"
+two_opt_reversal_neighborhood.sample_size "--two_opt_reversal_neighborhood.sample_size=" i (1, 100) | skeleton %in% c("SA", "ILS", "VNS") & neighborhood == "two_opt_reversal_neighborhood"
+perturbation "--perturbation=" c ("segment_reversal_kick") | skeleton %in% c("ILS")
+segment_reversal_kick.strength "--segment_reversal_kick.strength=" r (1.0, 10.0) | skeleton %in% c("ILS") & perturbation == "segment_reversal_kick"
+destruction "--destruction=" c ("related_customer_destruction", "uniform_arc_destruction") | skeleton %in% c("LNS_MIP")
+related_customer_destruction.ratio "--related_customer_destruction.ratio=" r (0.05, 0.8) | skeleton %in% c("LNS_MIP") & destruction == "related_customer_destruction"
+uniform_arc_destruction.ratio "--uniform_arc_destruction.ratio=" r (0.05, 0.8) | skeleton %in% c("LNS_MIP") & destruction == "uniform_arc_destruction"
+SA.T0 "--SA.T0=" r (1.0, 1000.0) | skeleton == "SA"  # log-scale
+SA.alpha "--SA.alpha=" r (0.8, 0.999) | skeleton == "SA"
+SA.iters_per_T "--SA.iters_per_T=" i (1, 50) | skeleton == "SA"
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+ILS.ls_sample "--ILS.ls_sample=" i (4, 256) | skeleton == "ILS"  # log-scale
+VNS.shake_strength "--VNS.shake_strength=" i (1, 4) | skeleton == "VNS"
+VNS.ls_time_share "--VNS.ls_time_share=" r (0.02, 0.3) | skeleton == "VNS"
+VNS.ls_sample "--VNS.ls_sample=" i (4, 256) | skeleton == "VNS"  # log-scale
+LNS_MIP.destroy_ratio "--LNS_MIP.destroy_ratio=" r (0.05, 0.6) | skeleton == "LNS_MIP"
+LNS_MIP.mip_time_share "--LNS_MIP.mip_time_share=" r (0.04, 1.0) | skeleton == "LNS_MIP"  # log-scale

@@ -61,6 +61,10 @@ def make_spec() -> ProblemSpec:
     )
 
 
+FORBIDDEN = ["examples.cvrp.problem_model", "examples.cvrp.components", "examples.cvrp.construction",
+             "examples.cvrp.model_parts", "examples.cvrp.tour_parts", "examples.cvrp.cases"]
+
+
 def make_model_spec():
     """Para generar el `ProblemModel` completo con LLM (§6.1): la descripción y la instancia, sin
     el modelo de referencia."""
@@ -80,9 +84,10 @@ def make_model_spec():
         ),
         instance_source=inspect.getsource(instance.CVRPInstance),
         instance_import="examples.cvrp.instance",
-        notes=["Elige tú la representación de la solución para las heurísticas (debe ser hashable y comparable con ==)."],
-        forbidden_modules=["examples.cvrp.problem_model", "examples.cvrp.components", "examples.cvrp.construction",
-                           "examples.cvrp.model_parts", "examples.cvrp.cases"],
+        representation=("Tupla canónica de rutas: cada ruta, una tupla de clientes en orden de visita sin el depósito; las "
+                        "rutas vacías se omiten y las rutas se ordenan por su primer cliente (la usan los componentes "
+                        "heurísticos del problema)."),
+        forbidden_modules=FORBIDDEN,
         answer_format=("Lista de rutas; cada ruta, una lista de clientes (enteros 1..n) en orden de visita, sin el depósito. "
                        "Ejemplo: [[3, 1], [2, 4]]. Dos respuestas con las mismas rutas en otro orden de rutas son la misma solución."),
         families=("Familias de restricciones: `visita` (cada cliente exactamente una vez; magnitud = cuántas visitas sobran o "
@@ -185,3 +190,21 @@ def starting_solution_example(n_customers: int = 6, seed: int = 11) -> str:
                  "un cliente al final de la ruta de un cliente cercano ahorra dist(0,c) + dist(c,0) y agrega un desvío menor. "
                  "Un movimiento que solo reordena dentro de una ruta de un cliente no cambia nada.")
     return "\n".join(lines)
+
+
+def make_tour_model_spec():
+    """La variante `cvrp_tour`: el mismo problema y los mismos casos, representado como gran tour + Split."""
+    from dataclasses import replace
+
+    return replace(
+        make_model_spec(),
+        name="CVRP con representación de gran tour",
+        representation=(
+            "GRAN TOUR: una tupla con una permutación de los clientes (sin el depósito). Se decodifica con Split (Prins): el "
+            "corte óptimo del tour, en su orden, en rutas consecutivas cuya carga no supere `inst.capacity` (camino mínimo en "
+            "un grafo acíclico sobre las posiciones del tour, con costo de cada tramo = distancia de la ruta que cierra en el "
+            "depósito). violations y cost_terms se evalúan sobre las rutas decodificadas. from_answer concatena las rutas de "
+            "la respuesta en su orden; from_assignment concatena las rutas que describen los arcos."
+        ),
+        decoder=True,
+    )

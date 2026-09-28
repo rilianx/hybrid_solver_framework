@@ -2,7 +2,14 @@
 
 Slots obligatorios: Constructor, Vecindario, Evaluador, Aceptación
 (Metropolis). Estado propio: temperatura. Parámetros del esqueleto:
-`T0`, `alpha`, `iters_per_T`.
+`T0`, `cooling` y, según el enfriamiento, `T_end` o `alpha` e `iters_per_T`.
+
+Enfriamiento (`cooling`):
+- `"time"`: T = T0 · T_end^(t / presupuesto), de T0 a T0·T_end a lo largo del presupuesto de tiempo.
+  Usa todo el presupuesto con cualquier velocidad del modelo.
+- `"iterations"`: T ← α·T cada `iters_per_T` iteraciones. Run 35: con los defaults (T0 = 31,6,
+  α = 0,8995, 26 iteraciones por T) la temperatura era despreciable a las ~1500 iteraciones, menos
+  de 1 s con el modelo generado del gran tour; un modelo 6 veces más rápido enfriaba 6 veces antes.
 
 No hay ningún bucle nuevo aquí: `build_sa` solo arma el
 `candidate_generator` (mover aleatoriamente en el vecindario) y el
@@ -46,6 +53,14 @@ def _cooling_updater(alpha: float, iters_per_T: int):
     return _update
 
 
+def _time_cooling_updater(T0: float, T_end: float, budget: float):
+    def _update(state: SearchState) -> None:
+        frac = min(1.0, state.elapsed_time / budget) if budget > 0 else 1.0
+        state.extra["temperature"] = T0 * T_end ** frac
+
+    return _update
+
+
 def build_sa(
     problem: ProblemModel,
     constructor: Constructor,
@@ -56,8 +71,20 @@ def build_sa(
     iters_per_T: int = 1,
     acceptance: Acceptance | None = None,
     record_history: bool = False,
+    cooling: str = "iterations",
+    T_end: float = 1e-3,
+    budget: float | None = None,
 ) -> tuple[TrajectorySkeleton, dict]:
-    """Retorna (skeleton, initial_extra) listos para `skeleton.run(inst, rng, initial_extra)`."""
+    """Retorna (skeleton, initial_extra) listos para `skeleton.run(inst, rng, initial_extra)`.
+    Con `cooling="time"` hace falta `budget` (segundos): la temperatura sigue el tiempo transcurrido."""
+    if cooling == "time":
+        if not budget:
+            raise ValueError("cooling='time' necesita el presupuesto en segundos (budget)")
+        updater = _time_cooling_updater(T0, T_end, budget)
+    elif cooling == "iterations":
+        updater = _cooling_updater(alpha, iters_per_T)
+    else:
+        raise ValueError(f"cooling debe ser 'time' o 'iterations', no {cooling!r}")
 
     acceptance = acceptance or MetropolisAcceptance()
 
@@ -71,7 +98,7 @@ def build_sa(
         candidate_generator=candidate_generator,
         acceptance=acceptance,
         stop=stop,
-        state_updaters=[_cooling_updater(alpha, iters_per_T)],
+        state_updaters=[updater],
         record_history=record_history,
     )
 

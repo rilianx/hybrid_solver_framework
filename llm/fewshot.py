@@ -80,12 +80,6 @@ class SwapInOut:
         s[i], s[j] = False, True
         return tuple(s)
 
-    def undo(self, sol, m):
-        i, j = m
-        s = list(sol)
-        s[i], s[j] = True, False
-        return tuple(s)
-
     def delta(self, sol, m):
         return self.problem.objective(self.apply(sol, m)) - self.problem.objective(sol)
 

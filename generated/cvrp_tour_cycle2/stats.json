@@ -1,0 +1,190 @@
+{
+  "greedy_score": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 1,
+    "llm_calls": 5,
+    "llm_seconds": 60.2,
+    "rejections_by_layer": {
+      "quality": 6
+    },
+    "rounds_per_accepted": {
+      "nearest_insert_with_return_bias": 1
+    },
+    "abandoned": [
+      "capacity_balance_frontier",
+      "geometric_cluster_completion"
+    ],
+    "accepted_files": [
+      "generated/cvrp_tour_cycle2/greedy_score/nearest_insert_with_return_bias_r1.py"
+    ],
+    "tokens": {
+      "calls": 5,
+      "input_tokens": 13757,
+      "output_tokens": 8611,
+      "total_tokens": 22368,
+      "reasoning_tokens": 1786
+    }
+  },
+  "neighborhood": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 1,
+    "llm_seconds": 6.9,
+    "rejections_by_layer": {},
+    "rounds_per_accepted": {
+      "customer_swap_neighborhood": 1,
+      "customer_relocate_neighborhood": 1,
+      "two_opt_segment_reversal": 1
+    },
+    "abandoned": [],
+    "accepted_files": [
+      "generated/cvrp_tour_cycle2/neighborhood/customer_swap_neighborhood_r1.py",
+      "generated/cvrp_tour_cycle2/neighborhood/customer_relocate_neighborhood_r1.py",
+      "generated/cvrp_tour_cycle2/neighborhood/two_opt_segment_reversal_r1.py"
+    ],
+    "tokens": {
+      "calls": 1,
+      "input_tokens": 5395,
+      "output_tokens": 1161,
+      "total_tokens": 6556,
+      "reasoning_tokens": 285
+    },
+    "combinations": {
+      "customer_swap_neighborhood": {
+        "compatible_skeletons": [
+          "SA",
+          "ILS",
+          "TS",
+          "VNS",
+          "GRASP",
+          "MIP_PERTURB"
+        ],
+        "gains": {
+          "SA/trivial": 0.4127,
+          "SA/random": 0.4108,
+          "VNS/trivial": 0.4032,
+          "VNS/random": 0.4383,
+          "TS/trivial": 0.3709,
+          "TS/random": 0.3578,
+          "GRASP/trivial": 0.3153,
+          "GRASP/random": 0.0942
+        }
+      },
+      "customer_relocate_neighborhood": {
+        "compatible_skeletons": [
+          "SA",
+          "ILS",
+          "TS",
+          "VNS",
+          "GRASP",
+          "MIP_PERTURB"
+        ],
+        "gains": {
+          "SA/trivial": 0.4234,
+          "SA/random": 0.3671,
+          "VNS/trivial": 0.389,
+          "VNS/random": 0.4248,
+          "TS/trivial": 0.3309,
+          "TS/random": 0.3851,
+          "GRASP/trivial": 0.3276,
+          "GRASP/random": 0.1047
+        }
+      },
+      "two_opt_segment_reversal": {
+        "compatible_skeletons": [
+          "SA",
+          "ILS",
+          "TS",
+          "VNS",
+          "GRASP",
+          "MIP_PERTURB"
+        ],
+        "gains": {
+          "SA/trivial": 0.4513,
+          "SA/random": 0.3419,
+          "VNS/trivial": 0.4883,
+          "VNS/random": 0.5063,
+          "TS/trivial": 0.3741,
+          "TS/random": 0.3681,
+          "GRASP/trivial": 0.2996,
+          "GRASP/random": 0.1431
+        }
+      }
+    }
+  },
+  "perturbation": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 2,
+    "llm_calls": 3,
+    "llm_seconds": 29.6,
+    "rejections_by_layer": {
+      "quality": 3
+    },
+    "rounds_per_accepted": {
+      "multi_reinsert_kick": 1,
+      "double_bridge_tour_break": 1
+    },
+    "abandoned": [
+      "intra_route_block_shuffle"
+    ],
+    "accepted_files": [
+      "generated/cvrp_tour_cycle2/perturbation/multi_reinsert_kick_r1.py",
+      "generated/cvrp_tour_cycle2/perturbation/double_bridge_tour_break_r1.py"
+    ],
+    "tokens": {
+      "calls": 3,
+      "input_tokens": 7616,
+      "output_tokens": 4117,
+      "total_tokens": 11733,
+      "reasoning_tokens": 1895
+    }
+  },
+  "destruction": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 2,
+    "llm_calls": 4,
+    "llm_seconds": 48.9,
+    "rejections_by_layer": {
+      "quality": 4
+    },
+    "rounds_per_accepted": {
+      "random_customer_relink_destruction": 1,
+      "worst_position_customer_destruction": 2
+    },
+    "abandoned": [
+      "route_block_destruction"
+    ],
+    "accepted_files": [
+      "generated/cvrp_tour_cycle2/destruction/random_customer_relink_destruction_r1.py",
+      "generated/cvrp_tour_cycle2/destruction/worst_position_customer_destruction_r2.py"
+    ],
+    "tokens": {
+      "calls": 4,
+      "input_tokens": 10839,
+      "output_tokens": 7390,
+      "total_tokens": 18229,
+      "reasoning_tokens": 2025
+    }
+  },
+  "_run": {
+    "problem": "cvrp_tour",
+    "model": "gpt-5.4-mini",
+    "provider": "openai",
+    "from_scratch": true,
+    "catalog_diversity": "annotate",
+    "planner": false,
+    "wall_seconds": 182.9,
+    "tokens": {
+      "calls": 13,
+      "input_tokens": 37607,
+      "output_tokens": 21279,
+      "total_tokens": 58886,
+      "reasoning_tokens": 5991
+    },
+    "note": "define LLM_PRICE_IN y LLM_PRICE_OUT (USD por millón de tokens) para estimar el costo"
+  }
+}

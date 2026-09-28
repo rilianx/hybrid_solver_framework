@@ -24,10 +24,12 @@ from core.validation import ValidationContext, ValidationReport, validate_compon
 from core.validation.base import fail, ok
 from core.validation.diversity import improving_neighbors
 from core.validation.quality import diversity_check, probe_checks
+from core.validation.resources import static_cache_check
 from core.validation.syntactic import load_module
 
 from .client import LLMClient, TokenUsage
-from .parser import ParsedModule, materialize, parse_response
+from .parser import ParsedModule, component_name, materialize, parse_response
+from .patching import merge_reply
 from .prompts import SYSTEM_PROMPT, ProblemSpec, correction_prompt, generation_prompt
 
 
@@ -61,6 +63,7 @@ class GenerationStats:
     duplicates: dict[str, str] = field(default_factory=dict)
     replans: int = 0
     wall_seconds: float = 0.0
+    patches: int = 0  # correcciones aplicadas como parche (solo las definiciones que cambian)
 
     def summary(self) -> str:
         rate = f"{self.accepted}/{self.parsed}" if self.parsed else "0/0"
@@ -72,6 +75,7 @@ class GenerationStats:
             + (f", {self.tokens}" if self.tokens.total_tokens else "")
             + f") rechazos por capa: {layers}; rondas por aceptado: {rounds}"
             + (f"; abandonados: {self.abandoned}" if self.abandoned else "")
+            + (f"; correcciones por parche: {self.patches}" if self.patches else "")
             + (f"; ideas: {len(self.planned)}, duplicadas: {len(self.duplicates)}, replaneos: {self.replans}, "
                f"{self.wall_seconds:.0f}s de pared" if self.planned else "")
         )
@@ -97,6 +101,7 @@ def validate_generated_module(
         report.add(fail("syntactic", "component_present", "el módulo no define el dict COMPONENT"))
     if not callable(factory):
         report.add(fail("syntactic", "factory_present", "el módulo no define `build_component(problem, **params)`"))
+    report.add(static_cache_check(module, "componente"))
     if not report.passed:
         return report, module, component
 
@@ -278,6 +283,11 @@ def generate_slot(
         if not fixed:
             stats.abandoned.append(name)
             continue
+        # reparación localizada: la respuesta trae solo lo que cambia y se aplica sobre el módulo rechazado
+        merged = merge_reply(m.source, fixed[0].source, required=("COMPONENT", "build_component"))
+        if merged.mode == "patch":
+            stats.patches += 1
+            fixed[0] = ParsedModule(source=merged.source, name=component_name(merged.source))
         fixed[0].name = fixed[0].name or name
         materialize(fixed, workspace, slot, round_no + 1)
         pending.append((fixed[0], round_no + 1))

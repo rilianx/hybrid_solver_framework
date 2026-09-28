@@ -24,6 +24,11 @@ Decisiones:
   numéricos afinados en 5 instancias quedaron en test 0.7 y 2.3 puntos peor que los defaults
   de esa misma elección. Y si el afinado le gana a su gemelo en train por menos que el ruido
   (`prefer_defaults`), se elige el gemelo.
+- Carrera en la selección final (`race_seeds`): después de esas semillas, los candidatos que
+  pierden contra el líder por más que el ruido (diferencia pareada por instancia y semilla) salen,
+  y los que siguen empatados reciben una semilla más, hasta `race_seeds` o hasta que quede uno. En
+  la run 35 dos de tres réplicas eligieron SA, que en test quedaba 0,8–1,2 puntos detrás del VNS
+  de la tercera. Es el racing de irace, solo en la selección final.
 - Sondeo inicial (`screen`): después de los defaults se encolan variantes de un solo componente
   (cada constructor, vecindario… alternativo con lo demás en su default), repartidas entre
   esqueletos y slots. En la run 23 dos de tres réplicas no llegaron a probar bien el constructor
@@ -49,6 +54,7 @@ class Trial:
     seconds: float
     enqueued: bool = False  # default de un esqueleto, no muestreado
     defaults_of: int | None = None  # gemelo de la selección final: los componentes de ese trial, numéricos por defecto
+    per_instance: list[float] | None = None  # costo (normalizado) por instancia con la semilla base
 
     @property
     def summary(self) -> str:
@@ -134,6 +140,7 @@ def tune_with_optuna(
     reeval_seeds: int = 2,
     screen: int = 0,
     defaults_margin: float = 0.005,
+    race_seeds: int | None = None,
 ) -> TuningResult:
     """Corre `n_trials` evaluaciones (incluidos los defaults encolados) y devuelve el resultado.
 
@@ -160,8 +167,9 @@ def tune_with_optuna(
     def objective(trial: "optuna.Trial") -> float:
         config = suggest_from_space(space, trial)
         t0 = time.perf_counter()
-        cost = assembler.evaluate(config, train_instances, budget, seed=seed, normalizers=normalizers)
-        rec = Trial(trial.number, config, cost, time.perf_counter() - t0, enqueued=trial.number in enqueued)
+        cost, blocks = evaluate_blocks(assembler, config, train_instances, budget, seed, normalizers)
+        rec = Trial(trial.number, config, cost, time.perf_counter() - t0, enqueued=trial.number in enqueued,
+                    per_instance=blocks)
         trials.append(rec)
         if on_trial is not None:
             on_trial(rec)
@@ -173,7 +181,8 @@ def tune_with_optuna(
     best_cost, reevaluated = best.cost, []
     if reeval_top > 0:
         best, best_cost, reevaluated = _reevaluate(assembler, trials, train_instances, budget, seed,
-                                                   reeval_top, reeval_seeds, normalizers, defaults_margin)
+                                                   reeval_top, reeval_seeds, normalizers, defaults_margin,
+                                                   race_seeds=race_seeds)
     return TuningResult(
         best_config=best.config, best_cost=best_cost, trials=trials,
         seconds=time.perf_counter() - t0, penalty_cost=assembler.penalty_cost,
@@ -234,16 +243,45 @@ def defaults_twin(assembler: Assembler, t: Trial) -> Trial | None:
     return Trial(t.number, config, float("nan"), 0.0, defaults_of=t.number)
 
 
+def evaluate_blocks(assembler: Assembler, config: dict[str, Any], instances: list[Any], budget: float, seed: int,
+                    normalizers: list[float] | None = None) -> tuple[float, list[float]]:
+    """Costo por instancia (el mismo que `Assembler.evaluate` sobre la lista: la instancia k con la
+    semilla `seed + k`) y su media; si alguna falla o es infactible, el costo es `penalty_cost`."""
+    blocks = [assembler.evaluate(config, [inst], budget, seed=seed + k,
+                                 normalizers=[normalizers[k]] if normalizers is not None else None)
+              for k, inst in enumerate(instances)]
+    cost = assembler.penalty_cost if any(b >= assembler.penalty_cost for b in blocks) else sum(blocks) / len(blocks)
+    return cost, blocks
+
+
+def clearly_worse(worse: list[float], leader: list[float]) -> bool:
+    """¿`worse` pierde contra `leader` por más que el ruido? Diferencia pareada por bloque (instancia y
+    semilla): media mayor que dos errores estándar."""
+    diffs = [w - b for w, b in zip(worse, leader)]
+    n = len(diffs)
+    if n < 2:
+        return False
+    m = sum(diffs) / n
+    se = (sum((d - m) ** 2 for d in diffs) / (n - 1) / n) ** 0.5
+    return m > 2 * se and m > 0
+
+
 def _reevaluate(assembler: Assembler, trials: list[Trial], instances: list[Any], budget: float, seed: int,
                 top: int, n_seeds: int, normalizers: list[float] | None,
-                defaults_margin: float = 0.005) -> tuple[Trial, float, list[dict[str, Any]]]:
+                defaults_margin: float = 0.005, race_seeds: int | None = None) -> tuple[Trial, float, list[dict[str, Any]]]:
     """El mejor trial de cada una de las `top` mejores elecciones de componentes distintas (más su
     gemelo con numéricos por defecto y el mejor default), con `n_seeds` semillas más.
 
     Por elección y no por trial: los mejores trials suelen ser la misma elección con otros
     numéricos (run 22: los 5), y el costo de un trial con una semilla es muy ruidoso (run 25: la
     misma configuración, en las mismas instancias, 0.669 y 0.759 según la semilla), así que la
-    elección que gana en test puede quedar 5.ª en train y fuera de los 5 mejores trials."""
+    elección que gana en test puede quedar 5.ª en train y fuera de los 5 mejores trials.
+
+    Carrera (`race_seeds` > `n_seeds`): después de las `n_seeds` semillas de todos, se descartan los
+    que pierden contra el líder por más que el ruido (diferencia pareada por instancia y semilla) y
+    los que quedan reciben una semilla más, hasta `race_seeds` semillas extra o hasta que quede uno.
+    Run 35: con 2 semillas extra, dos de tres réplicas eligieron SA; en test, el VNS de la tercera
+    les sacaba 0,8–1,2 puntos. Como en irace, las evaluaciones se gastan donde hay duda."""
     ok = sorted((t for t in trials if t.cost < assembler.penalty_cost), key=lambda t: t.cost)
     cands: list[Trial] = []
     seen: set[str] = set()
@@ -265,22 +303,48 @@ def _reevaluate(assembler: Assembler, trials: list[Trial], instances: list[Any],
     defaults = [t for t in ok if t.enqueued]
     if defaults and repr(sorted(defaults[0].config.items())) not in seen:
         cands.append(defaults[0])
-    rows = []
-    for t in cands:
-        seeds = [seed + 1000 * j for j in range(n_seeds + 1)]
-        if t.defaults_of is None:  # el costo con la semilla base ya se conoce
-            seeds = seeds[1:]
-        costs = ([] if t.defaults_of is not None else [t.cost]) + [
-            assembler.evaluate(t.config, instances, budget, seed=s, normalizers=normalizers) for s in seeds]
-        rows.append({"number": t.number, "enqueued": t.enqueued, "twin": t.defaults_of is not None,
-                     "summary": t.summary, "costs": costs, "mean": sum(costs) / len(costs)})
-    pick = min(range(len(cands)), key=lambda i: rows[i]["mean"]) if cands else None
-    if pick is not None and not cands[pick].enqueued and cands[pick].defaults_of is None:
-        twin = next((i for i, c in enumerate(cands) if c.defaults_of == cands[pick].number), None)
-        if twin is not None and prefer_defaults(rows[pick]["costs"], rows[twin]["costs"], defaults_margin):
-            pick = twin
-            rows[twin]["preferred_defaults"] = True
-    if pick is None:
+    if not cands:
         best = min(trials, key=lambda t: t.cost)
-        return best, best.cost, rows
+        return best, best.cost, []
+
+    max_extra = max(n_seeds, race_seeds or n_seeds)
+    # por candidato: costo medio por semilla y bloques (instancia, semilla) en el mismo orden para todos
+    costs: list[list[float]] = [[] for _ in cands]
+    blocks: list[list[float]] = [[] for _ in cands]
+    for i, t in enumerate(cands):
+        if t.defaults_of is None and t.per_instance is not None:  # la semilla base ya se conoce
+            costs[i].append(t.cost)
+            blocks[i] += t.per_instance
+        else:
+            c, b = evaluate_blocks(assembler, t.config, instances, budget, seed, normalizers)
+            costs[i].append(c)
+            blocks[i] += b
+    alive = list(range(len(cands)))
+    eliminated: dict[int, int] = {}
+    for j in range(1, max_extra + 1):
+        for i in alive:
+            c, b = evaluate_blocks(assembler, cands[i].config, instances, budget, seed + 1000 * j, normalizers)
+            costs[i].append(c)
+            blocks[i] += b
+        if j < n_seeds:
+            continue
+        leader = min(alive, key=lambda i: sum(costs[i]) / len(costs[i]))
+        for i in list(alive):
+            if i != leader and clearly_worse(blocks[i], blocks[leader]):
+                alive.remove(i)
+                eliminated[i] = j
+        if len(alive) == 1:
+            break
+    rows = [{"number": t.number, "enqueued": t.enqueued, "twin": t.defaults_of is not None, "summary": t.summary,
+             "costs": costs[i], "mean": sum(costs[i]) / len(costs[i]), "seeds": len(costs[i]),
+             **({"eliminated_after": eliminated[i]} if i in eliminated else {})}
+            for i, t in enumerate(cands)]
+    pick = min(alive, key=lambda i: rows[i]["mean"])
+    if not cands[pick].enqueued and cands[pick].defaults_of is None:
+        twin = next((i for i, c in enumerate(cands) if c.defaults_of == cands[pick].number), None)
+        if twin is not None:
+            k = min(len(costs[pick]), len(costs[twin]))  # semillas en común
+            if prefer_defaults(costs[pick][:k], costs[twin][:k], defaults_margin):
+                pick = twin
+                rows[twin]["preferred_defaults"] = True
     return cands[pick], rows[pick]["mean"], rows

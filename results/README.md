@@ -28,10 +28,23 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run25/`](tune_run25/) | 25 sep | corrida 16 | SA, ILS, VNS | 5+5, 10×15 | 5 s | 40 × 3 réplicas | sondeo inicial de un solo componente |
 | [`tune_run26/`](tune_run26/) | 26 sep | corrida 16 | SA, ILS, VNS | 10+10, 10×15 | 5 s | 40 × 3 réplicas | sondeo + re-evaluación por elección distinta |
 | [`tune_run27/`](tune_run27/) | 26 sep | corrida 16 | SA, ILS, VNS | 10+10, 10×15 | 5 s | 40 × 3 réplicas | réplicas nuevas con `prefer_defaults` |
+| [`tune_run28/`](tune_run28/) | 26 sep | ciclo CVRP rutas (modelo 34, componentes 37) | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | ciclo completo, representación de rutas |
+| [`tune_run29/`](tune_run29/) | 26 sep | ciclo CVRP gran tour (modelo 33, componentes 38) | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | ciclo completo, gran tour + Split |
+| [`tune_run30/`](tune_run30/) | 26 sep | CVRP escrito a mano | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | referencia para el ciclo completo |
+| [`tune_run31/`](tune_run31/) | 26 sep | ciclo CVRP rutas, 2.ª generación (componentes 39) | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | variación entre generaciones |
+| [`tune_run32/`](tune_run32/) | 26 sep | ciclo CVRP gran tour, 2.ª generación (componentes 40) | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | variación entre generaciones |
+| [`tune_run33/`](tune_run33/) | 27 sep | ciclo CVRP rutas, 2.ª generación optimizada (corrida 41) | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | efecto de la optimización al volver a afinar |
+| [`tune_run35/`](tune_run35/) | 27 sep | ciclo CVRP gran tour, 2.ª generación optimizada (modelo de la corrida 47, componentes de la 42) | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | efecto de la optimización, memoria acotada |
+| [`tune_run36/`](tune_run36/) | 27 sep | lo mismo que la run 35 | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | selección final en carrera |
+| [`tune_run37/`](tune_run37/) | 27 sep | ciclo CVRP gran tour: modelo de la corrida 50, SA por tiempo, carrera | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | todos los arreglos juntos |
+| [`tune_run38/`](tune_run38/) | 27 sep | ciclo CVRP rutas: modelo de la corrida 51, SA por tiempo, carrera | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | todos los arreglos juntos |
+| [`tune_run39/`](tune_run39/) | 27 sep | CLSP escrito a mano | SA, ILS, VNS, LNS_MIP | 10+10, 10×15 | 5 s | 40 × 3 réplicas | referencia para el ciclo del CLSP |
+| [`tune_run40/`](tune_run40/) | 28 sep | ciclo CLSP setups: modelo 52 (+54 constructiva, 57 memoria), componentes 55 | SA, ILS, VNS, LNS_MIP | 10+10, 10×15 | 5 s | 40 × 3 réplicas | ciclo completo en el segundo problema |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
-límite de tiempo) y quedó relanzada como la 4. Runs 9–14, en orden: corridas 11, 12, 13, 14,
+límite de tiempo) y quedó relanzada como la 4. La run 34 (gran tour optimizado, corrida 42) no
+dejó resultados: el modelo tenía una caché sin límite y los tres runners se quedaron sin memoria. Runs 9–14, en orden: corridas 11, 12, 13, 14,
 15 y 16 (`generated/clsp_scratch3`, `…3_planner`, `…4`, `…4_planner`, `…5`, `…5_planner`).
 Las runs 15–22 terminaron el tuning pero no pudieron crear su rama (`GITHUB_TOKEN` no puede
 empujar una rama cuya historia cambia `.github/workflows`); las cifras de abajo salen del log
@@ -135,6 +148,321 @@ del sondeo, una por el gemelo, que ganó la re-evaluación sin necesitar la regl
 afinada a igualarla. Lo que lo resolvió, en orden de efecto: más instancias de train (10 en vez
 de 5), re-evaluar elecciones de componentes distintas en vez de los mejores trials, y el sondeo
 de variantes de un solo componente al inicio.
+
+### Ciclo completo: modelo generado → componentes → tuning (CVRP, rutas contra gran tour)
+
+Primera corrida de punta a punta sin nada escrito a mano salvo el generador de instancias y
+los casos: el LLM genera el modelo por piezas con la representación pedida (incluida la vista
+constructiva), después genera desde cero puntajes, vecindarios, perturbaciones y destrucciones
+viendo solo el código de ese modelo, y el tuner afina (30 clientes, 10+10 instancias, SA/ILS/
+VNS/LNS_MIP, 3 réplicas, sondeo y re-evaluación por elección distinta).
+
+| Etapa | Rutas | Gran tour |
+|---|---|---|
+| Modelo (corridas 34 / 33) | heurística 1, MIP 3, constructiva 1 ronda; 23 mil tokens | heurística 1, MIP 5, constructiva 1; 43 mil |
+| Componentes (37 / 38) | 10/12: 3 puntajes, 1 vecindario, 3 perturbaciones, 3 destrucciones; 44 mil | 8/12: 2 puntajes, 3 vecindarios, 1 perturbación, 2 destrucciones; 58 mil |
+| Tuning (runs 28 / 29) | 6,21 / 5,59 / 6,26 % (desvío 0,3) | 6,02 / 5,35 / 3,20 % (desvío 1,2) |
+| Elegido | las 3 réplicas: ILS con `swap_customers_across_routes` | SA o VNS con `two_opt_reversal_neighborhood` |
+| Afinado vs mejor no afinado | −0,54 [−2,29, +1,29] (ruido) | +2,03 [+1,03, +2,93] |
+
+Comparación entre variantes (`scripts/compare_packs.py`, mejor conocido común a las 6 réplicas):
+gran tour queda **3,0 puntos de gap por debajo** de rutas, IC95 [1,4, 4,6] sobre las 10
+instancias de test. Los costos se comparan directamente porque los dos modelos generados pasan
+los mismos casos de prueba.
+
+Cómo leerlo: la diferencia es entre dos solvers generados enteros, no solo entre dos
+representaciones. El catálogo de rutas tiene un único vecindario (un intercambio entre rutas; los
+otros dos se abandonaron por `undo` mal implementados), y el de gran tour tiene 2-opt, que es el
+que eligen las tres réplicas. En la representación de gran tour los movimientos son de
+permutación, más fáciles de escribir bien, y eso también es un efecto de la representación. Para
+separarlos harían falta más corridas de componentes por variante. Pendiente: el mismo tuning con
+los componentes escritos a mano del CVRP como referencia.
+
+Arreglos del framework que salieron de esta corrida: el prompt de la vista MIP muestra la
+representación y la regla de ida y vuelta de los decodificadores; el mensaje de cobertura de
+variables nombra lo que sobra en `to_assignment` o `aux_values`; la firma de diversidad de los
+puntajes compara transiciones (con acciones "próximo cliente", el conjunto de acciones elegidas
+era siempre el mismo y tres ideas distintas daban similitud 1,00); y las ramas de los modelos
+rechazados se guardan.
+
+**Segunda generación de componentes y referencia escrita a mano** (runs 30–32; mismos modelos,
+otro catálogo generado por variante: corridas 39 y 40; referencia: el catálogo escrito a mano del
+CVRP con su modelo, mismas instancias y presupuesto). Gaps contra el mejor conocido común de cada
+par; diferencias pareadas por instancia con IC95:
+
+| Comparación | Resultado |
+|---|---|
+| Gran tour − rutas, 1.ª generación (29 − 28) | −3,0 puntos [−4,6, −1,4] |
+| Gran tour − rutas, 2.ª generación (32 − 31) | −1,3 [−2,2, −0,4] |
+| Rutas, 2.ª − 1.ª generación (31 − 28) | −3,9 [−5,4, −2,4] |
+| Gran tour, 2.ª − 1.ª generación (32 − 29) | −2,2 [−3,1, −1,2] |
+| Ciclo − escrito a mano: rutas 1.ª / 2.ª | +8,6 [+7,0, +10,0] / +4,6 [+4,0, +5,2] |
+| Ciclo − escrito a mano: gran tour 1.ª / 2.ª | +5,5 [+5,0, +5,9] / +3,3 [+2,6, +4,0] |
+
+Por réplica, en su propia corrida: escrito a mano 1,24 / 0,46 / 2,22 % (VNS o ILS con `relocate`);
+rutas 2.ª generación 3,46 / 3,60 / 3,02 % (ILS con 2-opt* entre rutas, que la 1.ª generación no
+tenía); gran tour 2.ª generación 2,67 / 3,44 / 4,08 % (SA con 2-opt sobre el tour).
+
+- **Gran tour queda por delante con los dos catálogos**, pero la ventaja baja de 3,0 a 1,3 puntos
+  cuando rutas consigue un segundo vecindario. La representación importa, menos de lo que parecía.
+- **Qué catálogo salió pesa más que la representación**: con el mismo modelo, otra generación de
+  componentes mejora 2,2 a 3,9 puntos. Para comparar representaciones hacen falta varias
+  generaciones por variante, igual que hicieron falta varias réplicas del tuning.
+- **El ciclo completo queda 3,3 a 8,6 puntos por detrás de los componentes escritos a mano**
+  (1,3 % de gap medio). La brecha se cierra entre generaciones (de 5,5–8,6 a 3,3–4,6), pero sigue
+  siendo grande: los componentes escritos a mano mueven clientes con `delta` en O(1) y el
+  constructor de inserción más barata es fuerte; los generados evalúan con el objetivo completo
+  (en gran tour, un Split por movimiento), y con 5 s por corrida hacen muchos menos movimientos.
+  Pendiente: medir movimientos por segundo, y pedir en el prompt de vecindarios un `delta`
+  incremental cuando la representación lo permite.
+
+**Etapa de optimización** (corridas 41 y 42 sobre los catálogos de la 2.ª generación; `llm.cycle
+optimize`). Se midió la velocidad (`scripts/throughput.py`): el modelo de rutas generado evaluaba
+4,9 mil soluciones/s y el de gran tour 219 (la referencia en la misma representación: 75 mil y 11
+mil), y todos los vecindarios recalculaban el objetivo completo en cada `delta`. La etapa pide
+versiones más rápidas y las acepta solo si dan las mismas salidas que las aceptadas (pruebas
+diferenciales) y son al menos 1,5 veces más rápidas. Resultado: modelo de rutas 4,9 → 51 mil
+evaluaciones/s, modelo de gran tour 219 → 4,5 mil; los tres vecindarios de gran tour 4–5 mil → 24–26
+mil `delta`/s; los de rutas no ganaron 1,5× sobre el modelo ya rápido; de los puntajes, 1 de 6.
+
+Efecto en la calidad, sin volver a afinar (`scripts/reevaluate_configs.py`: la configuración que
+eligió cada réplica de las runs 31 y 32, mismas instancias de test, semillas y 5 s, catálogo antes y
+después de optimizar, las dos en la misma máquina y de a una a la vez; gap contra el mejor conocido
+guardado de cada run):
+
+| Variante | Antes de optimizar | Optimizado | Mejora |
+|---|---|---|---|
+| Rutas (run 31) | 2,04 % | 1,19 % | +0,85 puntos |
+| Gran tour (run 32) | 3,25 % | 0,01 % | +3,24 puntos |
+
+- **La velocidad pesaba**: con el mismo algoritmo y las mismas decisiones del tuner, solo más
+  rápido, gran tour gana 3,2 puntos y rutas 0,85. Gana más donde el modelo era más lento (el Split
+  por evaluación del gran tour).
+- La medición de "antes" en esta máquina da peor que en Actions (los 5 s rinden distinto), por eso
+  se compara antes y después en la misma máquina y sin otras corridas en paralelo. Con otra corrida
+  en paralelo, el "antes" del gran tour empeoraba 0,1 puntos más.
+- Pendiente: afinar de nuevo sobre los catálogos optimizados (el tuner podría elegir otra cosa con
+  más movimientos por segundo) y compararlos con la referencia escrita a mano con el mismo mejor
+  conocido.
+- **Rutas, afinando de nuevo** (run 33 contra 31, mismo mejor conocido): 4,96 → 5,03 % de gap,
+  diferencia +0,07 [−0,88, +0,92], **ruido**. La réplica que eligió lo mismo que la run 31 (ILS con
+  2-opt* entre rutas y el kick de inversión) mejora ~2 puntos (2,76 % contra 4,6–5,2 %), pero las
+  otras dos eligieron VNS y quedaron peor (6,4 y 6,0 %). Lo que gana el catálogo más rápido lo
+  pierde el tuner eligiendo: con 40 trials, la selección sigue siendo la mayor fuente de ruido.
+  Contra el escrito a mano (run 30): +4,65 [+3,80, +5,55].
+- **Gran tour: la caché que agotó la memoria.** La run 34 murió en los tres runners (58 min a
+  2 h 12). El modelo optimizado en la corrida 42 memoizaba el Split con `lru_cache(maxsize=None)`
+  a nivel de módulo, con el tour como clave: en 5 s no se nota, en horas de tuning cada tour
+  distinto queda en memoria. Las pruebas de equivalencia y velocidad miraban salidas y tiempo, no
+  memoria. Arreglo: `core/validation/resources.py` mide con `tracemalloc` la memoria retenida al
+  evaluar 10 mil soluciones nuevas después de llenar las cachés acotadas (modelo: ≤ 1 MB; un
+  componente, reconstruido en cada tanda, ≤ 1,5 MB), y los prompts piden `maxsize ≤ 8192`. Con la
+  regla, el modelo de la corrida 42 retiene 11,5 MB y se rechaza; el de referencia escrito a mano
+  (`maxsize=8192`), 0,3 MB. El modelo de rutas de la corrida 41 (`maxsize=200000`) también la
+  violaría, aunque en la práctica cupo en la run 33. Se rehízo la optimización del gran tour
+  (corrida 47): 222 → 1,6 mil evaluaciones/s con cachés acotadas (la versión que perdía memoria
+  hacía 4,5 mil).
+- **Gran tour, afinando de nuevo** (run 35, memoria acotada): las tres réplicas terminaron (la run
+  34 no) y eligen 2-opt sobre el tour con SA o VNS.
+
+| Comparación (mismo mejor conocido por par) | Gap afinado | Diferencia por instancia |
+|---|---|---|
+| Gran tour optimizado (35) contra sin optimizar (32) | 4,26 → 1,88 % | −2,38 [−3,19, −1,68] |
+| Gran tour optimizado (35) contra escrito a mano (30) | 2,18 contra 1,30 % | +0,87 [+0,37, +1,31] |
+| Rutas optimizado (33) contra gran tour optimizado (35) | 5,62 contra 1,85 % | +3,77 [+2,73, +4,92] |
+
+  - **La brecha con lo escrito a mano baja de 3,3 a 0,9 puntos** en gran tour; es la primera vez
+    que el ciclo completo (modelo, componentes y aceleración, todo generado) queda a menos de un
+    punto de la referencia. Las réplicas también se ponen de acuerdo (desvío 0,22 contra 0,58).
+  - En rutas la optimización no se vio al afinar (run 33, ruido del tuner), y gran tour queda 3,8
+    puntos por delante: con modelos rápidos las dos, la representación vuelve a pesar.
+  - El afinado casi no le gana al mejor no afinado (+0,41 [−0,06, +0,88]): con un solo vecindario
+    bueno, el tuner tiene poco que elegir.
+
+**De dónde sale la brecha con lo escrito a mano** (`scripts/diagnose_gap.py`; datos en
+`tune_run35/diagnose_gap_vs_run30.json`). Las configuraciones elegidas por cada réplica de las
+runs 30 y 35, en las mismas 10 instancias de test y la misma máquina, a 1,25–20 s, contando
+iteraciones y llamadas a los componentes. Gap contra el mejor conocido común; diferencia pareada
+contra la media de las tres configuraciones escritas a mano:
+
+| Presupuesto | VNS generado (r0) | SA generados (r1 / r2) | Escrito a mano (media) |
+|---|---|---|---|
+| 1,25 s | 4,69 % (+2,29 [+1,15, +3,86]) | 4,11 / 4,68 % | 2,39 % |
+| 5 s | 0,91 % (−0,36 [−1,12, +0,51]) | 2,07 / 1,73 % | 1,26 % |
+| 20 s | 0,44 % (−0,33 [−0,81, +0,11]) | 2,07 / 1,68 % | 0,77 % |
+
+- **Los componentes generados no son el problema**: con VNS, el catálogo generado iguala a lo
+  escrito a mano desde los 5 s y queda por delante a 20 s (sin separarse del ruido).
+- **La brecha está en las dos réplicas que eligieron SA.** Con un solo vecindario (2-opt sobre el
+  tour), SA se estanca: 2,07 % a 5, 10 y 20 s. No es la velocidad: con el modelo de referencia
+  del gran tour (4 a 6 veces más iteraciones) se estanca en 1,89 %. Tampoco es solo el
+  enfriamiento: el SA enfría por iteraciones (con los parámetros elegidos, los defaults, la
+  temperatura se vuelve despreciable en ~1500 iteraciones, menos de 1 s), pero repartirlo en los
+  5 s no mejora (2,64 / 1,82 %). VNS sale de ese óptimo local con sus sacudidas; lo escrito a mano
+  nunca eligió SA.
+- **La velocidad pesa en presupuestos cortos**: a 1,25 s el generado va 2,1 puntos atrás. El Split
+  del modelo generado es O(n³) (todos los segmentos, sin corte por capacidad, y el costo de cada
+  ruta recalculado entero); el de referencia es O(n·L) y corta cuando se acaba la capacidad. Corrección
+  posterior: el corte sí pasa la prueba de equivalencia (mismas salidas en todas las soluciones
+  de prueba) y acelera el modelo 3,3 veces (2,2 → 7,1 mil evaluaciones/s); no era la prueba, el
+  LLM no lo encontró. El prompt de la optimización ahora sugiere la poda. Primer intento con la
+  sugerencia (corrida 48): rechazado en las 3 rondas. El LLM escribió un costo incremental con
+  aristas sumadas dos veces y sin el corte; el reporte decía "costo equivocado en un caso
+  oculto", sin nombrar la función, y la ronda 3 corrigió `cost_terms` (que estaba bien) y dejó el
+  módulo idéntico a la ronda 2. Arreglos: la prueba diferencial contra el modelo aceptado va
+  primero (nombra la función y la solución donde difiere) y una corrección que no cambia nada se
+  señala en el siguiente pedido. Segundo intento (corrida 49, 4 rondas): las cuatro con el mismo
+  `TypeError: 'int' object is not subscriptable`, sin ubicación. Arreglo: todo error que lanza el
+  código validado se informa con la función, la línea y el código donde ocurrió
+  (`describe_exception`, en las 14 capas que informaban solo el tipo y el mensaje). Tercer intento
+  (corrida 50): aceptado en la primera ronda, 2,1 → 7,2 mil evaluaciones/s (3,4×): costo de ruta
+  incremental en el Split (O(n³) → O(n²)), todavía sin el corte por capacidad. La versión de la
+  corrida 47 queda como `parts_opt_run47.py`.
+- **Rutas con memoria acotada** (corrida 51): el modelo de la corrida 41 (`lru_cache` de 200 mil
+  entradas) violaba la regla; reoptimizado desde el original, aceptado en la primera ronda:
+  4,8 → 40,9 mil evaluaciones/s (8,4×) con cachés de 8192 (la de la 41 hacía 51 mil).
+- **Qué elige el tuner sigue siendo la mayor fuente de ruido**: cada réplica eligió un esqueleto
+  distinto, y en esta máquina VNS le saca 0,8–1,2 puntos a los SA a 5 s. Si las tres hubieran
+  elegido VNS, el ciclo quedaría a la par de lo escrito a mano (en esta máquina, 0,36 puntos por
+  delante a 5 s).
+
+Arreglos que salen de aquí: un SA que enfríe según el tiempo y no según las iteraciones (con
+cualquier velocidad del modelo usaría todo el presupuesto); en el tuner, que la selección final
+reevalúe con más semillas cuando las mejores configuraciones difieren en el esqueleto (hecho: carrera, abajo); y en la
+optimización del modelo, sugerir la poda (descartar segmentos imposibles en vez de penalizarlos;
+hecho, y no hacía falta relajar la prueba de equivalencia).
+
+**Todo junto** (runs 37 y 38: modelos reoptimizados con memoria acotada, SA por tiempo, selección en
+carrera; mismos catálogos de componentes que las runs 32–36):
+
+| Comparación (mismo mejor conocido por par) | Gap afinado | Diferencia por instancia |
+|---|---|---|
+| Gran tour, run 37 contra run 36 | 0,58 contra 1,56 % | −0,98 [−1,18, −0,77] |
+| **Gran tour (37) contra escrito a mano (30)** | **0,58 contra 1,33 %** | **−0,76 [−1,07, −0,43]** |
+| Rutas, run 38 contra run 33 | 5,66 contra 5,03 % | +0,62 [−0,28, +1,38], ruido |
+| Rutas (38) contra escrito a mano (30) | 6,58 contra 1,30 % | +5,28 [+4,59, +6,01] |
+
+- **En gran tour el ciclo completo le gana a lo escrito a mano**, con las tres réplicas de acuerdo
+  (VNS con 2-opt sobre el tour, desvío 0,11). La mejora sobre la run 36 viene del modelo 3,4 veces
+  más rápido (corrida 50): el VNS generado ya igualaba a lo escrito a mano a 5 s y lo superaba con
+  más tiempo; más velocidad es más tiempo.
+- En rutas no cambia nada: el catálogo es el límite (su mejor vecindario es un intercambio entre
+  rutas; lo escrito a mano tiene `relocate` con delta O(1)). Las réplicas se ponen de acuerdo
+  (desvío 0,52 contra 1,62), pero en algo peor.
+
+**SA con enfriamiento por tiempo** (nuevo default, `SA.cooling = time`: T = T0 · T_end^(t/presupuesto)).
+Las dos configuraciones SA de la run 35, en las mismas instancias de test y a 5 s (una semilla):
+2,07 → 0,96 % y 1,73 → 1,60 % con `T_end = 10⁻³` (el default); con `10⁻⁴`, 2,35 y 1,58 %. El tuner
+afina `T_end`; las configuraciones anteriores, sin `SA.cooling`, siguen enfriando por iteraciones.
+
+**Selección final en carrera** (run 36: lo mismo que la 35, con `--race-seeds 6`). Después de las 2
+semillas extra de siempre, los candidatos que pierden contra el líder por más que el ruido salen y
+los empatados siguen recibiendo semillas:
+
+| | Run 35 (sin carrera) | Run 36 (carrera) |
+|---|---|---|
+| Elegido | VNS / SA / SA | VNS / VNS / VNS |
+| Gap afinado, mejor conocido común | 1,99 % | 1,34 % (−0,64 [−1,01, −0,27]) |
+| Contra lo escrito a mano (run 30) | +0,87 [+0,37, +1,31] | +0,23 [−0,02, +0,48], **ruido** |
+| Desvío entre réplicas | 0,22 | 0,14 |
+| Tiempo de tuning por réplica | 53–56 min | 56–67 min (+4 a +19 %) |
+
+- De 10 candidatos por réplica, 7 a 9 salen después de las 2 semillas de siempre: la carrera
+  solo gasta en los que quedan cerca. En dos réplicas llegaron al tope de 6 semillas extra un
+  VNS y un SA todavía empatados, y ganó VNS por la media.
+- **Con esto, el ciclo completo en gran tour ya no se distingue de lo escrito a mano.**
+- Cautela: en dos réplicas los finalistas (un VNS y un SA) siguen empatados en train aun con 7
+  semillas, y ganó VNS por la media, no por una diferencia significativa.
+- No es el objetivo del tuner: en las instancias de train, las configuraciones de la run 35 se
+  separan tanto como en test (VNS 0,17 %, los SA 1,49 y 1,35 % de gap contra el mejor de los
+  tres; en cociente con la partida trivial, 0,4718 contra 0,4781 y 0,4771). En la run 35 las
+  réplicas r1 y r2 no eligieron SA por una señal débil sino porque ningún VNS llegó a sus
+  candidatos finales: la trayectoria de TPE no lo probó con buenos parámetros.
+
+### Ciclo completo en el CLSP (representación de setups)
+
+**Modelo por piezas** (corrida 52): vista heurística en la ronda 1, vista MIP en la 6 (la última;
+rechazos por familias que no coinciden, términos del objetivo y la partición de grupos), 70 mil
+tokens. **La vista constructiva no se aceptó** en 6 rondas: oscila entre ofrecer todas las
+acciones (completaciones al azar infactibles por demanda) y ofrecer solo la segura (todas las
+construcciones al azar iguales, el puntaje no tendría qué elegir). Sin ella el ciclo sigue con
+constructores completos. Arreglo en el contrato de la vista constructiva: filtrar los candidatos
+con una prueba de completabilidad (una acción entra si después todavía existe una completación
+factible, p.ej. la "más permisiva": activar todo lo que falta). También: esos rechazos salían
+rotulados "vista MIP".
+
+Repetir el modelo entero para reintentar la vista constructiva (corrida 53) se rechazó antes, en
+la vista heurística (6 rondas: un `PulpError` y después un costo que no coincide en un caso
+oculto): la variación entre generaciones. Arreglos: `llm.cycle model --construction-only` (input
+`construction_only` de `generate.yml`) genera solo la vista constructiva sobre el modelo ya
+aceptado; y el traceback de un error salta también las librerías instaladas (en la 53 los tres
+marcos eran de PuLP y no se veía la línea del LLM).
+
+Vista constructiva sola sobre el modelo de la 52, con la pista de completabilidad (corrida 54):
+**aceptada en la primera ronda** (6,5 mil tokens; antes, 6 rondas rechazadas).
+
+**Componentes** (corrida 55): 10 de 12 (3 puntajes, 1 vecindario, 3 perturbaciones, 3
+destrucciones), 47 mil tokens, 6 correcciones como parche. **Optimización** (corrida 56): cortada
+por el límite de 45 min del job. El modelo resuelve dos LP por evaluación (39 soluciones/s; la
+referencia escrita a mano, uno, 62/s) y la medición de memoria hacía 30 mil evaluaciones por
+candidato. Además, ese modelo se había aceptado en la etapa del modelo con dos
+`lru_cache(maxsize=None)`: la regla de memoria solo corría en la optimización. Arreglos: una
+revisión estática e instantánea de las cachés (`lru_cache` sin límite o con más de 8192 entradas,
+en el módulo y un nivel adentro de lo que guarda) que corre también al aceptar modelos y
+componentes, y la medición dinámica solo cuando cabe en 60 s. De los 353 componentes generados
+hasta ahora, ninguno tiene una caché sin límite; de los modelos, el del CLSP y las versiones
+optimizadas de las corridas 41 y 42. Si el modelo aceptado viola la regla, la optimización se lo
+dice al LLM y pide solo no perder velocidad (0,8×) en vez de 1,5×.
+
+Con eso (corrida 57), el modelo del CLSP se aceptó en la primera ronda con cachés acotadas y la
+misma velocidad (43 → 40 evaluaciones/s). La optimización de componentes volvió a cortarse a los
+45 min (cada `delta` resuelve LP) y, como las estadísticas se escribían al final, no quedó
+registro; sus archivos a medio validar no se usan. Ahora la etapa guarda las estadísticas a medida
+que avanza, no empieza componentes después de `--max-minutes` (35) y el log sale sin buffer.
+
+**Tuning del ciclo contra lo escrito a mano** (runs 40 y 39, mismas instancias, presupuesto y tuner):
+
+| | Escrito a mano (39) | Ciclo completo (40) |
+|---|---|---|
+| Elegido | LNS_MIP, `greedy_unit_marginal_cost` + `period_window` (las 3) | LNS_MIP con puntajes y destrucciones generados (2 elecciones distintas) |
+| Gap afinado (mejor conocido común) | 0,68 % | 1,02 % |
+| Diferencia por instancia | | +0,34 [+0,15, +0,53] |
+| Desvío entre réplicas | 0,03 | 0,38 |
+
+- **El ciclo completo queda a 0,34 puntos de lo escrito a mano en el CLSP**: modelo, vista
+  constructiva, puntajes, destrucciones, todo generado. Dos de las tres réplicas (0,90 y 0,62 %)
+  están a la par de la referencia; la tercera eligió otra destrucción y queda en 1,54 %.
+- Los dos lados eligen LNS_MIP en todas las réplicas: con 10×15 el MIP de la vecindad es lo que
+  manda, y ahí pesan la destrucción y el constructor inicial, no la velocidad del modelo (el LP por
+  evaluación lo pagan los dos).
+- El afinado no le gana al mejor no afinado del catálogo generado (−0,11 [−0,51, +0,27]).
+
+### Reparación localizada: correcciones más cortas, no más componentes rescatados
+
+Desde la corrida 43, una corrección trae solo las funciones o métodos que cambian y
+`llm/patching.py` los reemplaza por nombre en el módulo rechazado (`undo` de los vecindarios ya
+no se pide). Corridas 43 y 44: la mitad de las respuestas traían el método solo
+(`def perturb(self, …)`), a veces con la sangría de la clase; lo sangrado no parseaba y lo suelto
+quedaba como función del módulo, sin corregir nada. Arreglado (un método con `self` va a la
+clase que lo define), se repitieron como 45 y 46. Mismos modelos y prompts que las corridas
+37–40 (correcciones con el módulo completo):
+
+| Corrida | Aceptados | Correcciones | Rescatadas | Tokens de salida por corrección | Tokens de la corrida |
+|---|---|---|---|---|---|
+| 37 / 39 rutas (módulo completo) | 10 / 9 de 12 | 7 / 11 | 2 / 3 | 1126 / 1312 | 44 / 57 mil |
+| 38 / 40 gran tour (módulo completo) | 8 / 8 | 10 / 9 | 1 / 1 | 1342 / 1507 | 58 / 59 mil |
+| 45 rutas (parches) | 12 | 1 | 1 | 702 | 29 mil |
+| 46 gran tour (parches) | 9 | 8 | 1 (7 como parche) | 1071 | 52 mil |
+
+- **Cada corrección sale 20–45 % más corta**: el LLM ya no reescribe lo que pasaba. La entrada no
+  cambia (el módulo rechazado sigue en el prompt como contexto).
+- **No rescata más componentes.** Casi todos los rechazos son de calidad (el operador no mejora
+  o no perturba lo suficiente en su esqueleto), y eso es un problema de la idea, no de una
+  función. El parche sirve para errores localizados (un `delta` sin la penalización, un índice
+  mal puesto); las corridas tuvieron pocos de esos. Los rechazos sintácticos quedaron en 0 en las
+  dos (3 en cada corrida de rutas antes), con una muestra chica.
+- La rutas 45 aceptó 12 de 12 con una sola corrección: variación entre generaciones, no efecto de
+  los parches (ya se vio que otra generación cambia 2 a 4 puntos).
 
 ### ProblemModel del CLSP por piezas: de 4 rechazos a aceptado a la primera, por arreglos del framework
 
