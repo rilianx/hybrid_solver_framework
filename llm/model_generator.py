@@ -89,6 +89,9 @@ class ModelSpec:
     # pista para la vista constructiva (etapa 3 de la generación por piezas), si el problema la necesita
     construction: str = ""
     families: str = ""
+    # la vista MIP es opcional: sin ella (p.ej. el CPMP, sin una formulación práctica) el modelo queda con la
+    # vista heurística y, si se acepta, la constructiva; entra al framework solo por el lado constructivo
+    mip: bool = True
 
 
 def model_prompt(spec: ModelSpec) -> str:

@@ -43,6 +43,9 @@ from core.problem_pack import ProblemPack
 
 CYCLE_SLOTS = ["greedy_score", "neighborhood", "perturbation", "destruction"]  # si el modelo tiene vista constructiva
 CYCLE_SLOTS_NO_VIEW = ["constructor", "neighborhood", "perturbation", "destruction"]
+# sin vista MIP (`ModelSpec.mip = False`, p.ej. el CPMP): solo el lado constructivo, en el esqueleto CONSTRUCT
+CYCLE_SLOTS_NO_MIP = ["greedy_score"]
+CYCLE_SLOTS_NO_MIP_NO_VIEW = ["constructor"]
 LOCAL_SEARCH_SKELETONS = ["SA", "ILS", "TS", "VNS", "GRASP", "MIP_PERTURB"]
 
 
@@ -66,7 +69,11 @@ class RandomConstructor:
 
 def _handwritten(parts, skeletons: list[str]) -> list[tuple[dict, Any]]:
     from core.fixing_policies import SlidingWindowPolicy
+    from core.model_parts import has_mip
 
+    if not has_mip(parts):
+        return [({"name": "trivial", "slot": "constructor", "compatible_skeletons": skeletons, "params": {}},
+                 lambda problem: TrivialConstructor(parts))]
     return [
         ({"name": "trivial", "slot": "constructor", "compatible_skeletons": skeletons, "params": {}},
          lambda problem: TrivialConstructor(parts)),
@@ -119,10 +126,17 @@ def parts_problem_spec(model_spec, parts_import: str, parts_source: str, parts=N
         problem_model_import=parts_import,
         problem_model_source=parts_source + "\n" + PARTS_MODEL_API,
         variable_naming=("Las variables de la vista MIP son las de `structural_variables(inst)` en las piezas; "
-                         "`variable_groups(inst)` las agrupa para Fix-and-Optimize."),
+                         "`variable_groups(inst)` las agrupa para Fix-and-Optimize." if parts is None or _has_mip(parts) else
+                         "Este modelo NO tiene vista MIP: no uses to_assignment, from_assignment, variable_groups ni build_mip."),
         notes=list(model_spec.notes),
         construction_source=construction_source(parts) if parts is not None else None,
     )
+
+
+def _has_mip(parts) -> bool:
+    from core.model_parts import has_mip
+
+    return has_mip(parts)
 
 
 def parts_contexts(base: ProblemPack, parts, n_contexts: int = 2, strict: bool = True, reference_free: bool = True,
@@ -187,11 +201,16 @@ def parts_pack(base: ProblemPack, parts, parts_import: str, model_spec, name: st
     """El pack de una representación: instancias y casos del pack base; modelo, catálogo mínimo y
     especificación para los componentes, de las piezas."""
     source = inspect.getsource(parts)
+    from core.model_parts import has_construction, has_mip
+
+    mip = has_mip(parts)
+    # sin vista MIP solo queda el lado constructivo: el esqueleto CONSTRUCT, con beam search si hay vista constructiva
+    skeletons = list(base.constructor_skeletons) if mip else ["CONSTRUCT"]
     pack = ProblemPack(
         name=name,
         module="llm.cycle",
         problem_factory=lambda inst: PartsModel(parts, inst),
-        handwritten=_handwritten(parts, list(base.constructor_skeletons)),
+        handwritten=_handwritten(parts, skeletons),
         make_spec=lambda: parts_problem_spec(model_spec, parts_import, source, parts),
         make_contexts=lambda **kw: None,  # se reemplaza abajo (necesita el pack para la sonda de combinación)
         make_instances=base.make_instances,
@@ -202,7 +221,9 @@ def parts_pack(base: ProblemPack, parts, parts_import: str, model_spec, name: st
         make_model_spec=lambda: model_spec,
         micro_size=base.micro_size,
         load_cases=base.load_cases,
-        constructor_skeletons=list(base.constructor_skeletons),
+        constructor_skeletons=skeletons,
+        beam_constructors=base.beam_constructors or (not mip and has_construction(parts)),
+        skeletons=None if mip else ["CONSTRUCT"],
     )
     pack.make_contexts = lambda n_contexts=2, strict=True, reference_free=True, combination=False: parts_contexts(
         base, parts, n_contexts, strict, reference_free, combination, pack)
@@ -210,7 +231,7 @@ def parts_pack(base: ProblemPack, parts, parts_import: str, model_spec, name: st
 
 
 def base_pack(problem: str) -> ProblemPack:
-    module = {"clsp": "examples.lotsizing.pack", "cvrp": "examples.cvrp.pack"}[problem]
+    module = {"clsp": "examples.lotsizing.pack", "cvrp": "examples.cvrp.pack", "cpmp": "examples.cpmp.pack"}[problem]
     return importlib.import_module(module).PACK
 
 
@@ -335,7 +356,7 @@ def main(argv: list[str] | None = None) -> None:
         argv, rest = argv[:k], argv[k + 1:]
     ap = argparse.ArgumentParser(prog="python -m llm.cycle")
     ap.add_argument("stage", choices=["model", "components", "optimize", "tune"])
-    ap.add_argument("--problem", choices=["clsp", "cvrp"], required=True)
+    ap.add_argument("--problem", choices=["clsp", "cvrp", "cpmp"], required=True)
     ap.add_argument("--variant", required=True)
     ap.add_argument("--workspace", required=True)
     ap.add_argument("--reference", action="store_true", help="usar las piezas de referencia de la variante")
@@ -356,9 +377,13 @@ def main(argv: list[str] | None = None) -> None:
     if args.stage == "components":
         from .cli import main as generate
 
-        from core.model_parts import has_construction
+        from core.model_parts import has_construction, has_mip
 
-        slots = CYCLE_SLOTS if has_construction(importlib.import_module(pack.make_spec().problem_model_import)) else CYCLE_SLOTS_NO_VIEW
+        parts = importlib.import_module(pack.make_spec().problem_model_import)
+        if has_mip(parts):
+            slots = CYCLE_SLOTS if has_construction(parts) else CYCLE_SLOTS_NO_VIEW
+        else:
+            slots = CYCLE_SLOTS_NO_MIP if has_construction(parts) else CYCLE_SLOTS_NO_MIP_NO_VIEW
         return generate(pack, ["--from-scratch", "--workspace", args.workspace, "--slots", *slots, *rest])
     from tuning.cli import main as tune
 

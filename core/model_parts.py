@@ -155,6 +155,11 @@ class PartsConstructionView:
 
     def __init__(self, parts, inst):
         self.parts, self.inst = parts, inst
+        # opcionales (los usa la beam search: poda por cota y parciales repetidas)
+        if callable(getattr(parts, "partial_lower_bound", None)):
+            self.lower_bound = lambda partial: parts.partial_lower_bound(inst, partial)
+        if callable(getattr(parts, "partial_key", None)):
+            self.key = lambda partial: parts.partial_key(inst, partial)
 
     def empty(self):
         return self.parts.empty_partial(self.inst)
@@ -177,6 +182,11 @@ class PartsConstructionView:
 
 def has_construction(parts) -> bool:
     return all(callable(getattr(parts, n, None)) for n in CONSTRUCTION_PARTS)
+
+
+def has_mip(parts) -> bool:
+    """La vista MIP es opcional (`ModelSpec.mip`): sin ella el modelo entra solo por el lado constructivo."""
+    return all(callable(getattr(parts, n, None)) for n in MIP_PARTS)
 
 
 class PartsModel:
@@ -216,20 +226,32 @@ class PartsModel:
         v = self.violations(sol)
         return "; ".join(f"{k}: {m:g}" for k, m in v.items()) or "factible"
 
+    @property
+    def has_mip(self) -> bool:
+        return has_mip(self.parts)
+
+    def _need_mip(self) -> None:
+        if not self.has_mip:
+            raise NotImplementedError("el modelo no tiene vista MIP (ModelSpec.mip = False)")
+
     def build_mip(self, inst) -> LinearMIP:
+        self._need_mip()
         return LinearMIP(self.parts, inst)
 
     def to_assignment(self, sol) -> dict[str, float]:
+        self._need_mip()
         return self.parts.to_assignment(self.inst, sol)
 
     def from_assignment(self, x: dict[str, float]):
+        self._need_mip()
         return self.parts.from_assignment(self.inst, x)
 
     def variable_groups(self, inst) -> dict[str, list[str]]:
+        self._need_mip()
         return self.parts.variable_groups(inst)
 
     def random_solution(self, rng):
         return self.parts.random_solution(self.inst, rng)
 
 
-__all__ = ["CONSTRUCTION_PARTS", "HEURISTIC_PARTS", "MIP_PARTS", "PartsConstructionView", "has_construction", "LinearMIP", "PartsModel", "TestCase", "family_of", "lhs", "violated"]
+__all__ = ["CONSTRUCTION_PARTS", "HEURISTIC_PARTS", "MIP_PARTS", "PartsConstructionView", "has_construction", "has_mip", "LinearMIP", "PartsModel", "TestCase", "family_of", "lhs", "violated"]

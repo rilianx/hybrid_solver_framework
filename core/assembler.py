@@ -14,6 +14,7 @@ Nada aquí conoce el problema: todo pasa por el registro y el ProblemModel.
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
 from random import Random
 from statistics import mean
@@ -135,6 +136,33 @@ SKELETONS: dict[str, SkeletonDef] = {
 }
 
 
+# Esqueletos solo constructivos: la solución es la del constructor, sin búsqueda encima. Sirven
+# para comparar y afinar estrategias constructivas (greedy_<puntaje>, beam_<puntaje>, ...) por
+# sí solas, y para problemas que todavía no tienen vecindarios ni vista MIP (CPMP). No están en
+# `SKELETONS` para no cambiar el espacio de los packs existentes: un pack los pide con
+# `ProblemPack.skeletons`. `multistart`: repetir `build` con el rng mientras quede presupuesto
+# y quedarse con la mejor (útil con reglas aleatorizadas: rcl, roulette).
+CONSTRUCTIVE_SKELETONS: dict[str, SkeletonDef] = {
+    "CONSTRUCT": SkeletonDef("CONSTRUCT", ("constructor",), params={"multistart": {"type": "bool", "default": False}}),
+}
+ALL_SKELETONS: dict[str, SkeletonDef] = {**SKELETONS, **CONSTRUCTIVE_SKELETONS}
+
+
+def run_construct(problem: Any, constructor: Any, inst: Any, rng: Random, budget: float, multistart: bool) -> RunResult:
+    t0 = time.perf_counter()
+    best, best_f, iters = None, float("inf"), 0
+    while True:
+        sol = constructor.build(inst, rng)
+        iters += 1
+        f = problem.objective(sol) if problem.is_feasible(sol) else float("inf")
+        if best is None or f < best_f:
+            best, best_f = sol, f
+        if not multistart or time.perf_counter() - t0 >= budget:
+            break
+    return RunResult(best_solution=best, best_objective=problem.objective(best), iterations=iters,
+                     elapsed_time=time.perf_counter() - t0, accepted=iters)
+
+
 class AssemblyError(ValueError):
     pass
 
@@ -222,6 +250,8 @@ class Assembler:
         def run(inst, rng: Random, budget: float) -> RunResult:
             P = self.problem_factory(inst)
             constructor = self._component(config, "constructor", skeleton, P)
+            if skeleton == "CONSTRUCT":
+                return run_construct(P, constructor, inst, rng, budget, bool(sp("multistart")))
             if skeleton == "SA":
                 nbh = self._component(config, "neighborhood", skeleton, P)
                 # configuraciones de antes del enfriamiento por tiempo: se reproducen tal cual

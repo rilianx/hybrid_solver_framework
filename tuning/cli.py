@@ -28,7 +28,7 @@ import json
 from pathlib import Path
 from statistics import mean
 
-from core.assembler import SKELETONS, Assembler, describe
+from core.assembler import ALL_SKELETONS, SKELETONS, Assembler, describe
 from core.problem_pack import ProblemPack
 from llm.catalog import build_registry, load_generated
 
@@ -40,7 +40,8 @@ def make_assembler(pack: ProblemPack, catalog: str, generated_dir: str | None = 
                    skeletons: list[str] | None = None) -> tuple[Assembler, list[str]]:
     generated = load_generated(pack, generated_dir, verbose=verbose) if catalog in ("all", "generated") else []
     registry = build_registry(pack, generated, handwritten=catalog != "generated")
-    sks = {k: SKELETONS[k] for k in skeletons} if skeletons else dict(SKELETONS)
+    skeletons = skeletons or pack.skeletons
+    sks = {k: ALL_SKELETONS[k] for k in skeletons} if skeletons else dict(SKELETONS)
     return Assembler(problem_factory=pack.problem_factory, registry=registry, skeletons=sks), [c.name for c in generated]
 
 
@@ -108,7 +109,7 @@ def main(pack: ProblemPack, argv: list[str] | None = None) -> None:
     ap.add_argument("--tuner-seed", type=int, default=None,
                     help="semilla del tuner y de las corridas de train, sin cambiar las instancias (réplicas del tuning)")
     ap.add_argument("--catalog", choices=["handwritten", "all", "generated", "both", "three"], default="both")
-    ap.add_argument("--skeletons", nargs="*", choices=sorted(SKELETONS), default=None,
+    ap.add_argument("--skeletons", nargs="*", choices=sorted(ALL_SKELETONS), default=None,
                     help="restringe el espacio a estos esqueletos (baselines de test: uno por componente)")
     ap.add_argument("--objective", choices=["ratio", "raw"], default="ratio",
                     help="costo de un trial: media de costo/partida trivial por instancia (ratio) o costo medio (raw)")

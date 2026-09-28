@@ -77,6 +77,9 @@ def is_complete(inst, partial) -> bool: ...
 def to_solution(inst, partial): ...                 # la solución (en la representación de la vista heurística, canónica)
 def complete_partial(inst, partial, rng): ...       # callejón sin salida (candidates vacío sin estar completa): termina
                                                     # como puedas, con una solución FACTIBLE (rng = random.Random)
+# Opcionales (los usa la beam search del framework):
+# def partial_lower_bound(inst, partial) -> float   # cota inferior del costo de CUALQUIER solución que complete `partial`
+# def partial_key(inst, partial)                   # hashable; dos parciales equivalentes dan la misma clave
 
 # El framework construye así (el puntaje que elige entre candidatos lo escribirá después otro modelo):
 #     partial = empty_partial(inst)
@@ -230,7 +233,9 @@ def _concat(heuristic: str, mip: str, construction: str | None = None) -> str:
         future += [ln for ln in lines if ln.startswith("from __future__ import")]
         bodies.append("\n".join(ln for ln in lines if not ln.startswith("from __future__ import")).strip("\n"))
     head = "\n".join(dict.fromkeys(future))
-    out = (head + "\n\n" if head else "") + bodies[0] + "\n\n\n# ---- vista MIP ----\n" + bodies[1] + "\n"
+    out = (head + "\n\n" if head else "") + bodies[0] + "\n"
+    if bodies[1]:  # sin vista MIP (`ModelSpec.mip = False`) no va el separador
+        out += "\n\n# ---- vista MIP ----\n" + bodies[1] + "\n"
     if len(bodies) > 2:
         out += "\n\n# ---- vista constructiva ----\n" + bodies[2] + "\n"
     return out
@@ -317,9 +322,10 @@ def generate_problem_model_parts(client: LLMClient, spec: ModelSpec, cases: list
         return blocks[0] if blocks else None
 
     if accepted_model is not None:
-        heur, _, rest = accepted_model.partition("\n# ---- vista MIP ----\n")
-        mip = rest.split("\n# ---- vista constructiva ----\n")[0]
-        if not rest:
+        head = accepted_model.split("\n# ---- vista constructiva ----\n")[0]
+        heur, _, rest = head.partition("\n# ---- vista MIP ----\n")
+        mip = rest
+        if not rest and spec.mip:
             raise ValueError("accepted_model no tiene el separador de la vista MIP")
         for st, src in ((res.heuristic, heur), (res.mip, mip)):
             st.accepted, st.source = True, src.strip("\n") + "\n"
@@ -358,6 +364,15 @@ def generate_problem_model_parts(client: LLMClient, spec: ModelSpec, cases: list
         prev = src
         prompt = correction_prompt("vista heurística", src, report.feedback(), context1)
     if not res.heuristic.accepted:
+        res.seconds = time.perf_counter() - t0
+        return res
+
+    if not spec.mip:  # sin vista MIP: el modelo es la vista heurística (y la constructiva, si se acepta)
+        path = ws / "model_heuristic.py"
+        path.write_text(_concat(res.heuristic.source, ""))
+        res.path = path
+        if construction:
+            _construction_stage(res, spec, cases, ws, ask, max_rounds, scale_instances, verbose)
         res.seconds = time.perf_counter() - t0
         return res
 

@@ -369,12 +369,16 @@ def check_construction_view(parts, cases: list[TestCase], scale_instances: list 
     targets += [(inst, f"instancia de tamaño realista {k}", False) for k, inst in enumerate(scale_instances or [])]
     for inst, where, visible in targets:
         sols = set()
+        bound = getattr(parts, "partial_lower_bound", None)
+        bound = bound if callable(bound) else None
         for s in range(n_random):
-            rng, trail = Random(s), []
+            rng, trail, bounds = Random(s), [], []
             t0 = time.perf_counter()
             try:
                 partial = parts.empty_partial(inst)
                 for _step in range(max_steps):
+                    if bound is not None:
+                        bounds.append(float(bound(inst, partial)))
                     if parts.is_complete(inst, partial):
                         sol, how = parts.to_solution(inst, partial), "to_solution"
                         break
@@ -416,6 +420,13 @@ def check_construction_view(parts, cases: list[TestCase], scale_instances: list 
                                 + "): candidates debe ofrecer solo acciones que se puedan completar a una solución factible, y "
                                   "complete_partial debe terminar en una factible"))
                 return report
+            if bounds:
+                cost = sum(parts.cost_terms(inst, sol).values())
+                if max(bounds) > cost + TOL * max(1.0, abs(cost)):
+                    report.add(fail(L, "lower_bound_valid", f"partial_lower_bound llega a {max(bounds):g} y la construcción "
+                                                            f"termina con costo {cost:g} en {where}: una cota inferior no puede "
+                                                            f"superar el costo de una solución que completa la parcial"))
+                    return report
             sols.add(repr(sol))
         if len(sols) < 2 and n_random > 1 and "realista" in where:
             report.add(fail(L, "choices_matter", f"las {n_random} construcciones al azar dieron la misma solución en {where}: "
@@ -427,11 +438,18 @@ def check_construction_view(parts, cases: list[TestCase], scale_instances: list 
 
 def validate_parts(parts, cases: list[TestCase], mip_time_limit: float = 20.0, scale_instances: list | None = None,
                    decoder: bool = False) -> ValidationReport:
-    """Las tres etapas en orden; se detiene en la primera que falla."""
+    """Las etapas en orden; se detiene en la primera que falla. Un modelo sin vista MIP (ninguna de
+    sus funciones definida, `ModelSpec.mip = False`) se valida con la heurística y la constructiva."""
+    from core.model_parts import has_construction
+
     report = ValidationReport(subject="ProblemModel por piezas")
-    for step in (lambda: check_heuristic_view(parts, cases, decoder=decoder),
-                 lambda: check_mip_view(parts, cases, scale_instances=scale_instances, decoder=decoder),
-                 lambda: check_mip_optimum(parts, cases, mip_time_limit)):
+    steps = [lambda: check_heuristic_view(parts, cases, decoder=decoder)]
+    if any(callable(getattr(parts, n, None)) for n in MIP_PARTS) or not has_construction(parts):
+        steps += [lambda: check_mip_view(parts, cases, scale_instances=scale_instances, decoder=decoder),
+                  lambda: check_mip_optimum(parts, cases, mip_time_limit)]
+    else:
+        steps.append(lambda: check_construction_view(parts, cases, scale_instances=scale_instances))
+    for step in steps:
         r = step()
         report.extend(r.results)
         if not r.passed:

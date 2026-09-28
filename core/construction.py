@@ -69,21 +69,30 @@ class GreedyConstructor:
         usa el gate de diversidad para comparar puntajes."""
         view = self.problem.construction_view(inst)
         self.builds += 1
-        partial, chosen = view.empty(), []
+        sol, chosen, fell_back = self.complete_from(view, view.empty(), rng)
+        self.fallbacks += fell_back
+        return sol, chosen
+
+    def complete_from(self, view: Any, partial: Any, rng: Random) -> tuple[Any, list, bool]:
+        """Completa `partial` con el bucle greedy: (solución, acciones, ¿terminó en el
+        respaldo?). Es el *rollout* que usa la beam search para evaluar un parcial."""
+        chosen: list = []
         for _ in range(self.max_steps):
             if view.is_complete(partial):
-                return view.to_solution(partial), chosen
+                return view.to_solution(partial), chosen, False
             cands = list(view.candidates(partial))
             if not cands:
-                self.fallbacks += 1
-                return view.complete(partial, rng), chosen
-            scores = [float(self.score.score(partial, c)) for c in cands]
-            if any(math.isnan(s) or math.isinf(s) for s in scores):
-                raise ValueError("el puntaje devolvió NaN o infinito")
-            action = self._pick(cands, scores, rng)
+                return view.complete(partial, rng), chosen, True
+            action = self._pick(cands, self.scores(partial, cands), rng)
             chosen.append(action)
             partial = view.apply(partial, action)
         raise RuntimeError(f"la construcción no terminó en {self.max_steps} pasos")
+
+    def scores(self, partial: Any, cands: list) -> list[float]:
+        scores = [float(self.score.score(partial, c)) for c in cands]
+        if any(math.isnan(s) or math.isinf(s) for s in scores):
+            raise ValueError("el puntaje devolvió NaN o infinito")
+        return scores
 
 
 __all__ = ["GreedyConstructor", "RULES"]

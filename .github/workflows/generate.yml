@@ -9,7 +9,7 @@ on:
         description: "Problema"
         default: clsp
         type: choice
-        options: [clsp, cvrp]
+        options: [clsp, cvrp, cpmp]
       target:
         description: "Qué generar: componentes (slots) o el ProblemModel completo (§6.1)"
         default: components
@@ -66,7 +66,7 @@ on:
         default: false
         type: boolean
       variant:
-        description: "Ciclo completo (llm.cycle): representación (cvrp: routes | tour; clsp: setups). Con target=problem_model genera el modelo por piezas del ciclo; con target=components, los componentes desde cero sobre ese modelo"
+        description: "Ciclo completo (llm.cycle): representación (cvrp: routes | tour; clsp: setups; cpmp: moves, sin vista MIP). Con target=problem_model genera el modelo por piezas del ciclo; con target=components, los componentes desde cero sobre ese modelo"
         default: ""
         type: string
       reference:
@@ -98,7 +98,7 @@ jobs:
       WS: ${{ inputs.workspace || (inputs.variant != '' && format('generated/{0}_{1}_cycle{2}', inputs.problem, inputs.variant, inputs.reference && '_ref' || '')) || (inputs.target == 'problem_model' && format('generated/{0}_model{1}', inputs.problem, inputs.model_mode == 'parts' && '_parts' || '')) || format('generated/{0}{1}{2}', inputs.problem, inputs.from_scratch && '_scratch' || '', inputs.planner && '_planner' || '') }}
       TARGET: ${{ inputs.target }}
       MODEL_MODE: ${{ inputs.model_mode }}
-      PKG: ${{ inputs.problem == 'cvrp' && 'cvrp' || 'lotsizing' }}
+      PKG: ${{ inputs.problem == 'cvrp' && 'cvrp' || inputs.problem == 'cpmp' && 'cpmp' || 'lotsizing' }}
       SCRATCH: ${{ inputs.from_scratch && 'true' || 'false' }}
       PLANNER: ${{ inputs.planner && 'true' || 'false' }}
       VARIANT: ${{ inputs.variant }}
