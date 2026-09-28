@@ -21,6 +21,7 @@ PROTOCOL_FOR_SLOT = {
     "constructor": contracts.Constructor,
     "greedy_score": contracts.GreedyScore,
     "construction_policy": contracts.ConstructionPolicy,
+    "phase": contracts.Phase,
     "neighborhood": contracts.Neighborhood,
     "evaluator": contracts.Evaluator,
     "acceptance": contracts.Acceptance,

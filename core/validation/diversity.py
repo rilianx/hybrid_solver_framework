@@ -223,6 +223,16 @@ SIGNATURE["greedy_score"] = greedy_score_signature
 SIGNATURE["construction_policy"] = greedy_score_signature  # el greedy lleva la memoria de la política
 
 
+def phase_signature(impl, sol=None, problem=None) -> set:
+    """Una fase, por lo que elige el greedy con ella y el comodín nulo (`core.phases.alone`)."""
+    from core.phases import alone
+
+    return greedy_score_signature(alone(impl), sol, problem)
+
+
+SIGNATURE["phase"] = phase_signature
+
+
 def signature(slot: str, impl, sol, problem=None):
     fn = SIGNATURE.get(slot)
     if fn is None:

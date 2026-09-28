@@ -446,10 +446,25 @@ def check_construction_policy(impl, ctx: ValidationContext) -> list[CheckResult]
     return _collapse(results)
 
 
+def check_phase(impl, ctx: ValidationContext) -> list[CheckResult]:
+    """Slot `phase`. Se valida como la política que arma con el comodín nulo (`core.phases.alone`):
+    lo mismo que una `construction_policy` (memorias hashables y deterministas, `score` finito,
+    nada modifica el parcial ni la memoria; `applies`, `start` y `done` corren dentro de la
+    política), y el constructor greedy resultante es factible, determinista y termina."""
+    from core.phases import alone
+
+    out = []
+    for r in check_construction_policy(alone(impl), ctx):
+        name = r.name.replace("construction_policy.", "phase.")
+        out.append(CheckResult(r.layer, name, r.passed, ("[fase con el comodín nulo] " + r.message) if r.message else r.message))
+    return out
+
+
 CHECKERS = {
     "constructor": check_constructor,
     "greedy_score": check_greedy_score,
     "construction_policy": check_construction_policy,
+    "phase": check_phase,
     "neighborhood": check_neighborhood,
     "evaluator": check_evaluator,
     "acceptance": check_acceptance,

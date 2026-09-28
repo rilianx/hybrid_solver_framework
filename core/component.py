@@ -32,6 +32,7 @@ KNOWN_SLOTS = {
     "constructor",
     "greedy_score",
     "construction_policy",
+    "phase",
     "neighborhood",
     "evaluator",
     "acceptance",
@@ -98,6 +99,13 @@ class ComponentSpec:
             raise ComponentSpecError("'params' debe ser un dict de nombre -> especificación")
         for pname, pspec in params.items():
             _validate_param(pname, pspec)
+            # `when`: {otro parámetro del mismo componente: [valores]}; el parámetro solo está activo si
+            # todos se cumplen (p.ej. los de la fase j de `greedy_phased`, si n_phases >= j)
+            for parent, values in (pspec.get("when") or {}).items():
+                if parent not in params or parent == pname:
+                    raise ComponentSpecError(f"parámetro '{pname}': 'when' nombra '{parent}', que no es otro parámetro del componente")
+                if not isinstance(values, (list, tuple)) or not values:
+                    raise ComponentSpecError(f"parámetro '{pname}': 'when' pide una lista no vacía de valores de '{parent}'")
 
         compatible = tuple(component_dict.get("compatible_skeletons", ()))
         requires = tuple(component_dict.get("requires", ()))

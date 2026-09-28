@@ -99,6 +99,7 @@ _WHAT = {
     "perturbation": "la forma del conjunto de variables que cambia (cuántas, concentración por coordenada, si enciende o apaga)",
     "greedy_score": "las acciones que elige el constructor greedy al construir la misma instancia",
     "construction_policy": "las acciones que elige el constructor greedy al construir la misma instancia",
+    "phase": "las acciones que elige el constructor greedy con esta fase y el comodín nulo, en la misma instancia",
 }
 
 
@@ -162,10 +163,11 @@ def probe_checks(slot: str, impl, probe) -> list[CheckResult]:
             return [fail(LAYER, "destruction.ratio_monotone",
                          f"en la instancia de tamaño realista, |free_vars| con ratio=0.5 ({mean(n_hi):.1f}) no supera a ratio=0.1 ({mean(n_lo):.1f})")]
         return [ok(LAYER, "destruction.ratio_monotone", f"|free_vars|: ratio 0.1 → {mean(n_lo):.1f}, ratio 0.5 → {mean(n_hi):.1f}")]
-    if slot in ("greedy_score", "construction_policy"):  # un puntaje se juzga por el constructor greedy que arma
+    if slot in ("greedy_score", "construction_policy", "phase"):  # un puntaje se juzga por el constructor greedy que arma
         from core.construction import GreedyConstructor
+        from core.phases import alone
 
-        impl, slot = GreedyConstructor(P, impl), "constructor"
+        impl, slot = GreedyConstructor(P, alone(impl) if slot == "phase" else impl), "constructor"
     if slot != "constructor" or inst is None:
         return []
     explain = getattr(P, "explain_infeasibility", None)
@@ -224,8 +226,46 @@ class _NullScore:
         return 0.0
 
 
+def check_phase_quality(impl, ctx: ValidationContext) -> list[CheckResult]:
+    """Una fase no es un constructor completo: se juzga por lo que aporta. Con el comodín nulo
+    (`core.phases.alone`) tiene que tomar el control alguna vez y mejorar al comodín solo, como
+    greedy o dentro de una beam search chica (si el pack registra beam search). Umbral laxo a
+    propósito: qué combinación de fases sirve lo decide el tuning."""
+    from core.construction import GreedyConstructor
+    from core.phases import NullPhase, PhasedPolicy, alone, phase_trace
+
+    P = ctx.problem
+    results = [] if ctx.diversity_probe is not None else list(
+        diversity_check("phase", impl, ctx.accepted_peers, ctx.trivial_solutions[0], P, ctx.max_similarity_to_peers))
+    steps = sum(1 for inst in ctx.instances for name, _ in phase_trace(alone(impl), P.construction_view(inst)) if name == "fase")
+    if steps == 0:
+        return results + [fail(LAYER, "phase.takes_control",
+                               "la fase nunca toma el control en las micro-instancias (applies da False en cada paso): no hace nada")]
+    null = PhasedPolicy([NullPhase()])
+    makers = [("greedy", lambda pol: GreedyConstructor(P, pol))]
+    if ctx.constructive_beam:
+        from core.beam_search import BeamSearchConstructor
+
+        nb = ctx.constructive_beam
+        makers.append((f"beam search nb = {nb}",
+                       lambda pol: BeamSearchConstructor(P, pol, beam_width=nb, branching=2 * nb, max_seconds=10.0)))
+    seen = []
+    for how, make in makers:
+        own = sum(P.objective(make(alone(impl)).build(inst, Random(0))) for inst in ctx.instances)
+        base = sum(P.objective(make(null).build(inst, Random(0))) for inst in ctx.instances)
+        seen.append(f"{how}: {own:.0f} contra {base:.0f}")
+        if own < base:
+            return results + [ok(LAYER, "phase.adds_value", f"toma el control en {steps} pasos; con el comodín nulo mejora al comodín "
+                                                            f"solo ({'; '.join(seen)})")]
+    return results + [fail(LAYER, "phase.adds_value",
+                           f"con el comodín nulo no mejora al comodín solo ({'; '.join(seen)}, suma de objetivos en las "
+                           f"micro-instancias; toma el control en {steps} pasos): la fase no aporta criterio propio")]
+
+
 def check_component_quality(slot: str, impl, ctx: ValidationContext) -> list[CheckResult]:
     P = ctx.problem
+    if slot == "phase":
+        return check_phase_quality(impl, ctx)
     if slot in ("greedy_score", "construction_policy"):
         # Diversidad como puntaje (qué acciones elige); calidad como el constructor que arma.
         from core.construction import GreedyConstructor

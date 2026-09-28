@@ -103,15 +103,15 @@ def select_destination(L: Layout, so: int, allowed=None) -> int | None:
     return ranked[0] if ranked else None
 
 
-def select_bg_move(L: Layout, prevent: bool = True) -> tuple[int, int] | None:
-    """Alg. 2: el BG de menor g(sd) − g(so). Con `prevent`, si quedan menos de M = N/S pilas
-    con espacio no se crean pilas ordenadas de altura máxima, y con menos de M/2 se admiten
-    GG que sacan el tope de una ordenada llena (`prevent`)."""
+def bg_moves(L: Layout, prevent: bool = True) -> dict[tuple[int, int], int]:
+    """Los movimientos BG (dejan bien puesto un contenedor) con su g(sd) − g(so). Con `prevent`,
+    si quedan menos de M = N/S pilas con espacio no se crean pilas ordenadas de altura máxima, y
+    con menos de M/2 se admiten GG que sacan el tope de una ordenada llena (§4.3.1)."""
     M = L.N / L.S
     nonfull = sum(1 for i in range(L.S) if L.e(i) > 0)
     decrease = prevent and nonfull < M / 2
     prevent = prevent and nonfull < M
-    best, best_d = None, None
+    out: dict[tuple[int, int], int] = {}
     for so in range(L.S):
         if not L.stacks[so]:
             continue
@@ -124,10 +124,14 @@ def select_bg_move(L: Layout, prevent: bool = True) -> tuple[int, int] | None:
                 continue
             if prevent and L.h(sd) + 1 == L.H:
                 continue
-            d = L.g(sd) - c
-            if best_d is None or d < best_d:
-                best, best_d = (so, sd), d
-    return best
+            out[(so, sd)] = L.g(sd) - c
+    return out
+
+
+def select_bg_move(L: Layout, prevent: bool = True) -> tuple[int, int] | None:
+    """Alg. 2: el BG de menor g(sd) − g(so) (empates: el primero en orden (so, sd))."""
+    moves = bg_moves(L, prevent)
+    return min(moves, key=moves.__getitem__) if moves else None
 
 
 # --- reducción (§4, §4.3) -------------------------------------------------------------

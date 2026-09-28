@@ -151,7 +151,9 @@ def build_config_space(
                 comp_condition = Condition(parent=node_name, kind="eq", values=(comp.name,))
                 for pname, pspec in comp.params.items():
                     full_name = f"{comp.name}.{pname}"
-                    node = _param_node_from_spec(full_name + suffix, pspec, conditions=(slot_condition, comp_condition))
+                    inner = tuple(Condition(parent=f"{comp.name}.{parent}{suffix}", kind="in", values=tuple(values))
+                                  for parent, values in (pspec.get("when") or {}).items())
+                    node = _param_node_from_spec(full_name + suffix, pspec, conditions=(slot_condition, comp_condition, *inner))
                     space.add(replace(node, key=full_name) if split else node)
 
     for skel, params in (skeleton_params or {}).items():

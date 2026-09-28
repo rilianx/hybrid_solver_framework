@@ -124,6 +124,29 @@ class ConstructionPolicy(Protocol):
 
 
 @runtime_checkable
+class Phase(Protocol):
+    """Slot `phase`: un modo de una construcción por fases (`core.phases.PhasedPolicy`). Una
+    heurística constructiva con modos (FRG: "llenar" y "reducir una pila") se arma con varias
+    fases chicas en vez de un puntaje único; el tuner elige cuántas y en qué orden de prioridad.
+
+    - `init(partial)`: la memoria propia de la fase (inmutable y hashable).
+    - `applies(partial, memory)`: ¿puede tomar el control ahora? Opcional (default: siempre).
+    - `start(partial, memory)`: al tomar el control, la memoria nueva (p.ej. qué pila reducir). Opcional.
+    - `score(partial, memory, action)`: MENOR = mejor, entre los candidatos de la vista.
+    - `update(partial, memory, action)`: la memoria tras hacer la acción que eligió.
+    - `done(partial, memory)`: ¿suelta el control? Se pregunta en el paso siguiente, sobre el parcial
+      nuevo. Opcional (default: tras cada paso, y en cada paso se vuelve a elegir fase).
+
+    Ninguna modifica `partial` ni `memory`; todas son deterministas."""
+
+    def init(self, partial: Partial) -> Memory: ...
+
+    def score(self, partial: Partial, memory: Memory, action: Action) -> float: ...
+
+    def update(self, partial: Partial, memory: Memory, action: Action) -> Memory: ...
+
+
+@runtime_checkable
 class Neighborhood(Protocol):
     """Slot `neighborhood`: movimientos locales con delta incremental.
 
