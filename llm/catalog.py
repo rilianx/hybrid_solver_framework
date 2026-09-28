@@ -10,6 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from core.component import ComponentRegistry, ComponentSpec
+from core.beam_search import BeamSearchConstructor
 from core.construction import RULES, GreedyConstructor
 from core.problem_pack import ProblemPack
 
@@ -25,7 +26,8 @@ def build_registry(pack: ProblemPack, generated: list[GeneratedComponent] | None
 
     Cada `greedy_score` registrado (a mano o generado) se envuelve además como constructor
     `greedy_<nombre>`: `GreedyConstructor` con ese puntaje, con la regla y α como
-    parámetros del tuner (más los parámetros propios del puntaje)."""
+    parámetros del tuner (más los parámetros propios del puntaje). Si el pack lo pide
+    (`beam_constructors`), también como `beam_<nombre>`: beam search con rollout greedy."""
     registry = ComponentRegistry()
     generated_slots = {c.slot for c in generated or []}
     for component, factory in pack.handwritten:
@@ -38,6 +40,8 @@ def build_registry(pack: ProblemPack, generated: list[GeneratedComponent] | None
         register_generated(registry, generated)
     for spec in list(registry.for_slot("greedy_score")):
         registry.register(greedy_constructor_spec(spec, pack.constructor_skeletons))
+        if pack.beam_constructors:
+            registry.register(beam_constructor_spec(spec, pack.constructor_skeletons))
     return registry
 
 
@@ -93,4 +97,21 @@ def load_generated(pack: ProblemPack, workspace: str | Path | None = None, reval
     return out
 
 
-__all__ = ["build_registry", "greedy_constructor_spec", "load_generated"]
+def beam_constructor_spec(score_spec: ComponentSpec, skeletons: list[str]) -> ComponentSpec:
+    """`beam_<puntaje>`: `BeamSearchConstructor` que ordena y poda los hijos con el puntaje
+    (`branching`) y los evalúa con un rollout greedy del mismo puntaje. `beam_width=1` es
+    el *pilot method*."""
+    params = {"beam_width": {"type": "int", "range": [1, 32], "log": True, "default": 4},
+              "branching": {"type": "int", "range": [1, 16], "log": True, "default": 4}}
+    params.update(score_spec.params)
+
+    def factory(problem, beam_width=4, branching=4, **score_params):
+        score = score_spec.make(problem, **score_params)
+        return BeamSearchConstructor(problem, score, beam_width=beam_width, branching=branching)
+
+    component = {"name": f"beam_{score_spec.name}", "slot": "constructor",
+                 "compatible_skeletons": list(score_spec.compatible_skeletons) or list(skeletons), "params": params}
+    return ComponentSpec.from_dict(component, factory)
+
+
+__all__ = ["build_registry", "greedy_constructor_spec", "beam_constructor_spec", "load_generated"]

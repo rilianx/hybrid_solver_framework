@@ -45,6 +45,9 @@ class ProblemPack:
     # esqueletos que puede usar un constructor (los greedy_<puntaje> se registran con estos)
     constructor_skeletons: list[str] = field(
         default_factory=lambda: ["SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH", "MIP_PERTURB"])
+    # registrar además cada puntaje como `beam_<puntaje>` (core.beam_search); apagado por defecto
+    # porque cada paso hace un rollout por hijo y en el CLSP un rollout cuesta LPs
+    beam_constructors: bool = False
 
     @property
     def default_workspace(self) -> str:
