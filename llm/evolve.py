@@ -125,6 +125,7 @@ class Individual:
     self_sorted: dict = field(default_factory=dict)  # por tamaño: [instancias que completa sola, total]
     regret: dict = field(default_factory=dict)  # con oráculo: estado → {steps, regret, wrong} (exacto)
     examples: list = field(default_factory=list)  # con oráculo: los peores pasos, con lo que haría el óptimo
+    good: list = field(default_factory=list)  # con oráculo: pasos donde acertó (para no romperlos)
     rejections: list = field(default_factory=list)  # de sus hijos, para no repetirlos
     refine_failures: dict = field(default_factory=dict)  # estado → hijos fallidos de refine_priority
 
@@ -231,7 +232,7 @@ def profile(harness: Harness, ind: Individual, instances, oracle_instances: int 
         if worst is None or lost > worst[0]:
             worst = (lost, inst, P, view)
     oracle = getattr(harness.pack, "oracle_distance", None)
-    ind.regret, ind.examples = {}, []
+    ind.regret, ind.examples, ind.good = {}, [], []
     if callable(oracle):  # arrepentimiento exacto por estado y contraejemplos, donde el oráculo alcanza
         from core.machine import machine_regret
 
@@ -253,8 +254,14 @@ def profile(harness: Harness, ind: Individual, instances, oracle_instances: int 
                 t = ind.regret.setdefault(st, {"steps": 0, "regret": 0, "wrong": 0})
                 for k in t:
                     t[k] += row[k]
-            ind.examples += [dict(e, instance=getattr(inst, "name", "")) for e in r["examples"]]
-        ind.examples = sorted(ind.examples, key=lambda e: -e["regret"])[:4]
+            label = f"{getattr(inst, 'name', '') or 'instancia'} #{used}"
+            ind.examples += [dict(e, instance=label) for e in r["examples"]]
+            ind.good += [dict(e, instance=label) for e in r["good"]]
+        from core.machine import _diverse
+
+        # variados: primero uno por (estado, instancia), después por gravedad (no los 4 peores de un mismo caso)
+        ind.examples = _diverse(sorted(ind.examples, key=lambda e: -e["regret"]), 4, key=lambda e: (e["state"], e["instance"]))
+        ind.good = _diverse(ind.good, 2, key=lambda e: e["state"])
     trace = ""
     if worst is not None:
         _, inst, P, view = worst
@@ -279,11 +286,20 @@ def regret_text(ind: Individual) -> str:
         name = f"{st} (comodín del framework)" if st == FALLBACK else st
         lines.append(f"| {name} | {r['steps']} | {r['regret']} | {r['wrong']} |")
     if ind.examples:
-        lines.append("\nPasos donde la máquina se aparta del óptimo (contraejemplos: busca la regla simple que los evite):")
+        lines.append("\nPasos donde la máquina se aparta del óptimo (contraejemplos: busca la regla simple que los evite). "
+                     "Los puntajes son los que les dio TU score (menor = preferida): muestran qué término hizo ganar a la mala.")
         for e in ind.examples:
-            opt = ", ".join(repr(a) for a in e["optimal"][:5]) or "(ninguna)"
-            lines.append(f"- {e['instance']}, estado `{e['state']}`, parcial `{_short(e['partial'])}`: eligió {e['chosen']!r}, "
-                         f"que cuesta {e['regret']} movimiento(s) de más; el óptimo haría {opt}")
+            opt = ", ".join(f"{a!r} (puntaje {sc:.4g})" for a, sc in zip(e["optimal"][:4], e.get("optimal_scores", [])[:4])) \
+                or "(ninguna)"
+            cont = ", ".join(repr(a) for a in e.get("continuation", []))
+            lines.append(f"- {e['instance']}, estado `{e['state']}`, parcial `{_short(e['partial'])}`:\n"
+                         f"  eligió {e['chosen']!r} (puntaje {e.get('chosen_score', float('nan')):.4g}), que cuesta "
+                         f"{e['regret']} movimiento(s) de más;\n  el óptimo haría {opt}"
+                         + (f";\n  un camino óptimo desde aquí: {cont}" if cont else ""))
+    if ind.good:
+        lines.append("\nPasos donde SÍ eligió como el óptimo (no los rompas al corregir):")
+        for e in ind.good:
+            lines.append(f"- {e['instance']}, estado `{e['state']}`, parcial `{_short(e['partial'])}`: eligió {e['chosen']!r}")
     return "\n".join(lines)
 
 

@@ -225,8 +225,18 @@ def test_the_oracle_is_exact_and_regret_adds_up_to_the_gap():
         moves = P.objective(GreedyConstructor(P, FRGMachine(P)).build(inst, Random(0)))
         opt = optimal_distance(tuple(tuple(s) for s in inst.stacks), inst.H)
         assert sum(row["regret"] for row in r["by_state"].values()) == moves - opt
+        view = P.construction_view(inst)
         for e in r["examples"]:
             assert e["regret"] > 0 and e["chosen"] not in e["optimal"]
+            assert len(e["optimal_scores"]) == len(e["optimal"]) and isinstance(e["chosen_score"], float)
+            # la continuación es un camino óptimo: cada acción baja la distancia exactamente en 1
+            q, d = e["partial"], oracle_distance(inst, e["partial"])
+            for a in e["continuation"]:
+                q = view.apply(q, a)
+                assert oracle_distance(inst, q) == d - 1
+                d -= 1
+        for g in r["good"]:
+            assert "chosen" in g and "state" in g
     big = PACK.make_instances(1, 7, PACK.parse_size("6x6"))[0]
     assert oracle_distance(big, PACK.problem_factory(big).construction_view(big).empty()) is None  # fuera de alcance, sin buscar
 
@@ -240,6 +250,7 @@ def test_counterexamples_reach_the_prompt(tmp_path):
            size="4x4", verbose=False, resume=True)
     prompt = client2.calls[0][1]
     assert "Contra el óptimo" in prompt and "movimientos de más" in prompt
+    assert "puntaje" in prompt and "TU score" in prompt  # por qué eligió la mala
 
 
 BG_PLUS_BIG = BG_ONLY.replace('"name": "bg_only"', '"name": "bg_plus_big"').replace(

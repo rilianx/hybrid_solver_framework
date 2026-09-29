@@ -164,11 +164,42 @@ def machine_profile(policy: MachinePolicy, view: Any, max_steps: int = 100_000, 
     return (out, bool(view.is_complete(partial))) if with_end else out
 
 
-def machine_regret(policy: MachinePolicy, view: Any, oracle, max_steps: int = 20_000, n_examples: int = 3):
+def _optimal_continuation(view: Any, partial: Any, oracle, n: int) -> list:
+    """Hasta `n` acciones de un camino óptimo desde `partial` (cada una baja la distancia en 1)."""
+    out, p = [], partial
+    d = oracle(p)
+    for _ in range(n):
+        if d is None or d == 0 or view.is_complete(p):
+            break
+        step = next((c for c in view.candidates(p) if oracle(view.apply(p, c)) == d - 1), None)
+        if step is None:
+            break
+        out.append(step)
+        p, d = view.apply(p, step), d - 1
+    return out
+
+
+def _diverse(items: list[dict], k: int, key) -> list[dict]:
+    """Los `k` primeros de `items` (ya ordenados) priorizando claves distintas (p.ej. estado e instancia)."""
+    seen, first, rest = set(), [], []
+    for it in items:
+        (rest if key(it) in seen else first).append(it)
+        seen.add(key(it))
+    return (first + rest)[:k]
+
+
+def machine_regret(policy: MachinePolicy, view: Any, oracle, max_steps: int = 20_000, n_examples: int = 3,
+                   n_good: int = 2, continuation: int = 4):
     """Con un oráculo exacto `oracle(parcial) -> distancia al objetivo` (o None fuera de su alcance):
-    por estado, pasos y movimientos de más (regret(a) = costo(a) + d(siguiente) − d(actual) ≥ 0,
-    con costo 1 por acción; su suma es objetivo − óptimo) y los `n_examples` peores pasos como
-    contraejemplos, con las acciones que el óptimo sí haría. None si el oráculo no alcanza aquí."""
+
+    - por estado, pasos y movimientos de más (regret(a) = costo(a) + d(siguiente) − d(actual) ≥ 0,
+      con costo 1 por acción; su suma es objetivo − óptimo);
+    - contraejemplos: los peores pasos (uno por estado primero), cada uno con las acciones que el
+      óptimo sí haría, el puntaje que la máquina le dio a la elegida y a cada óptima (por qué
+      prefirió la mala) y la continuación óptima desde ahí (lo que la acción óptima habilita);
+    - ejemplos positivos: pasos donde acertó, por estado, para no romperlos al corregir.
+
+    None si el oráculo no alcanza aquí."""
     partial = view.empty()
     d = oracle(partial)
     if d is None:
@@ -176,6 +207,7 @@ def machine_regret(policy: MachinePolicy, view: Any, oracle, max_steps: int = 20
     memory = policy.init(partial)
     rows: dict[str, dict] = {}
     worst: list[tuple] = []
+    good: list[tuple] = []
     for _ in range(max_steps):
         if view.is_complete(partial):
             break
@@ -183,7 +215,8 @@ def machine_regret(policy: MachinePolicy, view: Any, oracle, max_steps: int = 20
         if not cands:
             break
         scores = [policy.score(partial, memory, c) for c in cands]
-        a = cands[min(range(len(cands)), key=scores.__getitem__)]
+        i = min(range(len(cands)), key=scores.__getitem__)
+        a = cands[i]
         state = policy.state_of(partial, memory)
         nxt = view.apply(partial, a)
         dn = oracle(nxt)
@@ -194,16 +227,23 @@ def machine_regret(policy: MachinePolicy, view: Any, oracle, max_steps: int = 20
         row["steps"] += 1
         row["regret"] += regret
         row["wrong"] += regret > 0
-        if regret > 0:
-            worst.append((regret, state, partial, a, cands))
+        (worst if regret > 0 else good).append((regret, state, partial, a, cands, scores, scores[i]))
         memory = policy.update(partial, memory, a)
         partial, d = nxt, dn
     examples = []
-    for regret, state, p, a, cands in sorted(worst, key=lambda t: -t[0])[:n_examples]:
+    ranked = [{"t": t, "state": t[1]} for t in sorted(worst, key=lambda t: -t[0])]
+    for item in _diverse(ranked, n_examples, key=lambda it: it["state"]):
+        regret, state, p, a, cands, scores, chosen_score = item["t"]
         base = oracle(p)
-        best = [c for c in cands if oracle(view.apply(p, c)) == base - 1]
-        examples.append({"state": state, "partial": p, "chosen": a, "regret": regret, "optimal": best})
-    return {"by_state": rows, "examples": examples, "complete": bool(view.is_complete(partial))}
+        best = [(c, sc) for c, sc in zip(cands, scores) if oracle(view.apply(p, c)) == base - 1]
+        examples.append({"state": state, "partial": p, "chosen": a, "regret": regret, "chosen_score": chosen_score,
+                         "optimal": [c for c, _ in best], "optimal_scores": [sc for _, sc in best],
+                         "continuation": _optimal_continuation(view, p, oracle, continuation)})
+    positives = []
+    for item in _diverse([{"t": t, "state": t[1]} for t in good], n_good, key=lambda it: it["state"]):
+        _, state, p, a, _, _, sc = item["t"]
+        positives.append({"state": state, "partial": p, "chosen": a, "chosen_score": sc})
+    return {"by_state": rows, "examples": examples, "good": positives, "complete": bool(view.is_complete(partial))}
 
 
 def compress_trace(steps: list[tuple[str, Any]], max_steps: int = 60) -> str:

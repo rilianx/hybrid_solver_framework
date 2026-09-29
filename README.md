@@ -757,11 +757,19 @@ la asignación de culpa exacta por estado. En 4 instancias de 5×5 (óptimo 41 m
 
 La corrida 67 gastó cinco rondas en refinar `finish`, que casi no pierde nada.
 
-`evolve` usa el oráculo en 2 instancias de entrenamiento (las más chicas; ≈ 5 s por máquina,
-después con caché):
+`evolve` usa el oráculo en 2 instancias de entrenamiento (las más chicas; ≈ 6 s por máquina,
+después con caché) y agrega al prompt unos 2 mil caracteres:
 - tabla de movimientos de más por estado;
-- los 4 peores pasos como contraejemplos (layout, lo que eligió, cuánto costó y las acciones
-  que el óptimo sí haría);
+- 4 contraejemplos variados (uno por estado e instancia primero, después por gravedad), cada
+  uno con:
+  - el layout;
+  - lo que eligió la máquina y cuánto costó;
+  - las acciones que el óptimo sí haría;
+  - **el puntaje que la máquina le dio a la elegida y a cada óptima**, que muestra qué término
+    de su regla la hizo preferir la mala (a veces es un casi empate: 344,5 contra 348);
+  - **una continuación óptima** desde ahí, porque la acción óptima a veces solo se entiende por
+    lo que habilita después;
+- 2 pasos donde **sí** eligió como el óptimo, para no romperlos al corregir;
 - `refine_priority` apunta al estado con más arrepentimiento.
 
 El fitness sigue siendo movimientos en 5×5 + 6×6. Reglas simples no pueden copiar una búsqueda
