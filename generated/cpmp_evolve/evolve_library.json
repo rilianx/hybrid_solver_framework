@@ -1,0 +1,269 @@
+{
+  "library": [
+    {
+      "id": 0,
+      "rule": "repair_bad_top_move",
+      "name": "repair_bad_top_move",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 81.25,
+      "width": 0.107,
+      "precision": [
+        5,
+        16
+      ],
+      "params": {},
+      "source": "COMPONENT = {\n    \"name\": \"repair_bad_top_move\",\n    \"slot\": \"construction_machine\",\n    \"compatible_skeletons\": [\"CONSTRUCT\"],\n    \"requires\": [],\n    \"params\": {},\n}\n\nfrom core.rules import RuleMachine\n\n\nclass RepairBadTopMove:\n    \"\"\"Mueve un tope mal puesto a una pila donde quede bien puesto.\"\"\"\n\n    name = \"repair_bad_top_move\"\n\n    def allowed(self, partial, memory, candidates):\n        if not candidates:\n            return []\n\n        stacks = partial.stacks\n        h = partial.h\n        G = partial.G\n\n        def top_group(i):\n            return G if h(i) == 0 else stacks[i][-1]\n\n        def is_well_placed_at(i, grp):\n            if h(i) == 0:\n                return True\n            return top_group(i) >= grp\n\n        def is_bad_top_source(so):\n            if h(so) == 0:\n                return False\n            grp = stacks[so][-1]\n            if h(so) == 1:\n                return False\n            return stacks[so][-2] < grp\n\n        filtered = []\n        for a in candidates:\n            so = a.so\n            sd = a.sd\n            if so == sd:\n                continue\n            if h(so) == 0 or h(sd) >= partial.H:\n                continue\n            if not is_bad_top_source(so):\n                continue\n\n            moved = stacks[so][-1]\n            if not is_well_placed_at(sd, moved):\n                continue\n\n            # Evita empeorar pilas ya ordenadas si hay alternativa\n            if partial.is_sorted_stack(so) and not partial.is_sorted_stack(sd):\n                continue\n\n            filtered.append(a)\n\n        if not filtered:\n            return []\n\n        def key(a):\n            so = a.so\n            sd = a.sd\n            moved = stacks[so][-1]\n            dest_top = top_group(sd)\n            # preferir vacías, luego destinos más \"altos\", luego reducir huecos\n            empty_bonus = 0 if h(sd) == 0 else 1\n            tighten = abs(dest_top - moved)\n            return (empty_bonus, tighten, h(sd), sd)\n\n        filtered.sort(key=key)\n        return filtered\n\n\ndef build_component(problem, **params):\n    return RuleMachine(problem, [RepairBadTopMove()])\n",
+      "component": {
+        "name": "repair_bad_top_move",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {}
+      }
+    },
+    {
+      "id": 1,
+      "rule": "unblock_bad_below_move",
+      "name": "unblock_bad_below_move",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 104.25,
+      "width": 0.126,
+      "precision": [
+        5,
+        56
+      ],
+      "params": {},
+      "source": "COMPONENT = {\n    \"name\": \"unblock_bad_below_move\",\n    \"slot\": \"construction_machine\",\n    \"compatible_skeletons\": [\"CONSTRUCT\"],\n    \"requires\": [],\n    \"params\": {},\n}\n\nfrom core.rules import RuleMachine\n\n\nclass UnblockBadBelowMove:\n    \"\"\"Mueve un tope bien puesto desde una pila que aún tiene contenedores mal puestos debajo.\"\"\"\n\n    name = \"unblock_bad_below_move\"\n\n    def _is_bad(self, stack, idx):\n        if idx == 0:\n            return False\n        return stack[idx] > stack[idx - 1]\n\n    def _has_bad_below_top(self, stack):\n        if len(stack) < 2:\n            return False\n        return any(self._is_bad(stack, i) for i in range(1, len(stack)))\n\n    def _well_placed_top(self, stack):\n        if not stack:\n            return False\n        if len(stack) == 1:\n            return True\n        return stack[-1] <= stack[-2]\n\n    def allowed(self, partial, memory, candidates):\n        stacks = partial.stacks\n        out = []\n        for a in candidates:\n            so, sd = a.so, a.sd\n            if so == sd:\n                continue\n            src = stacks[so]\n            dst = stacks[sd]\n            if not src:\n                continue\n            if not self._has_bad_below_top(src):\n                continue\n            moved = src[-1]\n            if len(dst) >= partial.H:\n                continue\n            if dst and moved > dst[-1]:\n                continue\n            if not self._well_placed_top(src):\n                continue\n            out.append(a)\n        return out\n\n\ndef build_component(problem, **params):\n    return RuleMachine(problem, [UnblockBadBelowMove()])\n",
+      "component": {
+        "name": "unblock_bad_below_move",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {}
+      }
+    },
+    {
+      "id": 2,
+      "rule": "repair_bad_top_move",
+      "name": "repair_bad_top_move_refined",
+      "op": "refine_rule",
+      "parent": 0,
+      "macro": true,
+      "alone": 96.062,
+      "width": 0.087,
+      "precision": [
+        4,
+        14
+      ],
+      "params": {},
+      "source": "COMPONENT = {'name': 'repair_bad_top_move_refined', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {'allow_relax': {'type': 'bool', 'default': True}, 'tighten_factor': {'type': 'float', 'range': [0.0, 5.0], 'default': 1.0}}}\nfrom core.rules import RuleMachine\n\nclass RepairBadTopMoveRefined:\n    \"\"\"Mueve un tope mal puesto a una pila donde quede mejor situado.\n\n    La memoria es hashable: se guarda como un entero (índice de pila) o -1.\n    \"\"\"\n    name = 'repair_bad_top_move'\n\n    def __init__(self, prefer_empty=True, allow_relax=True, tighten_factor=1.0, source_penalty=0.5, dest_penalty=0.25):\n        self.prefer_empty = bool(prefer_empty)\n        self.allow_relax = bool(allow_relax)\n        self.tighten_factor = float(tighten_factor)\n        self.source_penalty = float(source_penalty)\n        self.dest_penalty = float(dest_penalty)\n\n    def start(self, partial, memory):\n        stacks = partial.stacks\n        h = partial.h\n        best = None\n        for i in range(partial.S):\n            if h(i) <= 1:\n                continue\n            top = stacks[i][-1]\n            below = stacks[i][-2]\n            if below < top:\n                score = (h(i), -partial.sorted_n[i], i)\n                if best is None or score < best[0]:\n                    best = (score, i)\n        return -1 if best is None else int(best[1])\n\n    def update(self, partial, memory, action):\n        source = int(memory) if memory is not None else -1\n        if source < 0:\n            return -1\n        if hasattr(action, 'so') and action.so == source:\n            return source\n        stacks = partial.stacks\n        h = partial.h\n        if source >= partial.S or h(source) <= 1:\n            return -1\n        top = stacks[source][-1]\n        below = stacks[source][-2]\n        if below >= top:\n            return -1\n        return source\n\n    def done(self, partial, memory):\n        source = int(memory) if memory is not None else -1\n        if source < 0:\n            return True\n        if source >= partial.S:\n            return True\n        stacks = partial.stacks\n        h = partial.h\n        if h(source) <= 1:\n            return True\n        top = stacks[source][-1]\n        below = stacks[source][-2]\n        return below >= top\n\n    def allowed(self, partial, memory, candidates):\n        if not candidates:\n            return []\n        stacks = partial.stacks\n        h = partial.h\n        G = partial.G\n        source = int(memory) if memory is not None else -1\n\n        def top_group(i):\n            return G if h(i) == 0 else stacks[i][-1]\n\n        def is_bad_top_source(so):\n            if h(so) <= 1:\n                return False\n            return stacks[so][-2] < stacks[so][-1]\n        strict = []\n        relaxed = []\n        for a in candidates:\n            so = a.so\n            sd = a.sd\n            if so == sd:\n                continue\n            if h(so) == 0 or h(sd) >= partial.H:\n                continue\n            if source >= 0 and so != source:\n                continue\n            if not is_bad_top_source(so):\n                continue\n            moved = stacks[so][-1]\n            dest_top = top_group(sd)\n            if h(sd) == 0 or dest_top >= moved:\n                strict.append(a)\n            elif self.allow_relax:\n                if h(sd) == 0 or dest_top >= moved - 1:\n                    relaxed.append(a)\n        pool = strict if strict else relaxed\n        if not pool:\n            return []\n\n        def key(a):\n            so = a.so\n            sd = a.sd\n            moved = stacks[so][-1]\n            dest_top = top_group(sd)\n            empty_score = 0 if self.prefer_empty and h(sd) == 0 else 1\n            tighten = abs(dest_top - moved)\n            source_rank = (-partial.sorted_n[so], h(so), so)\n            dest_rank = (h(sd), sd)\n            relax_flag = 0 if a in strict else 1\n            return (relax_flag, empty_score, self.tighten_factor * tighten, self.source_penalty * source_rank[0], self.dest_penalty * dest_rank[0], source_rank[1], dest_rank[1])\n        pool.sort(key=key)\n        return pool\n\ndef build_component(problem, **params):\n    return RuleMachine(problem, [RepairBadTopMoveRefined(prefer_empty=params.get('prefer_empty', True), allow_relax=params.get('allow_relax', True), tighten_factor=params.get('tighten_factor', 1.0), source_penalty=params.get('source_penalty', 0.5), dest_penalty=params.get('dest_penalty', 0.25))])\n",
+      "component": {
+        "name": "repair_bad_top_move_refined",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {
+          "allow_relax": {
+            "type": "bool",
+            "default": true
+          },
+          "tighten_factor": {
+            "type": "float",
+            "range": [
+              0.0,
+              5.0
+            ],
+            "default": 1.0
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "rule": "move_good_top_to_bad_stack",
+      "name": "move_good_top_to_bad_stack",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 111.25,
+      "width": 0.1,
+      "precision": [
+        12,
+        61
+      ],
+      "params": {
+        "prefer_more_bad_destinations": true
+      },
+      "source": "COMPONENT = {\n    \"name\": \"move_good_top_to_bad_stack\",\n    \"slot\": \"construction_machine\",\n    \"compatible_skeletons\": [\"CONSTRUCT\"],\n    \"requires\": [],\n    \"params\": {\n        \"prefer_more_bad_destinations\": {\n            \"type\": \"bool\",\n            \"default\": True,\n        }\n    },\n}\n\nfrom core.rules import RuleMachine\n\n\nclass MoveGoodTopToBadStack:\n    \"\"\"Mueve un tope bien puesto a una pila donde quedará mal puesto.\"\"\"\n\n    name = \"move_good_top_to_bad_stack\"\n\n    def __init__(self, prefer_more_bad_destinations: bool = True):\n        self.prefer_more_bad_destinations = prefer_more_bad_destinations\n\n    def allowed(self, partial, memory, candidates):\n        if not candidates:\n            return []\n\n        allowed = []\n        for a in candidates:\n            so = a.so\n            sd = a.sd\n            if so == sd:\n                continue\n            if partial.h(so) <= 0 or partial.h(sd) >= partial.H:\n                continue\n\n            moved = partial.g(so)\n            if moved is None:\n                continue\n\n            # Fuente: el tope debe estar bien puesto.\n            # Para una pila no vacía, el tope es bien puesto si su posición está\n            # dentro del prefijo ordenado desde abajo.\n            if partial.h(so) > partial.sorted_n[so]:\n                continue\n\n            # Destino: el contenedor debe quedar mal puesto al aterrizar.\n            dest_top = partial.g(sd)\n            if dest_top is None:\n                # En una pila vacía el contenedor queda bien puesto; no aplica.\n                continue\n            if dest_top >= moved:\n                continue\n\n            allowed.append(a)\n\n        if not allowed:\n            return []\n\n        if self.prefer_more_bad_destinations:\n            # Prioriza destinos donde el nuevo tope quede \"más mal\" respecto al tope actual.\n            allowed.sort(key=lambda a: (partial.g(a.sd) - partial.g(a.so), a.so, a.sd))\n        return allowed\n\n\ndef build_component(problem, **params):\n    prefer_more_bad_destinations = params.get(\"prefer_more_bad_destinations\", True)\n    return RuleMachine(problem, [MoveGoodTopToBadStack(prefer_more_bad_destinations=prefer_more_bad_destinations)])\n",
+      "component": {
+        "name": "move_good_top_to_bad_stack",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {
+          "prefer_more_bad_destinations": {
+            "type": "bool",
+            "default": true
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "rule": "move_good_top_to_empty_stack",
+      "name": "move_good_top_to_empty_stack",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 96.125,
+      "width": 0.137,
+      "precision": [
+        0,
+        1
+      ],
+      "params": {},
+      "source": "COMPONENT = {\n    \"name\": \"move_good_top_to_empty_stack\",\n    \"slot\": \"construction_machine\",\n    \"compatible_skeletons\": [\"CONSTRUCT\"],\n    \"requires\": [],\n    \"params\": {},\n}\n\nfrom core.rules import RuleMachine\n\n\nclass MoveGoodTopToEmptyStack:\n    \"\"\"Mueve un tope bien puesto a una pila vacía.\"\"\"\n\n    name = \"move_good_top_to_empty_stack\"\n\n    def allowed(self, partial, memory, candidates):\n        out = []\n        stacks = partial.stacks\n        heights = partial.H\n        for a in candidates:\n            so = a.so\n            sd = a.sd\n            if not stacks[so]:\n                continue\n            if len(stacks[sd]) != 0:\n                continue\n            top = stacks[so][-1]\n            if len(stacks[so]) == 1:\n                top_good = True\n            else:\n                top_good = top <= stacks[so][-2]\n            if top_good:\n                out.append(a)\n        return out\n\n\ndef build_component(problem, **params):\n    return RuleMachine(problem, [MoveGoodTopToEmptyStack()])\n",
+      "component": {
+        "name": "move_good_top_to_empty_stack",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {}
+      }
+    },
+    {
+      "id": 6,
+      "rule": "move_good_top_to_good_stack",
+      "name": "move_good_top_to_good_stack",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 105.125,
+      "width": 0.157,
+      "precision": [
+        22,
+        101
+      ],
+      "params": {},
+      "source": "COMPONENT = {\n    \"name\": \"move_good_top_to_good_stack\",\n    \"slot\": \"construction_machine\",\n    \"compatible_skeletons\": [\"CONSTRUCT\"],\n    \"requires\": [],\n    \"params\": {},\n}\n\nfrom core.rules import RuleMachine\n\n\nclass MoveGoodTopToGoodStack:\n    \"\"\"Mueve un contenedor tope bien puesto a otra pila no vacía donde también quedará bien puesto.\"\"\"\n\n    name = \"move_good_top_to_good_stack\"\n\n    def allowed(self, partial, memory, candidates):\n        allowed = []\n        for a in candidates:\n            so = a.so\n            sd = a.sd\n            if so == sd:\n                continue\n            if partial.h(so) == 0 or partial.h(sd) == 0:\n                continue\n            top = partial.g(so)\n            dest_top = partial.g(sd)\n            # El origen debe ser un tope bien puesto.\n            if not (partial.sorted_n[so] == partial.h(so)):\n                continue\n            # El movimiento debe mantener el contenedor como bien puesto en el destino.\n            if dest_top >= top:\n                allowed.append(a)\n        return allowed\n\n\ndef build_component(problem, **params):\n    return RuleMachine(problem, [MoveGoodTopToGoodStack()])\n",
+      "component": {
+        "name": "move_good_top_to_good_stack",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {}
+      }
+    },
+    {
+      "id": 7,
+      "rule": "repair_bad_top_move",
+      "name": "repair_bad_top_move_refined",
+      "op": "refine_rule",
+      "parent": 0,
+      "macro": true,
+      "alone": 88.688,
+      "width": 0.11,
+      "precision": [
+        5,
+        16
+      ],
+      "params": {
+        "repair_bad_top_move_allowed_k2": 0.001
+      },
+      "source": "COMPONENT = {'name': 'repair_bad_top_move_refined', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {'repair_bad_top_move_allowed_k2': {'type': 'float', 'range': [0.0, 0.002], 'default': 0.001}}}\nfrom core.rules import RuleMachine\n\nclass RepairBadTopMove:\n    _auto_repair_bad_top_move_allowed_k1 = 0.01\n    _auto_repair_bad_top_move_allowed_k2 = 0.001\n    'Mueve un tope mal puesto, con foco macro sobre una pila objetivo si conviene.'\n    name = 'repair_bad_top_move'\n\n    def __init__(self, prefer_empty=True, prefer_lower_fill=True, bad_below_weight=2.5, sorted_source_penalty=1.5, same_height_bonus=0.5, switch_margin=1):\n        self.prefer_empty = prefer_empty\n        self.prefer_lower_fill = prefer_lower_fill\n        self.bad_below_weight = bad_below_weight\n        self.sorted_source_penalty = sorted_source_penalty\n        self.same_height_bonus = same_height_bonus\n        self.switch_margin = switch_margin\n\n    def start(self, partial, memory):\n        stacks = partial.stacks\n        h = partial.h\n\n        def is_bad_top_source(so):\n            if h(so) <= 1:\n                return False\n            return stacks[so][-2] < stacks[so][-1]\n        best = None\n        best_key = None\n        for so in range(partial.S):\n            if not is_bad_top_source(so):\n                continue\n            top = stacks[so][-1]\n            bad_below = partial.ub(so)\n            src_sorted = partial.is_sorted_stack(so)\n            key = (-bad_below, 0 if src_sorted else 1, -top, so)\n            if best_key is None or key < best_key:\n                best_key = key\n                best = so\n        return best\n\n    def done(self, partial, memory):\n        so = memory\n        if so is None:\n            return True\n        if partial.h(so) <= 1:\n            return True\n        stacks = partial.stacks\n        return stacks[so][-2] >= stacks[so][-1]\n\n    def allowed(self, partial, memory, candidates):\n        if not candidates:\n            return []\n        stacks = partial.stacks\n        h = partial.h\n        G = partial.G\n        chosen_so = memory\n\n        def is_bad_top_source(so):\n            if h(so) <= 1:\n                return False\n            return stacks[so][-2] < stacks[so][-1]\n\n        def top_group(i):\n            return G if h(i) == 0 else stacks[i][-1]\n\n        def dest_helps(moved, sd):\n            if h(sd) == 0:\n                return True\n            return top_group(sd) >= moved\n        filtered = []\n        for a in candidates:\n            so = a.so\n            sd = a.sd\n            if so == sd:\n                continue\n            if h(so) == 0 or h(sd) >= partial.H:\n                continue\n            if not is_bad_top_source(so):\n                continue\n            if chosen_so is not None and so != chosen_so:\n                continue\n            moved = stacks[so][-1]\n            if not dest_helps(moved, sd):\n                continue\n            filtered.append(a)\n        if not filtered and chosen_so is not None:\n            for a in candidates:\n                so = a.so\n                sd = a.sd\n                if so == sd:\n                    continue\n                if h(so) == 0 or h(sd) >= partial.H:\n                    continue\n                if not is_bad_top_source(so):\n                    continue\n                moved = stacks[so][-1]\n                if not dest_helps(moved, sd):\n                    continue\n                filtered.append(a)\n        if not filtered:\n            return []\n\n        def key(a):\n            so = a.so\n            sd = a.sd\n            moved = stacks[so][-1]\n            src_bad_below = partial.ub(so)\n            dest_fill = h(sd)\n            dest_top = top_group(sd)\n            src_sorted = partial.is_sorted_stack(so)\n            score = 0.0\n            score -= self.bad_below_weight * src_bad_below\n            if src_sorted:\n                score += self.sorted_source_penalty\n            if self.prefer_empty:\n                score += 0.0 if h(sd) == 0 else 1.0\n            if self.prefer_lower_fill:\n                score += dest_fill * self._auto_repair_bad_top_move_allowed_k1\n            score += abs(dest_top - moved) * self._auto_repair_bad_top_move_allowed_k2\n            score += sd * 1e-05\n            score -= self.same_height_bonus if h(sd) == h(so) else 0.0\n            return (score, -src_bad_below, dest_fill, sd)\n        filtered.sort(key=key)\n        return filtered\n\ndef _build_component_llm(problem, **params):\n    return RuleMachine(problem, [RepairBadTopMove(prefer_empty=params.get('prefer_empty', True), prefer_lower_fill=params.get('prefer_lower_fill', True), bad_below_weight=params.get('bad_below_weight', 2.5), sorted_source_penalty=params.get('sorted_source_penalty', 1.5), same_height_bonus=params.get('same_height_bonus', 0.5), switch_margin=params.get('switch_margin', 1))])\n_AUTO = {'repair_bad_top_move_allowed_k1': 0.01, 'repair_bad_top_move_allowed_k2': 0.001}\n_AUTO_OWNER = {'repair_bad_top_move_allowed_k1': 'RepairBadTopMove', 'repair_bad_top_move_allowed_k2': 'RepairBadTopMove'}\n_AUTO_ATTR = {}\n_AUTO_CLASSES = {'RepairBadTopMove': RepairBadTopMove}\n_AUTO_FACTORY = '_build_component_llm'\n\ndef build_component(problem, **params):\n    \"\"\"Envoltura del framework: los números que el LLM dejó sueltos en los métodos son parámetros\n    (`_AUTO`, declarados en COMPONENT; `_AUTO_OWNER`: la clase de cada uno). Se fijan en las clases\n    mientras se construye (por si un `__init__` los usa) y en cada instancia: la máquina, sus\n    reglas y sus transiciones.\"\"\"\n    attrs = globals().get('_AUTO_ATTR', {})\n    auto = {k: params.pop(k, v) for k, v in _AUTO.items()}\n    lifted = [k for k in auto if k not in attrs]\n    saved = {k: getattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k) for k in lifted}\n    for k in lifted:\n        setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k, auto[k])\n    try:\n        obj = _build_component_llm(problem, **params)\n    finally:\n        for k, v in saved.items():\n            setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k, v)\n    parts = [obj, getattr(obj, 'transitions', None), *list(getattr(obj, 'rules', None) or [])]\n    for part in parts:\n        for k, v in auto.items():\n            if part is not None and isinstance(part, _AUTO_CLASSES[_AUTO_OWNER[k]]):\n                setattr(part, attrs.get(k, '_auto_' + k), v)\n    return obj\n",
+      "component": {
+        "name": "repair_bad_top_move_refined",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {
+          "repair_bad_top_move_allowed_k2": {
+            "type": "float",
+            "range": [
+              0.0,
+              0.002
+            ],
+            "default": 0.001
+          }
+        }
+      }
+    },
+    {
+      "id": 8,
+      "rule": "move_bad_top_to_empty_stack",
+      "name": "move_bad_top_to_empty_stack",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 90.688,
+      "width": 0.198,
+      "precision": [
+        1,
+        1
+      ],
+      "params": {},
+      "source": "COMPONENT = {\n    \"name\": \"move_bad_top_to_empty_stack\",\n    \"slot\": \"construction_machine\",\n    \"compatible_skeletons\": [\"CONSTRUCT\"],\n    \"requires\": [],\n    \"params\": {}\n}\n\nfrom core.rules import RuleMachine\n\n\nclass MoveBadTopToEmptyStack:\n    \"\"\"Mueve un contenedor tope mal puesto a una pila vacía.\"\"\"\n\n    name = \"move_bad_top_to_empty_stack\"\n\n    def allowed(self, partial, memory, candidates):\n        out = []\n        for a in candidates:\n            so = a.so\n            sd = a.sd\n            if partial.h(so) == 0:\n                continue\n            if partial.h(sd) != 0:\n                continue\n            # tope mal puesto en origen\n            if partial.h(so) <= partial.sorted_n[so]:\n                continue\n            out.append(a)\n        return out\n\n\ndef build_component(problem, **params):\n    return RuleMachine(problem, [MoveBadTopToEmptyStack()])\n",
+      "component": {
+        "name": "move_bad_top_to_empty_stack",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {}
+      }
+    },
+    {
+      "id": 9,
+      "rule": "move_good_top_to_bad_stack",
+      "name": "move_good_top_to_bad_stack_refined",
+      "op": "refine_rule",
+      "parent": 4,
+      "macro": false,
+      "alone": 101.875,
+      "width": 0.066,
+      "precision": [
+        3,
+        54
+      ],
+      "params": {},
+      "source": "COMPONENT = {'name': 'move_good_top_to_bad_stack_refined', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {'max_badness_gap': {'type': 'int', 'range': [1, 20], 'default': 1}}}\nfrom core.rules import RuleMachine\n\nclass MoveGoodTopToBadStack:\n    \"\"\"Mueve un tope bien puesto a una pila donde quedará mal puesto.\n\n    La versión refinada restringe los destinos a los que lo dejan \"apenas\"\n    mal puesto, para evitar decisiones demasiado agresivas cuando convienen\n    otras piezas de la biblioteca.\n    \"\"\"\n    name = 'move_good_top_to_bad_stack'\n\n    def __init__(self, max_badness_gap: int=1, prefer_closest_bad_destination: bool=True):\n        self.max_badness_gap = max_badness_gap\n        self.prefer_closest_bad_destination = prefer_closest_bad_destination\n\n    def allowed(self, partial, memory, candidates):\n        if not candidates:\n            return []\n        allowed = []\n        for a in candidates:\n            so = a.so\n            sd = a.sd\n            if so == sd:\n                continue\n            if partial.h(so) <= 0 or partial.h(sd) >= partial.H:\n                continue\n            moved = partial.g(so)\n            if moved is None:\n                continue\n            if partial.h(so) > partial.sorted_n[so]:\n                continue\n            dest_top = partial.g(sd)\n            if dest_top is None:\n                continue\n            if dest_top >= moved:\n                continue\n            gap = moved - dest_top\n            if gap > self.max_badness_gap:\n                continue\n            allowed.append(a)\n        if not allowed:\n            return []\n        if self.prefer_closest_bad_destination:\n            allowed.sort(key=lambda a: (partial.g(a.so) - partial.g(a.sd), a.so, a.sd))\n        return allowed\n\ndef build_component(problem, **params):\n    max_badness_gap = params.get('max_badness_gap', 1)\n    prefer_closest_bad_destination = params.get('prefer_closest_bad_destination', True)\n    return RuleMachine(problem, [MoveGoodTopToBadStack(max_badness_gap=max_badness_gap, prefer_closest_bad_destination=prefer_closest_bad_destination)])\n",
+      "component": {
+        "name": "move_good_top_to_bad_stack_refined",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {
+          "max_badness_gap": {
+            "type": "int",
+            "range": [
+              1,
+              20
+            ],
+            "default": 1
+          }
+        }
+      }
+    }
+  ]
+}

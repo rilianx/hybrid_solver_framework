@@ -3240,5 +3240,515 @@
       "cached_input_tokens": 15616,
       "reasoning_tokens": 13520
     }
+  },
+  {
+    "seed": false,
+    "rounds": 12,
+    "archive": [
+      "move_good_top_to_bad_stack",
+      "move_bad_top_to_empty_stack",
+      "repair_bad_top_move"
+    ],
+    "written": [
+      {
+        "name": "library_move_good_top_to_bad_stack_move_bad_top_to_empty_stack_repair_bad_top_move",
+        "path": "generated/cpmp_evolve/construction_machine/library_move_good_top_to_bad_stack_move_bad_top_to_empty_stack_repair_bad_top_move_r1.py",
+        "fitness": 103.938,
+        "params": {
+          "p4::prefer_more_bad_destinations": true,
+          "p7::repair_bad_top_move_allowed_k2": 0.001
+        },
+        "rejected": "módulo 'library_move_good_top_to_bad_stack_move_bad_top_to_empty_stack_repair_bad_top_move_r1.py': rechazado en la capa 'quality'. Propiedades violadas:\n  - constructor.not_much_worse_than_trivial: el constructor cuesta +711% más que la solución de referencia en la micro-instancia 0 (referencia = 6; umbral tolerado +100%). No hace falta que sea óptimo, pero sí un punto de partida razonable."
+      }
+    ],
+    "individuals": [
+      {
+        "round": 1,
+        "op": "new_rule",
+        "target": null,
+        "id": 0,
+        "rule": "repair_bad_top_move",
+        "name": "repair_bad_top_move",
+        "parent": null,
+        "macro": false,
+        "alone": 81.25,
+        "width": 0.107,
+        "precision": [
+          5,
+          16
+        ],
+        "params": {},
+        "best_with": 81.25,
+        "status": "mejor máquina",
+        "best": [
+          "repair_bad_top_move"
+        ],
+        "fitness": 93.312
+      },
+      {
+        "round": 2,
+        "op": "new_rule",
+        "target": null,
+        "repaired": false,
+        "status": "rechazado",
+        "reason": "cand_1.py: rechazado en la capa 'syntactic'. Propiedades violadas:\n  - factory_runs: build_component(problem) lanzó KeyError: 'prefer_empty'"
+      },
+      {
+        "round": 3,
+        "op": "new_rule",
+        "target": null,
+        "id": 1,
+        "rule": "unblock_bad_below_move",
+        "name": "unblock_bad_below_move",
+        "parent": null,
+        "macro": false,
+        "alone": 104.25,
+        "width": 0.126,
+        "precision": [
+          5,
+          56
+        ],
+        "params": {},
+        "best_with": 90.938,
+        "status": "en la biblioteca",
+        "best": [
+          "repair_bad_top_move"
+        ],
+        "fitness": 93.312
+      },
+      {
+        "round": 4,
+        "op": "refine_rule",
+        "target": "repair_bad_top_move",
+        "repaired": false,
+        "status": "rechazado",
+        "reason": "cand_2.py: rechazado en la capa 'syntactic'. Propiedades violadas:\n  - same_slot: el slot debe ser construction_machine"
+      },
+      {
+        "round": 5,
+        "op": "refine_rule",
+        "target": "repair_bad_top_move",
+        "repaired": true,
+        "id": 2,
+        "rule": "repair_bad_top_move",
+        "name": "repair_bad_top_move_refined",
+        "parent": 0,
+        "macro": true,
+        "alone": 96.062,
+        "width": 0.087,
+        "precision": [
+          4,
+          14
+        ],
+        "params": {},
+        "best_with": 84.938,
+        "status": "en la biblioteca",
+        "best": [
+          "repair_bad_top_move"
+        ],
+        "fitness": 93.312
+      },
+      {
+        "round": 6,
+        "op": "new_rule",
+        "target": null,
+        "id": 3,
+        "rule": "move_bad_top_to_bad_stack",
+        "name": "move_bad_top_to_bad_stack",
+        "parent": null,
+        "macro": false,
+        "alone": 105.312,
+        "width": 0.407,
+        "precision": [
+          29,
+          140
+        ],
+        "params": {},
+        "best_with": 88.312,
+        "status": "en la biblioteca",
+        "best": [
+          "repair_bad_top_move"
+        ],
+        "fitness": 93.312
+      },
+      {
+        "round": 7,
+        "op": "new_rule",
+        "target": null,
+        "id": 4,
+        "rule": "move_good_top_to_bad_stack",
+        "name": "move_good_top_to_bad_stack",
+        "parent": null,
+        "macro": false,
+        "alone": 111.25,
+        "width": 0.1,
+        "precision": [
+          12,
+          61
+        ],
+        "params": {},
+        "best_with": 88.25,
+        "status": "en la biblioteca",
+        "best": [
+          "repair_bad_top_move"
+        ],
+        "fitness": 93.312
+      },
+      {
+        "round": 8,
+        "op": "new_rule",
+        "target": null,
+        "id": 5,
+        "rule": "move_good_top_to_empty_stack",
+        "name": "move_good_top_to_empty_stack",
+        "parent": null,
+        "macro": false,
+        "alone": 96.125,
+        "width": 0.137,
+        "precision": [
+          0,
+          1
+        ],
+        "params": {},
+        "best_with": 84.562,
+        "status": "en la biblioteca",
+        "best": [
+          "repair_bad_top_move"
+        ],
+        "fitness": 93.312
+      },
+      {
+        "round": 9,
+        "op": "new_rule",
+        "target": null,
+        "id": 6,
+        "rule": "move_good_top_to_good_stack",
+        "name": "move_good_top_to_good_stack",
+        "parent": null,
+        "macro": false,
+        "alone": 105.125,
+        "width": 0.157,
+        "precision": [
+          22,
+          101
+        ],
+        "params": {},
+        "best_with": 83.812,
+        "status": "en la biblioteca",
+        "best": [
+          "repair_bad_top_move"
+        ],
+        "fitness": 93.312
+      },
+      {
+        "round": 10,
+        "op": "refine_rule",
+        "target": "repair_bad_top_move",
+        "repaired": true,
+        "id": 7,
+        "rule": "repair_bad_top_move",
+        "name": "repair_bad_top_move_refined",
+        "parent": 0,
+        "macro": true,
+        "alone": 88.688,
+        "width": 0.11,
+        "precision": [
+          5,
+          16
+        ],
+        "params": {},
+        "best_with": 82.75,
+        "status": "en la biblioteca",
+        "best": [
+          "repair_bad_top_move"
+        ],
+        "fitness": 93.312
+      },
+      {
+        "round": 11,
+        "op": "new_rule",
+        "target": null,
+        "id": 8,
+        "rule": "move_bad_top_to_empty_stack",
+        "name": "move_bad_top_to_empty_stack",
+        "parent": null,
+        "macro": false,
+        "alone": 90.688,
+        "width": 0.198,
+        "precision": [
+          1,
+          1
+        ],
+        "params": {},
+        "best_with": 80.25,
+        "status": "mejor máquina",
+        "best": [
+          "move_good_top_to_bad_stack",
+          "move_bad_top_to_empty_stack",
+          "repair_bad_top_move"
+        ],
+        "fitness": 103.938
+      },
+      {
+        "round": 12,
+        "op": "refine_rule",
+        "target": "move_good_top_to_bad_stack",
+        "id": 9,
+        "rule": "move_good_top_to_bad_stack",
+        "name": "move_good_top_to_bad_stack_refined",
+        "parent": 4,
+        "macro": false,
+        "alone": 101.875,
+        "width": 0.066,
+        "precision": [
+          3,
+          54
+        ],
+        "params": {},
+        "best_with": 84.562,
+        "status": "en la biblioteca",
+        "best": [
+          "move_good_top_to_bad_stack",
+          "move_bad_top_to_empty_stack",
+          "repair_bad_top_move"
+        ],
+        "fitness": 103.938
+      },
+      {
+        "library": [
+          {
+            "id": 0,
+            "rule": "repair_bad_top_move",
+            "name": "repair_bad_top_move",
+            "op": "new_rule",
+            "parent": null,
+            "macro": false,
+            "alone": 81.25,
+            "width": 0.107,
+            "precision": [
+              5,
+              16
+            ],
+            "params": {}
+          },
+          {
+            "id": 1,
+            "rule": "unblock_bad_below_move",
+            "name": "unblock_bad_below_move",
+            "op": "new_rule",
+            "parent": null,
+            "macro": false,
+            "alone": 104.25,
+            "width": 0.126,
+            "precision": [
+              5,
+              56
+            ],
+            "params": {}
+          },
+          {
+            "id": 2,
+            "rule": "repair_bad_top_move",
+            "name": "repair_bad_top_move_refined",
+            "op": "refine_rule",
+            "parent": 0,
+            "macro": true,
+            "alone": 96.062,
+            "width": 0.087,
+            "precision": [
+              4,
+              14
+            ],
+            "params": {}
+          },
+          {
+            "id": 4,
+            "rule": "move_good_top_to_bad_stack",
+            "name": "move_good_top_to_bad_stack",
+            "op": "new_rule",
+            "parent": null,
+            "macro": false,
+            "alone": 111.25,
+            "width": 0.1,
+            "precision": [
+              12,
+              61
+            ],
+            "params": {
+              "prefer_more_bad_destinations": true
+            }
+          },
+          {
+            "id": 5,
+            "rule": "move_good_top_to_empty_stack",
+            "name": "move_good_top_to_empty_stack",
+            "op": "new_rule",
+            "parent": null,
+            "macro": false,
+            "alone": 96.125,
+            "width": 0.137,
+            "precision": [
+              0,
+              1
+            ],
+            "params": {}
+          },
+          {
+            "id": 6,
+            "rule": "move_good_top_to_good_stack",
+            "name": "move_good_top_to_good_stack",
+            "op": "new_rule",
+            "parent": null,
+            "macro": false,
+            "alone": 105.125,
+            "width": 0.157,
+            "precision": [
+              22,
+              101
+            ],
+            "params": {}
+          },
+          {
+            "id": 7,
+            "rule": "repair_bad_top_move",
+            "name": "repair_bad_top_move_refined",
+            "op": "refine_rule",
+            "parent": 0,
+            "macro": true,
+            "alone": 88.688,
+            "width": 0.11,
+            "precision": [
+              5,
+              16
+            ],
+            "params": {
+              "repair_bad_top_move_allowed_k2": 0.001
+            }
+          },
+          {
+            "id": 8,
+            "rule": "move_bad_top_to_empty_stack",
+            "name": "move_bad_top_to_empty_stack",
+            "op": "new_rule",
+            "parent": null,
+            "macro": false,
+            "alone": 90.688,
+            "width": 0.198,
+            "precision": [
+              1,
+              1
+            ],
+            "params": {}
+          },
+          {
+            "id": 9,
+            "rule": "move_good_top_to_bad_stack",
+            "name": "move_good_top_to_bad_stack_refined",
+            "op": "refine_rule",
+            "parent": 4,
+            "macro": false,
+            "alone": 101.875,
+            "width": 0.066,
+            "precision": [
+              3,
+              54
+            ],
+            "params": {}
+          }
+        ],
+        "best": [
+          "move_good_top_to_bad_stack",
+          "move_bad_top_to_empty_stack",
+          "repair_bad_top_move"
+        ],
+        "fitness": 103.938,
+        "minimal": 90.688,
+        "compositions": [
+          [
+            80.25,
+            [
+              4,
+              8,
+              7
+            ]
+          ],
+          [
+            81.25,
+            [
+              0
+            ]
+          ],
+          [
+            81.25,
+            [
+              0,
+              8
+            ]
+          ],
+          [
+            81.25,
+            [
+              0,
+              8,
+              5
+            ]
+          ],
+          [
+            81.312,
+            [
+              8,
+              0
+            ]
+          ],
+          [
+            81.312,
+            [
+              8,
+              0,
+              5
+            ]
+          ],
+          [
+            81.312,
+            [
+              8,
+              5,
+              0
+            ]
+          ],
+          [
+            82.75,
+            [
+              7,
+              5
+            ]
+          ],
+          [
+            82.75,
+            [
+              7,
+              5,
+              8
+            ]
+          ],
+          [
+            83.812,
+            [
+              4,
+              6,
+              2
+            ]
+          ]
+        ]
+      }
+    ],
+    "tokens": {
+      "calls": 16,
+      "input_tokens": 33613,
+      "output_tokens": 21536,
+      "total_tokens": 55149,
+      "cached_input_tokens": 2304,
+      "reasoning_tokens": 11114
+    }
   }
 ]
