@@ -557,6 +557,40 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
   traen tramos óptimos de 8 pasos: varios pasos seguidos que atienden el mismo objetivo son una
   macro. La máquina mínima es una `RuleMachine` sin reglas. Las máquinas de las corridas 66–74
   (forma libre o con clase de transiciones) no se retoman en `evolve`.
+- **Biblioteca de reglas + compositor** (estrategia `library` de `evolve`, `llm/library.py`, la
+  estrategia por defecto; `--strategy machines` es la anterior). Tras la corrida 78 se midió a
+  mano si existe un camino evolutivo hacia FRG. Movimientos promedio, 8 instancias de test por
+  tamaño:
+
+  | máquina | 5×5 | 6×6 | media |
+  |---|---|---|---|
+  | mínima (solo comodín) | 44,0 | 122,0 | 83,0 |
+  | `bg` sola | 38,0 | 111,4 | 74,7 |
+  | **`bg` (100) + `reduce` simple (50)** | **11,9** | **25,0** | **18,4** |
+  | `bg` + macro de reducción con la parada de FRG | 13,5 | 26,0 | 19,8 |
+  | FRG (macro con contador) | 12,4 | 24,3 | 18,3 |
+
+  `reduce` es angosta: toma la pila desordenada que elige FRG y mueve su tope a los mejores
+  destinos. El camino es monótono y corto, y ni siquiera necesita la macro: FRG son dos acciones
+  y un orden. El LLM no llegaba porque diseñaba la máquina entera y su primera regla salía ancha.
+  Ahora hace dos preguntas locales:
+  - **`new_rule`**: el LLM escribe UNA regla angosta (un módulo cuyo `build_component` devuelve
+    `RuleMachine(problem, [regla])`), mirando los contraejemplos del oráculo de la mejor máquina
+    ("¿qué tipo de movimiento hace el óptimo que ninguna pieza permite?"). No elige prioridades.
+  - **`refine_rule(r)`**: mejora una pieza de la mejor máquina (la que más movimientos de más
+    causa), manteniendo su `name`, y puede volverla macro. La versión nueva entra junto a la
+    anterior.
+  - **Compositor, sin LLM**: prueba las combinaciones de hasta 3 piezas que incluyen la nueva, en
+    todos los órdenes de prioridad (100, 50, 25), con el greedy en train. La mejor se afina y
+    sus parámetros vuelven a las piezas. Dos versiones de la misma regla no se combinan.
+  - La biblioteca guarda hasta 8 piezas (sale la que no está en ninguna de las mejores
+    composiciones) en `evolve_library.json`, para `--resume`. Las dos primeras rondas son
+    `new_rule`; después, 55 % `new_rule` y 45 % `refine_rule`.
+  - Salida: la mejor máquina como un módulo que carga sus piezas (`lib_p<id>.py`), validado
+    completo.
+
+  Con las dos piezas escritas a mano como respuestas del LLM simulado, el compositor encuentra
+  `bg` > `reduce` en dos rondas (`tests/test_library.py`).
 - **Un algoritmo de optimización de greedies** (etapa `evolve`, `llm/evolve.py`). Un greedy como
   FRG no sale de una vez; se llega por pasos: primero solo movimientos BG, después la prioridad
   dentro de ese estado, después un estado de vaciado que vuelve al inicial, y otra vez las

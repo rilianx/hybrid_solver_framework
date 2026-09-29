@@ -947,6 +947,9 @@ def main(pack, argv: list[str] | None = None, workspace: str | None = None, spec
     import argparse
 
     ap = argparse.ArgumentParser(description="Evolucionar máquinas de estados constructivas (etapa evolve)")
+    ap.add_argument("--strategy", choices=["library", "machines"], default="library",
+                    help="library: el LLM escribe reglas sueltas y el framework las combina (llm.library); machines: el LLM "
+                         "escribe y modifica máquinas enteras")
     ap.add_argument("--seed", default=None, help="partir de una máquina escrita a mano del pack (p.ej. frg_machine)")
     ap.add_argument("--base", default=None, help="partir de una máquina generada del workspace")
     ap.add_argument("--resume", action="store_true", help="seguir desde el archivo de la corrida anterior (evolve_archive.json)")
@@ -975,6 +978,16 @@ def main(pack, argv: list[str] | None = None, workspace: str | None = None, spec
     inner = Client(model=args.model) if args.model else Client()
     client = TranscriptClient(inner, Path(args.workspace) / "transcript_evolve")
     tokens = TokenUsage()
+    if args.strategy == "library":
+        from .library import evolve_library
+
+        res = evolve_library(client, pack, spec or pack.make_spec(), args.workspace, Harness(pack, args.mode, args.beam_width),
+                             rounds=args.rounds, tune_samples=args.tune_samples, n_train=args.train, n_test=args.test,
+                             size=args.size, rng_seed=args.rng_seed, tokens=tokens, resume=args.resume,
+                             deadline=time.monotonic() + 60 * args.max_minutes)
+        print(json.dumps({k: v for k, v in res.as_dict().items() if k != "individuals"}, indent=2, ensure_ascii=False, default=str))
+        save_stats(args.workspace, res, tokens, getattr(inner, "model", ""))
+        return res
     res = evolve(client, pack, spec or pack.make_spec(), args.workspace, Harness(pack, args.mode, args.beam_width),
                  rounds=args.rounds, archive_size=args.archive, tune_samples=args.tune_samples, n_train=args.train,
                  n_test=args.test, size=args.size, seed=args.seed, base=args.base, rng_seed=args.rng_seed, tokens=tokens, resume=args.resume,
