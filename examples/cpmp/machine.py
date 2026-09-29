@@ -1,70 +1,87 @@
-"""FRG (Araya y Toledo 2023) como máquina de estados del slot `construction_machine`
-(`core.machine.MachinePolicy`):
+"""FRG (Araya y Toledo 2023) como máquina de reglas (`core.rules.RuleMachine`): dos reglas de
+acción y unas transiciones de tres líneas.
 
-    fill   --(no queda movimiento BG)-->                         reduce(sr)  [al entrar: select_reduce_stack]
-    reduce --(sr vacía, u ordenada y con el criterio de parada)-->  fill si hay BG, si no reduce(otra sr)
+- `bg_move`: los movimientos BG (dejan bien puesto un mal puesto) ordenados por g(sd) − g(so)
+  (el Alg. 2); no aplica si no hay.
+- `reduce_stack`: al activarse elige la pila sr (`select_reduce_stack`: la menos veces reducida,
+  ...); propone sacar el tope de sr a los destinos en el orden de `select_destination`; termina
+  cuando sr queda vacía o cumple el criterio de parada (§4.1).
+- Transiciones: `reduce_stack` mientras no termine; si no, `bg_move` si aplica; si no,
+  `reduce_stack` (que al volver a activarse elige otra pila).
 
-- `fill`: puntúa los movimientos BG por g(sd) − g(so) (el Alg. 2) y el resto muy alto.
-- `reduce`: puntúa los movimientos que sacan el tope de sr por el orden de `select_destination`.
-
-Memoria: (pila en reducción o None, veces que se redujo cada pila). El greedy con esta máquina
-hace los mismos movimientos que FRG sin la asignación de la §4.3.2 (`FRGConfig(assignment="never")`).
-Es un componente de referencia escrito a mano, como `frg` y `frg_policy`: entra al catálogo y
-sirve de semilla para la etapa `evolve`, pero el LLM no lo ve cuando genera máquinas desde cero.
+El greedy con esta máquina hace los mismos movimientos que FRG sin la asignación de la §4.3.2
+(`FRGConfig(assignment="never")`). Es un componente de referencia escrito a mano, como `frg` y
+`frg_policy`: entra al catálogo y sirve de semilla para la etapa `evolve`, pero el LLM no lo ve
+cuando genera máquinas desde cero.
 """
 
 from __future__ import annotations
 
-from .frg import bg_moves, destination_rank, select_reduce_stack, stop_reduction
+from core.rules import RuleMachine
+
+from .frg import bg_moves, ranked_destinations, select_reduce_stack, stop_reduction
 from .layout import Layout
 
-FAR = 1e6  # puntaje de un movimiento que el estado no haría
+
+class BGMove:
+    name = "bg_move"
+
+    def __init__(self, prevent: bool = True):
+        self.prevent = prevent
+
+    def propose(self, L: Layout, memory):
+        moves = bg_moves(L, self.prevent)
+        from .construction import Move
+
+        return [Move(so, sd) for so, sd in sorted(moves, key=moves.__getitem__)]
 
 
-class FRGMachine:
-    COMPONENT = {"name": "frg_machine", "slot": "construction_machine",
-                 "params": {"prevent": {"type": "bool", "default": True}, "r": {"type": "int", "range": [0, 3], "default": 1}}}
-    states = ("fill", "reduce")
+class ReduceStack:
+    """Memoria: (pila en reducción o None, veces que se redujo cada pila)."""
 
-    def __init__(self, problem=None, prevent: bool = True, r: int = 1):
-        self.prevent, self.r = prevent, r
-        self._last: tuple | None = None  # (estado del layout, BG): se consulta por candidato
+    name = "reduce_stack"
 
-    def _bg(self, L: Layout) -> dict:
-        k = L.state()
-        if self._last is None or self._last[0] != k:
-            self._last = (k, bg_moves(L, self.prevent))
-        return self._last[1]
+    def __init__(self, r: int = 1):
+        self.r = r
 
-    def initial(self, L: Layout):
-        return "fill", (None, (0,) * L.S)
+    def init(self, L: Layout):
+        return (None, (0,) * L.S)
 
-    def _start_reduction(self, L: Layout, reduced: tuple):
+    def start(self, L: Layout, memory):
+        _, reduced = memory
         sr = select_reduce_stack(L, list(reduced))
         if sr is None:
-            return "reduce", (None, reduced)
-        return "reduce", (sr, reduced[:sr] + (reduced[sr] + 1,) + reduced[sr + 1:])
+            return (None, reduced)
+        return (sr, reduced[:sr] + (reduced[sr] + 1,) + reduced[sr + 1:])
 
-    def transition(self, L: Layout, state: str, memory):
-        sr, reduced = memory
-        if state == "reduce" and sr is not None and L.stacks[sr] and not stop_reduction(L, sr, self.r):
-            return state, memory  # la reducción sigue
-        if self._bg(L):
-            return "fill", (None, reduced)
-        return self._start_reduction(L, reduced)
+    def propose(self, L: Layout, memory):
+        from .construction import Move
 
-    def score(self, L: Layout, state: str, memory, a) -> float:
-        if state == "fill":
-            d = self._bg(L).get((a.so, a.sd))
-            return FAR if d is None else float(d)
         sr = memory[0]
-        if a.so != sr:
-            return FAR
-        cat, val, sd = destination_rank(L, L.g(sr), a.sd)
-        return 1000.0 * cat + 10.0 * val + sd / 100.0  # el orden lexicográfico de select_destination
+        if sr is None or not L.stacks[sr]:
+            return []
+        return [Move(sr, sd) for sd in ranked_destinations(L, sr)]
 
-    def update(self, L: Layout, state: str, memory, a):
-        return memory
+    def done(self, L: Layout, memory) -> bool:
+        sr = memory[0]
+        return sr is None or not L.stacks[sr] or stop_reduction(L, sr, self.r)
 
 
-__all__ = ["FRGMachine"]
+class FRGTransitions:
+    def select(self, L: Layout, memory, rules):
+        if rules.active == "reduce_stack" and not rules.done("reduce_stack"):
+            return "reduce_stack", memory
+        if rules.applies("bg_move"):
+            return "bg_move", memory
+        return "reduce_stack", memory
+
+
+class FRGMachine(RuleMachine):
+    COMPONENT = {"name": "frg_machine", "slot": "construction_machine",
+                 "params": {"prevent": {"type": "bool", "default": True}, "r": {"type": "int", "range": [0, 3], "default": 1}}}
+
+    def __init__(self, problem=None, prevent: bool = True, r: int = 1):
+        super().__init__(problem, [BGMove(prevent), ReduceStack(r)], FRGTransitions())
+
+
+__all__ = ["BGMove", "ReduceStack", "FRGTransitions", "FRGMachine"]

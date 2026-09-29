@@ -138,6 +138,8 @@ class ConstructionMachine(Protocol):
     - `update(partial, state, memory, action)`: la memoria tras hacer la acción.
 
     La memoria es inmutable y hashable; nada modifica `partial` ni `memory`; todo es determinista.
+    Lo que genera y evoluciona el LLM es una máquina de REGLAS (`core.rules.RuleMachine`: reglas de
+    acción que proponen movimientos + transiciones que eligen cuál usar), que cumple este Protocol.
     Todo número que decide algo (umbral, peso, tope, desempate) va en `COMPONENT["params"]`, con
     rango y default, y llega por `build_component(problem, **params)`: lo afina el tuner."""
 

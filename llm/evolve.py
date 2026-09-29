@@ -4,7 +4,7 @@ estados constructivas, slot `construction_machine`), con el LLM como operador.
     archivo ← {base}                                   # máquina mínima, una semilla a mano o una generada
     repetir:
         padre    ← torneo en el archivo
-        operador ← calendario(padre)                    # add_state | refine_priority(s) | change_transition | simplify
+        operador ← calendario(padre)                    # add_rule | refine_rule(r) | change_transitions | simplify
         hijo     ← LLM(padre, operador, diagnóstico por estado del padre, archivo)
         validación liviana (contrato, parámetros extraíbles) + alcance del operador
         fitness  ← tuning corto de sus parámetros en train, media en test
@@ -14,9 +14,11 @@ estados constructivas, slot `construction_machine`), con el LLM como operador.
 Por qué así (el camino de FRG: primero solo movimientos BG, después la prioridad dentro de ese
 estado, después un estado de vaciado con vuelta al inicial, y otra vez las prioridades):
 
-- Operadores tipados y con alcance verificado: `add_state` agrega exactamente un estado;
-  `refine_priority(s)` cambia la regla de un estado y no las transiciones; `change_transition`
-  cambia las transiciones y no las reglas. Cada paso es chico y evaluable.
+- Máquinas de reglas (`core.rules.RuleMachine`): reglas de acción que proponen movimientos y
+  transiciones que eligen cuál usar, en clases separadas.
+- Operadores tipados y con alcance verificado clase por clase: `add_rule` agrega exactamente una
+  regla (y la conecta en las transiciones); `refine_rule(r)` cambia solo la clase de la regla r;
+  `change_transitions` cambia solo las transiciones. Cada paso es chico y evaluable.
 - Calendario: después de agregar un estado se refina su prioridad (`todo`); si la máquina todavía
   no actúa (todo cae en el comodín), se agrega un estado.
 - Tuning dentro del loop: padre e hijo se comparan con sus parámetros afinados (pocas muestras),
@@ -53,56 +55,40 @@ from .parser import extract_code_blocks
 from .prompts import SYSTEM_PROMPT, protocol_source, slot_hint
 
 SLOT = "construction_machine"
-OPERATORS = ("add_state", "refine_priority", "change_transition", "simplify")
+OPERATORS = ("add_rule", "refine_rule", "change_transitions", "simplify")
 
 MINIMAL = '''
 COMPONENT = {"name": "minimal", "slot": "construction_machine", "compatible_skeletons": ["CONSTRUCT"], "requires": [],
              "params": {}}
 
-from core.machine import FALLBACK
-
-
-class Minimal:
-    """Máquina mínima: sin estados propios todavía; cada paso lo decide el comodín del framework."""
-
-    states = ()
-
-    def __init__(self, problem):
-        self.problem = problem
-
-    def initial(self, partial):
-        return FALLBACK, ()
-
-    def transition(self, partial, state, memory):
-        return FALLBACK, ()
-
-    def score(self, partial, state, memory, action):
-        return 0.0
-
-    def update(self, partial, state, memory, action):
-        return memory
+from core.rules import NoTransitions, RuleMachine
 
 
 def build_component(problem):
-    return Minimal(problem)
+    """Máquina mínima: sin reglas todavía; cada paso lo decide el comodín del framework."""
+    return RuleMachine(problem, [], NoTransitions())
 '''
 
 OPERATOR_TEXT = {
-    "add_state": (
-        "Agrega EXACTAMENTE UN estado nuevo, con su regla (score) y las transiciones que entran y salen de él. No cambies "
-        "las reglas de los otros estados; toca sus transiciones solo lo necesario para conectar el nuevo. Mira el "
-        "diagnóstico: dónde la máquina cae al comodín `{fallback}` o qué estado pierde más cota; un estado nuevo suele "
-        "cubrir una situación que hoy nadie maneja bien. Puede ser un estado que vuelva al inicial cuando termina."),
-    "refine_priority": (
-        "Cambia SOLO la regla (score) del estado `{target}`: a qué candidato le da prioridad y cómo desempata (qué "
-        "elemento mover o elegir primero, hacia dónde, con qué criterio secundario). No cambies `transition`, ni los "
-        "estados, ni las reglas de los otros estados. Si introduces un número que decide algo, que sea un parámetro."),
-    "change_transition": (
-        "Cambia SOLO las transiciones (`transition`): cuándo se entra a un estado, cuándo se sale, a cuál se pasa, con "
-        "qué memoria se entra. No cambies las reglas (score) ni la lista de estados. Un umbral nuevo va como parámetro."),
+    "add_rule": (
+        "Agrega EXACTAMENTE UNA regla de acción nueva (una clase con `name` y `propose`, y si hace falta `init`, `start`, "
+        "`update`, `done`) y cambia las transiciones para usarla. No cambies las otras reglas. Mira el diagnóstico: dónde la "
+        "máquina cae al comodín `{fallback}`, qué regla pierde más movimientos, qué hace el óptimo en los contraejemplos "
+        "que ninguna regla propone. Una regla buena propone UN tipo de movimiento (y dice [] cuando no aplica); una regla "
+        "que sostiene un compromiso (p.ej. un objetivo que atiende varios pasos) lo elige en `start` y dice en `done` "
+        "cuándo terminó."),
+    "refine_rule": (
+        "Cambia SOLO la regla `{target}` (su clase): qué propone, en qué orden, cuándo dice que no aplica, qué recuerda, "
+        "cuándo termina. No cambies las otras reglas ni las transiciones. Mira su precisión y los contraejemplos donde "
+        "ella decidió: qué haría el óptimo y por qué tu orden lo dejó atrás."),
+    "change_transitions": (
+        "Cambia SOLO las transiciones (la clase con `select`): con qué regla se parte, cuándo se pasa a otra, cuál tiene "
+        "prioridad cuando varias aplican, cuándo se sostiene la activa. No cambies ninguna regla. Mira la cobertura y la "
+        "precisión de cada regla: una regla precisa que casi no se elige, o una imprecisa que se elige mucho, dicen qué "
+        "cambiar."),
     "simplify": (
-        "Simplifica: quita un estado, una condición o un parámetro que no aporte (mira el diagnóstico: un estado con "
-        "pocos pasos o que no pierde ni gana nada). Tiene que construir igual o mejor, con menos."),
+        "Simplifica: quita una regla (y su uso en las transiciones) o una condición que no aporte (una regla que casi "
+        "nunca se elige o que no pierde ni gana nada). Tiene que construir igual o mejor, con menos."),
 }
 
 
@@ -127,7 +113,8 @@ class Individual:
     examples: list = field(default_factory=list)  # con oráculo: los peores pasos, con lo que haría el óptimo
     good: list = field(default_factory=list)  # con oráculo: pasos donde acertó (para no romperlos)
     rejections: list = field(default_factory=list)  # de sus hijos, para no repetirlos
-    refine_failures: dict = field(default_factory=dict)  # estado → hijos fallidos de refine_priority
+    refine_failures: dict = field(default_factory=dict)  # regla → hijos fallidos de refine_rule
+    rules: dict = field(default_factory=dict)  # con oráculo: regla → {applies, optimal, chosen} (cobertura y precisión)
 
     @property
     def niche(self) -> int:
@@ -258,6 +245,23 @@ def profile(harness: Harness, ind: Individual, instances, oracle_instances: int 
             ind.examples += [dict(e, instance=label) for e in r["examples"]]
             ind.good += [dict(e, instance=label) for e in r["good"]]
         from core.machine import _diverse
+        from core.rules import rule_quality
+
+        ind.rules = {}
+        for inst in [i for i in sorted(instances, key=lambda i: getattr(i, "N", 0))][:budget]:
+            P = harness.pack.problem_factory(inst)
+            try:
+                q = rule_quality(MachinePolicy(ind.factory(P, **ind.params), P), P.construction_view(inst),
+                                 lambda p, inst=inst: oracle(inst, p))
+            except Exception:  # noqa: BLE001
+                q = None
+            if q is None:
+                continue
+            for n, row in q["rules"].items():
+                t = ind.rules.setdefault(n, {"applies": 0, "optimal": 0, "chosen": 0, "steps": 0})
+                for k in ("applies", "optimal", "chosen"):
+                    t[k] += row[k]
+                t["steps"] += q["steps"]
 
         # variados: primero uno por (estado, instancia), después por gravedad (no los 4 peores de un mismo caso)
         ind.examples = _diverse(sorted(ind.examples, key=lambda e: -e["regret"]), 4, key=lambda e: (e["state"], e["instance"]))
@@ -285,6 +289,15 @@ def regret_text(ind: Individual) -> str:
     for st, r in sorted(ind.regret.items(), key=lambda kv: -kv[1]["regret"]):
         name = f"{st} (comodín del framework)" if st == FALLBACK else st
         lines.append(f"| {name} | {r['steps']} | {r['regret']} | {r['wrong']} |")
+    if ind.rules:
+        lines.append("\nCalidad de cada regla: cobertura = en cuántos pasos propone algo; precisión = cuando propone, qué "
+                     "fracción de las veces su primera propuesta es óptima; elegida = cuántas veces la usaron las transiciones. "
+                     "Precisa y poco elegida: problema de transiciones; imprecisa: problema de la regla.")
+        lines.append("| regla | cobertura | precisión | elegida |")
+        lines.append("|---|---|---|---|")
+        for n, r in ind.rules.items():
+            prec = f"{r['optimal']}/{r['applies']} ({r['optimal'] / r['applies']:.0%})" if r["applies"] else "—"
+            lines.append(f"| {n} | {r['applies']}/{r['steps']} | {prec} | {r['chosen']} |")
     if ind.examples:
         lines.append("\nPasos donde la máquina se aparta del óptimo (contraejemplos: busca la regla simple que los evite). "
                      "Los puntajes son los que les dio TU score (menor = preferida): muestran qué término hizo ganar a la mala.")
@@ -370,6 +383,12 @@ def light_validation(path: Path, contexts, reach=None) -> tuple[ValidationReport
         except Exception as exc:  # noqa: BLE001
             report.add(fail("syntactic", "factory_runs", f"build_component(problem) lanzó {type(exc).__name__}: {exc}"))
             return report, module, component
+        from core.rules import RuleMachine
+
+        if not isinstance(impl, RuleMachine):
+            report.add(fail("syntactic", "rule_machine", "build_component debe devolver una `core.rules.RuleMachine(problem, "
+                                                         "[reglas...], Transiciones(...))`: reglas de acción y transiciones separadas"))
+            return report, module, component
         _, results = check_component_dict(component, impl)
         report.extend(results)
         report.add(check_protocol(SLOT, impl))
@@ -408,52 +427,70 @@ def light_validation(path: Path, contexts, reach=None) -> tuple[ValidationReport
     return report, module, component
 
 
-def _method_dump(source: str, name: str) -> str | None:
-    """El AST (sin posiciones) del método `name` de la clase que declara `states`."""
-    for node in ast.walk(ast.parse(source)):
-        if isinstance(node, ast.ClassDef) and any(isinstance(b, ast.Assign) and any(getattr(t, "id", None) == "states" for t in b.targets)
-                                                  for b in node.body):
-            for b in node.body:
-                if isinstance(b, ast.FunctionDef) and b.name == name:
-                    return ast.dump(b, include_attributes=False)
-    return None
+def _class_dumps(source: str) -> tuple[dict[str, str], str | None]:
+    """({nombre de regla: AST de su clase}, AST de la clase de transiciones), sin posiciones y sin
+    los `_auto_*` que agrega la normalización (para comparar lo que escribió el LLM)."""
+    rules, trans = {}, None
+    for node in ast.parse(source).body:
+        if not isinstance(node, ast.ClassDef):
+            continue
+        body = [b for b in node.body if not (isinstance(b, ast.Assign) and any(
+            getattr(t, "id", "").startswith("_auto_") for t in b.targets))]
+        dump = ast.dump(ast.ClassDef(node.name, node.bases, node.keywords, body, node.decorator_list), include_attributes=False)
+        methods = {b.name for b in node.body if isinstance(b, ast.FunctionDef)}
+        name = next((b.value.value for b in node.body if isinstance(b, ast.Assign) and any(getattr(t, "id", None) == "name"
+                     for t in b.targets) and isinstance(b.value, ast.Constant) and isinstance(b.value.value, str)), None)
+        if "propose" in methods and name:
+            rules[name] = dump
+        elif "select" in methods:
+            trans = dump
+    return rules, trans
 
 
 def scope_check(op: str, target: str | None, parent: Individual, child_states: tuple, child_source: str) -> str | None:
-    """None si el hijo respeta el alcance del operador; si no, por qué."""
+    """None si el hijo respeta el alcance del operador; si no, por qué. Las reglas y las
+    transiciones son clases separadas: el alcance se mira clase por clase."""
     ps, cs = tuple(parent.states), tuple(child_states)
-    if op == "add_state":
+    pr, pt = _class_dumps(parent.source)
+    cr, ct = _class_dumps(child_source)
+    same_rules = [n for n in ps if n in pr and n in cr and pr[n] != cr[n]]
+    if op == "add_rule":
         if len(cs) != len(ps) + 1 or not set(ps) <= set(cs):
-            return f"add_state debe agregar exactamente un estado a {list(ps)} (el hijo tiene {list(cs)})"
-    elif op == "refine_priority":
+            return f"add_rule debe agregar exactamente una regla a {list(ps)} (el hijo tiene {list(cs)})"
+        if same_rules:
+            return f"add_rule no cambia las reglas que ya estaban; el hijo modificó {same_rules}"
+    elif op == "refine_rule":
         if cs != ps:
-            return f"refine_priority no cambia los estados ({list(ps)}; el hijo tiene {list(cs)})"
-        if _method_dump(parent.source, "transition") != _method_dump(child_source, "transition"):
-            return f"refine_priority({target}) cambia solo score; el hijo modificó transition"
-    elif op == "change_transition":
+            return f"refine_rule no cambia las reglas que hay ({list(ps)}; el hijo tiene {list(cs)})"
+        others = [n for n in same_rules if n != target]
+        if others:
+            return f"refine_rule({target}) cambia solo esa regla; el hijo modificó también {others}"
+        if pt is not None and ct != pt:
+            return f"refine_rule({target}) no cambia las transiciones; el hijo las modificó"
+    elif op == "change_transitions":
         if cs != ps:
-            return f"change_transition no cambia los estados ({list(ps)}; el hijo tiene {list(cs)})"
-        if _method_dump(parent.source, "score") != _method_dump(child_source, "score"):
-            return "change_transition cambia solo transition; el hijo modificó score"
+            return f"change_transitions no cambia las reglas ({list(ps)}; el hijo tiene {list(cs)})"
+        if same_rules:
+            return f"change_transitions no cambia ninguna regla; el hijo modificó {same_rules}"
     elif op == "simplify":
         if len(cs) > len(ps):
-            return f"simplify no agrega estados ({list(ps)}; el hijo tiene {list(cs)})"
+            return f"simplify no agrega reglas ({list(ps)}; el hijo tiene {list(cs)})"
     return None
 
 
 # ---------------------------------------------------------------- operadores y selección
 def schedule(parent: Individual, rng: Random) -> tuple[str, str | None]:
     """El operador para un hijo de `parent`: si la máquina todavía no actúa (todo en el comodín),
-    agregar un estado; si tiene estados recién agregados, refinar su prioridad; si no, al azar."""
+    agregar una regla; si tiene reglas recién agregadas, refinarlas; si no, al azar."""
     from core.machine import FALLBACK
 
     own = {k: v["steps"] for k, v in parent.profile.items() if k != FALLBACK}
     if not any(own.values()):
-        return "add_state", None
+        return "add_rule", None
     pending = [s for s in parent.todo if parent.refine_failures.get(s, 0) < 2]
-    if pending:  # tras 2 refinamientos fallidos de un estado, se pasa a otros operadores (corrida 67: 5 seguidos)
-        return "refine_priority", pending[0]
-    ops = [("add_state", 0.35), ("refine_priority", 0.35), ("change_transition", 0.2)]
+    if pending:  # tras 2 refinamientos fallidos de una regla, se pasa a otros operadores (corrida 67: 5 seguidos)
+        return "refine_rule", pending[0]
+    ops = [("add_rule", 0.3), ("refine_rule", 0.35), ("change_transitions", 0.25)]
     if len(parent.states) > 1:
         ops.append(("simplify", 0.1))
     r, acc = rng.random() * sum(w for _, w in ops), 0.0
@@ -462,7 +499,7 @@ def schedule(parent: Individual, rng: Random) -> tuple[str, str | None]:
         if r <= acc:
             break
     target = None
-    if op == "refine_priority":  # el estado propio que más pierde: exacto si hay oráculo, si no por la cota
+    if op == "refine_rule":  # la regla que más pierde: exacto si hay oráculo, si no por la cota
         if parent.regret:
             cands = sorted((s for s in parent.regret if s != FALLBACK), key=lambda s: -parent.regret[s]["regret"])
         else:
@@ -538,6 +575,12 @@ def repair_prompt(op: str, target: str | None, reason: str, source: str) -> str:
             f"módulo completo.\n\n# Tu módulo\n```python\n{source}\n```")
 
 
+def _rules_doc() -> str:
+    import core.rules
+
+    return (core.rules.__doc__ or "").strip()
+
+
 def evolve_prompt(spec, parent: Individual, op: str, target: str | None, prof: str, trace: str, archive: list[Individual],
                   seed: bool) -> str:
     from core.machine import FALLBACK
@@ -546,18 +589,20 @@ def evolve_prompt(spec, parent: Individual, op: str, target: str | None, prof: s
            "importar funciones de los mismos módulos)." if seed and parent.op == "base" else "")
     parts = [
         f"# Tarea\nEstás mejorando paso a paso un constructor greedy del problema **{spec.name}**, escrito como máquina de "
-        f"estados (slot `{SLOT}`). En cada paso se aplica UN operador a una máquina del archivo; el resultado se afina "
+        f"reglas: reglas de acción que proponen movimientos y transiciones que eligen cuál usar (slot `{SLOT}`, "
+        f"`core.rules.RuleMachine`). En cada paso se aplica UN operador a una máquina del archivo; el resultado se afina "
         f"(sus parámetros) y se compara en instancias que no ves.{who}",
+        f"\n# Estructura (core.rules)\n{_rules_doc()}",
         f"\n# Operador de este paso: `{op}`\n" + OPERATOR_TEXT[op].format(target=target, fallback=FALLBACK),
-        f"\nLa máquina puede devolver `FALLBACK` (`from core.machine import FALLBACK`, el estado \"{FALLBACK}\") desde "
-        "`transition` cuando ninguno de sus estados sabe qué hacer: el framework elige entonces la acción que menos sube la "
-        "cota inferior de la vista. No va en `states`.",
-        "\nLos atributos `self._auto_<nombre>` (y `_AUTO`, `_MACHINE`, la envoltura de `build_component`) los puso el "
+        f"\nLas transiciones pueden devolver `FALLBACK` (`from core.machine import FALLBACK`, \"{FALLBACK}\") cuando ninguna "
+        "regla sabe qué hacer: el framework elige entonces la acción que menos sube la cota inferior de la vista. Si la regla "
+        "elegida no propone nada, también decide el comodín.",
+        "\nLos atributos `self._auto_<nombre>` (y `_AUTO`, `_AUTO_OWNER`, `_AUTO_CLASSES`, la envoltura de `build_component`) los puso el "
         "framework: son números que ya se extrajeron como parámetros. Mantenlos tal cual; si escribes un número suelto "
         "nuevo, el framework también lo convierte en parámetro.",
         f"\n# Máquina padre: `{parent.name}` (fitness {parent.fitness:.2f}, parámetros afinados {parent.params})\n"
         f"```python\n{parent.source}\n```",
-        f"\n# Diagnóstico del padre por estado (instancias de entrenamiento)\n{prof}\n\n{trace}",
+        f"\n# Diagnóstico del padre por regla (instancias de entrenamiento)\n{prof}\n\n{trace}",
         f"\n# Archivo (menor fitness = mejor)\n{archive_text(archive)}",
         f"\n# Contrato del slot\n```python\n{protocol_source(SLOT)}```",
         "\n# Reglas\n" + slot_hint(spec, SLOT),
@@ -568,7 +613,8 @@ def evolve_prompt(spec, parent: Individual, op: str, target: str | None, prof: s
     if parent.rejections:
         parts.append("\n# Hijos de esta máquina ya rechazados (no los repitas)\n" + "\n".join(f"- {r}" for r in parent.rejections[-4:]))
     parts.append("\nPon un nombre descriptivo nuevo en COMPONENT[\"name\"]. Devuelve UN solo bloque ```python``` con el módulo "
-                 "completo (COMPONENT y build_component(problem, **params)).")
+                 "completo: COMPONENT, las clases de las reglas, la de las transiciones y build_component(problem, **params), que "
+                 "devuelve `RuleMachine(problem, [reglas...], Transiciones(...))` (`from core.rules import RuleMachine`).")
     return "\n".join(parts)
 
 
@@ -691,7 +737,7 @@ def evolve(client: LLMClient, pack, spec, workspace: str | Path, harness: Harnes
         if notes:
             entry["normalized"] = notes
         if reason is not None:
-            if op == "refine_priority" and target:
+            if op == "refine_rule" and target:
                 parent.refine_failures[target] = parent.refine_failures.get(target, 0) + 1
             parent.rejections.append(f"{op}{'(' + target + ')' if target else ''}: {reason}")
             res.individuals.append({**entry, "status": "rechazado", "reason": reason})
@@ -705,7 +751,7 @@ def evolve(client: LLMClient, pack, spec, workspace: str | Path, harness: Harnes
             component = dict(component, name=name)
         child = Individual(cid, name, source, module.build_component, component, states, parent=parent.id, op=op, target=target)
         new_states = [s for s in states if s not in parent.states]
-        child.todo = new_states if op == "add_state" else [s for s in parent.todo if s != target and s in states]
+        child.todo = new_states if op == "add_rule" else [s for s in parent.todo if s != target and s in states]
         child.params, child.train, child.fitness = tune(harness, child.factory, component, train, test, tune_samples, rng)
         profile(harness, child, train)
         everyone.append(child)
@@ -713,7 +759,7 @@ def evolve(client: LLMClient, pack, spec, workspace: str | Path, harness: Harnes
         save_archive(saved, archive, is_seed)  # un job cortado no pierde el archivo
         res.individuals.append({**child.row(), "round": rnd, "status": "archivo" if admitted else "no mejora su nicho"})
         if not admitted:
-            if op == "refine_priority" and target:
+            if op == "refine_rule" and target:
                 parent.refine_failures[target] = parent.refine_failures.get(target, 0) + 1
             parent.rejections.append(f"{op}{'(' + target + ')' if target else ''}: `{name}` ({', '.join(states)}) dio fitness "
                                      f"{child.fitness:.2f}; no mejora a las máquinas de {child.niche} estados del archivo")

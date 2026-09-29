@@ -198,62 +198,76 @@ COMPONENT = {
     },
 }
 
+from core.rules import RuleMachine
 
-class CategoryThenTopUp:
-    """Mochila con ítems por categoría (`inst.category[i]`), como máquina de tres estados:
 
-        fill_category --(ya no cabe ningún ítem de la categoría)--> fill_category (otra) o top_up
-        cualquiera    --(holgura < top_up_slack · capacidad)-->     top_up
-        top_up: el ítem de mayor valor que cabe
+class FillCategory:
+    \"\"\"Regla con compromiso: al activarse elige la categoría de mayor valor por peso medio entre las que
+    tienen al menos `min_fit` ítems que caben (`inst.category[i]`), y propone sus ítems (mayor valor
+    por peso primero) hasta que no quepa ninguno. La acción es `action.item`; el parcial expone
+    `partial.remaining` y `partial.chosen`.\"\"\"
 
-    `fill_category` llena una categoría a la vez (memoria: la categoría); entra a una categoría solo
-    si le caben al menos `min_fit` ítems. La acción es `action.item`; el parcial expone
-    `partial.remaining` y `partial.chosen`. Los números que deciden van en COMPONENT["params"]."""
+    name = "fill_category"
 
-    states = ("fill_category", "top_up")
-
-    def __init__(self, problem, min_fit: int = 2, top_up_slack: float = 0.2):
-        self.inst = problem.inst
-        self.min_fit = min_fit
-        self.threshold = top_up_slack * problem.inst.capacity
+    def __init__(self, inst, min_fit):
+        self.inst, self.min_fit = inst, min_fit
 
     def _fitting(self, partial, cat):
         return [i for i, c in enumerate(self.inst.category) if c == cat and i not in partial.chosen
                 and self.inst.weights[i] <= partial.remaining]
 
-    def _next_category(self, partial):
+    def init(self, partial):
+        return (None,)
+
+    def start(self, partial, memory):
         cats = [c for c in sorted(set(self.inst.category)) if len(self._fitting(partial, c)) >= self.min_fit]
-        if not cats:
-            return None
         def density(c):
             items = self._fitting(partial, c)
             return sum(self.inst.values[i] / max(self.inst.weights[i], 1e-9) for i in items) / len(items)
-        return max(cats, key=density)
+        return (max(cats, key=density) if cats else None,)
 
-    def initial(self, partial):
-        return "fill_category", (self._next_category(partial),)
+    def propose(self, partial, memory):
+        if memory[0] is None:
+            return []
+        items = sorted(self._fitting(partial, memory[0]), key=lambda i: -self.inst.values[i] / max(self.inst.weights[i], 1e-9))
+        return [partial.action_for(i) for i in items]
 
-    def transition(self, partial, state, memory):
+    def done(self, partial, memory):
+        return memory[0] is None or not self._fitting(partial, memory[0])
+
+
+class TopUp:
+    \"\"\"Regla sin memoria: el ítem de mayor valor que todavía cabe.\"\"\"
+
+    name = "top_up"
+
+    def __init__(self, inst):
+        self.inst = inst
+
+    def propose(self, partial, memory):
+        items = [i for i in range(len(self.inst.weights)) if i not in partial.chosen and self.inst.weights[i] <= partial.remaining]
+        return [partial.action_for(i) for i in sorted(items, key=lambda i: -self.inst.values[i])]
+
+
+class Transitions:
+    \"\"\"Llenar por categoría mientras quede holgura; con poca holgura (o sin categoría útil), completar.\"\"\"
+
+    def __init__(self, capacity, top_up_slack):
+        self.threshold = top_up_slack * capacity
+
+    def select(self, partial, memory, rules):
         if partial.remaining < self.threshold:
-            return "top_up", ()
-        if state == "fill_category" and memory[0] is not None and self._fitting(partial, memory[0]):
-            return state, memory  # la categoría sigue
-        cat = self._next_category(partial)
-        return ("fill_category", (cat,)) if cat is not None else ("top_up", ())
-
-    def score(self, partial, state, memory, action):
-        w, v = self.inst.weights[action.item], self.inst.values[action.item]
-        if state == "top_up":
-            return -v
-        own = self.inst.category[action.item] == memory[0]
-        return (0.0 if own else 1e6) - v / max(w, 1e-9)
-
-    def update(self, partial, state, memory, action):
-        return memory
+            return "top_up", memory
+        if rules.active == "fill_category" and not rules.done("fill_category"):
+            return "fill_category", memory
+        if rules.applies("fill_category"):
+            return "fill_category", memory
+        return "top_up", memory
 
 
 def build_component(problem, min_fit: int = 2, top_up_slack: float = 0.2):
-    return CategoryThenTopUp(problem, min_fit, top_up_slack)
+    inst = problem.inst
+    return RuleMachine(problem, [FillCategory(inst, min_fit), TopUp(inst)], Transitions(inst.capacity, top_up_slack))
 '''
 
 FEWSHOT["greedy_score"] = '''

@@ -111,8 +111,8 @@ def test_the_trace_shows_the_states_and_a_reduction_holds_its_stack():
     inst = CPMPInstance.cvs_like(5, 5, Random(3))
     P = CPMPModel(inst)
     trace = machine_trace(MachinePolicy(FRGMachine(P)), P.construction_view(inst))
-    assert {s for s, _ in trace} == {"fill", "reduce"}
-    reduce_so = [a.so for s, a in trace if s == "reduce"]
+    assert {s for s, _ in trace} == {"bg_move", "reduce_stack"}
+    reduce_so = [a.so for s, a in trace if s == "reduce_stack"]
     assert len(set(reduce_so)) < len(reduce_so)
 
 
@@ -129,16 +129,23 @@ def test_validation_accepts_frg_and_rejects_broken_machines(contexts):
         r = validate_component(dict(COMP, name="frg_machine"), FRGMachine(c.problem), c)
         assert r.passed, r.feedback()
 
-    class Unreachable(FRGMachine):
-        states = ("fill", "reduce", "never")
+    from core.rules import RuleMachine
+    from examples.cpmp.machine import BGMove, FRGTransitions, ReduceStack
 
-    class BadState(FRGMachine):
-        def transition(self, L, state, memory):
+    class Never:  # una regla que el controlador nunca elige
+        name = "never"
+
+        def propose(self, L, m):
+            return []
+
+    class BadChoice(FRGTransitions):
+        def select(self, L, memory, rules):
             return "nope", memory
 
     c = contexts[0]
-    assert "states_reachable" in validate_component(COMP, Unreachable(c.problem), c).feedback()
-    assert not validate_component(COMP, BadState(c.problem), c).passed
+    unreachable = RuleMachine(c.problem, [BGMove(), ReduceStack(), Never()], FRGTransitions())
+    assert "states_reachable" in validate_component(COMP, unreachable, c).feedback()
+    assert not validate_component(COMP, RuleMachine(c.problem, [BGMove(), ReduceStack()], BadChoice()), c).passed
 
 
 def test_generated_machines_expose_their_numbers_as_parameters(tmp_path, contexts):

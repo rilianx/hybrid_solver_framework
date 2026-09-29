@@ -211,7 +211,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   constructivas*).
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 296 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 301 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -232,7 +232,7 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 296 passed (~280 s)
+python -m pytest -q                 # 301 passed (~280 s)
 
 # segundo problema: CVRP con flota libre (mismos CLI, otro pack)
 python -m examples.cvrp.tune --catalog handwritten --size 30 --trials 30 --ref-time 60
@@ -444,6 +444,36 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
   few-shot del prompt es una mochila por categorías con tres estados y sus números como
   parámetros. El ciclo sin vista MIP pide `construction_machine` junto a `greedy_score` y
   `construction_policy`.
+- **Máquinas de reglas: reglas de acción + transiciones** (`core/rules.py`). En la corrida 70,
+  los refinamientos de un estado empeoraban siempre (74 a 106 contra 52), porque el LLM
+  reescribía entera una función que puntuaba todos los candidatos y en ella mezclaba qué tipo de
+  movimiento hacer, cuál y cuándo cambiar. FRG separa esas cosas:
+  - **Reglas de acción**: clases con `name` y `propose(parcial, memoria)`, que devuelve las
+    acciones en orden de preferencia o `[]` si no aplica. Opcionales: `init`, `start` (al
+    activarse, p.ej. elegir la pila a reducir), `update` y `done` (si sostiene un compromiso de
+    varios pasos).
+  - **Transiciones**: una clase con `select(parcial, memoria, reglas)`, que devuelve el nombre
+    de la regla o `FALLBACK`. `reglas.active`, `reglas.applies(n)` y `reglas.done(n)` le dicen qué
+    pasa.
+
+  `RuleMachine(problem, reglas, transiciones)` es una `ConstructionMachine` (estados = reglas),
+  así que el greedy, la beam search, la validación, los parámetros y los diagnósticos la usan sin
+  cambios. FRG a mano (`examples/cpmp/machine.py`) son `bg_move` y `reduce_stack` más tres líneas
+  de transiciones, con los mismos movimientos que FRG sin asignación (20 de 20 en 5×5). Los
+  números de cada regla y de las transiciones se extraen como parámetros de su clase (p.ej.
+  `reduce_stack_propose_k1`).
+
+  El oráculo da además, por regla (`rule_quality`):
+  - **cobertura**: en cuántos pasos propone algo;
+  - **precisión**: cuando propone, qué fracción de las veces su primera propuesta es óptima;
+  - **elegida**: cuántas veces la usaron las transiciones.
+
+  Una regla precisa y poco elegida es un problema de transiciones; una imprecisa, de la regla.
+  `evolve` exige esta estructura, con operadores `add_rule`, `refine_rule(r)`,
+  `change_transitions` y `simplify`, y verifica el alcance clase por clase: `refine_rule(r)` no
+  puede tocar otra regla ni las transiciones. La máquina mínima es una `RuleMachine` sin reglas.
+  Las máquinas de forma libre de las corridas 66–70 siguen valiendo como slot, pero no se
+  retoman en `evolve`.
 - **Un algoritmo de optimización de greedies** (etapa `evolve`, `llm/evolve.py`). Un greedy como
   FRG no sale de una vez; se llega por pasos: primero solo movimientos BG, después la prioridad
   dentro de ese estado, después un estado de vaciado que vuelve al inicial, y otra vez las
@@ -747,6 +777,10 @@ rondas, 106 mil tokens.** De 55,5 a **52,0**, con un `change_transition` que da 
 adaptativo para pasar a `finish`. Ninguna ronda se perdió por alcanzabilidad (antes 5 de 12).
 Hubo 4 rechazos: 2 por números sueltos fuera de la clase y 2 por salirse del alcance del
 operador.
+
+**Corrida 70: primera con contraejemplos ricos, 12 rondas, 110 mil tokens.** Sin mejora: la mejor
+sigue en 52,0 (34,1 en 5×5 y 69,9 en 6×6; FRG 12,4 y 24,3). Los 5 `refine_priority` dieron de 67
+a 106. Eso llevó a separar reglas y transiciones.
 
 **Oráculo exacto: imitar al óptimo, no al respaldo** (`ProblemPack.oracle_distance`,
 `core.machine.machine_regret`). Un greedy que imite al best-first del respaldo sería el comodín

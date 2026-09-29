@@ -454,7 +454,7 @@ def check_construction_machine(impl, ctx: ValidationContext) -> list[CheckResult
     factible, determinista y termina. Además cada estado se alcanza en alguna construcción (greedy
     o con la RCL): un estado que nunca se usa es código muerto."""
     from core.construction import GreedyConstructor
-    from core.machine import MachinePolicy, machine_trace
+    from core.machine import FALLBACK, MachinePolicy, machine_trace
 
     L = "construction_machine"
     states = getattr(impl, "states", None)
@@ -466,7 +466,7 @@ def check_construction_machine(impl, ctx: ValidationContext) -> list[CheckResult
     def _initial():
         view = ctx.problem.construction_view(ctx.instances[0])
         out = impl.initial(view.empty())
-        if not (isinstance(out, tuple) and len(out) == 2 and out[0] in states):  # se parte de un estado propio
+        if not (isinstance(out, tuple) and len(out) == 2 and (out[0] in states or out[0] == FALLBACK)):
             return fail(LAYER, f"{L}.initial", f"initial debe devolver (estado de {states}, memoria), no {out!r}")
         return ok(LAYER, f"{L}.initial")
 

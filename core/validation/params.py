@@ -53,7 +53,7 @@ def _skipped(tree) -> set[int]:
     y los parámetros que ya extrajo el framework (`_AUTO`, `_auto_*`)."""
     skip: set[int] = set()
     for node in ast.walk(tree):
-        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and (t.id in ("COMPONENT", "_AUTO") or t.id.startswith(AUTO))
+        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and (t.id in ("COMPONENT", "_AUTO", "_AUTO_OWNER") or t.id.startswith(AUTO))
                                                 for t in node.targets):
             skip |= {id(n) for n in ast.walk(node.value)}
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
@@ -133,59 +133,132 @@ def build_component(problem, **params):
 '''
 
 
+_WRAPPER_MULTI = '''
+def build_component(problem, **params):
+    """Envoltura del framework: los números que el LLM dejó sueltos en los métodos son parámetros
+    (`_AUTO`, declarados en COMPONENT; `_AUTO_OWNER`: la clase de cada uno). Se fijan en las clases
+    mientras se construye (por si un `__init__` los usa) y en cada instancia: la máquina, sus
+    reglas y sus transiciones."""
+    auto = {k: params.pop(k, v) for k, v in _AUTO.items()}
+    saved = {k: getattr(_AUTO_CLASSES[_AUTO_OWNER[k]], "_auto_" + k) for k in auto}
+    for k, v in auto.items():
+        setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], "_auto_" + k, v)
+    try:
+        obj = _build_component_llm(problem, **params)
+    finally:
+        for k, v in saved.items():
+            setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], "_auto_" + k, v)
+    parts = [obj, getattr(obj, "transitions", None), *list(getattr(obj, "rules", None) or [])]
+    for part in parts:
+        for k, v in auto.items():
+            if part is not None and isinstance(part, _AUTO_CLASSES[_AUTO_OWNER[k]]):
+                setattr(part, "_auto_" + k, v)
+    return obj
+'''
+
+
+def _assign(tree, name: str):
+    return next((n for n in tree.body if isinstance(n, ast.Assign)
+                 and any(isinstance(t, ast.Name) and t.id == name for t in n.targets)), None)
+
+
+def _target_classes(tree) -> list[ast.ClassDef]:
+    """Las clases cuyos números son parámetros: reglas (`propose`), transiciones (`select`) y
+    máquinas (atributo `states`)."""
+    out = []
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef):
+            continue
+        methods = {b.name for b in node.body if isinstance(b, ast.FunctionDef)}
+        has_states = any(isinstance(b, (ast.Assign, ast.AnnAssign)) and any(
+            getattr(t, "id", None) == "states" for t in (b.targets if isinstance(b, ast.Assign) else [b.target])) for b in node.body)
+        if methods & {"propose", "select"} or has_states:
+            out.append(node)
+    return out
+
+
+def _prefix(cls: ast.ClassDef) -> str:
+    """Prefijo de los nombres de parámetro: el `name` de una regla; nada para una máquina; si no, la clase."""
+    for b in cls.body:
+        if isinstance(b, ast.Assign) and any(getattr(t, "id", None) == "name" for t in b.targets) \
+                and isinstance(b.value, ast.Constant) and isinstance(b.value.value, str):
+            return b.value.value + "_"
+    if any(isinstance(b, (ast.Assign, ast.AnnAssign)) and any(
+            getattr(t, "id", None) == "states" for t in (b.targets if isinstance(b, ast.Assign) else [b.target])) for b in cls.body):
+        return ""
+    return cls.name.lower() + "_"
+
+
 def extract_constants(source: str) -> tuple[str, dict]:
-    """(fuente nueva, {parámetro: especificación}): cada número suelto dentro de un método de la
-    clase de la máquina pasa a ser `self._auto_<método>_k<i>` y un parámetro de COMPONENT."""
+    """(fuente nueva, {parámetro: especificación}): cada número suelto dentro de un método de una
+    regla, de las transiciones o de la máquina pasa a ser `self._auto_<prefijo><método>_k<i>` y un
+    parámetro de COMPONENT. Un módulo ya normalizado se extiende."""
     tree = ast.parse(source)
-    cls = _machine_class(tree)
     comp = _component_of(tree)
-    if cls is None or comp is None or not any(isinstance(n, ast.FunctionDef) and n.name == "build_component" for n in tree.body):
+    if comp is None or not any(isinstance(n, ast.FunctionDef) and n.name in ("build_component", "_build_component_llm")
+                               for n in tree.body):
+        return source, {}
+    legacy = _assign(tree, "_MACHINE") is not None  # normalizado antes de las máquinas de reglas: una sola clase
+    classes = [_machine_class(tree)] if legacy else _target_classes(tree)
+    classes = [c for c in classes if c is not None]
+    if not classes:
         return source, {}
     skip = _skipped(tree)
+    prior_node, owner_node = _assign(tree, "_AUTO"), _assign(tree, "_AUTO_OWNER")
+    prior = ast.literal_eval(prior_node.value) if prior_node is not None else {}
+    owners = ast.literal_eval(owner_node.value) if owner_node is not None else {}
+    taken = set(prior) | set(comp.get("params") or {})
     extracted: dict[str, dict] = {}
     defaults: dict[str, Any] = {}
-    # un módulo ya normalizado (el hijo de una máquina que ya pasó por aquí): se extiende su `_AUTO`
-    prior_node = next((n for n in tree.body if isinstance(n, ast.Assign)
-                       and any(isinstance(t, ast.Name) and t.id == "_AUTO" for t in n.targets)), None)
-    prior = ast.literal_eval(prior_node.value) if prior_node is not None else {}
-    taken = set(prior) | set(comp.get("params") or {})
+    new_owner: dict[str, str] = {}
 
     class Lift(ast.NodeTransformer):
-        def __init__(self, method: str, self_name: str):
-            self.method, self.self_name, self.i = method, self_name, 0
+        def __init__(self, stem: str, self_name: str, cls_name: str):
+            self.stem, self.self_name, self.cls_name, self.i = stem, self_name, cls_name, 0
 
         def visit_Constant(self, node):
             v = node.value
             if id(node) in skip or isinstance(v, bool) or not isinstance(v, (int, float)) or _allowed(v):
                 return node
             self.i += 1
-            name = f"{self.method.strip('_')}_k{self.i}"
+            name = f"{self.stem}_k{self.i}"
             while name in taken:
                 self.i += 1
-                name = f"{self.method.strip('_')}_k{self.i}"
+                name = f"{self.stem}_k{self.i}"
             taken.add(name)
-            extracted[name] = _range_for(v)
-            defaults[name] = v
+            extracted[name], defaults[name], new_owner[name] = _range_for(v), v, self.cls_name
             return ast.copy_location(ast.Attribute(value=ast.Name(id=self.self_name, ctx=ast.Load()), attr=AUTO + name,
                                                    ctx=ast.Load()), node)
 
-    for fn in [b for b in cls.body if isinstance(b, ast.FunctionDef)]:
-        if not fn.args.args or any(getattr(d, "id", None) == "staticmethod" for d in fn.decorator_list):
-            continue
-        Lift(fn.name, fn.args.args[0].arg).visit(fn)
+    for cls in classes:
+        pre = "" if legacy else _prefix(cls)
+        before = len(defaults)
+        for fn in [b for b in cls.body if isinstance(b, ast.FunctionDef)]:
+            if not fn.args.args or any(getattr(d, "id", None) == "staticmethod" for d in fn.decorator_list):
+                continue
+            Lift(pre + fn.name.strip("_"), fn.args.args[0].arg, cls.name).visit(fn)
+        mine = list(defaults)[before:]
+        cls.body[0:0] = [ast.parse(f"{AUTO}{k} = {defaults[k]!r}").body[0] for k in mine]
     if not extracted:
         return source, {}
-    cls.body[0:0] = [ast.parse(f"{AUTO}{k} = {v!r}").body[0] for k, v in defaults.items()]
     params = dict(comp.get("params") or {})
     params.update(extracted)
     _set_component(tree, {**comp, "params": params})
-    if prior_node is not None:
+    if prior_node is not None:  # ya normalizado: se extienden sus tablas
         prior_node.value = ast.parse(repr({**prior, **defaults}), mode="eval").body
+        if not legacy:
+            all_owner = {**owners, **new_owner}
+            owner_node.value = ast.parse(repr(all_owner), mode="eval").body
+            classes_node = _assign(tree, "_AUTO_CLASSES")
+            names = sorted(set(all_owner.values()))
+            classes_node.value = ast.parse("{" + ", ".join(f"{n!r}: {n}" for n in names) + "}", mode="eval").body
         return ast.unparse(tree) + "\n", extracted
     for node in tree.body:
         if isinstance(node, ast.FunctionDef) and node.name == "build_component":
             node.name = "_build_component_llm"
-    tail = f"\n\n_MACHINE = {cls.name}\n_AUTO = {defaults!r}\n" + _WRAPPER
+    names = sorted(set(new_owner.values()))
+    tail = (f"\n\n_AUTO = {defaults!r}\n_AUTO_OWNER = {new_owner!r}\n"
+            f"_AUTO_CLASSES = {{{', '.join(f'{n!r}: {n}' for n in names)}}}\n" + _WRAPPER_MULTI)
     return ast.unparse(tree) + tail, extracted
 
 

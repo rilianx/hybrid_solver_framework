@@ -1,7 +1,7 @@
-"""Etapa `evolve` (`llm.evolve`): un algoritmo de optimización chico sobre máquinas de estados
-constructivas. Operadores tipados con alcance verificado, calendario (agregar estado → refinar su
-prioridad), tuning corto de los parámetros dentro del loop, diagnóstico por estado y archivo con
-nichos por cantidad de estados."""
+"""Etapa `evolve` (`llm.evolve`): un algoritmo de optimización chico sobre máquinas de reglas
+(`core.rules.RuleMachine`). Operadores tipados con alcance verificado clase por clase, calendario
+(agregar regla → refinarla), tuning corto de los parámetros dentro del loop, diagnóstico por regla
+y archivo con nichos por cantidad de reglas."""
 
 from __future__ import annotations
 
@@ -20,50 +20,42 @@ COMPONENT = {"name": "bg_only", "slot": "construction_machine", "compatible_skel
              "params": {}}
 
 from core.machine import FALLBACK
+from core.rules import RuleMachine
+from examples.cpmp.construction import Move
 
 
-class BGOnly:
-    """Un solo estado: mover un mal puesto a una pila ordenada de grupo mayor o igual (la menor
-    diferencia de grupos primero); si no hay, el comodín."""
+class BG:
+    \"\"\"Mover un mal puesto a una pila ordenada de grupo mayor o igual, la menor diferencia de grupos primero.\"\"\"
 
-    states = ("bg",)
+    name = "bg"
 
-    def __init__(self, problem):
-        self.problem = problem
-
-    def _bg(self, L):
-        out = {}
+    def propose(self, L, memory):
+        out = []
         for so in range(L.S):
             if L.stacks[so] and not L.is_sorted_stack(so):
                 for sd in range(L.S):
                     if sd != so and L.e(sd) > 0 and L.is_sorted_stack(sd) and L.g(sd) >= L.g(so):
-                        out[(so, sd)] = L.g(sd) - L.g(so)
-        return out
+                        out.append((L.g(sd) - L.g(so), so, sd))
+        return [Move(so, sd) for _, so, sd in sorted(out)]
 
-    def initial(self, L):
-        return "bg", ()
 
-    def transition(self, L, state, memory):
-        return ("bg", ()) if self._bg(L) else (FALLBACK, ())
-
-    def score(self, L, state, memory, a):
-        d = self._bg(L).get((a.so, a.sd))
-        return 1e6 if d is None else float(d)
-
-    def update(self, L, state, memory, a):
-        return memory
+class Trans:
+    def select(self, L, memory, rules):
+        return ("bg", memory) if rules.applies("bg") else (FALLBACK, memory)
 
 
 def build_component(problem):
-    return BGOnly(problem)
+    return RuleMachine(problem, [BG()], Trans())
 '''
 
-# refine_priority que toca transition: fuera de alcance
+# refine_rule que toca las transiciones: fuera de alcance
 BG_TOUCHES_TRANSITION = BG_ONLY.replace('"name": "bg_only"', '"name": "bg_wider"').replace(
-    'return ("bg", ()) if self._bg(L) else (FALLBACK, ())', 'return ("bg", ()) if len(self._bg(L)) >= 1 else (FALLBACK, ())')
-# refine_priority válido: solo cambia el desempate de score
+    'return ("bg", memory) if rules.applies("bg") else (FALLBACK, memory)',
+    'return ("bg", memory) if rules.applies("bg") and rules.active != FALLBACK else (FALLBACK, memory)')
+# refine_rule válido: solo cambia el desempate de la regla (primero el grupo más alto)
 BG_REFINED = BG_ONLY.replace('"name": "bg_only"', '"name": "bg_high_first"').replace(
-    "return 1e6 if d is None else float(d)", "return 1e6 if d is None else float(d) - L.g(a.so) / 1000")
+    "out.append((L.g(sd) - L.g(so), so, sd))", "out.append((L.g(sd) - L.g(so), -L.g(so), so, sd))").replace(
+    "return [Move(so, sd) for _, so, sd in sorted(out)]", "return [Move(so, sd) for _, _, so, sd in sorted(out)]")
 
 
 def _fenced(src):
@@ -78,28 +70,41 @@ def test_from_the_minimal_machine_the_schedule_adds_a_state_then_refines_it(tmp_
                  n_train=2, n_test=3, size="4x4", verbose=False)
     ops = [(r.get("op"), r.get("target"), r.get("status")) for r in res.individuals]
     assert ops[0] == ("base", None, "base")
-    assert ops[1][:2] == ("add_state", None) and ops[1][2] == "archivo"
-    assert ops[2] == ("refine_priority", "bg", "rechazado") and "transition" in res.individuals[2]["reason"]
-    assert ops[3][:2] == ("refine_priority", "bg")
+    assert ops[1][:2] == ("add_rule", None) and ops[1][2] == "archivo"
+    assert ops[2] == ("refine_rule", "bg", "rechazado") and "transiciones" in res.individuals[2]["reason"]
+    assert ops[3][:2] == ("refine_rule", "bg")
     base, bg = res.individuals[0], res.individuals[1]
     assert bg["fitness"] < base["fitness"]  # un estado BG ya mejora al comodín solo
     first, second, repair, third = (c[1] for c in client.calls)
-    assert "`add_state`" in first and "_default" in first and "comodín del framework" in first  # diagnóstico: todo es comodín
-    assert "`refine_priority`" in second and "`bg`" in second
-    assert "RECHAZADO" in repair and "transition" in repair and "class BGOnly" in repair  # corrección dentro de la ronda
+    assert "`add_rule`" in first and "_default" in first and "comodín del framework" in first  # diagnóstico: todo es comodín
+    assert "`refine_rule`" in second and "`bg`" in second
+    assert "RECHAZADO" in repair and "transiciones" in repair and "class BG" in repair  # corrección dentro de la ronda
     assert res.individuals[2]["repaired"] is False
-    assert "ya rechazados" in third and "transition" in third
+    assert "ya rechazados" in third and "transiciones" in third
     assert "bg_only" in res.archive
 
 
+BG_AND_OTHER = BG_ONLY.replace("""class Trans:""", """class Other:
+    name = "other"
+
+    def propose(self, L, memory):
+        return []
+
+
+class Trans:""").replace("RuleMachine(problem, [BG()], Trans())", "RuleMachine(problem, [BG(), Other()], Trans())")
+
+
 def test_scope_of_each_operator():
+    """Reglas y transiciones son clases separadas: el alcance se verifica clase por clase."""
     parent = Individual(0, "bg_only", BG_ONLY, None, {}, ("bg",))
-    assert scope_check("refine_priority", "bg", parent, ("bg",), BG_REFINED) is None
-    assert "transition" in scope_check("refine_priority", "bg", parent, ("bg",), BG_TOUCHES_TRANSITION)
-    assert "score" in scope_check("change_transition", None, parent, ("bg",), BG_REFINED)
-    assert scope_check("change_transition", None, parent, ("bg",), BG_TOUCHES_TRANSITION) is None
-    assert "exactamente un estado" in scope_check("add_state", None, parent, ("bg",), BG_ONLY)
-    assert scope_check("add_state", None, parent, ("bg", "reduce"), BG_ONLY) is None
+    assert scope_check("refine_rule", "bg", parent, ("bg",), BG_REFINED) is None
+    assert "transiciones" in scope_check("refine_rule", "bg", parent, ("bg",), BG_TOUCHES_TRANSITION)
+    assert "bg" in scope_check("change_transitions", None, parent, ("bg",), BG_REFINED)
+    assert scope_check("change_transitions", None, parent, ("bg",), BG_TOUCHES_TRANSITION) is None
+    assert "exactamente una regla" in scope_check("add_rule", None, parent, ("bg",), BG_ONLY)
+    assert scope_check("add_rule", None, parent, ("bg", "other"), BG_AND_OTHER) is None
+    changed = BG_AND_OTHER.replace("out.append((L.g(sd) - L.g(so), so, sd))", "out.append((L.g(so) - L.g(sd), so, sd))")
+    assert "no cambia las reglas" in scope_check("add_rule", None, parent, ("bg", "other"), changed)
     assert "no agrega" in scope_check("simplify", None, parent, ("bg", "x"), BG_ONLY)
 
 
@@ -136,7 +141,7 @@ def test_a_seed_and_the_minimal_machine_are_valid_starting_points(tmp_path):
     from llm.evolve import base_individual
 
     seed, is_seed = base_individual(PACK, tmp_path, "frg_machine", None)
-    assert is_seed and seed.states == ("fill", "reduce") and "from examples.cpmp.frg import" in seed.source
+    assert is_seed and seed.states == ("bg_move", "reduce_stack") and "from examples.cpmp.frg import" in seed.source
     minimal, is_seed = base_individual(PACK, tmp_path, None, None)
     assert not is_seed and minimal.source == MINIMAL and minimal.states == ()
 
@@ -174,11 +179,11 @@ def test_the_schedule_moves_on_after_two_failed_refinements():
 
     parent = Individual(0, "m", "", None, {}, ("repair", "finish"), todo=["finish"])
     parent.profile = {"repair": {"steps": 5, "lost": 3.0, "rising": 2}, "finish": {"steps": 2, "lost": 1.0, "rising": 1}}
-    assert schedule(parent, Random(0)) == ("refine_priority", "finish")
+    assert schedule(parent, Random(0)) == ("refine_rule", "finish")
     parent.refine_failures["finish"] = 2
     ops = {schedule(parent, Random(s)) for s in range(30)}
-    assert ("refine_priority", "finish") not in ops or len(ops) > 1
-    assert any(op != "refine_priority" for op, _ in ops)
+    assert ("refine_rule", "finish") not in ops or len(ops) > 1
+    assert any(op != "refine_rule" for op, _ in ops)
 
 
 def test_infeasible_instances_cost_a_finite_penalty():
@@ -253,17 +258,23 @@ def test_counterexamples_reach_the_prompt(tmp_path):
     assert "puntaje" in prompt and "TU score" in prompt  # por qué eligió la mala
 
 
-BG_PLUS_BIG = BG_ONLY.replace('"name": "bg_only"', '"name": "bg_plus_big"').replace(
-    'states = ("bg",)', 'states = ("bg", "big")').replace(
-    '''        return ("bg", ()) if self._bg(L) else (FALLBACK, ())''',
-    '''        if L.H >= 5 and L.S >= 5 and not self._bg(L):  # solo en instancias de 5×5 o más
-            return "big", ()
-        return ("bg", ()) if self._bg(L) else (FALLBACK, ())''').replace(
-    '''    def score(self, L, state, memory, a):
-        d = self._bg(L).get((a.so, a.sd))''', '''    def score(self, L, state, memory, a):
-        if state == "big":
-            return float(L.h(a.sd))
-        d = self._bg(L).get((a.so, a.sd))''')
+BG_PLUS_BIG = BG_ONLY.replace('"name": "bg_only"', '"name": "bg_plus_big"').replace("""class Trans:""", """class Big:
+    \"\"\"Solo en instancias de 5×5 o más: el tope de la pila más alta a la más baja.\"\"\"
+
+    name = "big"
+
+    def propose(self, L, memory):
+        so = max(range(L.S), key=lambda s: (L.h(s), s))
+        return [Move(so, sd) for sd in sorted(range(L.S), key=lambda s: (L.h(s), s)) if sd != so and L.e(sd) > 0]
+
+
+class Trans:""").replace(
+    'return ("bg", memory) if rules.applies("bg") else (FALLBACK, memory)',
+    """if rules.applies("bg"):
+            return "bg", memory
+        if L.H >= 5 and L.S >= 5:
+            return "big", memory
+        return FALLBACK, memory""").replace("RuleMachine(problem, [BG()], Trans())", "RuleMachine(problem, [BG(), Big()], Trans())")
 
 
 def test_a_state_for_larger_instances_is_reachable_through_the_training_set(tmp_path):
