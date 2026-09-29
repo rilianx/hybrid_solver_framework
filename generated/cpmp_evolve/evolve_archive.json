@@ -3,7 +3,7 @@
   "archive": [
     {
       "name": "minimal",
-      "source": "\nCOMPONENT = {\"name\": \"minimal\", \"slot\": \"construction_machine\", \"compatible_skeletons\": [\"CONSTRUCT\"], \"requires\": [],\n             \"params\": {}}\n\nfrom core.rules import NoTransitions, RuleMachine\n\n\ndef build_component(problem):\n    \"\"\"Máquina mínima: sin reglas todavía; cada paso lo decide el comodín del framework.\"\"\"\n    return RuleMachine(problem, [], NoTransitions())\n",
+      "source": "\nCOMPONENT = {\"name\": \"minimal\", \"slot\": \"construction_machine\", \"compatible_skeletons\": [\"CONSTRUCT\"], \"requires\": [],\n             \"params\": {}}\n\nfrom core.rules import RuleMachine\n\n\ndef build_component(problem):\n    \"\"\"Máquina mínima: sin reglas todavía; cada paso lo decide el comodín del framework.\"\"\"\n    return RuleMachine(problem, [])\n",
       "component": {
         "name": "minimal",
         "slot": "construction_machine",
@@ -21,101 +21,10 @@
       "todo": []
     },
     {
-      "name": "supporting_safe_move_refined_v4",
-      "source": "from __future__ import annotations\nfrom dataclasses import dataclass\nfrom typing import List, Tuple\nfrom core.machine import FALLBACK\nfrom core.rules import RuleMachine\n\n@dataclass(frozen=True)\nclass Move:\n    so: int\n    sd: int\nCOMPONENT = {'name': 'supporting_safe_move_refined_v4', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {'supporting_safe_move_w_bad': {'type': 'float', 'range': [0.0, 16.0], 'default': 8.0}, 'supporting_safe_move_w_ub': {'type': 'float', 'range': [0.0, 12.0], 'default': 6.0}, 'supporting_safe_move_w_dest_sorted': {'type': 'float', 'range': [0.0, 3.0], 'default': 1.5}, 'supporting_safe_move_w_src_sorted': {'type': 'float', 'range': [0.0, 5.0], 'default': 2.5}, 'supporting_safe_move_w_gap': {'type': 'float', 'range': [0.0, 2.0], 'default': 1.0}, 'supporting_safe_move_w_fill': {'type': 'float', 'range': [0.0, 1.5], 'default': 0.75}, 'supporting_safe_move_max_bad_increase': {'type': 'int', 'range': [0, 2], 'default': 1}, 'supporting_safe_move_prefer_safe_only': {'type': 'bool', 'default': True}}}\n\nclass SupportingSafeMoveRule:\n    name = 'supporting_safe_move'\n\n    def __init__(self, problem, w_bad: float=8.0, w_ub: float=6.0, w_dest_sorted: float=1.5, w_src_sorted: float=2.5, w_gap: float=1.0, w_fill: float=0.75, max_bad_increase: int=1, prefer_safe_only: bool=True):\n        self.problem = problem\n        self.w_bad = w_bad\n        self.w_ub = w_ub\n        self.w_dest_sorted = w_dest_sorted\n        self.w_src_sorted = w_src_sorted\n        self.w_gap = w_gap\n        self.w_fill = w_fill\n        self.max_bad_increase = max_bad_increase\n        self.prefer_safe_only = prefer_safe_only\n\n    def init(self, partial):\n        return ()\n\n    def start(self, partial, memory):\n        return memory\n\n    def update(self, partial, memory, action):\n        return memory\n\n    def done(self, partial, memory):\n        return True\n\n    def _total_ub(self, partial) -> int:\n        return sum((partial.ub(i) for i in range(partial.S)))\n\n    def _score(self, partial, so: int, sd: int) -> Tuple:\n        trial = partial.copy(track=False)\n        trial.move(so, sd)\n        base_bad = partial.bad()\n        new_bad = trial.bad()\n        base_ub = self._total_ub(partial)\n        new_ub = self._total_ub(trial)\n        src_sorted = partial.is_sorted_stack(so)\n        dst_sorted_before = partial.is_sorted_stack(sd)\n        dst_sorted_after = trial.is_sorted_stack(sd)\n        moved = partial.g(so)\n        dest_top_before = partial.g(sd) if partial.stacks[sd] else partial.G\n        gap = max(0, dest_top_before - moved)\n        bad_delta = new_bad - base_bad\n        ub_delta = new_ub - base_ub\n        return (bad_delta, ub_delta, 0 if dst_sorted_after else 1, 1 if src_sorted else 0, gap, 0 if dst_sorted_before else 1, -partial.h(sd), so, sd)\n\n    def propose(self, partial, memory):\n        \"\"\"\n        Refinement: rank moves primarily by the post-move lower-bound quality.\n\n        The previous version over-valued \"supporting\" properties of the destination\n        even when they led away from the optimal path. Here we make that support\n        weaker than the actual impact on bad() and ub():\n        - first, avoid increasing bad if any non-worsening move exists;\n        - second, reduce unlocked bad containers (ub);\n        - only then, favor moves that land on a sorted stack or avoid moving\n          from a sorted source;\n        - use tight-fit / free-space as late tie-breakers.\n        \"\"\"\n        candidates: List[Tuple[Tuple, int, int]] = []\n        safe_candidates: List[Tuple[Tuple, int, int]] = []\n        base_bad = partial.bad()\n        for so in range(partial.S):\n            if not partial.stacks[so]:\n                continue\n            for sd in range(partial.S):\n                if not partial.valid(so, sd):\n                    continue\n                trial = partial.copy(track=False)\n                trial.move(so, sd)\n                bad_delta = trial.bad() - base_bad\n                score = self._score(partial, so, sd)\n                item = (score, so, sd)\n                candidates.append(item)\n                if bad_delta <= self.max_bad_increase:\n                    safe_candidates.append(item)\n        if self.prefer_safe_only and safe_candidates:\n            safe_candidates.sort(key=lambda x: x[0])\n            return [Move(so=so, sd=sd) for _, so, sd in safe_candidates]\n        if not candidates:\n            return []\n        candidates.sort(key=lambda x: x[0])\n        return [Move(so=so, sd=sd) for _, so, sd in candidates]\n\nclass SafePlacementTransitions:\n\n    def initial(self, partial):\n        return ()\n\n    def select(self, partial, memory, rules):\n        if rules.applies(SupportingSafeMoveRule.name):\n            return (SupportingSafeMoveRule.name, memory)\n        return (FALLBACK, memory)\n\ndef _build_component_llm(problem, **params):\n    rule = SupportingSafeMoveRule(problem, **params)\n    transitions = SafePlacementTransitions()\n    return RuleMachine(problem, [rule], transitions)\n\n_AUTO = {'supporting_safe_move_w_bad': 8.0, 'supporting_safe_move_w_ub': 6.0, 'supporting_safe_move_w_dest_sorted': 1.5, 'supporting_safe_move_w_src_sorted': 2.5, 'supporting_safe_move_w_gap': 1.0, 'supporting_safe_move_w_fill': 0.75, 'supporting_safe_move_max_bad_increase': 1, 'supporting_safe_move_prefer_safe_only': True}\n_AUTO_OWNER = {'supporting_safe_move_w_bad': 'SupportingSafeMoveRule', 'supporting_safe_move_w_ub': 'SupportingSafeMoveRule', 'supporting_safe_move_w_dest_sorted': 'SupportingSafeMoveRule', 'supporting_safe_move_w_src_sorted': 'SupportingSafeMoveRule', 'supporting_safe_move_w_gap': 'SupportingSafeMoveRule', 'supporting_safe_move_w_fill': 'SupportingSafeMoveRule', 'supporting_safe_move_max_bad_increase': 'SupportingSafeMoveRule', 'supporting_safe_move_prefer_safe_only': 'SupportingSafeMoveRule'}\n_AUTO_ATTR = {'supporting_safe_move_w_bad': 'w_bad', 'supporting_safe_move_w_ub': 'w_ub', 'supporting_safe_move_w_dest_sorted': 'w_dest_sorted', 'supporting_safe_move_w_src_sorted': 'w_src_sorted', 'supporting_safe_move_w_gap': 'w_gap', 'supporting_safe_move_w_fill': 'w_fill', 'supporting_safe_move_max_bad_increase': 'max_bad_increase', 'supporting_safe_move_prefer_safe_only': 'prefer_safe_only'}\n_AUTO_CLASSES = {'SupportingSafeMoveRule': SupportingSafeMoveRule}\n_AUTO_FACTORY = '_build_component_llm'\n\ndef build_component(problem, **params):\n    \"\"\"Envoltura del framework: los números que el LLM dejó sueltos en los métodos son parámetros\n    (`_AUTO`, declarados en COMPONENT; `_AUTO_OWNER`: la clase de cada uno). Se fijan en las clases\n    mientras se construye (por si un `__init__` los usa) y en cada instancia: la máquina, sus\n    reglas y sus transiciones.\"\"\"\n    attrs = globals().get(\"_AUTO_ATTR\", {})  # parámetro -> atributo de la instancia (los defaults de un __init__)\n    auto = {k: params.pop(k, v) for k, v in _AUTO.items()}\n    lifted = [k for k in auto if k not in attrs]\n    saved = {k: getattr(_AUTO_CLASSES[_AUTO_OWNER[k]], \"_auto_\" + k) for k in lifted}\n    for k in lifted:\n        setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], \"_auto_\" + k, auto[k])\n    try:\n        obj = _build_component_llm(problem, **params)\n    finally:\n        for k, v in saved.items():\n            setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], \"_auto_\" + k, v)\n    parts = [obj, getattr(obj, \"transitions\", None), *list(getattr(obj, \"rules\", None) or [])]\n    for part in parts:\n        for k, v in auto.items():\n            if part is not None and isinstance(part, _AUTO_CLASSES[_AUTO_OWNER[k]]):\n                setattr(part, attrs.get(k, \"_auto_\" + k), v)\n    return obj\n",
+      "name": "safe_unlock_to_sorted_stack",
+      "source": "COMPONENT = {\n    \"name\": \"safe_unlock_to_sorted_stack\",\n    \"slot\": \"construction_machine\",\n    \"compatible_skeletons\": [\"CONSTRUCT\"],\n    \"requires\": [],\n    \"params\": {},\n}\n\nfrom core.rules import RuleMachine\n\n\nclass SafeUnlockToSortedStack:\n    name = \"safe_unlock_to_sorted_stack\"\n    priority = 100\n\n    def init(self, partial):\n        return ()\n\n    def allowed(self, partial, memory, candidates):\n        if not candidates:\n            return []\n\n        allowed = []\n        for action in candidates:\n            so, sd = action.so, action.sd\n            if partial.sorted_n[so] >= len(partial.stacks[so]):\n                continue\n\n            c = partial.stacks[so][-1]\n            if len(partial.stacks[sd]) >= partial.H:\n                continue\n\n            # Prefer moves that place a blocking container onto an already ordered stack\n            # without breaking that stack's order.\n            if partial.sorted_n[sd] == len(partial.stacks[sd]) and c <= partial.g(sd):\n                allowed.append(action)\n\n        return allowed\n\n    def score(self, partial, memory, action):\n        so, sd = action.so, action.sd\n        c = partial.stacks[so][-1]\n\n        # Lower is better.\n        # 1) Move from the most \"unsettled\" source first.\n        # 2) Prefer compacting onto fuller sorted stacks.\n        # 3) Prefer destinations with tighter tops when multiple choices remain.\n        source_bad = len(partial.stacks[so]) - partial.sorted_n[so]\n        dest_free = partial.e(sd)\n        dest_top = partial.g(sd)\n\n        return float(source_bad * 10_000 + dest_free * 100 + dest_top - c)\n\n\ndef build_component(problem, **params):\n    return RuleMachine(problem, [SafeUnlockToSortedStack()])\n",
       "component": {
-        "name": "supporting_safe_move_refined_v4",
-        "slot": "construction_machine",
-        "compatible_skeletons": [
-          "CONSTRUCT"
-        ],
-        "requires": [],
-        "params": {
-          "supporting_safe_move_w_bad": {
-            "type": "float",
-            "range": [
-              0.0,
-              16.0
-            ],
-            "default": 8.0
-          },
-          "supporting_safe_move_w_ub": {
-            "type": "float",
-            "range": [
-              0.0,
-              12.0
-            ],
-            "default": 6.0
-          },
-          "supporting_safe_move_w_dest_sorted": {
-            "type": "float",
-            "range": [
-              0.0,
-              3.0
-            ],
-            "default": 1.5
-          },
-          "supporting_safe_move_w_src_sorted": {
-            "type": "float",
-            "range": [
-              0.0,
-              5.0
-            ],
-            "default": 2.5
-          },
-          "supporting_safe_move_w_gap": {
-            "type": "float",
-            "range": [
-              0.0,
-              2.0
-            ],
-            "default": 1.0
-          },
-          "supporting_safe_move_w_fill": {
-            "type": "float",
-            "range": [
-              0.0,
-              1.5
-            ],
-            "default": 0.75
-          },
-          "supporting_safe_move_max_bad_increase": {
-            "type": "int",
-            "range": [
-              0,
-              2
-            ],
-            "default": 1
-          },
-          "supporting_safe_move_prefer_safe_only": {
-            "type": "bool",
-            "default": true
-          }
-        }
-      },
-      "states": [
-        "supporting_safe_move"
-      ],
-      "params": {
-        "supporting_safe_move_w_bad": 8.0,
-        "supporting_safe_move_w_ub": 6.0,
-        "supporting_safe_move_w_dest_sorted": 1.5,
-        "supporting_safe_move_w_src_sorted": 2.5,
-        "supporting_safe_move_w_gap": 1.0,
-        "supporting_safe_move_w_fill": 0.75,
-        "supporting_safe_move_max_bad_increase": 1,
-        "supporting_safe_move_prefer_safe_only": true
-      },
-      "fitness": 58.25,
-      "op": "refine_rule",
-      "target": "supporting_safe_move",
-      "todo": []
-    },
-    {
-      "name": "supporting_safe_move_refined_v7_5",
-      "source": "from __future__ import annotations\nfrom dataclasses import dataclass\nfrom typing import List, Tuple\nfrom core.machine import FALLBACK\nfrom core.rules import RuleMachine\n\n@dataclass(frozen=True)\nclass Move:\n    so: int\n    sd: int\nCOMPONENT = {'name': 'supporting_safe_move_refined_v7', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {}}\n\nclass SupportingSafeMoveRule:\n    name = 'supporting_safe_move'\n\n    def __init__(self, problem, supporting_safe_move_w_bad: float=8.0, supporting_safe_move_w_ub: float=6.0, supporting_safe_move_w_dest_sorted: float=1.5, supporting_safe_move_w_src_sorted: float=2.5, supporting_safe_move_w_gap: float=1.0, supporting_safe_move_w_fill: float=0.75, supporting_safe_move_max_bad_increase: int=1, supporting_safe_move_prefer_safe_only: bool=True):\n        self.problem = problem\n        self.w_bad = supporting_safe_move_w_bad\n        self.w_ub = supporting_safe_move_w_ub\n        self.w_dest_sorted = supporting_safe_move_w_dest_sorted\n        self.w_src_sorted = supporting_safe_move_w_src_sorted\n        self.w_gap = supporting_safe_move_w_gap\n        self.w_fill = supporting_safe_move_w_fill\n        self.max_bad_increase = supporting_safe_move_max_bad_increase\n        self.prefer_safe_only = supporting_safe_move_prefer_safe_only\n\n    def init(self, partial):\n        return ()\n\n    def start(self, partial, memory):\n        return memory\n\n    def update(self, partial, memory, action):\n        return memory\n\n    def done(self, partial, memory):\n        return True\n\n    def _total_ub(self, partial) -> int:\n        return sum((partial.ub(i) for i in range(partial.S)))\n\n    def _score(self, partial, so: int, sd: int) -> Tuple:\n        trial = partial.copy(track=False)\n        trial.move(so, sd)\n        base_bad = partial.bad()\n        new_bad = trial.bad()\n        base_ub = self._total_ub(partial)\n        new_ub = self._total_ub(trial)\n        bad_delta = new_bad - base_bad\n        ub_delta = new_ub - base_ub\n        src_sorted = partial.is_sorted_stack(so)\n        dst_sorted_before = partial.is_sorted_stack(sd)\n        dst_sorted_after = trial.is_sorted_stack(sd)\n        moved = partial.g(so)\n        dest_top_before = partial.g(sd) if partial.stacks[sd] else partial.G\n        gap = max(0, dest_top_before - moved)\n        dst_fill_before = partial.h(sd)\n        dst_fill_after = trial.h(sd)\n        dst_sorted_gain = trial.sorted_n[sd] - partial.sorted_n[sd]\n        return (bad_delta, ub_delta, 0 if dst_sorted_after else 1, -dst_sorted_gain, 0 if dst_sorted_before else 1, 1 if src_sorted else 0, gap, -dst_fill_after, -dst_fill_before, so, sd)\n\n    def propose(self, partial, memory):\n        candidates: List[Tuple[Tuple, int, int]] = []\n        safe_candidates: List[Tuple[Tuple, int, int]] = []\n        base_bad = partial.bad()\n        for so in range(partial.S):\n            if not partial.stacks[so]:\n                continue\n            for sd in range(partial.S):\n                if not partial.valid(so, sd):\n                    continue\n                trial = partial.copy(track=False)\n                trial.move(so, sd)\n                bad_delta = trial.bad() - base_bad\n                score = self._score(partial, so, sd)\n                item = (score, so, sd)\n                candidates.append(item)\n                if bad_delta <= self.max_bad_increase:\n                    safe_candidates.append(item)\n        if not candidates:\n            return []\n        if self.prefer_safe_only and safe_candidates:\n            safe_candidates.sort(key=lambda x: x[0])\n            return [Move(so=so, sd=sd) for _, so, sd in safe_candidates]\n        candidates.sort(key=lambda x: x[0])\n        return [Move(so=so, sd=sd) for _, so, sd in candidates]\n\nclass SafePlacementTransitions:\n\n    def initial(self, partial):\n        return ()\n\n    def select(self, partial, memory, rules):\n        if rules.applies(SupportingSafeMoveRule.name):\n            return (SupportingSafeMoveRule.name, memory)\n        return (FALLBACK, memory)\n\ndef build_component(problem, **params):\n    rule = SupportingSafeMoveRule(problem, **params)\n    transitions = SafePlacementTransitions()\n    return RuleMachine(problem, [rule], transitions)\n",
-      "component": {
-        "name": "supporting_safe_move_refined_v7_5",
+        "name": "safe_unlock_to_sorted_stack",
         "slot": "construction_machine",
         "compatible_skeletons": [
           "CONSTRUCT"
@@ -124,47 +33,144 @@
         "params": {}
       },
       "states": [
-        "supporting_safe_move"
+        "safe_unlock_to_sorted_stack"
       ],
       "params": {},
-      "fitness": 58.25,
-      "op": "refine_rule",
-      "target": "supporting_safe_move",
-      "todo": []
+      "fitness": 72.75,
+      "op": "add_simple",
+      "target": null,
+      "todo": [
+        "safe_unlock_to_sorted_stack"
+      ]
     },
     {
-      "name": "supporting_safe_move_refined_v8_short_source_unlock",
-      "source": "from __future__ import annotations\nfrom dataclasses import dataclass\nfrom typing import List, Tuple\nfrom core.machine import FALLBACK\nfrom core.rules import RuleMachine\n\n@dataclass(frozen=True)\nclass Move:\n    so: int\n    sd: int\nCOMPONENT = {'name': 'supporting_safe_move_refined_v8_short_source_unlock', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {'short_source_unlock_short_source_min_height': {'type': 'int', 'range': [0, 4], 'default': 2}}}\n\nclass SupportingSafeMoveRule:\n    name = 'supporting_safe_move'\n\n    def __init__(self, problem, supporting_safe_move_w_bad: float=8.0, supporting_safe_move_w_ub: float=6.0, supporting_safe_move_w_dest_sorted: float=1.5, supporting_safe_move_w_src_sorted: float=2.5, supporting_safe_move_w_gap: float=1.0, supporting_safe_move_w_fill: float=0.75, supporting_safe_move_max_bad_increase: int=1, supporting_safe_move_prefer_safe_only: bool=True):\n        self.problem = problem\n        self.w_bad = supporting_safe_move_w_bad\n        self.w_ub = supporting_safe_move_w_ub\n        self.w_dest_sorted = supporting_safe_move_w_dest_sorted\n        self.w_src_sorted = supporting_safe_move_w_src_sorted\n        self.w_gap = supporting_safe_move_w_gap\n        self.w_fill = supporting_safe_move_w_fill\n        self.max_bad_increase = supporting_safe_move_max_bad_increase\n        self.prefer_safe_only = supporting_safe_move_prefer_safe_only\n\n    def init(self, partial):\n        return ()\n\n    def start(self, partial, memory):\n        return memory\n\n    def update(self, partial, memory, action):\n        return memory\n\n    def done(self, partial, memory):\n        return True\n\n    def _total_ub(self, partial) -> int:\n        return sum((partial.ub(i) for i in range(partial.S)))\n\n    def _score(self, partial, so: int, sd: int) -> Tuple:\n        trial = partial.copy(track=False)\n        trial.move(so, sd)\n        base_bad = partial.bad()\n        new_bad = trial.bad()\n        base_ub = self._total_ub(partial)\n        new_ub = self._total_ub(trial)\n        bad_delta = new_bad - base_bad\n        ub_delta = new_ub - base_ub\n        src_sorted = partial.is_sorted_stack(so)\n        dst_sorted_before = partial.is_sorted_stack(sd)\n        dst_sorted_after = trial.is_sorted_stack(sd)\n        moved = partial.g(so)\n        dest_top_before = partial.g(sd) if partial.stacks[sd] else partial.G\n        gap = max(0, dest_top_before - moved)\n        dst_fill_before = partial.h(sd)\n        dst_fill_after = trial.h(sd)\n        dst_sorted_gain = trial.sorted_n[sd] - partial.sorted_n[sd]\n        return (bad_delta, ub_delta, 0 if dst_sorted_after else 1, -dst_sorted_gain, 0 if dst_sorted_before else 1, 1 if src_sorted else 0, gap, -dst_fill_after, -dst_fill_before, so, sd)\n\n    def propose(self, partial, memory):\n        candidates: List[Tuple[Tuple, int, int]] = []\n        safe_candidates: List[Tuple[Tuple, int, int]] = []\n        base_bad = partial.bad()\n        for so in range(partial.S):\n            if not partial.stacks[so]:\n                continue\n            for sd in range(partial.S):\n                if not partial.valid(so, sd):\n                    continue\n                trial = partial.copy(track=False)\n                trial.move(so, sd)\n                bad_delta = trial.bad() - base_bad\n                score = self._score(partial, so, sd)\n                item = (score, so, sd)\n                candidates.append(item)\n                if bad_delta <= self.max_bad_increase:\n                    safe_candidates.append(item)\n        if not candidates:\n            return []\n        if self.prefer_safe_only and safe_candidates:\n            safe_candidates.sort(key=lambda x: x[0])\n            return [Move(so=so, sd=sd) for _, so, sd in safe_candidates]\n        candidates.sort(key=lambda x: x[0])\n        return [Move(so=so, sd=sd) for _, so, sd in candidates]\n\nclass ShortSourceUnlockRule:\n    name = 'short_source_unlock'\n\n    def __init__(self, problem, short_source_min_height: int=2):\n        self.problem = problem\n        self.short_source_min_height = short_source_min_height\n\n    def init(self, partial):\n        return ()\n\n    def start(self, partial, memory):\n        best = None\n        best_key = None\n        for so in range(partial.S):\n            if not partial.stacks[so]:\n                continue\n            if not partial.is_sorted_stack(so):\n                continue\n            h = partial.h(so)\n            if h < self.short_source_min_height:\n                continue\n            top = partial.g(so)\n            key = (h, top, so)\n            if best_key is None or key < best_key:\n                best_key = key\n                best = so\n        return () if best is None else (best,)\n\n    def update(self, partial, memory, action):\n        return ()\n\n    def done(self, partial, memory):\n        return True\n\n    def propose(self, partial, memory):\n        if not memory:\n            return []\n        so = memory[0]\n        if so < 0 or so >= partial.S or (not partial.stacks[so]):\n            return []\n        candidates: List[Tuple[Tuple, int, int]] = []\n        base_bad = partial.bad()\n        for sd in range(partial.S):\n            if not partial.valid(so, sd):\n                continue\n            trial = partial.copy(track=False)\n            trial.move(so, sd)\n            bad_delta = trial.bad() - base_bad\n            dst_sorted_after = trial.is_sorted_stack(sd)\n            dst_sorted_gain = trial.sorted_n[sd] - partial.sorted_n[sd]\n            moved = partial.g(so)\n            dest_top = partial.g(sd) if partial.stacks[sd] else partial.G\n            gap = max(0, dest_top - moved)\n            score = (bad_delta, 0 if dst_sorted_after else 1, -dst_sorted_gain, gap, -trial.h(sd), sd)\n            candidates.append((score, so, sd))\n        candidates.sort(key=lambda x: x[0])\n        return [Move(so=so, sd=sd) for _, so, sd in candidates]\n\nclass SafePlacementTransitions:\n\n    def __init__(self):\n        self.order = (ShortSourceUnlockRule.name, SupportingSafeMoveRule.name)\n\n    def initial(self, partial):\n        return ()\n\n    def select(self, partial, memory, rules):\n        if rules.active == ShortSourceUnlockRule.name and (not rules.done(ShortSourceUnlockRule.name)):\n            return (ShortSourceUnlockRule.name, memory)\n        if rules.applies(ShortSourceUnlockRule.name):\n            return (ShortSourceUnlockRule.name, memory)\n        if rules.applies(SupportingSafeMoveRule.name):\n            return (SupportingSafeMoveRule.name, memory)\n        return (FALLBACK, memory)\n\ndef _build_component_llm(problem, **params):\n    unlock_rule = ShortSourceUnlockRule(problem, **{k: v for k, v in params.items() if k.startswith('short_source_')})\n    safe_rule = SupportingSafeMoveRule(problem, **{k: v for k, v in params.items() if k.startswith('supporting_safe_move_')})\n    transitions = SafePlacementTransitions()\n    return RuleMachine(problem, [unlock_rule, safe_rule], transitions)\n\n_AUTO = {'short_source_unlock_short_source_min_height': 2}\n_AUTO_OWNER = {'short_source_unlock_short_source_min_height': 'ShortSourceUnlockRule'}\n_AUTO_ATTR = {'short_source_unlock_short_source_min_height': 'short_source_min_height'}\n_AUTO_CLASSES = {'ShortSourceUnlockRule': ShortSourceUnlockRule}\n_AUTO_FACTORY = '_build_component_llm'\n\ndef build_component(problem, **params):\n    \"\"\"Envoltura del framework: los números que el LLM dejó sueltos en los métodos son parámetros\n    (`_AUTO`, declarados en COMPONENT; `_AUTO_OWNER`: la clase de cada uno). Se fijan en las clases\n    mientras se construye (por si un `__init__` los usa) y en cada instancia: la máquina, sus\n    reglas y sus transiciones.\"\"\"\n    attrs = globals().get(\"_AUTO_ATTR\", {})  # parámetro -> atributo de la instancia (los defaults de un __init__)\n    auto = {k: params.pop(k, v) for k, v in _AUTO.items()}\n    lifted = [k for k in auto if k not in attrs]\n    saved = {k: getattr(_AUTO_CLASSES[_AUTO_OWNER[k]], \"_auto_\" + k) for k in lifted}\n    for k in lifted:\n        setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], \"_auto_\" + k, auto[k])\n    try:\n        obj = _build_component_llm(problem, **params)\n    finally:\n        for k, v in saved.items():\n            setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], \"_auto_\" + k, v)\n    parts = [obj, getattr(obj, \"transitions\", None), *list(getattr(obj, \"rules\", None) or [])]\n    for part in parts:\n        for k, v in auto.items():\n            if part is not None and isinstance(part, _AUTO_CLASSES[_AUTO_OWNER[k]]):\n                setattr(part, attrs.get(k, \"_auto_\" + k), v)\n    return obj\n",
+      "name": "safe_unlock_to_sorted_stack_refined_rule",
+      "source": "COMPONENT = {'name': 'safe_unlock_to_sorted_stack_refined_rule', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {'source_bad_weight': {'type': 'float', 'range': [0.0, 1000.0], 'default': 1000.0}, 'dest_free_weight': {'type': 'float', 'range': [0.0, 100.0], 'default': 10.0}, 'dest_top_weight': {'type': 'float', 'range': [0.0, 100.0], 'default': 1.0}, 'safe_unlock_to_sorted_stack_score_k2': {'type': 'float', 'range': [0.0, 0.02], 'default': 0.01}}}\nfrom core.rules import RuleMachine\n\nclass SafeUnlockToSortedStack:\n    _auto_safe_unlock_to_sorted_stack_score_k1 = 10.0\n    _auto_safe_unlock_to_sorted_stack_score_k2 = 0.01\n    name = 'safe_unlock_to_sorted_stack'\n    priority = 100\n\n    def __init__(self, safe_dest_bonus: float=12.0, source_sorted_bonus: float=8.0, source_bad_weight: float=1000.0, dest_free_weight: float=10.0, dest_top_weight: float=1.0, created_bad_weight: float=200.0):\n        self._safe_dest_bonus = safe_dest_bonus\n        self._source_sorted_bonus = source_sorted_bonus\n        self._source_bad_weight = source_bad_weight\n        self._dest_free_weight = dest_free_weight\n        self._dest_top_weight = dest_top_weight\n        self._created_bad_weight = created_bad_weight\n\n    def init(self, partial):\n        return ()\n\n    def allowed(self, partial, memory, candidates):\n        if not candidates:\n            return []\n        allowed = []\n        for action in candidates:\n            so, sd = (action.so, action.sd)\n            if not partial.stacks[so]:\n                continue\n            if len(partial.stacks[sd]) >= partial.H:\n                continue\n            c = partial.stacks[so][-1]\n            if partial.sorted_n[sd] == len(partial.stacks[sd]) and c <= partial.g(sd):\n                allowed.append(action)\n                continue\n            if partial.sorted_n[so] == len(partial.stacks[so]):\n                if c > partial.g(sd) or not partial.stacks[sd]:\n                    allowed.append(action)\n                continue\n            if c >= partial.g(sd) or partial.sorted_n[sd] == len(partial.stacks[sd]):\n                allowed.append(action)\n        return allowed\n\n    def score(self, partial, memory, action):\n        so, sd = (action.so, action.sd)\n        c = partial.stacks[so][-1]\n        nxt = partial.copy()\n        nxt.move(so, sd)\n        resulting_bad = nxt.bad()\n        created_bad = max(0, resulting_bad - partial.bad())\n        dest_is_safe = 1.0 if partial.sorted_n[sd] == len(partial.stacks[sd]) and c <= partial.g(sd) else 0.0\n        source_is_sorted = 1.0 if partial.sorted_n[so] == len(partial.stacks[so]) else 0.0\n        source_bad = len(partial.stacks[so]) - partial.sorted_n[so]\n        dest_free = partial.e(sd)\n        dest_top = partial.g(sd)\n        score = resulting_bad * self._source_bad_weight + created_bad * self._created_bad_weight - dest_is_safe * self._safe_dest_bonus - source_is_sorted * self._source_sorted_bonus + source_bad * self._auto_safe_unlock_to_sorted_stack_score_k1 + dest_free * self._dest_free_weight + dest_top * self._dest_top_weight - c * self._auto_safe_unlock_to_sorted_stack_score_k2\n        return float(score)\n\ndef _build_component_llm(problem, **params):\n    return RuleMachine(problem, [SafeUnlockToSortedStack(**params)])\n_AUTO = {'safe_unlock_to_sorted_stack_score_k1': 10.0, 'safe_unlock_to_sorted_stack_score_k2': 0.01}\n_AUTO_OWNER = {'safe_unlock_to_sorted_stack_score_k1': 'SafeUnlockToSortedStack', 'safe_unlock_to_sorted_stack_score_k2': 'SafeUnlockToSortedStack'}\n_AUTO_ATTR = {}\n_AUTO_CLASSES = {'SafeUnlockToSortedStack': SafeUnlockToSortedStack}\n_AUTO_FACTORY = '_build_component_llm'\n\ndef build_component(problem, **params):\n    \"\"\"Envoltura del framework: los números que el LLM dejó sueltos en los métodos son parámetros\n    (`_AUTO`, declarados en COMPONENT; `_AUTO_OWNER`: la clase de cada uno). Se fijan en las clases\n    mientras se construye (por si un `__init__` los usa) y en cada instancia: la máquina, sus\n    reglas y sus transiciones.\"\"\"\n    attrs = globals().get('_AUTO_ATTR', {})\n    auto = {k: params.pop(k, v) for k, v in _AUTO.items()}\n    lifted = [k for k in auto if k not in attrs]\n    saved = {k: getattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k) for k in lifted}\n    for k in lifted:\n        setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k, auto[k])\n    try:\n        obj = _build_component_llm(problem, **params)\n    finally:\n        for k, v in saved.items():\n            setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k, v)\n    parts = [obj, getattr(obj, 'transitions', None), *list(getattr(obj, 'rules', None) or [])]\n    for part in parts:\n        for k, v in auto.items():\n            if part is not None and isinstance(part, _AUTO_CLASSES[_AUTO_OWNER[k]]):\n                setattr(part, attrs.get(k, '_auto_' + k), v)\n    return obj\n",
       "component": {
-        "name": "supporting_safe_move_refined_v8_short_source_unlock",
+        "name": "safe_unlock_to_sorted_stack_refined_rule",
         "slot": "construction_machine",
         "compatible_skeletons": [
           "CONSTRUCT"
         ],
         "requires": [],
         "params": {
-          "short_source_unlock_short_source_min_height": {
-            "type": "int",
+          "source_bad_weight": {
+            "type": "float",
             "range": [
-              0,
-              4
+              0.0,
+              1000.0
             ],
-            "default": 2
+            "default": 1000.0
+          },
+          "dest_free_weight": {
+            "type": "float",
+            "range": [
+              0.0,
+              100.0
+            ],
+            "default": 10.0
+          },
+          "dest_top_weight": {
+            "type": "float",
+            "range": [
+              0.0,
+              100.0
+            ],
+            "default": 1.0
+          },
+          "safe_unlock_to_sorted_stack_score_k2": {
+            "type": "float",
+            "range": [
+              0.0,
+              0.02
+            ],
+            "default": 0.01
           }
         }
       },
       "states": [
-        "short_source_unlock",
-        "supporting_safe_move"
+        "safe_unlock_to_sorted_stack"
       ],
       "params": {
-        "short_source_unlock_short_source_min_height": 4
+        "source_bad_weight": 1000.0,
+        "dest_free_weight": 10.0,
+        "dest_top_weight": 1.0,
+        "safe_unlock_to_sorted_stack_score_k2": 0.01
       },
-      "fitness": 78.312,
-      "op": "add_rule",
+      "fitness": 51.938,
+      "op": "refine_rule",
+      "target": "safe_unlock_to_sorted_stack",
+      "todo": []
+    },
+    {
+      "name": "reduce_bad_stack_then_unlock",
+      "source": "COMPONENT = {'name': 'reduce_bad_stack_then_unlock', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {'dest_top_weight': {'type': 'float', 'range': [0.0, 100.0], 'default': 1.0}, 'macro_sorted_dest_bonus': {'type': 'float', 'range': [0.0, 50.0], 'default': 10.0}, 'macro_resulting_bad_weight': {'type': 'float', 'range': [0.0, 2000.0], 'default': 1000.0}, 'macro_dest_free_weight': {'type': 'float', 'range': [0.0, 100.0], 'default': 8.0}, 'macro_dest_top_weight': {'type': 'float', 'range': [0.0, 100.0], 'default': 1.0}}}\nfrom core.rules import RuleMachine\n\nclass SafeUnlockToSortedStack:\n    _auto_safe_unlock_to_sorted_stack_score_k1 = 10.0\n    _auto_safe_unlock_to_sorted_stack_score_k2 = 0.01\n    name = 'safe_unlock_to_sorted_stack'\n    priority = 100\n\n    def __init__(self, safe_dest_bonus: float=12.0, source_sorted_bonus: float=8.0, source_bad_weight: float=1000.0, dest_free_weight: float=10.0, dest_top_weight: float=1.0, created_bad_weight: float=200.0):\n        self._safe_dest_bonus = safe_dest_bonus\n        self._source_sorted_bonus = source_sorted_bonus\n        self._source_bad_weight = source_bad_weight\n        self._dest_free_weight = dest_free_weight\n        self._dest_top_weight = dest_top_weight\n        self._created_bad_weight = created_bad_weight\n\n    def init(self, partial):\n        return ()\n\n    def allowed(self, partial, memory, candidates):\n        if not candidates:\n            return []\n        allowed = []\n        for action in candidates:\n            so, sd = (action.so, action.sd)\n            if not partial.stacks[so]:\n                continue\n            if len(partial.stacks[sd]) >= partial.H:\n                continue\n            c = partial.stacks[so][-1]\n            if partial.sorted_n[sd] == len(partial.stacks[sd]) and c <= partial.g(sd):\n                allowed.append(action)\n                continue\n            if partial.sorted_n[so] == len(partial.stacks[so]):\n                if c > partial.g(sd) or not partial.stacks[sd]:\n                    allowed.append(action)\n                continue\n            if c >= partial.g(sd) or partial.sorted_n[sd] == len(partial.stacks[sd]):\n                allowed.append(action)\n        return allowed\n\n    def score(self, partial, memory, action):\n        so, sd = (action.so, action.sd)\n        c = partial.stacks[so][-1]\n        nxt = partial.copy()\n        nxt.move(so, sd)\n        resulting_bad = nxt.bad()\n        created_bad = max(0, resulting_bad - partial.bad())\n        dest_is_safe = 1.0 if partial.sorted_n[sd] == len(partial.stacks[sd]) and c <= partial.g(sd) else 0.0\n        source_is_sorted = 1.0 if partial.sorted_n[so] == len(partial.stacks[so]) else 0.0\n        source_bad = len(partial.stacks[so]) - partial.sorted_n[so]\n        dest_free = partial.e(sd)\n        dest_top = partial.g(sd)\n        score = resulting_bad * self._source_bad_weight + created_bad * self._created_bad_weight - dest_is_safe * self._safe_dest_bonus - source_is_sorted * self._source_sorted_bonus + source_bad * self._auto_safe_unlock_to_sorted_stack_score_k1 + dest_free * self._dest_free_weight + dest_top * self._dest_top_weight - c * self._auto_safe_unlock_to_sorted_stack_score_k2\n        return float(score)\n\nclass ReduceBadStackMacro:\n    _auto_reduce_bad_stack_macro_score_k1 = 0.01\n    name = 'reduce_bad_stack_macro'\n    priority = 120\n\n    def __init__(self, macro_safe_dest_bonus: float=14.0, macro_sorted_dest_bonus: float=10.0, macro_created_bad_weight: float=120.0, macro_resulting_bad_weight: float=1000.0, macro_dest_free_weight: float=8.0, macro_dest_top_weight: float=1.0, macro_source_penalty: float=0.5):\n        self._macro_safe_dest_bonus = macro_safe_dest_bonus\n        self._macro_sorted_dest_bonus = macro_sorted_dest_bonus\n        self._macro_created_bad_weight = macro_created_bad_weight\n        self._macro_resulting_bad_weight = macro_resulting_bad_weight\n        self._macro_dest_free_weight = macro_dest_free_weight\n        self._macro_dest_top_weight = macro_dest_top_weight\n        self._macro_source_penalty = macro_source_penalty\n\n    def init(self, partial):\n        return ()\n\n    def start(self, partial, memory):\n        best = None\n        best_key = None\n        for i, s in enumerate(partial.stacks):\n            if not s:\n                continue\n            if partial.sorted_n[i] == len(s):\n                continue\n            bad_i = len(s) - partial.sorted_n[i]\n            ub_i = partial.ub(i)\n            key = (ub_i, bad_i, len(s), -i)\n            if best_key is None or key > best_key:\n                best_key = key\n                best = i\n        return () if best is None else (best,)\n\n    def done(self, partial, memory):\n        if not memory:\n            return True\n        source = memory[0]\n        return source >= partial.S or partial.is_sorted_stack(source) or (not partial.stacks[source])\n\n    def allowed(self, partial, memory, candidates):\n        if not memory:\n            return []\n        source = memory[0]\n        allowed = []\n        for action in candidates:\n            if action.so != source:\n                continue\n            if not partial.valid(action.so, action.sd):\n                continue\n            allowed.append(action)\n        return allowed\n\n    def score(self, partial, memory, action):\n        so, sd = (action.so, action.sd)\n        c = partial.stacks[so][-1]\n        nxt = partial.copy()\n        nxt.move(so, sd)\n        resulting_bad = nxt.bad()\n        created_bad = max(0, resulting_bad - partial.bad())\n        dest_is_safe = 1.0 if partial.sorted_n[sd] == len(partial.stacks[sd]) and c <= partial.g(sd) else 0.0\n        dest_is_sorted = 1.0 if partial.sorted_n[sd] == len(partial.stacks[sd]) else 0.0\n        dest_free = partial.e(sd)\n        dest_top = partial.g(sd)\n        source_bad = len(partial.stacks[so]) - partial.sorted_n[so]\n        score = resulting_bad * self._macro_resulting_bad_weight + created_bad * self._macro_created_bad_weight - dest_is_safe * self._macro_safe_dest_bonus - dest_is_sorted * self._macro_sorted_dest_bonus + dest_free * self._macro_dest_free_weight + dest_top * self._macro_dest_top_weight + source_bad * self._macro_source_penalty - c * self._auto_reduce_bad_stack_macro_score_k1\n        return float(score)\n\n    def update(self, partial, memory, action):\n        return memory\n\ndef _build_component_llm(problem, **params):\n    macro = ReduceBadStackMacro(macro_safe_dest_bonus=params.get('macro_safe_dest_bonus', 14.0), macro_sorted_dest_bonus=params.get('macro_sorted_dest_bonus', 10.0), macro_created_bad_weight=params.get('macro_created_bad_weight', 120.0), macro_resulting_bad_weight=params.get('macro_resulting_bad_weight', 1000.0), macro_dest_free_weight=params.get('macro_dest_free_weight', 8.0), macro_dest_top_weight=params.get('macro_dest_top_weight', 1.0), macro_source_penalty=params.get('macro_source_penalty', 0.5))\n    simple = SafeUnlockToSortedStack(source_bad_weight=params.get('source_bad_weight', 1000.0), dest_free_weight=params.get('dest_free_weight', 10.0), dest_top_weight=params.get('dest_top_weight', 1.0), created_bad_weight=params.get('created_bad_weight', 200.0))\n    return RuleMachine(problem, [macro, simple])\n_AUTO = {'safe_unlock_to_sorted_stack_score_k1': 10.0, 'safe_unlock_to_sorted_stack_score_k2': 0.01, 'reduce_bad_stack_macro_score_k1': 0.01}\n_AUTO_OWNER = {'safe_unlock_to_sorted_stack_score_k1': 'SafeUnlockToSortedStack', 'safe_unlock_to_sorted_stack_score_k2': 'SafeUnlockToSortedStack', 'reduce_bad_stack_macro_score_k1': 'ReduceBadStackMacro'}\n_AUTO_ATTR = {}\n_AUTO_CLASSES = {'ReduceBadStackMacro': ReduceBadStackMacro, 'SafeUnlockToSortedStack': SafeUnlockToSortedStack}\n_AUTO_FACTORY = '_build_component_llm'\n\ndef build_component(problem, **params):\n    \"\"\"Envoltura del framework: los números que el LLM dejó sueltos en los métodos son parámetros\n    (`_AUTO`, declarados en COMPONENT; `_AUTO_OWNER`: la clase de cada uno). Se fijan en las clases\n    mientras se construye (por si un `__init__` los usa) y en cada instancia: la máquina, sus\n    reglas y sus transiciones.\"\"\"\n    attrs = globals().get('_AUTO_ATTR', {})\n    auto = {k: params.pop(k, v) for k, v in _AUTO.items()}\n    lifted = [k for k in auto if k not in attrs]\n    saved = {k: getattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k) for k in lifted}\n    for k in lifted:\n        setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k, auto[k])\n    try:\n        obj = _build_component_llm(problem, **params)\n    finally:\n        for k, v in saved.items():\n            setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k, v)\n    parts = [obj, getattr(obj, 'transitions', None), *list(getattr(obj, 'rules', None) or [])]\n    for part in parts:\n        for k, v in auto.items():\n            if part is not None and isinstance(part, _AUTO_CLASSES[_AUTO_OWNER[k]]):\n                setattr(part, attrs.get(k, '_auto_' + k), v)\n    return obj\n",
+      "component": {
+        "name": "reduce_bad_stack_then_unlock",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {
+          "dest_top_weight": {
+            "type": "float",
+            "range": [
+              0.0,
+              100.0
+            ],
+            "default": 1.0
+          },
+          "macro_sorted_dest_bonus": {
+            "type": "float",
+            "range": [
+              0.0,
+              50.0
+            ],
+            "default": 10.0
+          },
+          "macro_resulting_bad_weight": {
+            "type": "float",
+            "range": [
+              0.0,
+              2000.0
+            ],
+            "default": 1000.0
+          },
+          "macro_dest_free_weight": {
+            "type": "float",
+            "range": [
+              0.0,
+              100.0
+            ],
+            "default": 8.0
+          },
+          "macro_dest_top_weight": {
+            "type": "float",
+            "range": [
+              0.0,
+              100.0
+            ],
+            "default": 1.0
+          }
+        }
+      },
+      "states": [
+        "reduce_bad_stack_macro",
+        "safe_unlock_to_sorted_stack"
+      ],
+      "params": {
+        "dest_top_weight": 84.0091216555413,
+        "macro_sorted_dest_bonus": 35.51267118187434,
+        "macro_resulting_bad_weight": 1570.0955192469537,
+        "macro_dest_free_weight": 62.52658292736323,
+        "macro_dest_top_weight": 61.189708481414506
+      },
+      "fitness": 92.438,
+      "op": "add_macro",
       "target": null,
       "todo": [
-        "short_source_unlock"
+        "reduce_bad_stack_macro"
       ]
     }
   ]

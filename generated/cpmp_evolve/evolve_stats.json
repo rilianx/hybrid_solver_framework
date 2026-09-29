@@ -2175,5 +2175,262 @@
       "cached_input_tokens": 11264,
       "reasoning_tokens": 19669
     }
+  },
+  {
+    "seed": false,
+    "rounds": 12,
+    "archive": [
+      "safe_unlock_to_sorted_stack_refined_rule",
+      "safe_unlock_to_sorted_stack",
+      "minimal",
+      "reduce_bad_stack_then_unlock"
+    ],
+    "written": [
+      {
+        "name": "safe_unlock_to_sorted_stack_refined_rule",
+        "path": "generated/cpmp_evolve/construction_machine/safe_unlock_to_sorted_stack_refined_rule_r1.py",
+        "fitness": 51.938,
+        "params": {
+          "source_bad_weight": 1000.0,
+          "dest_free_weight": 10.0,
+          "dest_top_weight": 1.0,
+          "safe_unlock_to_sorted_stack_score_k2": 0.01
+        }
+      },
+      {
+        "name": "safe_unlock_to_sorted_stack",
+        "path": "generated/cpmp_evolve/construction_machine/safe_unlock_to_sorted_stack_r1.py",
+        "fitness": 72.75,
+        "params": {}
+      },
+      {
+        "name": "reduce_bad_stack_then_unlock",
+        "path": "generated/cpmp_evolve/construction_machine/reduce_bad_stack_then_unlock_r1.py",
+        "fitness": 92.438,
+        "params": {
+          "dest_top_weight": 84.0091216555413,
+          "macro_sorted_dest_bonus": 35.51267118187434,
+          "macro_resulting_bad_weight": 1570.0955192469537,
+          "macro_dest_free_weight": 62.52658292736323,
+          "macro_dest_top_weight": 61.189708481414506
+        }
+      }
+    ],
+    "individuals": [
+      {
+        "id": 0,
+        "name": "minimal",
+        "parent": null,
+        "op": "base",
+        "target": null,
+        "states": [],
+        "params": {},
+        "train": 92.5,
+        "fitness": 83.0,
+        "status": "base"
+      },
+      {
+        "id": 1,
+        "name": "safe_unlock_to_sorted_stack",
+        "parent": 0,
+        "op": "add_simple",
+        "target": null,
+        "states": [
+          "safe_unlock_to_sorted_stack"
+        ],
+        "params": {},
+        "train": 92.0,
+        "fitness": 72.75,
+        "round": 1,
+        "status": "archivo"
+      },
+      {
+        "id": 2,
+        "name": "safe_unlock_to_sorted_stack_refined",
+        "parent": 1,
+        "op": "refine_rule",
+        "target": "safe_unlock_to_sorted_stack",
+        "states": [
+          "safe_unlock_to_sorted_stack"
+        ],
+        "params": {},
+        "train": 101.625,
+        "fitness": 85.312,
+        "round": 2,
+        "status": "archivo"
+      },
+      {
+        "id": 3,
+        "name": "safe_unlock_to_sorted_stack_refined_macro",
+        "parent": 1,
+        "op": "refine_rule",
+        "target": "safe_unlock_to_sorted_stack",
+        "states": [
+          "safe_unlock_to_sorted_stack"
+        ],
+        "params": {},
+        "train": 90.625,
+        "fitness": 94.25,
+        "round": 3,
+        "status": "no mejora su nicho"
+      },
+      {
+        "id": 4,
+        "name": "safe_unlock_to_sorted_stack_refined_rule",
+        "parent": 1,
+        "op": "refine_rule",
+        "target": "safe_unlock_to_sorted_stack",
+        "states": [
+          "safe_unlock_to_sorted_stack"
+        ],
+        "params": {
+          "source_bad_weight": 1000.0,
+          "dest_free_weight": 10.0,
+          "dest_top_weight": 1.0,
+          "safe_unlock_to_sorted_stack_score_k2": 0.01
+        },
+        "train": 68.25,
+        "fitness": 51.938,
+        "round": 4,
+        "status": "archivo"
+      },
+      {
+        "id": 5,
+        "name": "reduce_bad_stack_then_unlock",
+        "parent": 4,
+        "op": "add_macro",
+        "target": null,
+        "states": [
+          "reduce_bad_stack_macro",
+          "safe_unlock_to_sorted_stack"
+        ],
+        "params": {
+          "dest_top_weight": 84.0091216555413,
+          "macro_sorted_dest_bonus": 35.51267118187434,
+          "macro_resulting_bad_weight": 1570.0955192469537,
+          "macro_dest_free_weight": 62.52658292736323,
+          "macro_dest_top_weight": 61.189708481414506
+        },
+        "train": 90.125,
+        "fitness": 92.438,
+        "round": 5,
+        "status": "archivo"
+      },
+      {
+        "id": 6,
+        "name": "reduce_bad_stack_macro_refined",
+        "parent": 5,
+        "op": "refine_rule",
+        "target": "reduce_bad_stack_macro",
+        "states": [
+          "reduce_bad_stack_macro",
+          "safe_unlock_to_sorted_stack"
+        ],
+        "params": {
+          "macro_sorted_dest_bonus": 29.032950240275802,
+          "macro_dest_free_weight": 18.939132855435613,
+          "macro_dest_top_weight": 18.672952825555512,
+          "dest_top_weight": 61.277317986860666
+        },
+        "train": 89.75,
+        "fitness": 97.188,
+        "round": 6,
+        "status": "no mejora su nicho"
+      },
+      {
+        "id": 7,
+        "name": "safe_unlock_to_sorted_stack_refined_rule_v2",
+        "parent": 4,
+        "op": "refine_rule",
+        "target": "safe_unlock_to_sorted_stack",
+        "states": [
+          "safe_unlock_to_sorted_stack"
+        ],
+        "params": {
+          "source_bad_weight": 1698.9719303727343,
+          "dest_free_weight": 89.50389674266752,
+          "dest_top_weight": 58.980118353115984,
+          "resulting_ub_weight": 474.88243661606026,
+          "source_ub_weight": 289.84750537280297,
+          "safe_unlock_to_sorted_stack_score_k2": 0.009011262132623104
+        },
+        "train": 65.5,
+        "fitness": 73.25,
+        "round": 7,
+        "status": "no mejora su nicho"
+      },
+      {
+        "id": 8,
+        "parent": 4,
+        "op": "add_simple",
+        "target": null,
+        "round": 8,
+        "repaired": false,
+        "status": "rechazado",
+        "reason": "add_simple debe agregar exactamente una regla a ['safe_unlock_to_sorted_stack'] (el hijo tiene ['safe_unlock_to_sorted_stack'])"
+      },
+      {
+        "id": 8,
+        "parent": 4,
+        "op": "add_simple",
+        "target": null,
+        "round": 9,
+        "repaired": false,
+        "status": "rechazado",
+        "reason": "add_simple debe agregar exactamente una regla a ['safe_unlock_to_sorted_stack'] (el hijo tiene ['sorted_source_lowest_top_rule'])"
+      },
+      {
+        "id": 8,
+        "parent": 4,
+        "op": "add_simple",
+        "target": null,
+        "round": 10,
+        "repaired": false,
+        "normalized": [
+          "números sueltos extraídos como parámetros: ['safe_unlock_to_sorted_stack_score_k1', 'safe_unlock_to_sorted_stack_score_k2', 'safe_unlock_to_sorted_stack_score_k3']",
+          "parámetros sin efecto sacados de COMPONENT (quedan fijos en su default): ['safe_unlock_to_sorted_stack_score_k1', 'safe_unlock_to_sorted_stack_score_k2', 'safe_unlock_to_sorted_stack_score_k3']"
+        ],
+        "status": "rechazado",
+        "reason": "add_simple debe agregar exactamente una regla a ['safe_unlock_to_sorted_stack'] (el hijo tiene ['safe_unlock_to_sorted_stack'])"
+      },
+      {
+        "id": 8,
+        "parent": 4,
+        "op": "add_macro",
+        "target": null,
+        "round": 11,
+        "repaired": false,
+        "status": "rechazado",
+        "reason": "cand_8.py: rechazado en la capa 'syntactic'. Propiedades violadas:\n  - rule_machine: build_component debe devolver una `core.rules.RuleMachine(problem, [reglas...])`: reglas simples y macros, cada una con `priority`"
+      },
+      {
+        "id": 8,
+        "name": "safe_unlock_to_sorted_stack_refined_rule_v2_8",
+        "parent": 4,
+        "op": "refine_rule",
+        "target": "safe_unlock_to_sorted_stack",
+        "states": [
+          "safe_unlock_to_sorted_stack"
+        ],
+        "params": {
+          "safe_dest_bonus": 83.59026555711023,
+          "source_sorted_bonus": 7.000430092833387,
+          "safe_unlock_to_sorted_stack_score_k1": 1.4394337902852472,
+          "safe_unlock_to_sorted_stack_score_k2": 0.006021230720027382
+        },
+        "train": 88.25,
+        "fitness": 78.062,
+        "round": 12,
+        "status": "no mejora su nicho"
+      }
+    ],
+    "tokens": {
+      "calls": 17,
+      "input_tokens": 92526,
+      "output_tokens": 40040,
+      "total_tokens": 132566,
+      "cached_input_tokens": 35328,
+      "reasoning_tokens": 23488
+    }
   }
 ]
