@@ -534,6 +534,16 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
   - si un `add_*` se rechaza, el turno de corrección nombra las reglas que hay que dejar
     exactamente iguales y cuántas debe tener la lista.
 
+  **Corrida 77: retoma la 76, 12 rondas, 157 mil tokens.** La mejor sigue en 51,94 (una regla).
+  Los refinamientos extra de macros sirvieron: con `drain_bad_stack_macro` (vacía una pila mal
+  ordenada), el nicho de dos reglas bajó de 90,8 a 88,3, 85,7 y 82,7. Un `change_priority` lo
+  llevó a 73,25, pero subiendo la macro sobre la regla simple, al revés de FRG. La regla simple
+  permitía en promedio el 67–80 % de los candidatos: siempre aplica, así que una macro con menos
+  prioridad nunca actuaba. Ahora `rule_breadth` mide también qué tan ancha es cada regla (la
+  fracción de candidatos que permite) y cuántas veces una regla aplicaba pero decidió otra
+  (`shadowed_by`). El diagnóstico dice cuál es la ancha y recomienda angostarla en vez de invertir
+  prioridades.
+
   El alcance se verifica clase por clase y la prioridad aparte. Los contraejemplos del oráculo
   traen tramos óptimos de 8 pasos: varios pasos seguidos que atienden el mismo objetivo son una
   macro. La máquina mínima es una `RuleMachine` sin reglas. Las máquinas de las corridas 66–74

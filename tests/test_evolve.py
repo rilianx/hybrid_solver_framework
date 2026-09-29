@@ -338,3 +338,24 @@ def test_repair_of_an_add_names_the_rules_to_keep_and_macros_get_more_refinement
     parent.profile = {"bg": {"steps": 3}}
     parent.refine_failures = {"other": 2}  # una regla simple ya se habría soltado; la macro sigue
     assert MACRO_TRIES > 2 and schedule(parent, Random(0)) == ("refine_rule", "other")
+
+
+def test_the_diagnostic_says_which_rule_shadows_which(tmp_path):
+    """Corrida 77: una regla ancha de prioridad alta tapaba a la macro. El diagnóstico lo dice."""
+    from llm.evolve import breadth_text, profile, shadowed
+
+    src = BG_AND_OTHER.replace('''    def allowed(self, L, memory, candidates):
+        return []''', '''    def allowed(self, L, memory, candidates):
+        return list(candidates)''').replace('"name": "bg_only"', '"name": "wide"')
+    path = tmp_path / "wide.py"
+    path.write_text(src)
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("wide_mod", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    ind = Individual(0, "wide", src, mod.build_component, mod.COMPONENT, ("bg", "other"))
+    profile(Harness(PACK), ind, PACK.make_instances(2, 9100, PACK.parse_size("4x4")))
+    assert any(n == "other" and m == "bg" for n, m, _, _ in shadowed(ind))
+    text = breadth_text(ind)
+    assert "tapadas" in text and "angostar" in text and "en promedio" in text

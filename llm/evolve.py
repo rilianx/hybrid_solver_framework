@@ -298,9 +298,11 @@ def profile(harness: Harness, ind: Individual, instances, oracle_instances: int 
         except Exception:  # noqa: BLE001
             b = None
         for n, row in (b or {}).items():
-            t = ind.breadth.setdefault(n, {"applies": 0, "all": 0})
-            t["applies"] += row["applies"]
-            t["all"] += row["all"]
+            t = ind.breadth.setdefault(n, {"applies": 0, "all": 0, "share": 0.0, "shadowed_by": {}})
+            for k in ("applies", "all", "share"):
+                t[k] += row[k]
+            for m, c in row["shadowed_by"].items():
+                t["shadowed_by"][m] = t["shadowed_by"].get(m, 0) + c
     return total, trace
 
 
@@ -313,14 +315,50 @@ def broad_rules(ind: Individual) -> list[str]:
     return [n for _, n in sorted(rows, reverse=True)]
 
 
+SHADOWED = 0.2  # una regla tapada en más de esta fracción de los pasos donde aplica se informa
+
+
+def shadowed(ind: Individual) -> list[tuple[str, str, int, int]]:
+    """(regla tapada, la que decidió, pasos, pasos donde la tapada aplica), de la más tapada."""
+    out = []
+    for n, r in ind.breadth.items():
+        for m, c in (r.get("shadowed_by") or {}).items():
+            if r["applies"] and c >= 3 and c / r["applies"] > SHADOWED:
+                out.append((n, m, c, r["applies"]))
+    return sorted(out, key=lambda t: -t[2] / t[3])
+
+
 def breadth_text(ind: Individual) -> str:
+    lines = []
+    if ind.breadth:
+        rows = [f"`{n}` permite en promedio el {r['share'] / r['applies']:.0%} de los candidatos"
+                for n, r in ind.breadth.items() if r["applies"]]
+        if rows:
+            lines.append("\n\nQué tan ancha es cada regla (cuando aplica): " + "; ".join(rows) + ".")
     broad = broad_rules(ind)
-    if not broad:
-        return ""
-    rows = ", ".join(f"`{n}` en {ind.breadth[n]['all']} de {ind.breadth[n]['applies']} pasos" for n in broad)
-    return ("\n\nReglas que permiten TODOS los candidatos casi siempre (un puntaje compuesto disfrazado de regla): "
-            f"{rows}. Mejor varias reglas, cada una un tipo de movimiento, con prioridades entre ellas: así cada una se "
-            "puede refinar sola y lo que ninguna sabe hacer lo cubre el comodín.")
+    if broad:
+        rows = ", ".join(f"`{n}` en {ind.breadth[n]['all']} de {ind.breadth[n]['applies']} pasos" for n in broad)
+        lines.append("Reglas que permiten TODOS los candidatos casi siempre (un puntaje compuesto disfrazado de regla): "
+                     f"{rows}. Mejor varias reglas, cada una un tipo de movimiento, con prioridades entre ellas: así cada "
+                     "una se puede refinar sola y lo que ninguna sabe hacer lo cubre el comodín.")
+    shadow = shadowed(ind)
+    if shadow:
+        def width(n):
+            r = ind.breadth.get(n) or {}
+            return r["share"] / r["applies"] if r.get("applies") else 0.0
+
+        rows = []
+        for n, m, c, a in shadow:
+            row = f"`{n}` aplicaba en {c} de sus {a} pasos donde decidió `{m}`"
+            if width(m) > width(n):
+                row += f" (`{m}` es la ancha: angostarla le deja esos pasos a `{n}`)"
+            else:
+                row += (f" (`{n}` es la ancha: angostada a su tipo de movimiento podría ir sobre `{m}` sin taparla)")
+            rows.append(row)
+        lines.append("Reglas tapadas por otra: " + "; ".join(rows) + ". Mejor angostar la regla ancha que invertir "
+                     "prioridades: en FRG la de mayor prioridad (llenar) es estrecha, y cuando no aplica entra la macro de "
+                     "reducción.")
+    return "\n".join(lines)
 
 
 def regret_text(ind: Individual) -> str:
