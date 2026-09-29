@@ -649,6 +649,15 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
   pieza de reducción: 21,0 en test, en `generated/cpmp_evolve/construction_machine/`, con su
   biblioteca en `evolve_library.json` para `--resume`. Con el mismo mecanismo, el modelo
   cambió el resultado de 86,3 a 20,06: `gpt-5.4-mini` no llegaba a abstraer las piezas.
+
+  Después se simplificó: una pieza es una **regla simple** (`allowed` y, si hace falta, `score`).
+  Una con `start`/`done` se rechaza, y el prompt no habla de macros ni de prioridades. El orden
+  de consulta lo decide el compositor. En la 82, ninguna pieza fue macro; las dos macros de las
+  corridas 80–81 salieron de refinamientos y empeoraron. `frontier_blocker_transfer` no reduce
+  hasta el final: en 16 instancias de test, de 87 tramos sobre una misma pila, 70 son de 1
+  movimiento, 16 de 2 y 1 de 3, y 35 dejan la pila vacía, porque ataca pilas cortas o con un
+  solo bloqueador. Entre medio entra `bg`. Es "sacar un bloqueador y llenar", no el compromiso
+  de FRG con una pila. Probablemente de ahí viene la diferencia en 6×6.
 - **Un algoritmo de optimización de greedies** (etapa `evolve`, `llm/evolve.py`). Un greedy como
   FRG no sale de una vez; se llega por pasos: primero solo movimientos BG, después la prioridad
   dentro de ese estado, después un estado de vaciado que vuelve al inicial, y otra vez las

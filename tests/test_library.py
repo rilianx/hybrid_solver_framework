@@ -143,3 +143,22 @@ def test_the_composer_tries_every_order():
     assert len(cache) == 3 + 6 + 6  # 1, 2 y 3 piezas en todos los órdenes
     assert ranked[0][1][:2] == (0, 1)  # bg sobre reduce
     assert cache[(0, 1)] < cache[(1, 0)] and cache[(0, 1)] < cache[(2,)]
+
+
+def test_a_piece_is_a_simple_rule_and_the_prompt_has_no_macros_or_priorities(tmp_path):
+    """Las piezas son reglas simples: una con `start`/`done` se rechaza, y el prompt no habla de
+    macros ni de prioridades (el orden lo decide el compositor)."""
+    macro = REDUCE_PIECE.replace("    def allowed(self, L, memory, candidates):", '''    def start(self, L, memory):
+        return memory
+
+    def done(self, L, memory):
+        return True
+
+    def allowed(self, L, memory, candidates):''')
+    client = ScriptedClient(responses=[_fenced(macro), _fenced(macro), _fenced(BG_PIECE)])
+    res = evolve_library(client, PACK, PACK.make_spec(), tmp_path, Harness(PACK), rounds=2, tune_samples=1, n_train=2,
+                         n_test=2, size="4x4", verbose=False)
+    rows = [r for r in res.individuals if "round" in r]
+    assert rows[0]["status"] == "rechazado" and "regla simple" in rows[0]["reason"]
+    prompt = client.calls[0][1].lower()
+    assert "macro" not in prompt and "prioridad" not in prompt and "priority" not in prompt

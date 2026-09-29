@@ -46,11 +46,11 @@ OPERATOR_TEXT = {
         "Escribe UNA pieza NUEVA: un tipo de movimiento. Tiene que ser ANGOSTA: de los candidatos permite solo los de su "
         "tipo y devuelve [] cuando no aplica; lo demás lo cubren otras piezas o el comodín. Mira los pasos de abajo donde "
         "el óptimo hace un movimiento que NINGUNA pieza permite (o solo una ANCHA): ¿de qué tipo es? No repitas una pieza "
-        "que ya está. Si el tipo se sostiene varios pasos sobre el mismo objetivo, puede ser macro (`start`/`done`)."),
+        "que ya está."),
     "refine_rule": (
         "Mejora la pieza `{target}` (abajo), manteniendo su `name`. En los pasos donde ella decidió mal: si el óptimo no "
-        "estaba entre lo que permitió, cambia el set (angostar o ampliar); si estaba, cambia el orden. Puede volverse macro "
-        "(`start` fija su objetivo, `done` dice cuándo terminó). La versión nueva entra junto a la anterior."),
+        "estaba entre lo que permitió, cambia el set (angostar o ampliar); si estaba, cambia el orden. La versión nueva "
+        "entra junto a la anterior."),
 }
 
 
@@ -149,7 +149,7 @@ def library_text(library: list[Piece], best: tuple[int, ...] | None) -> str:
     for pc in sorted(library, key=lambda p: p.alone):
         prec = f"precisión {pc.precision[0]}/{pc.precision[1]}" if pc.precision and pc.precision[1] else "precisión —"
         where = f", posición {best.index(pc.id) + 1} de la mejor" if best and pc.id in best else ""
-        lines.append(f"- `{pc.rule}` #{pc.id} ({'macro' if pc.macro else 'simple'}{', ANCHA' if pc.broad else ''}): "
+        lines.append(f"- `{pc.rule}` #{pc.id}{' (ANCHA)' if pc.broad else ''}: "
                      f"{pc.doc or '—'} Permite el {pc.width:.0%} de los candidatos, {prec}, sola {pc.alone:.1f}{where}.")
     return "\n".join(lines)
 
@@ -284,7 +284,6 @@ class MiRegla:
         return [a for a in candidates if ...]
 
     # opcional: def score(self, partial, memory, action) -> float  (menor = mejor; si no, vale el orden)
-    # macro (compromiso de varios pasos): def start(self, partial, memory) -> memoria; def done(self, partial, memory) -> bool
 
 
 def build_component(problem, **params):
@@ -297,9 +296,9 @@ def library_prompt(spec, op: str, target: Piece | None, library: list[Piece], be
     order = " > ".join(f"`{next(p.rule for p in library if p.id == i)}`" for i in best) if best else "solo el comodín"
     parts = [
         f"# Tarea\nConstructor greedy para **{spec.name}**, armado con piezas. Cada pieza es UNA regla: de los candidatos "
-        f"permite los de un tipo de movimiento. El framework combina hasta {MAX_PIECES} piezas de la biblioteca en todos los "
-        "órdenes de prioridad y se queda con la mejor; lo que ninguna permite lo decide el comodín (la acción que menos "
-        "sube la cota inferior). Tú no eliges prioridades.",
+        f"permite los de un tipo de movimiento. El framework prueba combinaciones de hasta {MAX_PIECES} piezas de la "
+        "biblioteca y se queda con la mejor; lo que ninguna permite lo decide el comodín (la acción que menos sube la cota "
+        "inferior).",
         f"\n# Operador: `{op}`\n" + OPERATOR_TEXT[op].format(target=target.rule if target else ""),
         f"\n# Biblioteca\n{library_text(library, best)}",
         f"\n# Mejor máquina: {order}, {best_fitness:.1f} movimientos (menor = mejor)\n{evid}",
@@ -335,6 +334,9 @@ def _attempt_piece(path: Path, source: str, contexts, op: str, target: Piece | N
         return (f"una pieza es UNA regla: build_component devuelve RuleMachine(problem, [regla]) con una sola (tiene "
                 f"{len(rules)}: {[r.name for r in rules]})"), module, component, None, norm
     rule = rules[0].name
+    if callable(getattr(rules[0], "start", None)) or callable(getattr(rules[0], "done", None)):
+        return ("una pieza es una regla simple, sin `start` ni `done`: se evalúa en cada paso con `allowed` (y `score` "
+                "si hace falta)"), module, component, None, norm
     if op == "new_rule" and any(pc.rule == rule for pc in library):
         return f"ya hay una pieza `{rule}` en la biblioteca: una regla nueva necesita otro `name` (y otro tipo de movimiento)", \
             module, component, None, norm
