@@ -2175,5 +2175,252 @@
       "cached_input_tokens": 11264,
       "reasoning_tokens": 19669
     }
+  },
+  {
+    "seed": false,
+    "rounds": 12,
+    "archive": [
+      "safe_placement_refined_v5_7",
+      "safe_placement_refined_v3",
+      "minimal",
+      "safe_placement_refined_v6_source_fix"
+    ],
+    "written": [
+      {
+        "name": "safe_placement_refined_v5_7",
+        "path": "generated/cpmp_evolve/construction_machine/safe_placement_refined_v5_7_r1.py",
+        "fitness": 74.25,
+        "params": {
+          "safe_placement_score_w_total_ub": 100000,
+          "safe_placement_score_w_dest_unsorted": 1000,
+          "safe_placement_score_w_source_sorted": 0
+        }
+      },
+      {
+        "name": "safe_placement_refined_v3",
+        "path": "generated/cpmp_evolve/construction_machine/safe_placement_refined_v3_r1.py",
+        "fitness": 80.125,
+        "params": {
+          "safe_placement_score_w_bad": 2465604,
+          "safe_placement_score_w_source_sorted": 325213,
+          "safe_placement_score_w_dest_unsorted": 103560,
+          "safe_placement_score_w_source_ub": 765284
+        }
+      },
+      {
+        "name": "safe_placement_refined_v6_source_fix",
+        "fitness": 99.688,
+        "rejected": "módulo 'safe_placement_refined_v6_source_fix_r1.py': rechazado en la capa 'quality'. Propiedades violadas:\n  - constructor.not_much_worse_than_trivial: el constructor cuesta +633% más que la solución de referencia en la micro-instancia 0 (referencia = 3; umbral tolerado +100%). No hace falta que sea óptimo, pero sí un punto de partida razonable."
+      }
+    ],
+    "individuals": [
+      {
+        "id": 0,
+        "name": "minimal",
+        "parent": null,
+        "op": "base",
+        "target": null,
+        "states": [],
+        "params": {},
+        "train": 92.5,
+        "fitness": 83.0,
+        "status": "base"
+      },
+      {
+        "id": 1,
+        "name": "safe_placement",
+        "parent": 0,
+        "op": "add_simple",
+        "target": null,
+        "states": [
+          "safe_placement"
+        ],
+        "params": {},
+        "train": 101.625,
+        "fitness": 97.375,
+        "round": 1,
+        "status": "archivo"
+      },
+      {
+        "id": 2,
+        "parent": 1,
+        "op": "refine_rule",
+        "target": "safe_placement",
+        "round": 2,
+        "repaired": false,
+        "status": "rechazado",
+        "reason": "cand_2.py: rechazado en la capa 'syntactic'. Propiedades violadas:\n  - rule_machine: build_component debe devolver una `core.rules.RuleMachine(problem, [reglas...])`: reglas simples y macros, cada una con `priority`"
+      },
+      {
+        "id": 2,
+        "name": "safe_placement_refined",
+        "parent": 1,
+        "op": "refine_rule",
+        "target": "safe_placement",
+        "states": [
+          "safe_placement"
+        ],
+        "params": {
+          "safe_placement_score_k1": 1739178872
+        },
+        "train": 91.375,
+        "fitness": 93.875,
+        "round": 3,
+        "status": "archivo"
+      },
+      {
+        "id": 3,
+        "name": "safe_placement_refined_v2",
+        "parent": 2,
+        "op": "refine_rule",
+        "target": "safe_placement",
+        "states": [
+          "safe_placement"
+        ],
+        "params": {
+          "safe_placement_score_k1": 2167613558
+        },
+        "train": 84.0,
+        "fitness": 100.25,
+        "round": 4,
+        "status": "no mejora su nicho"
+      },
+      {
+        "id": 4,
+        "name": "safe_placement_refined_v3",
+        "parent": 2,
+        "op": "refine_rule",
+        "target": "safe_placement",
+        "states": [
+          "safe_placement"
+        ],
+        "params": {
+          "safe_placement_score_w_bad": 2465604,
+          "safe_placement_score_w_source_sorted": 325213,
+          "safe_placement_score_w_dest_unsorted": 103560,
+          "safe_placement_score_w_source_ub": 765284
+        },
+        "train": 98.375,
+        "fitness": 80.125,
+        "round": 5,
+        "status": "archivo"
+      },
+      {
+        "id": 5,
+        "parent": 4,
+        "op": "add_macro",
+        "target": null,
+        "round": 6,
+        "repaired": false,
+        "status": "rechazado",
+        "reason": "cand_5.py: rechazado en la capa 'contractual'. Propiedades violadas:\n  - construction_machine.states_reachable: los estados ['safe_placement'] nunca se alcanzan, ni en las micro-instancias ni en las de entrenamiento (greedy): revisa su prioridad y cuándo `allowed` devuelve algo, o quítalos"
+      },
+      {
+        "id": 5,
+        "parent": 4,
+        "op": "add_simple",
+        "target": null,
+        "round": 7,
+        "repaired": false,
+        "normalized": [
+          "parámetros sin efecto sacados de COMPONENT (quedan fijos en su default): ['safe_placement_score_w_bad', 'safe_placement_score_w_dest_unsorted']"
+        ],
+        "status": "rechazado",
+        "reason": "add_simple no cambia las reglas que ya estaban; el hijo modificó ['safe_placement']"
+      },
+      {
+        "id": 5,
+        "name": "safe_placement_refined_v4",
+        "parent": 4,
+        "op": "refine_rule",
+        "target": "safe_placement",
+        "states": [
+          "safe_placement"
+        ],
+        "params": {
+          "safe_placement_score_w_bad": 100000,
+          "safe_placement_score_w_source_sorted": 1000000,
+          "safe_placement_score_w_dest_nonempty": 1
+        },
+        "train": 106.75,
+        "fitness": 95.0,
+        "round": 8,
+        "status": "archivo"
+      },
+      {
+        "id": 6,
+        "name": "safe_placement_refined_v5",
+        "parent": 2,
+        "op": "refine_rule",
+        "target": "safe_placement",
+        "states": [
+          "safe_placement"
+        ],
+        "params": {},
+        "train": 100.75,
+        "fitness": 98.25,
+        "round": 9,
+        "status": "no mejora su nicho"
+      },
+      {
+        "id": 7,
+        "name": "safe_placement_refined_v5_7",
+        "parent": 4,
+        "op": "refine_rule",
+        "target": "safe_placement",
+        "states": [
+          "safe_placement"
+        ],
+        "params": {
+          "safe_placement_score_w_total_ub": 100000,
+          "safe_placement_score_w_dest_unsorted": 1000,
+          "safe_placement_score_w_source_sorted": 0
+        },
+        "train": 76.875,
+        "fitness": 74.25,
+        "round": 10,
+        "status": "archivo"
+      },
+      {
+        "id": 8,
+        "name": "safe_placement_refined_v6_source_fix",
+        "parent": 4,
+        "op": "add_simple",
+        "target": null,
+        "states": [
+          "source_fix",
+          "safe_placement"
+        ],
+        "params": {},
+        "train": 110.875,
+        "fitness": 99.688,
+        "round": 11,
+        "status": "archivo"
+      },
+      {
+        "id": 9,
+        "name": "buffer_relocation_macro_v1",
+        "parent": 7,
+        "op": "add_macro",
+        "target": null,
+        "states": [
+          "buffer_relocation",
+          "safe_placement"
+        ],
+        "params": {},
+        "train": 99.625,
+        "fitness": 102.625,
+        "round": 12,
+        "status": "no mejora su nicho"
+      }
+    ],
+    "tokens": {
+      "calls": 16,
+      "input_tokens": 87619,
+      "output_tokens": 31226,
+      "total_tokens": 118845,
+      "cached_input_tokens": 24320,
+      "reasoning_tokens": 19664
+    }
   }
 ]
