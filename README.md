@@ -819,6 +819,23 @@ rechazaron por cosas del framework, no del algoritmo:
   extrae un argumento que la fábrica ya pasa al construir la clase. El prompt muestra el padre
   sin tablas ni envoltura (`llm_view`).
 
+Las tres máquinas de la corrida 72 en `CONSTRUCT`, con 8 instancias de test por tamaño. El
+afinado usa 40 muestras en 4+4 instancias de train, y la beam (nb = 3, ramas 6) corre con los
+parámetros afinados para el greedy:
+
+| | 5×5 greedy | 5×5 beam | 6×6 greedy | 6×6 beam |
+|---|---|---|---|---|
+| FRG / BS-FRG | 12,4 | 10,9 | 24,3 | 21,8 |
+| v4 (defaults = afinado) | 26,3 | **10,9** | 90,3 | 23,5 |
+| v2 afinado (defaults) | 44,9 (28,6) | 11,5 | 110,4 (120,9) | 24,0 |
+| v3 afinado (defaults) | 76,9 (37,6) | 29,3 | 126,6 (108,8) | 23,4 |
+
+Como greedy, las máquinas generadas siguen lejos de FRG, sobre todo en 6×6. Dentro de una beam
+search quedan cerca de BS-FRG: v4 lo empata en 5×5 y queda a 1,7 movimientos en 6×6. La regla
+sabe ordenar movimientos, pero le falta el compromiso de FRG (reducir una pila hasta el final),
+que la beam compensa. Afinar con pocas instancias de train no generaliza: en v2 y v3 el greedy
+afinado es peor que con defaults en 5×5.
+
 **Oráculo exacto: imitar al óptimo, no al respaldo** (`ProblemPack.oracle_distance`,
 `core.machine.machine_regret`). Un greedy que imite al best-first del respaldo sería el comodín
 (la acción que menos sube la cota). Lo que sí sirve es la distancia exacta al objetivo, d(·).
