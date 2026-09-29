@@ -9,8 +9,10 @@ La vista es neutral: solo sabe del problema, no de ninguna heurística.
 - Completo: el layout está ordenado. A partir de `max_moves` movimientos no hay candidatos.
 - `complete` (respaldo): búsqueda best-first genérica sobre layouts (menos mal puestos
   primero, sin repetir layouts; `best_first`), sin reglas de ninguna heurística publicada.
-  No garantiza calidad, y en instancias grandes se agota (5×7 y 10×10 al estilo CVS con
-  20 mil nodos): ahí la construcción queda infactible, sin ningún último recurso más fuerte.
+  No garantiza calidad, y en instancias grandes se agota (5×7 y 10×10 al estilo CVS): ahí la
+  construcción queda infactible, sin ningún último recurso más fuerte. Con 20 mil nodos
+  dependía del desempate al azar (6×6: ordenaba 7 de 20 instancias desde el inicial); con 100
+  mil, 18 de 20.
 - `lower_bound` = movimientos hechos + mal puestos (cada uno se mueve al menos una vez);
   `key` = el layout, para que la beam search descarte repetidos.
 
@@ -98,7 +100,7 @@ def _extend(L: Layout, moves) -> Layout:
 
 
 class CPMPConstructionView:
-    def __init__(self, problem, inst: "CPMPInstance", max_moves: int | None = None, fallback_nodes: int = 20_000):
+    def __init__(self, problem, inst: "CPMPInstance", max_moves: int | None = None, fallback_nodes: int = 100_000):
         self.problem, self.inst = problem, inst
         self.max_moves = max_moves
         self.fallback_nodes = fallback_nodes

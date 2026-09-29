@@ -165,3 +165,42 @@ def test_a_run_can_be_resumed_from_its_archive(tmp_path):
     retaken = [r["name"] for r in res.individuals if r.get("status") == "retomado"]
     assert set(retaken) == {"minimal", "bg_only"}
     assert "`bg`" in second.calls[0][1]  # el padre retomado sigue con su calendario (refinar bg)
+
+
+def test_the_schedule_moves_on_after_two_failed_refinements():
+    """Corrida 67: cinco refine_priority(finish) seguidos sin mejora. Tras dos, otro operador."""
+    from llm.evolve import schedule
+
+    parent = Individual(0, "m", "", None, {}, ("repair", "finish"), todo=["finish"])
+    parent.profile = {"repair": {"steps": 5, "lost": 3.0, "rising": 2}, "finish": {"steps": 2, "lost": 1.0, "rising": 1}}
+    assert schedule(parent, Random(0)) == ("refine_priority", "finish")
+    parent.refine_failures["finish"] = 2
+    ops = {schedule(parent, Random(s)) for s in range(30)}
+    assert ("refine_priority", "finish") not in ops or len(ops) > 1
+    assert any(op != "refine_priority" for op, _ in ops)
+
+
+def test_infeasible_instances_cost_a_finite_penalty():
+    class Stuck:  # nunca ordena: se queda sin candidatos y el respaldo decide
+        states = ("x",)
+        def initial(self, L): return "x", ()
+        def transition(self, L, s, m): return "x", ()
+        def score(self, L, s, m, a): return 0.0
+        def update(self, L, s, m, a): return m
+
+    h = Harness(PACK)
+    inst = PACK.make_instances(1, 3, PACK.parse_size("4x4"))[0]
+    v = h.run(lambda P, **k: Stuck(), {}, inst)
+    assert v != float("inf") and v > 0
+
+
+def test_mixed_sizes_and_the_self_sorted_line_reach_the_prompt(tmp_path):
+    client = ScriptedClient(responses=[_fenced(BG_ONLY)])
+    res = evolve(client, PACK, PACK.make_spec(), tmp_path, Harness(PACK), rounds=1, tune_samples=1, n_train=1, n_test=1,
+                 size="4x4,5x5", verbose=False)
+    assert res.individuals[1]["status"] == "archivo"
+    client2 = ScriptedClient(responses=[_fenced(BG_REFINED)])
+    evolve(client2, PACK, PACK.make_spec(), tmp_path, Harness(PACK), rounds=1, tune_samples=1, n_train=1, n_test=1,
+           size="4x4,5x5", verbose=False, resume=True)
+    prompt = client2.calls[0][1]
+    assert "Completa sola" in prompt and "cvs_4x4" in prompt and "cvs_5x5" in prompt

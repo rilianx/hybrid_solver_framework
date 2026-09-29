@@ -122,7 +122,9 @@ class Individual:
     train: float = float("inf")
     fitness: float = float("inf")  # media en test con los parámetros afinados
     profile: dict = field(default_factory=dict)
+    self_sorted: dict = field(default_factory=dict)  # por tamaño: [instancias que completa sola, total]
     rejections: list = field(default_factory=list)  # de sus hijos, para no repetirlos
+    refine_failures: dict = field(default_factory=dict)  # estado → hijos fallidos de refine_priority
 
     @property
     def niche(self) -> int:
@@ -157,12 +159,14 @@ class Harness:
         return BeamSearchConstructor(problem, machine, beam_width=nb, branching=2 * nb, max_seconds=self.max_seconds)
 
     def run(self, factory, params: dict, inst) -> float:
+        """Objetivo; una solución infactible cuenta como 2·objetivo + 1 (una penalización finita: con
+        tamaños mezclados, una máquina que falla en alguna instancia grande sigue siendo comparable y
+        refinable), una excepción como infinito."""
         P = self.pack.problem_factory(inst)
         try:
             sol = self.constructor(P, factory(P, **params)).build(inst, Random(0))
-            if not P.is_feasible(sol):
-                return float("inf")
-            return float(P.objective(sol))
+            obj = float(P.objective(sol))
+            return obj if P.is_feasible(sol) else 2.0 * obj + 1.0
         except Exception:  # noqa: BLE001
             return float("inf")
 
@@ -202,13 +206,18 @@ def profile(harness: Harness, ind: Individual, instances) -> tuple[dict, str]:
 
     total: dict[str, dict] = {}
     worst = None
+    ind.self_sorted = {}
     for inst in instances:
         P = harness.pack.problem_factory(inst)
         view = P.construction_view(inst)
         try:
-            prof = machine_profile(MachinePolicy(ind.factory(P, **ind.params), P), view, max_steps=20_000)
+            prof, alone = machine_profile(MachinePolicy(ind.factory(P, **ind.params), P), view, max_steps=20_000, with_end=True)
         except Exception:  # noqa: BLE001
             continue
+        key = getattr(inst, "name", "") or "instancias"
+        done = ind.self_sorted.setdefault(key, [0, 0])
+        done[0] += alone
+        done[1] += 1
         lost = sum(r["lost"] for r in prof.values())
         for st, r in prof.items():
             t = total.setdefault(st, {"steps": 0, "lost": 0.0, "rising": 0})
@@ -224,6 +233,18 @@ def profile(harness: Harness, ind: Individual, instances) -> tuple[dict, str]:
         trace = f"Instancia donde más pierde:\n```\n{text[:600]}\n```\nTraza (greedy; `estado: acciones`):\n```\n{compress_trace(steps)}\n```"
     ind.profile = total
     return total, trace
+
+
+def self_sorted_text(ind: Individual) -> str:
+    """Cuántas instancias completa la máquina sola, por tamaño: si llega a un parcial sin candidatos
+    (el tope de movimientos de la vista, un callejón), el resto lo decide el respaldo de la vista."""
+    if not ind.self_sorted:
+        return ""
+    parts = [f"{k}: {a} de {n}" for k, (a, n) in sorted(ind.self_sorted.items())]
+    warn = any(a < n for a, n in ind.self_sorted.values())
+    return ("\n\nCompleta sola (sin el respaldo de la vista): " + ", ".join(parts)
+            + (". Donde no, se queda sin candidatos (agota el tope de movimientos o llega a un callejón) y la solución "
+               "la arma el respaldo: eso es lo primero que hay que corregir." if warn else "."))
 
 
 def profile_text(prof: dict) -> str:
@@ -326,8 +347,9 @@ def schedule(parent: Individual, rng: Random) -> tuple[str, str | None]:
     own = {k: v["steps"] for k, v in parent.profile.items() if k != FALLBACK}
     if not any(own.values()):
         return "add_state", None
-    if parent.todo:
-        return "refine_priority", parent.todo[0]
+    pending = [s for s in parent.todo if parent.refine_failures.get(s, 0) < 2]
+    if pending:  # tras 2 refinamientos fallidos de un estado, se pasa a otros operadores (corrida 67: 5 seguidos)
+        return "refine_priority", pending[0]
     ops = [("add_state", 0.35), ("refine_priority", 0.35), ("change_transition", 0.2)]
     if len(parent.states) > 1:
         ops.append(("simplify", 0.1))
@@ -506,9 +528,11 @@ def evolve(client: LLMClient, pack, spec, workspace: str | Path, harness: Harnes
     ws = Path(workspace)
     tokens = tokens if tokens is not None else TokenUsage()
     rng = Random(rng_seed)
-    sz = pack.parse_size(size or pack.default_size)
-    train = pack.make_instances(n_train, 9100, sz)
-    test = pack.make_instances(n_test, 10100, sz)
+    # tamaños mezclados (`--size 5x5,6x6`): la máquina tiene que generalizar (corrida 67: la mejor ordenaba
+    # sola 8 de 8 en 5×5 y 0 de 8 en 6×6, donde agotaba el tope de movimientos)
+    sizes = [x.strip() for x in (size or pack.default_size).split(",") if x.strip()]
+    train = [i for k, s in enumerate(sizes) for i in pack.make_instances(n_train, 9100 + 50 * k, pack.parse_size(s))]
+    test = [i for k, s in enumerate(sizes) for i in pack.make_instances(n_test, 10100 + 50 * k, pack.parse_size(s))]
     contexts = [c for c in pack.make_contexts(strict=False)]
     tmp = ws / SLOT / "_evolve"
     saved = ws / "evolve_archive.json"
@@ -533,7 +557,8 @@ def evolve(client: LLMClient, pack, spec, workspace: str | Path, harness: Harnes
         parent = select_parent(archive, rng)
         op, target = schedule(parent, rng)
         prof, trace = profile(harness, parent, train)
-        text = client.complete(SYSTEM_PROMPT, evolve_prompt(spec, parent, op, target, profile_text(prof), trace, archive, is_seed))
+        text = client.complete(SYSTEM_PROMPT, evolve_prompt(spec, parent, op, target, profile_text(prof) + self_sorted_text(parent),
+                                                            trace, archive, is_seed))
         used = getattr(client, "last_usage", None)
         if isinstance(used, TokenUsage):
             tokens.add(used)
@@ -558,6 +583,8 @@ def evolve(client: LLMClient, pack, spec, workspace: str | Path, harness: Harnes
         if notes:
             entry["normalized"] = notes
         if reason is not None:
+            if op == "refine_priority" and target:
+                parent.refine_failures[target] = parent.refine_failures.get(target, 0) + 1
             parent.rejections.append(f"{op}{'(' + target + ')' if target else ''}: {reason}")
             res.individuals.append({**entry, "status": "rechazado", "reason": reason})
             last = time.monotonic() - t0
@@ -578,6 +605,8 @@ def evolve(client: LLMClient, pack, spec, workspace: str | Path, harness: Harnes
         save_archive(saved, archive, is_seed)  # un job cortado no pierde el archivo
         res.individuals.append({**child.row(), "round": rnd, "status": "archivo" if admitted else "no mejora su nicho"})
         if not admitted:
+            if op == "refine_priority" and target:
+                parent.refine_failures[target] = parent.refine_failures.get(target, 0) + 1
             parent.rejections.append(f"{op}{'(' + target + ')' if target else ''}: `{name}` ({', '.join(states)}) dio fitness "
                                      f"{child.fitness:.2f}; no mejora a las máquinas de {child.niche} estados del archivo")
         last = time.monotonic() - t0

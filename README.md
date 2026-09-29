@@ -211,7 +211,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   constructivas*).
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 290 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 293 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -232,7 +232,7 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 290 passed (~270 s)
+python -m pytest -q                 # 293 passed (~275 s)
 
 # segundo problema: CVRP con flota libre (mismos CLI, otro pack)
 python -m examples.cvrp.tune --catalog handwritten --size 30 --trials 30 --ref-time 60
@@ -710,6 +710,28 @@ Ajustes:
 - el padre se elige por nicho: primero un nicho al azar, después un torneo dentro;
 - el archivo se guarda en `evolve_archive.json` tras cada ronda, con las fuentes;
 - `--resume` retoma desde ese archivo. El de la corrida 66 está en `generated/cpmp_evolve/`.
+
+**Corrida 67: `evolve --resume` desde el archivo de la 66, 12 rondas, 95 mil tokens.** Con el padre
+elegido por nicho, 3 de las 12 rondas fueron a máquinas de dos estados. La mejor
+(`repair_priority_promote_sorted_dest_finish`) baja de 29,25 a **19,25** movimientos en 5×5:
+un estado de reparación en bloque que pasa a uno de cierre cuando quedan a lo más
+`finish_bad_threshold` = 2 mal puestos. Después hubo cinco `refine_priority(finish)` seguidos
+sin mejora.
+
+Esa máquina completa sola 8 de 8 instancias en 5×5 y **0 de 8 en 6×6**: agota el tope de 106
+movimientos y la solución la arma desde cero el respaldo de la vista. Reforzar el respaldo
+habría hecho pasar la sonda de 6×6 sin que la máquina sirviera ahí. Ajustes:
+
+- `--size 5x5,6x6`: train y test mezclan tamaños y el fitness premia generalizar. Una instancia
+  infactible cuesta 2·objetivo + 1, finito, así la máquina sigue siendo comparable y refinable.
+  Con 5×5 + 6×6, esa máquina da 61,5 y FRG como greedy 18,3.
+- El diagnóstico dice cuántas instancias completa sola por tamaño (`machine_profile(...,
+  with_end=True)`), y el prompt pide corregir primero eso.
+- El calendario deja de insistir: tras 2 refinamientos fallidos de un estado, pasa a otros
+  operadores.
+- El respaldo de la vista del CPMP pasa de 20 mil a 100 mil nodos. Con 20 mil dependía del
+  desempate al azar: en 6×6 ordenaba desde el inicial 7 de 20 instancias, con 100 mil 18 de 20.
+  Es robustez de la vista, no calidad de la máquina.
 
 **Validación de la vista constructiva generada: un puntaje constante no puede ciclar.** En la
 corrida 58 la vista del CPMP que escribió el LLM ofrecía movimientos que no empeoran el

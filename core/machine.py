@@ -132,11 +132,12 @@ def machine_trace(policy: MachinePolicy, view: Any, max_steps: int = 100_000) ->
     return out
 
 
-def machine_profile(policy: MachinePolicy, view: Any, max_steps: int = 100_000) -> dict[str, dict]:
+def machine_profile(policy: MachinePolicy, view: Any, max_steps: int = 100_000, with_end: bool = False):
     """Por estado: pasos, cota inferior perdida (Σ del aumento de `view.lower_bound` en sus pasos) y
     pasos que la hacen subir. Con una cota exacta al completar, la suma sobre los estados es
     objetivo − cota inicial: cuánto de lo que se pierde es culpa de cada estado. Sin cota, solo
-    los pasos."""
+    los pasos. `with_end`: devuelve además si la máquina completó sola (sin llegar a un parcial
+    sin candidatos, donde decide el respaldo de la vista)."""
     lb = getattr(view, "lower_bound", None)
     lb = lb if callable(lb) else None
     partial = view.empty()
@@ -160,7 +161,7 @@ def machine_profile(policy: MachinePolicy, view: Any, max_steps: int = 100_000) 
             row["lost"] += max(0.0, d)
             row["rising"] += d > 1e-9
         partial = nxt
-    return out
+    return (out, bool(view.is_complete(partial))) if with_end else out
 
 
 def compress_trace(steps: list[tuple[str, Any]], max_steps: int = 60) -> str:
