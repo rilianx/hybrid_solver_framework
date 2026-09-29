@@ -566,7 +566,7 @@ def scope_check(op: str, target: str | None, parent: Individual, child_states: t
         if reprio:
             return f"{op} elige la prioridad de la regla nueva, no cambia las otras; el hijo cambió la de {reprio}"
     elif op == "refine_rule":
-        if cs != ps:
+        if set(cs) != set(ps):  # el orden de la lista no importa: decide la prioridad (corrida 78)
             return f"refine_rule no cambia las reglas que hay ({list(ps)}; el hijo tiene {list(cs)})"
         others = [n for n in changed if n != target]
         if others:
@@ -574,7 +574,7 @@ def scope_check(op: str, target: str | None, parent: Individual, child_states: t
         if reprio:
             return f"refine_rule({target}) no cambia prioridades; el hijo cambió la de {reprio}"
     elif op == "change_priority":
-        if cs != ps:
+        if set(cs) != set(ps):
             return f"change_priority no cambia las reglas ({list(ps)}; el hijo tiene {list(cs)})"
         if changed:
             return f"change_priority cambia solo prioridades; el hijo modificó {changed}"

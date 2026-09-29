@@ -359,3 +359,10 @@ def test_the_diagnostic_says_which_rule_shadows_which(tmp_path):
     assert any(n == "other" and m == "bg" for n, m, _, _ in shadowed(ind))
     text = breadth_text(ind)
     assert "tapadas" in text and "angostar" in text and "en promedio" in text
+
+
+def test_reordering_the_rule_list_is_not_out_of_scope():
+    """Corrida 78: un change_priority que además reordenó la lista de RuleMachine se rechazaba."""
+    parent = Individual(0, "m", BG_AND_OTHER, None, {}, ("bg", "other"))
+    swapped = BG_AND_OTHER.replace("[BG(), Other()]", "[Other(), BG()]").replace("priority = 50", "priority = 150")
+    assert scope_check("change_priority", None, parent, ("other", "bg"), swapped) is None

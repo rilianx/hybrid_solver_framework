@@ -2813,5 +2813,432 @@
       "cached_input_tokens": 37120,
       "reasoning_tokens": 14444
     }
+  },
+  {
+    "seed": false,
+    "rounds": 12,
+    "archive": [
+      "safe_unlock_to_sorted_stack_refined_rule",
+      "targeted_unlock_macro_rule",
+      "empty_slot_rescue_rule",
+      "drain_bad_stack_macro_targeted_unlock_refined_rule"
+    ],
+    "written": [
+      {
+        "name": "safe_unlock_to_sorted_stack_refined_rule",
+        "path": "generated/cpmp_evolve/construction_machine/safe_unlock_to_sorted_stack_refined_rule_r1.py",
+        "fitness": 51.938,
+        "params": {
+          "source_bad_weight": 1000.0,
+          "dest_free_weight": 10.0,
+          "dest_top_weight": 1.0,
+          "safe_unlock_to_sorted_stack_score_k1": 10.0,
+          "safe_unlock_to_sorted_stack_score_k2": 0.01,
+          "safe_unlock_to_sorted_stack_safe_dest_bonus": 12.0,
+          "safe_unlock_to_sorted_stack_source_sorted_bonus": 8.0,
+          "safe_unlock_to_sorted_stack_created_bad_weight": 200.0
+        }
+      },
+      {
+        "name": "targeted_unlock_macro_rule",
+        "path": "generated/cpmp_evolve/construction_machine/targeted_unlock_macro_rule_r1.py",
+        "fitness": 56.625,
+        "params": {
+          "source_bad_weight": 1000.0,
+          "dest_free_weight": 10.0,
+          "dest_top_weight": 1.0,
+          "macro_source_bad_weight": 1000.0,
+          "macro_dest_free_weight": 10.0,
+          "macro_dest_top_weight": 1.0,
+          "macro_safe_bonus": 12.0,
+          "safe_unlock_to_sorted_stack_score_k2": 0.01
+        }
+      },
+      {
+        "name": "empty_slot_rescue_rule",
+        "fitness": 64.125,
+        "rejected": "módulo 'empty_slot_rescue_rule_r1.py': rechazado en la capa 'contractual'. Propiedades violadas:\n  - construction_machine.states_reachable: los estados ['safe_unlock_to_sorted_stack'] nunca se alcanzan en las micro-instancias (greedy y RCL): revisa las condiciones que llevan a ellos (en una máquina de reglas: su prioridad y cuándo `allowed` devuelve algo), o quítalos"
+      },
+      {
+        "name": "drain_bad_stack_macro_targeted_unlock_refined_rule",
+        "path": "generated/cpmp_evolve/construction_machine/drain_bad_stack_macro_targeted_unlock_refined_rule_r1.py",
+        "fitness": 78.938,
+        "params": {
+          "result_bad_weight": 1000.0,
+          "unsorted_dest_penalty": 25.0,
+          "safe_unlock_to_sorted_stack_dest_free_weight": 10.0,
+          "safe_unlock_to_sorted_stack_score_k1": 10.0,
+          "drain_bad_stack_macro_score_k1": 10.0,
+          "targeted_unlock_macro_score_k2": 0.01
+        }
+      }
+    ],
+    "individuals": [
+      {
+        "id": 0,
+        "name": "minimal",
+        "parent": null,
+        "op": "base",
+        "target": null,
+        "states": [],
+        "params": {},
+        "train": 90.688,
+        "fitness": 83.0,
+        "status": "retomado"
+      },
+      {
+        "id": 1,
+        "name": "safe_unlock_to_sorted_stack_refined_rule",
+        "parent": null,
+        "op": "refine_rule",
+        "target": "safe_unlock_to_sorted_stack",
+        "states": [
+          "safe_unlock_to_sorted_stack"
+        ],
+        "params": {
+          "source_bad_weight": 1000.0,
+          "dest_free_weight": 10.0,
+          "dest_top_weight": 1.0,
+          "safe_unlock_to_sorted_stack_score_k1": 10.0,
+          "safe_unlock_to_sorted_stack_score_k2": 0.01,
+          "safe_unlock_to_sorted_stack_safe_dest_bonus": 12.0,
+          "safe_unlock_to_sorted_stack_source_sorted_bonus": 8.0,
+          "safe_unlock_to_sorted_stack_created_bad_weight": 200.0
+        },
+        "train": 61.875,
+        "fitness": 51.938,
+        "status": "retomado"
+      },
+      {
+        "id": 2,
+        "name": "drain_bad_stack_macro_targeted_unlock",
+        "parent": null,
+        "op": "add_macro",
+        "target": null,
+        "states": [
+          "drain_bad_stack_macro",
+          "targeted_unlock_macro",
+          "safe_unlock_to_sorted_stack"
+        ],
+        "params": {
+          "result_bad_weight": 1000.0,
+          "unsorted_dest_penalty": 25.0,
+          "targeted_unlock_source_bad_weight": 8.0,
+          "safe_unlock_to_sorted_stack_score_k1": 10.0,
+          "safe_unlock_to_sorted_stack_score_k2": 0.01,
+          "drain_bad_stack_macro_score_k1": 10.0,
+          "drain_bad_stack_macro_score_k2": 8.0,
+          "targeted_unlock_macro_score_k1": 5.0,
+          "targeted_unlock_macro_score_k2": 0.01,
+          "created_bad_weight": 200.0,
+          "safe_dest_bonus": 12.0,
+          "empty_dest_bonus": 6.0,
+          "source_top_weight": 2.0,
+          "source_ub_weight": 10.0,
+          "targeted_unlock_dest_bonus": 15.0,
+          "targeted_unlock_source_ub_weight": 6.0,
+          "safe_unlock_to_sorted_stack_source_sorted_bonus": 8.0,
+          "safe_unlock_to_sorted_stack_dest_free_weight": 10.0
+        },
+        "train": 91.375,
+        "fitness": 86.625,
+        "status": "retomado"
+      },
+      {
+        "id": 3,
+        "name": "drain_bad_stack_macro_priority_swap",
+        "parent": null,
+        "op": "change_priority",
+        "target": null,
+        "states": [
+          "drain_bad_stack_macro",
+          "safe_unlock_to_sorted_stack"
+        ],
+        "params": {
+          "drain_bad_stack_macro_unsorted_dest_penalty": 35.78096751507282,
+          "safe_unlock_to_sorted_stack_dest_free_weight": 7.7603447062501125,
+          "safe_unlock_to_sorted_stack_score_k1": 8.288359765544946,
+          "safe_unlock_to_sorted_stack_score_k2": 0.013016657245266901,
+          "drain_bad_stack_macro_score_k1": 0.03048443713440374,
+          "drain_bad_stack_macro_score_k2": 3.076952659914813,
+          "drain_bad_stack_macro_created_bad_weight": 133.76067626500063,
+          "drain_bad_stack_macro_safe_dest_bonus": 5.745983044463006,
+          "drain_bad_stack_macro_empty_dest_bonus": 7.648792813551603,
+          "drain_bad_stack_macro_source_ub_weight": 7.572961406461889,
+          "safe_unlock_to_sorted_stack_safe_dest_bonus": 21.010161401112413,
+          "safe_unlock_to_sorted_stack_source_sorted_bonus": 9.09042273456307,
+          "safe_unlock_to_sorted_stack_created_bad_weight": 165.76255867345773
+        },
+        "train": 61.25,
+        "fitness": 85.938,
+        "status": "retomado"
+      },
+      {
+        "id": 4,
+        "name": "drain_bad_stack_macro_priority_rebalance",
+        "parent": 3,
+        "op": "change_priority",
+        "target": null,
+        "states": [
+          "drain_bad_stack_macro",
+          "safe_unlock_to_sorted_stack"
+        ],
+        "params": {
+          "safe_unlock_to_sorted_stack_score_k1": 6.518878089198208,
+          "drain_bad_stack_macro_score_k1": 16.75473682089034,
+          "drain_bad_stack_macro_unsorted_dest_penalty": 2.4928498301825863,
+          "safe_unlock_to_sorted_stack_dest_free_weight": 16.454398464413927
+        },
+        "train": 55.688,
+        "fitness": 71.375,
+        "round": 1,
+        "status": "archivo"
+      },
+      {
+        "id": 5,
+        "name": "safe_unlock_to_sorted_stack_refined_rule_v3",
+        "parent": 1,
+        "op": "refine_rule",
+        "target": "safe_unlock_to_sorted_stack",
+        "states": [
+          "safe_unlock_to_sorted_stack"
+        ],
+        "params": {
+          "source_bad_weight": 1000.0,
+          "dest_free_weight": 10.0,
+          "dest_top_weight": 1.0,
+          "safe_unlock_to_sorted_stack_init_k1": 10.0,
+          "safe_unlock_to_sorted_stack_init_k2": 0.01
+        },
+        "train": 83.688,
+        "fitness": 82.75,
+        "round": 2,
+        "status": "no mejora su nicho"
+      },
+      {
+        "id": 6,
+        "name": "drain_bad_stack_macro_targeted_unlock_refined_rule",
+        "parent": 2,
+        "op": "refine_rule",
+        "target": "targeted_unlock_macro",
+        "states": [
+          "drain_bad_stack_macro",
+          "targeted_unlock_macro",
+          "safe_unlock_to_sorted_stack"
+        ],
+        "params": {
+          "result_bad_weight": 1000.0,
+          "unsorted_dest_penalty": 25.0,
+          "safe_unlock_to_sorted_stack_dest_free_weight": 10.0,
+          "safe_unlock_to_sorted_stack_score_k1": 10.0,
+          "drain_bad_stack_macro_score_k1": 10.0,
+          "targeted_unlock_macro_score_k2": 0.01
+        },
+        "train": 74.125,
+        "fitness": 78.938,
+        "round": 3,
+        "status": "archivo"
+      },
+      {
+        "id": 7,
+        "name": "safe_unlock_to_sorted_stack_refined_rule_v4",
+        "parent": 1,
+        "op": "refine_rule",
+        "target": "safe_unlock_to_sorted_stack",
+        "states": [
+          "safe_unlock_to_sorted_stack"
+        ],
+        "params": {
+          "source_bad_weight": 806.338292890187,
+          "dest_safe_bonus": 16.426035500774343,
+          "dest_sorted_bonus": 20.73608044857212,
+          "source_sorted_penalty": 4.970016911935055,
+          "source_unlock_bonus": 45.43287771983903,
+          "dest_free_weight": 47.40046511372964,
+          "dest_top_weight": 84.08483326276716,
+          "dest_headroom_weight": 48.81147288245285,
+          "c_top_weight": 6.873031873155355,
+          "safe_unlock_to_sorted_stack_score_k1": 9.581730383039721
+        },
+        "train": 92.25,
+        "fitness": 103.375,
+        "round": 4,
+        "status": "no mejora su nicho"
+      },
+      {
+        "id": 8,
+        "name": "empty_slot_rescue_rule",
+        "parent": 6,
+        "op": "add_simple",
+        "target": null,
+        "states": [
+          "empty_slot_rescue",
+          "drain_bad_stack_macro",
+          "targeted_unlock_macro",
+          "safe_unlock_to_sorted_stack"
+        ],
+        "params": {
+          "result_bad_weight": 8269.865896652218,
+          "unsorted_dest_penalty": 104.74628201641056,
+          "safe_unlock_to_sorted_stack_dest_free_weight": 11.92480951294142,
+          "drain_bad_stack_macro_score_k1": 9.758028112113774,
+          "targeted_unlock_macro_score_k2": 0.011278082341835928,
+          "empty_slot_rescue_source_bad_weight": 12.767270904768926
+        },
+        "train": 68.875,
+        "fitness": 64.125,
+        "round": 5,
+        "status": "archivo"
+      },
+      {
+        "id": 9,
+        "parent": 6,
+        "op": "change_priority",
+        "target": null,
+        "round": 6,
+        "repaired": false,
+        "normalized": [
+          "números sueltos extraídos como parámetros: ['drain_bad_stack_macro_created_bad_weight', 'drain_bad_stack_macro_empty_dest_bonus', 'drain_bad_stack_macro_safe_dest_bonus', 'drain_bad_stack_macro_score_k1', 'drain_bad_stack_macro_score_k2', 'drain_bad_stack_macro_source_ub_weight', 'drain_bad_stack_macro_unsorted_dest_penalty', 'safe_unlock_to_sorted_stack_created_bad_weight', 'safe_unlock_to_sorted_stack_dest_free_weight', 'safe_unlock_to_sorted_stack_safe_dest_bonus', 'safe_unlock_to_sorted_stack_score_k1', 'safe_unlock_to_sorted_stack_score_k2', 'safe_unlock_to_sorted_stack_source_sorted_bonus', 'targeted_unlock_macro_created_bad_weight', 'targeted_unlock_macro_dest_bonus', 'targeted_unlock_macro_score_k1', 'targeted_unlock_macro_score_k2', 'targeted_unlock_macro_source_bad_weight', 'targeted_unlock_macro_source_ub_weight']",
+          "parámetros sin efecto sacados de COMPONENT (quedan fijos en su default): ['safe_unlock_to_sorted_stack_score_k2', 'drain_bad_stack_macro_score_k2', 'targeted_unlock_macro_score_k1', 'safe_unlock_to_sorted_stack_safe_dest_bonus', 'safe_unlock_to_sorted_stack_source_sorted_bonus', 'safe_unlock_to_sorted_stack_created_bad_weight', 'drain_bad_stack_macro_created_bad_weight', 'drain_bad_stack_macro_safe_dest_bonus', 'drain_bad_stack_macro_empty_dest_bonus', 'drain_bad_stack_macro_source_ub_weight', 'targeted_unlock_macro_dest_bonus', 'targeted_unlock_macro_source_bad_weight', 'targeted_unlock_macro_source_ub_weight', 'targeted_unlock_macro_created_bad_weight']"
+        ],
+        "status": "rechazado",
+        "reason": "change_priority no cambia las reglas (['drain_bad_stack_macro', 'targeted_unlock_macro', 'safe_unlock_to_sorted_stack']; el hijo tiene ['targeted_unlock_macro', 'drain_bad_stack_macro', 'safe_unlock_to_sorted_stack'])"
+      },
+      {
+        "id": 9,
+        "name": "targeted_unlock_macro_rule",
+        "parent": 1,
+        "op": "add_macro",
+        "target": null,
+        "states": [
+          "targeted_unlock_macro",
+          "safe_unlock_to_sorted_stack"
+        ],
+        "params": {
+          "source_bad_weight": 1000.0,
+          "dest_free_weight": 10.0,
+          "dest_top_weight": 1.0,
+          "macro_source_bad_weight": 1000.0,
+          "macro_dest_free_weight": 10.0,
+          "macro_dest_top_weight": 1.0,
+          "macro_safe_bonus": 12.0,
+          "safe_unlock_to_sorted_stack_score_k2": 0.01
+        },
+        "train": 65.938,
+        "fitness": 56.625,
+        "round": 7,
+        "status": "archivo"
+      },
+      {
+        "id": 10,
+        "name": "safe_unlock_to_sorted_stack_macro_refine",
+        "parent": 1,
+        "op": "refine_rule",
+        "target": "safe_unlock_to_sorted_stack",
+        "states": [
+          "safe_unlock_to_sorted_stack"
+        ],
+        "params": {
+          "source_bad_weight": 800.0,
+          "dest_free_weight": 8.0,
+          "dest_top_weight": 1.0,
+          "safe_unlock_to_sorted_stack_score_k2": 0.01
+        },
+        "train": 53.562,
+        "fitness": 65.625,
+        "round": 8,
+        "status": "no mejora su nicho"
+      },
+      {
+        "id": 11,
+        "name": "targeted_unlock_macro_refined_rule",
+        "parent": 9,
+        "op": "refine_rule",
+        "target": "targeted_unlock_macro",
+        "states": [
+          "targeted_unlock_macro",
+          "safe_unlock_to_sorted_stack"
+        ],
+        "params": {
+          "source_bad_weight": 296.3863893491513,
+          "dest_free_weight": 84.91315553121947,
+          "dest_top_weight": 95.846907728749,
+          "macro_source_bad_weight": 387.64569013819994,
+          "macro_dest_free_weight": 29.380353478258403,
+          "macro_dest_top_weight": 74.57841029207015,
+          "macro_safe_bonus": 95.75468650535228,
+          "safe_unlock_to_sorted_stack_score_k1": 19.6679615691678
+        },
+        "train": 91.938,
+        "fitness": 110.188,
+        "round": 9,
+        "status": "no mejora su nicho"
+      },
+      {
+        "id": 12,
+        "name": "safe_unlock_to_sorted_stack_focus_refine_rule",
+        "parent": 1,
+        "op": "refine_rule",
+        "target": "safe_unlock_to_sorted_stack",
+        "states": [
+          "safe_unlock_to_sorted_stack"
+        ],
+        "params": {
+          "bad_weight": 9019.373300730895,
+          "ub_weight": 39.980675922074106,
+          "dest_free_weight": 255.3863294502452,
+          "source_sorted_penalty": 2.665600139486224,
+          "dest_sorted_bonus": 52.00631817170318
+        },
+        "train": 77.25,
+        "fitness": 87.062,
+        "round": 10,
+        "status": "no mejora su nicho"
+      },
+      {
+        "id": 13,
+        "name": "empty_slot_rescue_refined_rule",
+        "parent": 8,
+        "op": "refine_rule",
+        "target": "empty_slot_rescue",
+        "states": [
+          "empty_slot_rescue",
+          "drain_bad_stack_macro",
+          "targeted_unlock_macro",
+          "safe_unlock_to_sorted_stack"
+        ],
+        "params": {
+          "empty_slot_rescue_source_top_weight": 13.728362085971161,
+          "drain_bad_stack_macro_score_k1": 0.6026846910453987,
+          "targeted_unlock_macro_score_k2": 0.018385647068032276
+        },
+        "train": 62.812,
+        "fitness": 68.25,
+        "round": 11,
+        "status": "no mejora su nicho"
+      },
+      {
+        "id": 14,
+        "parent": 9,
+        "op": "refine_rule",
+        "target": "targeted_unlock_macro",
+        "round": 12,
+        "repaired": false,
+        "normalized": [
+          "números sueltos extraídos como parámetros: ['safe_unlock_to_sorted_stack_created_bad_weight', 'safe_unlock_to_sorted_stack_dest_free_weight', 'safe_unlock_to_sorted_stack_dest_top_weight', 'safe_unlock_to_sorted_stack_safe_dest_bonus', 'safe_unlock_to_sorted_stack_score_k1', 'safe_unlock_to_sorted_stack_score_k2', 'safe_unlock_to_sorted_stack_source_bad_weight', 'safe_unlock_to_sorted_stack_source_sorted_bonus', 'targeted_unlock_macro_start_k1']",
+          "parámetros sin efecto sacados de COMPONENT (quedan fijos en su default): ['safe_unlock_to_sorted_stack_score_k1', 'safe_unlock_to_sorted_stack_safe_dest_bonus', 'safe_unlock_to_sorted_stack_source_sorted_bonus', 'safe_unlock_to_sorted_stack_source_bad_weight', 'safe_unlock_to_sorted_stack_dest_free_weight', 'safe_unlock_to_sorted_stack_created_bad_weight', 'safe_unlock_to_sorted_stack_score_k2', 'targeted_unlock_macro_start_k1']"
+        ],
+        "status": "rechazado",
+        "reason": "cand_14.py: rechazado en la capa 'syntactic'. Propiedades violadas:\n  - params_default: los parámetros ['macro_source_bad_weight', 'macro_dest_free_weight', 'macro_dest_top_weight', 'macro_safe_bonus'] no declaran 'default' en COMPONENT['params']: el default es el valor que propones y el punto de partida del tuner"
+      }
+    ],
+    "tokens": {
+      "calls": 15,
+      "input_tokens": 111808,
+      "output_tokens": 47736,
+      "total_tokens": 159544,
+      "cached_input_tokens": 15616,
+      "reasoning_tokens": 13520
+    }
   }
 ]

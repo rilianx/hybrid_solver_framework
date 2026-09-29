@@ -544,6 +544,15 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
   (`shadowed_by`). El diagnóstico dice cuál es la ancha y recomienda angostarla en vez de invertir
   prioridades.
 
+  **Corrida 78: retoma la 77, con el diagnóstico de ancho y reglas tapadas, 12 rondas, 160 mil
+  tokens.** La mejor sigue en 51,94. El nicho de dos reglas bajó de 71,4 a **56,6**
+  (`targeted_unlock_macro`, prioridad 150, que fija un par origen–destino y lo repite hasta
+  ordenar el origen, sobre la regla ancha de prioridad 100). Hay una máquina de cuatro reglas
+  con 64,1. El LLM no siguió el consejo de angostar la regla ancha (72–75 % de los candidatos):
+  sus 4 refinamientos dieron entre 65,6 y 103,4, todos peores. Las macros siguen arriba, al revés
+  de FRG. Un `change_priority` se rechazó solo por reordenar la lista de reglas; ahora el orden
+  de la lista no cuenta para el alcance.
+
   El alcance se verifica clase por clase y la prioridad aparte. Los contraejemplos del oráculo
   traen tramos óptimos de 8 pasos: varios pasos seguidos que atienden el mismo objetivo son una
   macro. La máquina mínima es una `RuleMachine` sin reglas. Las máquinas de las corridas 66–74
