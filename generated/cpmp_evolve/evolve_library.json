@@ -1,0 +1,342 @@
+{
+  "library": [
+    {
+      "id": 0,
+      "rule": "safe_relocate_greedy",
+      "name": "safe_relocate_greedy",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 51.812,
+      "params": {
+        "safe_relocate_greedy_score_k2": 0.1,
+        "safe_relocate_greedy_score_k3": 0.01
+      },
+      "source": "COMPONENT = {'name': 'safe_relocate_greedy', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {'safe_relocate_greedy_score_k2': {'type': 'float', 'range': [0.0, 0.2], 'default': 0.1}, 'safe_relocate_greedy_score_k3': {'type': 'float', 'range': [0.0, 0.02], 'default': 0.01}}}\nfrom core.rules import RuleMachine\n\nclass SafeRelocateGreedy:\n    _auto_safe_relocate_greedy_score_k1 = 10.0\n    _auto_safe_relocate_greedy_score_k2 = 0.1\n    _auto_safe_relocate_greedy_score_k3 = 0.01\n    _auto_safe_relocate_greedy_score_k4 = 0.001\n    'Regla simple: prioriza recolocaciones que reduzcan la cota local de malos puestos.'\n    name = 'safe_relocate_greedy'\n    priority = 100\n\n    def init(self, partial):\n        return ()\n\n    def allowed(self, partial, memory, candidates):\n        return list(candidates)\n\n    def score(self, partial, memory, action):\n        so, sd = (action.so, action.sd)\n        nxt = partial.copy(track=False)\n        nxt.move(so, sd)\n        new_bad = float(nxt.bad())\n        new_ub = float(sum((nxt.ub(i) for i in range(nxt.S))))\n        source_ub = float(partial.ub(so))\n        source_h = float(partial.h(so))\n        dest_h = float(partial.h(sd))\n        dest_g = float(partial.g(sd))\n        source_g = float(partial.g(so))\n        c = float(partial.g(so))\n        dest_well_placed = 0.0 if partial.h(sd) == 0 or c <= dest_g else 1.0\n        return 1000000.0 * new_bad + 10000.0 * new_ub + 100.0 * dest_well_placed + self._auto_safe_relocate_greedy_score_k1 * source_ub + 1.0 * source_h + self._auto_safe_relocate_greedy_score_k2 * dest_h + self._auto_safe_relocate_greedy_score_k3 * source_g + self._auto_safe_relocate_greedy_score_k4 * dest_g + 0.0001 * float(so) + 1e-05 * float(sd)\n\n    def update(self, partial, memory, action):\n        return memory\n\ndef _build_component_llm(problem, **params):\n    return RuleMachine(problem, [SafeRelocateGreedy()])\n_AUTO = {'safe_relocate_greedy_score_k1': 10.0, 'safe_relocate_greedy_score_k2': 0.1, 'safe_relocate_greedy_score_k3': 0.01, 'safe_relocate_greedy_score_k4': 0.001}\n_AUTO_OWNER = {'safe_relocate_greedy_score_k1': 'SafeRelocateGreedy', 'safe_relocate_greedy_score_k2': 'SafeRelocateGreedy', 'safe_relocate_greedy_score_k3': 'SafeRelocateGreedy', 'safe_relocate_greedy_score_k4': 'SafeRelocateGreedy'}\n_AUTO_ATTR = {}\n_AUTO_CLASSES = {'SafeRelocateGreedy': SafeRelocateGreedy}\n_AUTO_FACTORY = '_build_component_llm'\n\ndef build_component(problem, **params):\n    \"\"\"Envoltura del framework: los números que el LLM dejó sueltos en los métodos son parámetros\n    (`_AUTO`, declarados en COMPONENT; `_AUTO_OWNER`: la clase de cada uno). Se fijan en las clases\n    mientras se construye (por si un `__init__` los usa) y en cada instancia: la máquina, sus\n    reglas y sus transiciones.\"\"\"\n    attrs = globals().get('_AUTO_ATTR', {})\n    auto = {k: params.pop(k, v) for k, v in _AUTO.items()}\n    lifted = [k for k in auto if k not in attrs]\n    saved = {k: getattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k) for k in lifted}\n    for k in lifted:\n        setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k, auto[k])\n    try:\n        obj = _build_component_llm(problem, **params)\n    finally:\n        for k, v in saved.items():\n            setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k, v)\n    parts = [obj, getattr(obj, 'transitions', None), *list(getattr(obj, 'rules', None) or [])]\n    for part in parts:\n        for k, v in auto.items():\n            if part is not None and isinstance(part, _AUTO_CLASSES[_AUTO_OWNER[k]]):\n                setattr(part, attrs.get(k, '_auto_' + k), v)\n    return obj\n",
+      "component": {
+        "name": "safe_relocate_greedy",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {
+          "safe_relocate_greedy_score_k2": {
+            "type": "float",
+            "range": [
+              0.0,
+              0.2
+            ],
+            "default": 0.1
+          },
+          "safe_relocate_greedy_score_k3": {
+            "type": "float",
+            "range": [
+              0.0,
+              0.02
+            ],
+            "default": 0.01
+          }
+        }
+      }
+    },
+    {
+      "id": 1,
+      "rule": "safe_sorted_insert",
+      "name": "safe_sorted_insert",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 105.938,
+      "params": {},
+      "source": "COMPONENT = {'name': 'safe_sorted_insert', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {'source_bad_weight': {'type': 'float', 'range': [0.0, 10.0], 'default': 2.0}}}\nfrom core.rules import RuleMachine\n\nclass SafeSortedInsertRule:\n    \"\"\"Permite solo inserciones seguras sobre pilas ya ordenadas.\"\"\"\n    name = 'safe_sorted_insert'\n    priority = 100\n\n    def __init__(self, problem, source_bad_weight: float=2.0, destination_slack_weight: float=0.25):\n        self.problem = problem\n        self.source_bad_weight = source_bad_weight\n        self.destination_slack_weight = destination_slack_weight\n\n    def init(self, partial):\n        return ()\n\n    def update(self, partial, memory, action):\n        return memory\n\n    def allowed(self, partial, memory, candidates):\n        allowed = []\n        for action in candidates:\n            so, sd = (action.so, action.sd)\n            if not partial.stacks[so]:\n                continue\n            c = partial.g(so)\n            if partial.h(sd) == 0 or c <= partial.g(sd):\n                if not partial.is_sorted_stack(so) or partial.ub(so) > 0:\n                    allowed.append(action)\n        return allowed\n\n    def score(self, partial, memory, action):\n        nxt = partial.copy(track=False)\n        nxt.move(action.so, action.sd)\n        score = float(nxt.bad()) * 1000.0\n        score += float(nxt.ub(action.so)) * self.source_bad_weight\n        score -= float(partial.sorted_n[action.sd]) * self.destination_slack_weight\n        return score\n\ndef build_component(problem, **params):\n    source_bad_weight = params.get('source_bad_weight', 2.0)\n    destination_slack_weight = params.get('destination_slack_weight', 0.25)\n    rule = SafeSortedInsertRule(problem, source_bad_weight=source_bad_weight, destination_slack_weight=destination_slack_weight)\n    return RuleMachine(problem, [rule])\n",
+      "component": {
+        "name": "safe_sorted_insert",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {
+          "source_bad_weight": {
+            "type": "float",
+            "range": [
+              0.0,
+              10.0
+            ],
+            "default": 2.0
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "rule": "safe_relocate_greedy",
+      "name": "safe_relocate_greedy_refined",
+      "op": "refine_rule",
+      "parent": 0,
+      "macro": false,
+      "alone": 69.688,
+      "params": {},
+      "source": "COMPONENT = {'name': 'safe_relocate_greedy_refined', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {'bad_weight': {'type': 'float', 'range': [1.0, 5000000.0], 'default': 1000000.0}, 'unlock_weight': {'type': 'float', 'range': [0.0, 1000000.0], 'default': 10000.0}, 'dest_sorted_bonus': {'type': 'float', 'range': [0.0, 100000.0], 'default': 50.0}, 'dest_h_weight': {'type': 'float', 'range': [0.0, 1000.0], 'default': 1.0}, 'source_h_weight': {'type': 'float', 'range': [0.0, 1000.0], 'default': 1.0}, 'source_g_weight': {'type': 'float', 'range': [0.0, 100.0], 'default': 0.1}, 'dest_g_weight': {'type': 'float', 'range': [0.0, 100.0], 'default': 0.01}, 'so_tiebreak': {'type': 'float', 'range': [0.0, 1.0], 'default': 0.0001}, 'sd_tiebreak': {'type': 'float', 'range': [0.0, 1.0], 'default': 1e-05}}}\nfrom core.rules import RuleMachine\n\nclass SafeRelocateGreedy:\n    name = 'safe_relocate_greedy'\n    priority = 100\n\n    def __init__(self, bad_weight: float=1000000.0, unlock_weight: float=10000.0, source_bad_weight: float=1000.0, source_ub_weight: float=100.0, dest_sorted_bonus: float=50.0, dest_ub_weight: float=10.0, dest_h_weight: float=1.0, source_h_weight: float=1.0, source_g_weight: float=0.1, dest_g_weight: float=0.01, so_tiebreak: float=0.0001, sd_tiebreak: float=1e-05):\n        self.bad_weight = bad_weight\n        self.unlock_weight = unlock_weight\n        self.source_bad_weight = source_bad_weight\n        self.source_ub_weight = source_ub_weight\n        self.dest_sorted_bonus = dest_sorted_bonus\n        self.dest_ub_weight = dest_ub_weight\n        self.dest_h_weight = dest_h_weight\n        self.source_h_weight = source_h_weight\n        self.source_g_weight = source_g_weight\n        self.dest_g_weight = dest_g_weight\n        self.so_tiebreak = so_tiebreak\n        self.sd_tiebreak = sd_tiebreak\n\n    def init(self, partial):\n        return ()\n\n    def allowed(self, partial, memory, candidates):\n        return list(candidates)\n\n    def score(self, partial, memory, action):\n        so, sd = (action.so, action.sd)\n        nxt = partial.copy(track=False)\n        nxt.move(so, sd)\n        new_bad = float(nxt.bad())\n        unlocked = float(sum((nxt.ub(i) for i in range(nxt.S))))\n        source_bad_after = float(nxt.h(so) - nxt.sorted_n[so])\n        source_ub_after = float(nxt.ub(so))\n        dest_ub_after = float(nxt.ub(sd))\n        dest_sorted_after = 0.0 if nxt.is_sorted_stack(sd) else 1.0\n        source_h = float(nxt.h(so))\n        dest_h = float(nxt.h(sd))\n        source_g = float(nxt.g(so))\n        dest_g = float(nxt.g(sd))\n        return self.bad_weight * new_bad + self.unlock_weight * unlocked + self.source_bad_weight * source_bad_after + self.source_ub_weight * source_ub_after + self.dest_sorted_bonus * dest_sorted_after + self.dest_ub_weight * dest_ub_after + self.source_h_weight * source_h + self.dest_h_weight * dest_h + self.source_g_weight * source_g + self.dest_g_weight * dest_g + self.so_tiebreak * float(so) + self.sd_tiebreak * float(sd)\n\n    def update(self, partial, memory, action):\n        return memory\n\ndef build_component(problem, **params):\n    return RuleMachine(problem, [SafeRelocateGreedy(**params)])\n",
+      "component": {
+        "name": "safe_relocate_greedy_refined",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {
+          "bad_weight": {
+            "type": "float",
+            "range": [
+              1.0,
+              5000000.0
+            ],
+            "default": 1000000.0
+          },
+          "unlock_weight": {
+            "type": "float",
+            "range": [
+              0.0,
+              1000000.0
+            ],
+            "default": 10000.0
+          },
+          "dest_sorted_bonus": {
+            "type": "float",
+            "range": [
+              0.0,
+              100000.0
+            ],
+            "default": 50.0
+          },
+          "dest_h_weight": {
+            "type": "float",
+            "range": [
+              0.0,
+              1000.0
+            ],
+            "default": 1.0
+          },
+          "source_h_weight": {
+            "type": "float",
+            "range": [
+              0.0,
+              1000.0
+            ],
+            "default": 1.0
+          },
+          "source_g_weight": {
+            "type": "float",
+            "range": [
+              0.0,
+              100.0
+            ],
+            "default": 0.1
+          },
+          "dest_g_weight": {
+            "type": "float",
+            "range": [
+              0.0,
+              100.0
+            ],
+            "default": 0.01
+          },
+          "so_tiebreak": {
+            "type": "float",
+            "range": [
+              0.0,
+              1.0
+            ],
+            "default": 0.0001
+          },
+          "sd_tiebreak": {
+            "type": "float",
+            "range": [
+              0.0,
+              1.0
+            ],
+            "default": 1e-05
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "rule": "sorted_support_insert",
+      "name": "sorted_support_insert",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 82.312,
+      "params": {},
+      "source": "COMPONENT = {'name': 'sorted_support_insert', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {'sorted_support_insert_score_k1': {'type': 'float', 'range': [0.0, 0.2], 'default': 0.1}, 'sorted_support_insert_score_k2': {'type': 'float', 'range': [0.0, 0.02], 'default': 0.01}}}\nfrom core.rules import RuleMachine\n\nclass SortedSupportInsert:\n    _auto_sorted_support_insert_score_k1 = 0.1\n    _auto_sorted_support_insert_score_k2 = 0.01\n    'Regla de construcción: prioriza insertar contenedores en pilas ya ordenadas.'\n    name = 'sorted_support_insert'\n    priority = 80\n\n    def allowed(self, partial, memory, candidates):\n        allowed = []\n        for a in candidates:\n            so, sd = (a.so, a.sd)\n            if not partial.is_sorted_stack(sd):\n                continue\n            if partial.g(so) <= partial.g(sd):\n                allowed.append(a)\n        return allowed\n\n    def score(self, partial, memory, action):\n        sd = action.sd\n        so = action.so\n        dest_height = float(partial.h(sd))\n        src_height = float(partial.h(so))\n        src_badness = float(partial.h(so) - partial.sorted_n[so])\n        return dest_height + self._auto_sorted_support_insert_score_k1 * src_height - self._auto_sorted_support_insert_score_k2 * src_badness\n\ndef _build_component_llm(problem, **params):\n    return RuleMachine(problem, [SortedSupportInsert()])\n\n_AUTO = {'sorted_support_insert_score_k1': 0.1, 'sorted_support_insert_score_k2': 0.01}\n_AUTO_OWNER = {'sorted_support_insert_score_k1': 'SortedSupportInsert', 'sorted_support_insert_score_k2': 'SortedSupportInsert'}\n_AUTO_ATTR = {}\n_AUTO_CLASSES = {'SortedSupportInsert': SortedSupportInsert}\n_AUTO_FACTORY = '_build_component_llm'\n\ndef build_component(problem, **params):\n    \"\"\"Envoltura del framework: los números que el LLM dejó sueltos en los métodos son parámetros\n    (`_AUTO`, declarados en COMPONENT; `_AUTO_OWNER`: la clase de cada uno). Se fijan en las clases\n    mientras se construye (por si un `__init__` los usa) y en cada instancia: la máquina, sus\n    reglas y sus transiciones.\"\"\"\n    attrs = globals().get(\"_AUTO_ATTR\", {})  # parámetro -> atributo de la instancia (los defaults de un __init__)\n    auto = {k: params.pop(k, v) for k, v in _AUTO.items()}\n    lifted = [k for k in auto if k not in attrs]\n    saved = {k: getattr(_AUTO_CLASSES[_AUTO_OWNER[k]], \"_auto_\" + k) for k in lifted}\n    for k in lifted:\n        setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], \"_auto_\" + k, auto[k])\n    try:\n        obj = _build_component_llm(problem, **params)\n    finally:\n        for k, v in saved.items():\n            setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], \"_auto_\" + k, v)\n    parts = [obj, getattr(obj, \"transitions\", None), *list(getattr(obj, \"rules\", None) or [])]\n    for part in parts:\n        for k, v in auto.items():\n            if part is not None and isinstance(part, _AUTO_CLASSES[_AUTO_OWNER[k]]):\n                setattr(part, attrs.get(k, \"_auto_\" + k), v)\n    return obj\n",
+      "component": {
+        "name": "sorted_support_insert",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {
+          "sorted_support_insert_score_k1": {
+            "type": "float",
+            "range": [
+              0.0,
+              0.2
+            ],
+            "default": 0.1
+          },
+          "sorted_support_insert_score_k2": {
+            "type": "float",
+            "range": [
+              0.0,
+              0.02
+            ],
+            "default": 0.01
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "rule": "unlock_to_sorted_support",
+      "name": "unlock_to_sorted_support",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 111.312,
+      "params": {},
+      "source": "COMPONENT = {'name': 'unlock_to_sorted_support', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {}}\nfrom core.rules import RuleMachine\n\nclass UnlockToSortedSupport:\n    _auto_unlock_to_sorted_support_score_k1 = 10\n    'Mueve un contenedor bloqueado a una pila ya ordenada que lo pueda soportar.'\n    name = 'unlock_to_sorted_support'\n    priority = 100\n\n    def init(self, partial):\n        return ()\n\n    def allowed(self, partial, memory, candidates):\n        allowed = []\n        for a in candidates:\n            so, sd = (a.so, a.sd)\n            if partial.ub(so) <= 0:\n                continue\n            if not partial.is_sorted_stack(sd):\n                continue\n            if partial.g(sd) < partial.g(so):\n                continue\n            allowed.append(a)\n        return allowed\n\n    def score(self, partial, memory, action):\n        so, sd = (action.so, action.sd)\n        nxt = partial.copy(track=False)\n        before_bad = nxt.bad()\n        before_src_ub = nxt.ub(so)\n        before_dst_h = nxt.h(sd)\n        nxt.move(so, sd)\n        after_bad = nxt.bad()\n        after_src_ub = nxt.ub(so) if so < nxt.S else 0\n        after_dst_sorted = 1 if nxt.is_sorted_stack(sd) else 0\n        return 1000000 * after_bad - 10000 * (before_bad - after_bad) - 1000 * (before_src_ub - after_src_ub) - 100 * after_dst_sorted + self._auto_unlock_to_sorted_support_score_k1 * before_dst_h + sd\n\n    def update(self, partial, memory, action):\n        return memory\n\ndef _build_component_llm(problem, **params):\n    return RuleMachine(problem, [UnlockToSortedSupport()])\n_AUTO = {'unlock_to_sorted_support_score_k1': 10}\n_AUTO_OWNER = {'unlock_to_sorted_support_score_k1': 'UnlockToSortedSupport'}\n_AUTO_ATTR = {}\n_AUTO_CLASSES = {'UnlockToSortedSupport': UnlockToSortedSupport}\n_AUTO_FACTORY = '_build_component_llm'\n\ndef build_component(problem, **params):\n    \"\"\"Envoltura del framework: los números que el LLM dejó sueltos en los métodos son parámetros\n    (`_AUTO`, declarados en COMPONENT; `_AUTO_OWNER`: la clase de cada uno). Se fijan en las clases\n    mientras se construye (por si un `__init__` los usa) y en cada instancia: la máquina, sus\n    reglas y sus transiciones.\"\"\"\n    attrs = globals().get('_AUTO_ATTR', {})\n    auto = {k: params.pop(k, v) for k, v in _AUTO.items()}\n    lifted = [k for k in auto if k not in attrs]\n    saved = {k: getattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k) for k in lifted}\n    for k in lifted:\n        setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k, auto[k])\n    try:\n        obj = _build_component_llm(problem, **params)\n    finally:\n        for k, v in saved.items():\n            setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k, v)\n    parts = [obj, getattr(obj, 'transitions', None), *list(getattr(obj, 'rules', None) or [])]\n    for part in parts:\n        for k, v in auto.items():\n            if part is not None and isinstance(part, _AUTO_CLASSES[_AUTO_OWNER[k]]):\n                setattr(part, attrs.get(k, '_auto_' + k), v)\n    return obj\n",
+      "component": {
+        "name": "unlock_to_sorted_support",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {}
+      }
+    },
+    {
+      "id": 5,
+      "rule": "safe_relocate_greedy",
+      "name": "safe_relocate_sorted_support_refined",
+      "op": "refine_rule",
+      "parent": 0,
+      "macro": false,
+      "alone": 104.5,
+      "params": {},
+      "source": "COMPONENT = {'name': 'safe_relocate_sorted_support_refined', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {'bad_weight': {'type': 'float', 'range': [100000.0, 5000000.0], 'default': 1000000.0}}}\nfrom core.rules import RuleMachine\n\nclass SafeRelocateGreedy:\n    _auto_safe_relocate_greedy_score_k1 = 5.0\n    'Regla simple: prioriza recolocaciones seguras hacia pilas ya ordenadas.'\n    name = 'safe_relocate_greedy'\n    priority = 100\n\n    def __init__(self, bad_weight: float=1000000.0, ub_weight: float=10000.0, source_bad_weight: float=100.0, source_sorted_penalty: float=10.0, dest_sorted_bonus: float=1.0, move_index_weight: float=0.0001):\n        self.bad_weight = float(bad_weight)\n        self.ub_weight = float(ub_weight)\n        self.source_bad_weight = float(source_bad_weight)\n        self.source_sorted_penalty = float(source_sorted_penalty)\n        self.dest_sorted_bonus = float(dest_sorted_bonus)\n        self.move_index_weight = float(move_index_weight)\n\n    def init(self, partial):\n        return ()\n\n    def allowed(self, partial, memory, candidates):\n        candidates = list(candidates)\n        if not candidates:\n            return []\n        safe_sorted = []\n        safe_any = []\n        for action in candidates:\n            so, sd = (action.so, action.sd)\n            c = partial.g(so)\n            dest_keeps_sorted = partial.is_sorted_stack(sd) and (partial.h(sd) == 0 or c <= partial.g(sd))\n            if dest_keeps_sorted:\n                safe_sorted.append(action)\n            if partial.h(sd) == 0 or c <= partial.g(sd):\n                safe_any.append(action)\n        if safe_sorted:\n            return safe_sorted\n        if safe_any:\n            return safe_any\n        return candidates\n\n    def score(self, partial, memory, action):\n        so, sd = (action.so, action.sd)\n        nxt = partial.copy(track=False)\n        nxt.move(so, sd)\n        new_bad = float(nxt.bad())\n        new_ub = float(sum((nxt.ub(i) for i in range(nxt.S))))\n        source_bad = float(partial.h(so) - partial.sorted_n[so])\n        source_sorted = 1.0 if partial.is_sorted_stack(so) else 0.0\n        dest_sorted = 1.0 if partial.is_sorted_stack(sd) else 0.0\n        dest_keeps_sorted = 1.0 if partial.is_sorted_stack(sd) and (partial.h(sd) == 0 or partial.g(so) <= partial.g(sd)) else 0.0\n        score = 0.0\n        score += self.bad_weight * new_bad\n        score += self.ub_weight * new_ub\n        score += self.source_bad_weight * source_bad\n        score += self.source_sorted_penalty * source_sorted\n        score -= self.dest_sorted_bonus * dest_sorted\n        score -= self._auto_safe_relocate_greedy_score_k1 * dest_keeps_sorted\n        score += self.move_index_weight * float(so * partial.S + sd)\n        return score\n\n    def update(self, partial, memory, action):\n        return memory\n\ndef _build_component_llm(problem, **params):\n    return RuleMachine(problem, [SafeRelocateGreedy(**params)])\n_AUTO = {'safe_relocate_greedy_score_k1': 5.0}\n_AUTO_OWNER = {'safe_relocate_greedy_score_k1': 'SafeRelocateGreedy'}\n_AUTO_ATTR = {}\n_AUTO_CLASSES = {'SafeRelocateGreedy': SafeRelocateGreedy}\n_AUTO_FACTORY = '_build_component_llm'\n\ndef build_component(problem, **params):\n    \"\"\"Envoltura del framework: los números que el LLM dejó sueltos en los métodos son parámetros\n    (`_AUTO`, declarados en COMPONENT; `_AUTO_OWNER`: la clase de cada uno). Se fijan en las clases\n    mientras se construye (por si un `__init__` los usa) y en cada instancia: la máquina, sus\n    reglas y sus transiciones.\"\"\"\n    attrs = globals().get('_AUTO_ATTR', {})\n    auto = {k: params.pop(k, v) for k, v in _AUTO.items()}\n    lifted = [k for k in auto if k not in attrs]\n    saved = {k: getattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k) for k in lifted}\n    for k in lifted:\n        setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k, auto[k])\n    try:\n        obj = _build_component_llm(problem, **params)\n    finally:\n        for k, v in saved.items():\n            setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k, v)\n    parts = [obj, getattr(obj, 'transitions', None), *list(getattr(obj, 'rules', None) or [])]\n    for part in parts:\n        for k, v in auto.items():\n            if part is not None and isinstance(part, _AUTO_CLASSES[_AUTO_OWNER[k]]):\n                setattr(part, attrs.get(k, '_auto_' + k), v)\n    return obj\n",
+      "component": {
+        "name": "safe_relocate_sorted_support_refined",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {
+          "bad_weight": {
+            "type": "float",
+            "range": [
+              100000.0,
+              5000000.0
+            ],
+            "default": 1000000.0
+          }
+        }
+      }
+    },
+    {
+      "id": 6,
+      "rule": "safe_relocate_greedy",
+      "name": "safe_relocate_greedy_refined",
+      "op": "refine_rule",
+      "parent": 0,
+      "macro": false,
+      "alone": 105.562,
+      "params": {},
+      "source": "COMPONENT = {'name': 'safe_relocate_greedy_refined', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {'safe_insert_bonus': {'type': 'float', 'range': [0.0, 1.0], 'default': 0.35}, 'source_ub_weight': {'type': 'float', 'range': [0.0, 10.0], 'default': 1.5}, 'dest_height_weight': {'type': 'float', 'range': [0.0, 10.0], 'default': 0.2}, 'dest_slack_weight': {'type': 'float', 'range': [0.0, 10.0], 'default': 0.1}, 'safe_relocate_greedy_score_k1': {'type': 'float', 'range': [0.0, 20.0], 'default': 10.0}}}\nfrom core.rules import RuleMachine\n\nclass SafeRelocateGreedy:\n    _auto_safe_relocate_greedy_score_k1 = 10.0\n    name = 'safe_relocate_greedy'\n    priority = 100\n\n    def __init__(self, safe_insert_bonus: float=0.35, source_bad_weight: float=2.5, source_ub_weight: float=1.5, dest_height_weight: float=0.2, dest_slack_weight: float=0.1):\n        self.safe_insert_bonus = float(safe_insert_bonus)\n        self.source_bad_weight = float(source_bad_weight)\n        self.source_ub_weight = float(source_ub_weight)\n        self.dest_height_weight = float(dest_height_weight)\n        self.dest_slack_weight = float(dest_slack_weight)\n\n    def init(self, partial):\n        return ()\n\n    def allowed(self, partial, memory, candidates):\n        if not candidates:\n            return []\n        preferred = []\n        secondary = []\n        fallback = []\n        for a in candidates:\n            so, sd = (a.so, a.sd)\n            c = partial.g(so)\n            dest_top = partial.g(sd)\n            dest_sorted = partial.is_sorted_stack(sd)\n            if dest_sorted and c <= dest_top:\n                preferred.append(a)\n                continue\n            if c <= dest_top or partial.ub(so) > 0:\n                secondary.append(a)\n            else:\n                fallback.append(a)\n        if preferred:\n            return sorted(preferred, key=lambda a: self.score(partial, memory, a))\n        if secondary:\n            return sorted(secondary, key=lambda a: self.score(partial, memory, a))\n        return sorted(fallback, key=lambda a: self.score(partial, memory, a))\n\n    def score(self, partial, memory, action):\n        so, sd = (action.so, action.sd)\n        nxt = partial.copy(track=False)\n        nxt.move(so, sd)\n        new_bad = float(nxt.bad())\n        source_bad = float(partial.bad())\n        source_ub = float(partial.ub(so))\n        dest_ub = float(partial.ub(sd))\n        dest_h = float(partial.h(sd))\n        dest_e = float(partial.e(sd))\n        source_h = float(partial.h(so))\n        c = float(partial.g(so))\n        dest_top = float(partial.g(sd))\n        safe_insert = 1.0 if c <= dest_top else 0.0\n        dest_sorted = 1.0 if partial.is_sorted_stack(sd) else 0.0\n        score = 1000000.0 * new_bad\n        score += self.source_bad_weight * source_bad\n        score += self.source_ub_weight * source_ub\n        score += self.dest_height_weight * dest_h\n        score += self.dest_slack_weight * dest_e\n        score -= self.safe_insert_bonus * (100.0 * dest_sorted + self._auto_safe_relocate_greedy_score_k1 * safe_insert)\n        score += 0.0001 * float(so) + 1e-05 * float(sd) + 1e-06 * dest_ub + 1e-07 * source_h\n        return score\n\n    def update(self, partial, memory, action):\n        return memory\n\ndef _build_component_llm(problem, **params):\n    rule = SafeRelocateGreedy(safe_insert_bonus=params.get('safe_insert_bonus', 0.35), source_bad_weight=params.get('source_bad_weight', 2.5), source_ub_weight=params.get('source_ub_weight', 1.5), dest_height_weight=params.get('dest_height_weight', 0.2), dest_slack_weight=params.get('dest_slack_weight', 0.1))\n    return RuleMachine(problem, [rule])\n_AUTO = {'safe_relocate_greedy_score_k1': 10.0}\n_AUTO_OWNER = {'safe_relocate_greedy_score_k1': 'SafeRelocateGreedy'}\n_AUTO_ATTR = {}\n_AUTO_CLASSES = {'SafeRelocateGreedy': SafeRelocateGreedy}\n_AUTO_FACTORY = '_build_component_llm'\n\ndef build_component(problem, **params):\n    \"\"\"Envoltura del framework: los números que el LLM dejó sueltos en los métodos son parámetros\n    (`_AUTO`, declarados en COMPONENT; `_AUTO_OWNER`: la clase de cada uno). Se fijan en las clases\n    mientras se construye (por si un `__init__` los usa) y en cada instancia: la máquina, sus\n    reglas y sus transiciones.\"\"\"\n    attrs = globals().get('_AUTO_ATTR', {})\n    auto = {k: params.pop(k, v) for k, v in _AUTO.items()}\n    lifted = [k for k in auto if k not in attrs]\n    saved = {k: getattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k) for k in lifted}\n    for k in lifted:\n        setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k, auto[k])\n    try:\n        obj = _build_component_llm(problem, **params)\n    finally:\n        for k, v in saved.items():\n            setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k, v)\n    parts = [obj, getattr(obj, 'transitions', None), *list(getattr(obj, 'rules', None) or [])]\n    for part in parts:\n        for k, v in auto.items():\n            if part is not None and isinstance(part, _AUTO_CLASSES[_AUTO_OWNER[k]]):\n                setattr(part, attrs.get(k, '_auto_' + k), v)\n    return obj\n",
+      "component": {
+        "name": "safe_relocate_greedy_refined",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {
+          "safe_insert_bonus": {
+            "type": "float",
+            "range": [
+              0.0,
+              1.0
+            ],
+            "default": 0.35
+          },
+          "source_ub_weight": {
+            "type": "float",
+            "range": [
+              0.0,
+              10.0
+            ],
+            "default": 1.5
+          },
+          "dest_height_weight": {
+            "type": "float",
+            "range": [
+              0.0,
+              10.0
+            ],
+            "default": 0.2
+          },
+          "dest_slack_weight": {
+            "type": "float",
+            "range": [
+              0.0,
+              10.0
+            ],
+            "default": 0.1
+          },
+          "safe_relocate_greedy_score_k1": {
+            "type": "float",
+            "range": [
+              0.0,
+              20.0
+            ],
+            "default": 10.0
+          }
+        }
+      }
+    },
+    {
+      "id": 7,
+      "rule": "safe_relocate_greedy",
+      "name": "safe_relocate_greedy_refined",
+      "op": "refine_rule",
+      "parent": 0,
+      "macro": false,
+      "alone": 60.0,
+      "params": {},
+      "source": "COMPONENT = {'name': 'safe_relocate_greedy_refined', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {'source_height_weight': {'type': 'float', 'default': 0.2, 'range': [0.0, 5.0]}}}\nfrom core.rules import RuleMachine\n\nclass SafeRelocateGreedyRefined:\n    name = 'safe_relocate_greedy'\n    priority = 100\n\n    def __init__(self, prefer_sorted_support: bool=True, prefer_repair_source: bool=True, source_bad_weight: float=8.0, dest_bad_weight: float=4.0, unlock_weight: float=2.0, sorted_support_bonus: float=3.0, tight_support_bonus: float=1.5, empty_dest_bonus: float=0.8, source_height_weight: float=0.2, dest_height_weight: float=0.1, tie_so_weight: float=0.0001, tie_sd_weight: float=1e-05):\n        self.prefer_sorted_support = prefer_sorted_support\n        self.prefer_repair_source = prefer_repair_source\n        self.source_bad_weight = source_bad_weight\n        self.dest_bad_weight = dest_bad_weight\n        self.unlock_weight = unlock_weight\n        self.sorted_support_bonus = sorted_support_bonus\n        self.tight_support_bonus = tight_support_bonus\n        self.empty_dest_bonus = empty_dest_bonus\n        self.source_height_weight = source_height_weight\n        self.dest_height_weight = dest_height_weight\n        self.tie_so_weight = tie_so_weight\n        self.tie_sd_weight = tie_sd_weight\n\n    def init(self, partial):\n        return ()\n\n    def allowed(self, partial, memory, candidates):\n        return list(candidates)\n\n    def score(self, partial, memory, action):\n        so, sd = (action.so, action.sd)\n        source_bad = float(partial.ub(so))\n        dest_bad = float(partial.ub(sd))\n        source_top = partial.g(so)\n        dest_top = partial.g(sd)\n        source_sorted = bool(partial.is_sorted_stack(so))\n        dest_sorted = bool(partial.is_sorted_stack(sd))\n        source_h = float(partial.h(so))\n        dest_h = float(partial.h(sd))\n        nxt = partial.copy(track=False)\n        nxt.move(so, sd)\n        new_bad = float(nxt.bad())\n        new_ub = float(sum((nxt.ub(i) for i in range(nxt.S))))\n        support_ok = 1.0 if dest_sorted and source_top <= dest_top else 0.0\n        tight_support = 1.0 if dest_sorted and (dest_h > 0 or partial.h(sd) == 0) else 0.0\n        empty_dest = 1.0 if partial.h(sd) == 0 else 0.0\n        repair_source = 1.0 if source_bad > 0 else 0.0\n        score = 0.0\n        score += 1000000.0 * new_bad\n        score += 10000.0 * new_ub\n        score += self.source_bad_weight * source_bad\n        score += self.dest_bad_weight * dest_bad\n        if self.prefer_repair_source:\n            score -= self.unlock_weight * repair_source\n        if self.prefer_sorted_support:\n            score -= self.sorted_support_bonus * support_ok\n            score -= self.tight_support_bonus * tight_support\n        score -= self.empty_dest_bonus * empty_dest\n        score += self.source_height_weight * source_h\n        score += self.dest_height_weight * dest_h\n        score += self.tie_so_weight * float(so)\n        score += self.tie_sd_weight * float(sd)\n        return score\n\n    def update(self, partial, memory, action):\n        return memory\n\ndef build_component(problem, **params):\n    return RuleMachine(problem, [SafeRelocateGreedyRefined(**params)])\n",
+      "component": {
+        "name": "safe_relocate_greedy_refined",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {
+          "source_height_weight": {
+            "type": "float",
+            "default": 0.2,
+            "range": [
+              0.0,
+              5.0
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
