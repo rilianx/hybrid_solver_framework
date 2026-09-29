@@ -1569,5 +1569,307 @@
       "cached_input_tokens": 29952,
       "reasoning_tokens": 18531
     }
+  },
+  {
+    "seed": false,
+    "rounds": 12,
+    "archive": [
+      "supporting_safe_move_refined_v4",
+      "supporting_safe_move_refined_v5_7",
+      "supporting_safe_move_refined_v6",
+      "minimal"
+    ],
+    "written": [
+      {
+        "name": "supporting_safe_move_refined_v4",
+        "path": "generated/cpmp_evolve/construction_machine/supporting_safe_move_refined_v4_r1.py",
+        "fitness": 58.25,
+        "params": {
+          "supporting_safe_move_w_bad": 8.0,
+          "supporting_safe_move_w_ub": 6.0,
+          "supporting_safe_move_w_dest_sorted": 1.5,
+          "supporting_safe_move_w_src_sorted": 2.5,
+          "supporting_safe_move_w_gap": 1.0,
+          "supporting_safe_move_w_fill": 0.75,
+          "supporting_safe_move_max_bad_increase": 1,
+          "supporting_safe_move_prefer_safe_only": true
+        }
+      },
+      {
+        "name": "supporting_safe_move_refined_v5_7",
+        "path": "generated/cpmp_evolve/construction_machine/supporting_safe_move_refined_v5_7_r1.py",
+        "fitness": 61.812,
+        "params": {}
+      },
+      {
+        "name": "supporting_safe_move_refined_v6",
+        "path": "generated/cpmp_evolve/construction_machine/supporting_safe_move_refined_v6_r1.py",
+        "fitness": 62.188,
+        "params": {}
+      }
+    ],
+    "individuals": [
+      {
+        "id": 0,
+        "name": "minimal",
+        "parent": null,
+        "op": "base",
+        "target": null,
+        "states": [],
+        "params": {},
+        "train": 92.5,
+        "fitness": 83.0,
+        "status": "retomado"
+      },
+      {
+        "id": 1,
+        "name": "supporting_safe_move_refined_v2",
+        "parent": null,
+        "op": "refine_rule",
+        "target": "supporting_safe_move",
+        "states": [
+          "supporting_safe_move"
+        ],
+        "params": {
+          "w_fill": 4.721427154527134,
+          "w_dest_top": 1.007012080683658,
+          "supporting_safe_move_propose_k1": 52.10062025445404,
+          "supporting_safe_move_propose_k4": 7.330643681325619,
+          "supporting_safe_move_w_bad": 7.304088425903186,
+          "supporting_safe_move_w_ub": 3.8664254710830352,
+          "supporting_safe_move_w_sorted": 0.9540195531054341,
+          "supporting_safe_move_w_src_ub": 2.5959297833149204
+        },
+        "train": 80.0,
+        "fitness": 78.375,
+        "status": "retomado"
+      },
+      {
+        "id": 2,
+        "name": "supporting_safe_move_refined_v3",
+        "parent": null,
+        "op": "refine_rule",
+        "target": "supporting_safe_move",
+        "states": [
+          "supporting_safe_move"
+        ],
+        "params": {
+          "w_ub": 2.0,
+          "w_fill": 0.5,
+          "w_src_ub": 1.5,
+          "w_dest_top": 0.25,
+          "w_future": 1.25,
+          "w_dest_sorted": 2.0,
+          "w_source_sorted": 0.75,
+          "supporting_safe_move_w_bad": 4.0,
+          "supporting_safe_move_w_sorted": 1.0
+        },
+        "train": 77.75,
+        "fitness": 73.188,
+        "status": "retomado"
+      },
+      {
+        "id": 3,
+        "name": "supporting_safe_move_refined_v4",
+        "parent": null,
+        "op": "refine_rule",
+        "target": "supporting_safe_move",
+        "states": [
+          "supporting_safe_move"
+        ],
+        "params": {
+          "supporting_safe_move_w_bad": 8.0,
+          "supporting_safe_move_w_ub": 6.0,
+          "supporting_safe_move_w_dest_sorted": 1.5,
+          "supporting_safe_move_w_src_sorted": 2.5,
+          "supporting_safe_move_w_gap": 1.0,
+          "supporting_safe_move_w_fill": 0.75,
+          "supporting_safe_move_max_bad_increase": 1,
+          "supporting_safe_move_prefer_safe_only": true
+        },
+        "train": 61.0,
+        "fitness": 58.25,
+        "status": "retomado"
+      },
+      {
+        "id": 4,
+        "name": "supporting_safe_move_refined_v5",
+        "parent": 3,
+        "op": "refine_rule",
+        "target": "supporting_safe_move",
+        "states": [
+          "supporting_safe_move"
+        ],
+        "params": {},
+        "train": 61.25,
+        "fitness": 66.938,
+        "round": 1,
+        "status": "archivo"
+      },
+      {
+        "id": 5,
+        "name": "supporting_safe_move_transition_gated_v1",
+        "parent": 4,
+        "op": "change_transitions",
+        "target": null,
+        "states": [
+          "supporting_safe_move"
+        ],
+        "params": {},
+        "train": 60.875,
+        "fitness": 66.938,
+        "round": 2,
+        "status": "archivo"
+      },
+      {
+        "id": 6,
+        "name": "supporting_safe_move_refined_v6",
+        "parent": 5,
+        "op": "refine_rule",
+        "target": "supporting_safe_move",
+        "states": [
+          "supporting_safe_move"
+        ],
+        "params": {},
+        "train": 61.0,
+        "fitness": 62.188,
+        "round": 3,
+        "status": "archivo"
+      },
+      {
+        "id": 7,
+        "parent": 3,
+        "op": "add_rule",
+        "target": null,
+        "round": 4,
+        "repaired": false,
+        "status": "rechazado",
+        "reason": "add_rule debe agregar exactamente una regla a ['supporting_safe_move'] (el hijo tiene ['direct_fill'])"
+      },
+      {
+        "id": 7,
+        "parent": 6,
+        "op": "add_rule",
+        "target": null,
+        "round": 5,
+        "repaired": false,
+        "normalized": [
+          "números sueltos extraídos como parámetros: ['gatedrescuetransitions_bad_limit', 'gatedrescuetransitions_prefer_rule_when_feasible', 'gatedrescuetransitions_sorted_stack_limit', 'gatedrescuetransitions_ub_limit', 'supporting_safe_move_w_bad', 'supporting_safe_move_w_dest_sorted', 'supporting_safe_move_w_fill', 'supporting_safe_move_w_gap', 'supporting_safe_move_w_src_sorted', 'supporting_safe_move_w_ub']",
+          "parámetros sin efecto sacados de COMPONENT (quedan fijos en su default): ['rescue_bad_threshold', 'rescue_ub_threshold', 'prefer_sorted_dest', 'prefer_safe_only', 'rescue_w_bad', 'rescue_w_ub', 'rescue_w_dest_sorted', 'rescue_w_src_sorted', 'rescue_w_fill', 'max_bad_increase', 'transition_bad_switch', 'transition_ub_switch', 'transition_sorted_switch', 'supporting_safe_move_w_bad', 'supporting_safe_move_w_dest_sorted', 'supporting_safe_move_w_src_sorted', 'supporting_safe_move_w_fill', 'gatedrescuetransitions_prefer_rule_when_feasible']"
+        ],
+        "status": "rechazado",
+        "reason": "cand_7.py: rechazado en la capa 'syntactic'. Propiedades violadas:\n  - no_loose_constants: números sueltos en el código: 0.5 (línea 204), 3 (línea 204), 6 (línea 204), 10 (línea 204), 0.5 (línea 205), 3 (línea 205), 4 (línea 205), 6 (línea 205), 10 (línea 205), 4 (línea 206), 8 (línea 206). Todo número que decide algo (umbral, peso, tope, desempate) va en COMPONENT['params'] con 'range' y 'default', y llega por build_component(problem, **params), para que el tuner lo afine. Se permiten 0, ±1, 2, tolerancias (< 1e-3) y potencias de 10 desde 100 (orden lexicográfico o centinela)."
+      },
+      {
+        "id": 7,
+        "name": "supporting_safe_move_refined_v5_7",
+        "parent": 3,
+        "op": "refine_rule",
+        "target": "supporting_safe_move",
+        "states": [
+          "supporting_safe_move"
+        ],
+        "params": {},
+        "train": 59.375,
+        "fitness": 61.812,
+        "round": 6,
+        "status": "archivo"
+      },
+      {
+        "id": 8,
+        "name": "supporting_safe_move_refined_v7",
+        "parent": 3,
+        "op": "refine_rule",
+        "target": "supporting_safe_move",
+        "states": [
+          "supporting_safe_move"
+        ],
+        "params": {},
+        "train": 71.625,
+        "fitness": 63.375,
+        "round": 7,
+        "status": "no mejora su nicho"
+      },
+      {
+        "id": 9,
+        "name": "supporting_safe_move_refined_v8",
+        "parent": 3,
+        "op": "refine_rule",
+        "target": "supporting_safe_move",
+        "states": [
+          "supporting_safe_move"
+        ],
+        "params": {},
+        "train": 71.625,
+        "fitness": 63.375,
+        "round": 8,
+        "status": "no mejora su nicho"
+      },
+      {
+        "id": 10,
+        "parent": 3,
+        "op": "change_transitions",
+        "target": null,
+        "round": 9,
+        "repaired": false,
+        "normalized": [
+          "números sueltos extraídos como parámetros: ['changetransitionsv1_min_bad_drop', 'changetransitionsv1_min_ub_drop', 'changetransitionsv1_require_src_unsorted']",
+          "parámetros sin efecto sacados de COMPONENT (quedan fijos en su default): ['transition_min_bad_drop', 'transition_min_ub_drop', 'transition_require_src_unsorted', 'changetransitionsv1_min_bad_drop', 'changetransitionsv1_min_ub_drop', 'changetransitionsv1_require_src_unsorted']"
+        ],
+        "status": "rechazado",
+        "reason": "cand_10.py: rechazado en la capa 'contractual'. Propiedades violadas:\n  - construction_machine.states: `states` debe ser una tupla no vacía de nombres distintos (str), no ()"
+      },
+      {
+        "id": 10,
+        "parent": 7,
+        "op": "add_rule",
+        "target": null,
+        "round": 10,
+        "repaired": false,
+        "normalized": [
+          "números sueltos extraídos como parámetros: ['supporting_safe_move_w_bad', 'supporting_safe_move_w_dest_room', 'supporting_safe_move_w_fill', 'supporting_safe_move_w_gap', 'supporting_safe_move_w_src_unlock', 'supporting_safe_move_w_ub']"
+        ],
+        "status": "rechazado",
+        "reason": "cand_10.py: rechazado en la capa 'contractual'. Propiedades violadas:\n  - construction_machine.states_reachable: los estados ['supporting_fit_move'] nunca se alcanzan, ni en las micro-instancias ni en las de entrenamiento (greedy): revisa las condiciones de transition que llevan a ellos, o quítalos"
+      },
+      {
+        "id": 10,
+        "parent": 3,
+        "op": "add_rule",
+        "target": null,
+        "round": 11,
+        "repaired": false,
+        "normalized": [
+          "parámetros sin efecto sacados de COMPONENT (quedan fijos en su default): ['direct_fill_w_exact_fit', 'direct_fill_w_dest_sorted', 'direct_fill_w_source_bad', 'direct_fill_w_height', 'direct_fill_max_rank', 'supporting_safe_move_w_bad', 'supporting_safe_move_w_ub', 'supporting_safe_move_w_dest_sorted', 'supporting_safe_move_w_src_sorted', 'supporting_safe_move_w_gap', 'supporting_safe_move_w_fill', 'supporting_safe_move_max_bad_increase', 'supporting_safe_move_prefer_safe_only']"
+        ],
+        "status": "rechazado",
+        "reason": "cand_10.py: rechazado en la capa 'syntactic'. Propiedades violadas:\n  - no_loose_constants: números sueltos en el código: 3 (línea 156), 4 (línea 156), 6 (línea 157), 8 (línea 157). Todo número que decide algo (umbral, peso, tope, desempate) va en COMPONENT['params'] con 'range' y 'default', y llega por build_component(problem, **params), para que el tuner lo afine. Se permiten 0, ±1, 2, tolerancias (< 1e-3) y potencias de 10 desde 100 (orden lexicográfico o centinela)."
+      },
+      {
+        "id": 10,
+        "name": "supporting_safe_move_refined_v5_8",
+        "parent": 7,
+        "op": "refine_rule",
+        "target": "supporting_safe_move",
+        "states": [
+          "supporting_safe_move"
+        ],
+        "params": {
+          "supporting_safe_move_score_k3": 0.001
+        },
+        "train": 60.0,
+        "fitness": 89.812,
+        "round": 12,
+        "status": "no mejora su nicho"
+      }
+    ],
+    "tokens": {
+      "calls": 17,
+      "input_tokens": 115279,
+      "output_tokens": 55540,
+      "total_tokens": 170819,
+      "cached_input_tokens": 17664,
+      "reasoning_tokens": 15681
+    }
   }
 ]
