@@ -49,6 +49,7 @@ from statistics import mean
 from typing import Any
 
 from core.validation.base import ValidationReport, fail, ok
+from core.validation.params import llm_view
 
 from .client import LLMClient, TokenUsage
 from .parser import extract_code_blocks
@@ -597,11 +598,12 @@ def evolve_prompt(spec, parent: Individual, op: str, target: str | None, prof: s
         f"\nLas transiciones pueden devolver `FALLBACK` (`from core.machine import FALLBACK`, \"{FALLBACK}\") cuando ninguna "
         "regla sabe qué hacer: el framework elige entonces la acción que menos sube la cota inferior de la vista. Si la regla "
         "elegida no propone nada, también decide el comodín.",
-        "\nLos atributos `self._auto_<nombre>` (y `_AUTO`, `_AUTO_OWNER`, `_AUTO_CLASSES`, la envoltura de `build_component`) los puso el "
-        "framework: son números que ya se extrajeron como parámetros. Mantenlos tal cual; si escribes un número suelto "
-        "nuevo, el framework también lo convierte en parámetro.",
+        "\nLos atributos `self._auto_<nombre>` (y sus valores `_auto_<nombre> = v` en la clase) los puso el framework: son "
+        "números que ya se extrajeron como parámetros (`<nombre>` en los parámetros afinados). Mantenlos tal cual. Si "
+        "escribes un número suelto nuevo en un método, o un default en un `__init__` que se guarda en `self`, el framework "
+        "también lo convierte en parámetro; no escribas tablas `_AUTO` ni envolturas de `build_component`.",
         f"\n# Máquina padre: `{parent.name}` (fitness {parent.fitness:.2f}, parámetros afinados {parent.params})\n"
-        f"```python\n{parent.source}\n```",
+        f"```python\n{llm_view(parent.source)}\n```",
         f"\n# Diagnóstico del padre por regla (instancias de entrenamiento)\n{prof}\n\n{trace}",
         f"\n# Archivo (menor fitness = mejor)\n{archive_text(archive)}",
         f"\n# Contrato del slot\n```python\n{protocol_source(SLOT)}```",

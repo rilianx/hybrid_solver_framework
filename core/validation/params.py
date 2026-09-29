@@ -61,7 +61,25 @@ def _skipped(tree) -> set[int]:
                 skip |= {id(n) for n in ast.walk(d)}
         if isinstance(node, (ast.Subscript,)):  # índices: x[0], x[-1], x[2:]
             skip |= {id(n) for n in ast.walk(node.slice)}
+    skip |= {id(d) for _, d in _params_get(tree)}
     return skip
+
+
+def _params_get(tree) -> list[tuple[str, ast.Constant]]:
+    """Los `params.get("nombre", número)` de una función con `**params` (build_component): el
+    número es el default de un parámetro, no un número suelto (corrida 73: el LLM declaraba así los
+    pesos de su regla nueva y se rechazaba). (nombre, nodo del default)."""
+    out = []
+    for fn in ast.walk(tree):
+        if not isinstance(fn, ast.FunctionDef) or fn.args.kwarg is None:
+            continue
+        for n in ast.walk(fn):  # también sobre un dict armado desde params (corrida 73: trans_params.get(...))
+            if (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr == "get"
+                    and isinstance(n.func.value, ast.Name) and len(n.args) == 2
+                    and isinstance(n.args[0], ast.Constant) and isinstance(n.args[0].value, str)
+                    and isinstance(n.args[1], ast.Constant) and isinstance(n.args[1].value, (int, float))):
+                out.append((n.args[0].value, n.args[1]))
+    return out
 
 
 def loose_constants(source: str) -> list[tuple[int, float]]:
@@ -191,7 +209,22 @@ def _prefix(cls: ast.ClassDef) -> str:
     return cls.name.lower() + "_"
 
 
-def _init_defaults(cls: ast.ClassDef, prefix: str, taken: set) -> list[tuple[str, dict, str]]:
+def _passed_args(tree, cls_name: str, names: list[str], declared: set) -> set[str]:
+    """Los argumentos de `__init__` que el módulo pasa al construir la clase (`Regla(w=params[...])`):
+    ya los decide la fábrica. Con `**params` llegan solo los declarados en COMPONENT."""
+    out: set[str] = set()
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == cls_name:
+            if any(isinstance(a, ast.Starred) for a in n.args):
+                return set(names)
+            if any(k.arg is None for k in n.keywords):
+                out |= set(names) & declared
+            out |= {k.arg for k in n.keywords if k.arg is not None}
+            out |= set(names[:len(n.args)])
+    return out
+
+
+def _init_defaults(tree, cls: ast.ClassDef, prefix: str, taken: set) -> list[tuple[str, dict, str]]:
     """Los defaults numéricos (o bool) de un `__init__` que se guardan tal cual en un atributo
     (`def __init__(self, ..., w_bad=8.0): self.w_bad = w_bad`): son parámetros escondidos, porque
     build_component no los pasa (corrida 72: ocho pesos así, fuera del tuner). (parámetro,
@@ -204,10 +237,11 @@ def _init_defaults(cls: ast.ClassDef, prefix: str, taken: set) -> list[tuple[str
               if isinstance(t, ast.Attribute) and isinstance(t.value, ast.Name) and t.value.id == self_name
               and isinstance(n.value, ast.Name) and n.value.id == t.attr}
     args = init.args.args[1:]
+    passed = _passed_args(tree, cls.name, [a.arg for a in args], taken)
     defaults = init.args.defaults
     out = []
     for arg, d in zip(args[len(args) - len(defaults):], defaults):
-        if arg.arg not in stored or not isinstance(d, ast.Constant):
+        if arg.arg not in stored or arg.arg in passed or not isinstance(d, ast.Constant):
             continue
         v = d.value
         name = f"{prefix}{arg.arg}"
@@ -220,10 +254,59 @@ def _init_defaults(cls: ast.ClassDef, prefix: str, taken: set) -> list[tuple[str
     return out
 
 
+_TABLES = ("_AUTO", "_AUTO_OWNER", "_AUTO_ATTR", "_AUTO_CLASSES", "_AUTO_FACTORY")
+
+
+def _strip_framework(tree, comp: dict):
+    """Saca las tablas y la envoltura que agregó una normalización anterior y devuelve la fábrica del
+    LLM a `build_component`. (árbol, COMPONENT sin los parámetros de las tablas, {parámetro:
+    especificación anterior} de esos parámetros)."""
+    auto_node = _assign(tree, "_AUTO")
+    fac_node = _assign(tree, "_AUTO_FACTORY")
+    auto = ast.literal_eval(auto_node.value) if auto_node is not None else {}
+    fac = ast.literal_eval(fac_node.value) if fac_node is not None else "_build_component_llm"
+    params = dict(comp.get("params") or {})
+    old = {k: params.pop(k) for k in list(params) if k in auto}
+    body = [n for n in tree.body
+            if not (isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id in _TABLES for t in n.targets))
+            and not (isinstance(n, ast.FunctionDef) and n.name == "build_component")]
+    fns = {n.name: n for n in body if isinstance(n, ast.FunctionDef)}
+    # una fábrica que solo delega (`return _build_component_llm(problem, **params)`) se saltea
+    while fac in fns and len(fns[fac].body) == 1 and isinstance(fns[fac].body[0], ast.Return) \
+            and isinstance(fns[fac].body[0].value, ast.Call) and isinstance(fns[fac].body[0].value.func, ast.Name) \
+            and fns[fac].body[0].value.func.id in fns and fns[fac].body[0].value.func.id != fac:
+        inner = fns[fac].body[0].value.func.id
+        body.remove(fns.pop(fac))
+        fac = inner
+    if fac in fns:
+        fns[fac].name = "build_component"
+    tree.body = body
+    comp = {**comp, "params": params}
+    _set_component(tree, comp)
+    return tree, comp, old
+
+
+def llm_view(source: str) -> str:
+    """El módulo como lo escribiría el LLM: sin las tablas ni la envoltura del framework (los
+    `self._auto_*` y sus defaults de clase quedan). Es lo que ve al refinar: si ve las tablas, las
+    copia y quedan obsoletas."""
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return source
+    comp = _component_of(tree)
+    if comp is None or _assign(tree, "_AUTO") is None or _assign(tree, "_MACHINE") is not None:
+        return source
+    tree, _, _ = _strip_framework(tree, comp)
+    return ast.unparse(tree) + "\n"
+
+
 def extract_constants(source: str) -> tuple[str, dict]:
     """(fuente nueva, {parámetro: especificación}): cada número suelto dentro de un método de una
     regla, de las transiciones o de la máquina pasa a ser `self._auto_<prefijo><método>_k<i>` y un
-    parámetro de COMPONENT. Un módulo ya normalizado se extiende."""
+    parámetro de COMPONENT. En un módulo ya normalizado las tablas y la envoltura del framework se
+    rehacen desde el código (el LLM las copia del padre y las deja obsoletas: corrida 73); lo
+    devuelto son solo los parámetros nuevos."""
     tree = ast.parse(source)
     comp = _component_of(tree)
     if comp is None or not any(isinstance(n, ast.FunctionDef) and n.name in ("build_component", "_build_component_llm")
@@ -234,6 +317,11 @@ def extract_constants(source: str) -> tuple[str, dict]:
     classes = [c for c in classes if c is not None]
     if not classes:
         return source, {}
+    stripped, old_auto = False, {}
+    if not legacy and _assign(tree, "_AUTO") is not None:
+        tree, comp, old_auto = _strip_framework(tree, comp)
+        stripped = True
+        classes = [c for c in _target_classes(tree)]
     skip = _skipped(tree)
     prior_node, owner_node = _assign(tree, "_AUTO"), _assign(tree, "_AUTO_OWNER")
     prior = ast.literal_eval(prior_node.value) if prior_node is not None else {}
@@ -262,6 +350,15 @@ def extract_constants(source: str) -> tuple[str, dict]:
                                                    ctx=ast.Load()), node)
 
     attr_of: dict[str, str] = {}  # parámetros que son defaults de un __init__: parámetro -> atributo
+    if not legacy:  # los ya extraídos: `_auto_<k> = v` en el cuerpo de cada clase
+        for cls in classes:
+            for b in cls.body:
+                if (isinstance(b, ast.Assign) and len(b.targets) == 1 and isinstance(b.targets[0], ast.Name)
+                        and b.targets[0].id.startswith(AUTO) and isinstance(b.value, ast.Constant)):
+                    k = b.targets[0].id[len(AUTO):]
+                    taken.add(k)
+                    extracted[k] = old_auto.get(k) or _range_for(b.value.value)
+                    defaults[k], new_owner[k] = b.value.value, cls.name
     for cls in classes:
         pre = "" if legacy else _prefix(cls)
         before = len(defaults)
@@ -272,15 +369,24 @@ def extract_constants(source: str) -> tuple[str, dict]:
         mine = [k for k in list(defaults)[before:]]
         cls.body[0:0] = [ast.parse(f"{AUTO}{k} = {defaults[k]!r}").body[0] for k in mine]
         if not legacy:
-            for k, spec, attr in _init_defaults(cls, pre, taken):
+            for k, spec, attr in _init_defaults(tree, cls, pre, taken):
                 taken.add(k)
+                spec = old_auto.get(k) or spec
                 extracted[k], defaults[k], new_owner[k], attr_of[k] = spec, spec["default"], cls.name, attr
-    if not extracted:
+    for k, d in _params_get(tree):  # parámetros que la fábrica lee con default y COMPONENT no declara
+        if k not in taken:
+            taken.add(k)
+            v = d.value
+            extracted[k] = {"type": "bool", "default": v} if isinstance(v, bool) else _range_for(v)
+    if not extracted and not stripped:
         return source, {}
     params = dict(comp.get("params") or {})
     params.update(extracted)
     _set_component(tree, {**comp, "params": params})
-    if prior_node is not None:  # ya normalizado: se extienden sus tablas
+    new = {k: v for k, v in extracted.items() if k not in old_auto}
+    if not extracted:
+        return ast.unparse(tree) + "\n", new
+    if prior_node is not None:  # normalizado en el formato de una sola clase (_MACHINE): se extienden sus tablas
         prior_node.value = ast.parse(repr({**prior, **defaults}), mode="eval").body
         attr_node = _assign(tree, "_AUTO_ATTR")
         if attr_node is not None:
@@ -315,7 +421,7 @@ def extract_constants(source: str) -> tuple[str, dict]:
     tail = (f"\n\n_AUTO = {defaults!r}\n_AUTO_OWNER = {new_owner!r}\n_AUTO_ATTR = {attr_of!r}\n"
             f"_AUTO_CLASSES = {{{', '.join(f'{n!r}: {n}' for n in names)}}}\n_AUTO_FACTORY = {target!r}\n"
             + _WRAPPER_MULTI.replace("_build_component_llm(problem", target + "(problem"))
-    return ast.unparse(tree) + tail, extracted
+    return ast.unparse(tree) + tail, new
 
 
 def inert_params(component: dict, factory: Callable, instances_problems: list[tuple[Any, Any]],
@@ -349,11 +455,13 @@ def normalize_machine_file(path, instances_problems: list[tuple[Any, Any]]) -> l
     path = Path(path)
     notes: list[str] = []
     try:
-        src, extracted = extract_constants(path.read_text())
+        original = path.read_text()
+        src, extracted = extract_constants(original)
     except SyntaxError:
         return notes
-    if extracted:
+    if src != original:
         path.write_text(src)
+    if extracted:
         notes.append(f"números sueltos extraídos como parámetros: {sorted(extracted)}")
     module, _ = load_module(path)
     component = getattr(module, "COMPONENT", None) if module is not None else None

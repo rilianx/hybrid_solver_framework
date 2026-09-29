@@ -227,3 +227,36 @@ def test_init_defaults_of_a_rule_are_parameters_even_if_the_module_has_its_own_l
     rule = mod.build_component(P, weighted_w_gap=2.5, weighted_safe=False).rules[0]
     assert (rule.w_gap, rule.max_bad, rule.safe) == (2.5, 1, False)
     assert mod.build_component(P).rules[0].w_gap == 8.0
+
+
+def test_factory_defaults_passed_args_and_stale_tables_copied_by_the_llm(tmp_path):
+    """Corrida 73: (1) `params.get("nombre", 4.0)` en la fábrica es el default de un parámetro, no
+    un número suelto; (2) un argumento que la fábrica pasa al construir la regla no se vuelve a
+    extraer de su `__init__` (lo pisaría); (3) las tablas `_AUTO` que el LLM copia del padre se
+    rehacen desde el código, y el LLM ve el padre sin ellas (`llm_view`)."""
+    from core.validation.params import extract_constants, llm_view, loose_constants
+
+    module = INIT_MODULE.replace(
+        "return RuleMachine(problem, [Weighted()], Trans())",
+        "return RuleMachine(problem, [Weighted(w_gap=params.get('w_gap', 4.0))], Trans())")
+    src, extracted = extract_constants(module)
+    assert loose_constants(src) == []
+    assert "w_gap" in extracted and "weighted_w_gap" not in extracted and "weighted_max_bad" in extracted
+    path = tmp_path / "factory.py"
+    path.write_text(src)
+    P = PACK.make_contexts()[0].problem
+    assert _load(path, "factory_norm").build_component(P, w_gap=1.5).rules[0].w_gap == 1.5
+
+    view = llm_view(src)
+    assert "_AUTO" not in view and view.count("def build_component") == 1
+    stale = src.replace("_AUTO = {", "_AUTO = {'weighted_gone': 3, ")  # una entrada que el código ya no tiene
+    again, more = extract_constants(stale)
+    assert "weighted_gone" not in again and more == {}
+    back, _ = extract_constants(view)  # el LLM devuelve el padre sin cambios: mismos parámetros
+    assert _load_src(tmp_path, back, "back").COMPONENT["params"].keys() == _load_src(tmp_path, src, "orig").COMPONENT["params"].keys()
+
+
+def _load_src(tmp_path, src, name):
+    path = tmp_path / f"{name}.py"
+    path.write_text(src)
+    return _load(path, name)

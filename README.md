@@ -800,6 +800,25 @@ de una tupla con nombre). Una regla que propone algo que no es candidato se rech
 comparación por valor, `good_place` da 106,1: es una regla mala de verdad, que mueve también
 contenedores bien puestos, algo que ahora los refinamientos sí pueden corregir.
 
+**Corrida 72: máquinas de reglas con acciones por valor, desde la mínima, 12 rondas, 152 mil
+tokens.** Un `add_rule` (`supporting_safe_move`) y cuatro `refine_rule` bajaron de 106,3 a
+**58,25** (FRG 18,3). La regla final ordena todos los movimientos válidos por una tupla (cambio
+de mal puestos, cambio de cota, destino ordenado, …) con dos filtros. Todo `add_rule` de una
+segunda regla falló. Los ocho pesos de la regla eran defaults de `__init__` y quedaban fuera del
+tuner; ahora son parámetros.
+
+**Corrida 73: retoma la 72 (`--resume`), 12 rondas, 171 mil tokens.** Al retomar, los pesos
+extraídos de `__init__` subieron la v2 de 84,8 a 78,4. La mejor sigue en 58,25: los hijos quedaron
+entre 61,8 y 89,8. Los intentos de segunda regla (`direct_fill`, `rescue_blocked_stack`) se
+rechazaron por cosas del framework, no del algoritmo:
+- `params.get("direct_fill_w_exact_fit", 4.0)` en la fábrica contaba como número suelto. Ahora
+  es el default de un parámetro (`_params_get`).
+- El LLM copiaba del padre normalizado las tablas `_AUTO` y la envoltura, y quedaban obsoletas:
+  un default extraído de `__init__` pisaba el valor que la fábrica pasaba explícitamente. Ahora
+  la normalización rehace siempre las tablas desde el código (`_strip_framework`). Tampoco
+  extrae un argumento que la fábrica ya pasa al construir la clase. El prompt muestra el padre
+  sin tablas ni envoltura (`llm_view`).
+
 **Oráculo exacto: imitar al óptimo, no al respaldo** (`ProblemPack.oracle_distance`,
 `core.machine.machine_regret`). Un greedy que imite al best-first del respaldo sería el comodín
 (la acción que menos sube la cota). Lo que sí sirve es la distancia exacta al objetivo, d(·).
