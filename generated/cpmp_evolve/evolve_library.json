@@ -1,0 +1,238 @@
+{
+  "library": [
+    {
+      "id": 0,
+      "rule": "min_top_destination_rule",
+      "name": "min_top_destination_rule",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 102.438,
+      "width": 0.181,
+      "precision": [
+        29,
+        140
+      ],
+      "params": {},
+      "source": "COMPONENT = {'name': 'min_top_destination_rule', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {}}\nfrom core.rules import RuleMachine\n\nclass MinTopDestinationRule:\n    \"\"\"Permite solo movimientos hacia el destino factible con menor tope.\"\"\"\n    name = 'min_top_destination_rule'\n\n    def __init__(self, prefer_fuller_on_tie: bool=True, allow_empty_destination: bool=True):\n        self.prefer_fuller_on_tie = prefer_fuller_on_tie\n        self.allow_empty_destination = allow_empty_destination\n\n    def allowed(self, partial, memory, candidates):\n        if not candidates:\n            return []\n\n        def dest_key(a):\n            sd = a.sd\n            top = partial.g(sd)\n            if partial.h(sd) == 0:\n                top_key = float('inf') if not self.allow_empty_destination else partial.G + 1\n            else:\n                top_key = top\n            if self.prefer_fuller_on_tie:\n                tie_key = -partial.h(sd)\n            else:\n                tie_key = partial.h(sd)\n            return (top_key, tie_key, sd)\n        best = min(candidates, key=dest_key)\n        best_key = dest_key(best)\n        return [a for a in candidates if dest_key(a) == best_key]\n\ndef build_component(problem, **params):\n    prefer_fuller_on_tie = params.get('prefer_fuller_on_tie', True)\n    allow_empty_destination = params.get('allow_empty_destination', True)\n    return RuleMachine(problem, [MinTopDestinationRule(prefer_fuller_on_tie=prefer_fuller_on_tie, allow_empty_destination=allow_empty_destination)])\n",
+      "component": {
+        "name": "min_top_destination_rule",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {}
+      }
+    },
+    {
+      "id": 1,
+      "rule": "move_to_empty_stack_rule",
+      "name": "move_to_empty_stack_rule",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 94.25,
+      "width": 0.246,
+      "precision": [
+        1,
+        2
+      ],
+      "params": {},
+      "source": "COMPONENT = {\n    \"name\": \"move_to_empty_stack_rule\",\n    \"slot\": \"construction_machine\",\n    \"compatible_skeletons\": [\"CONSTRUCT\"],\n    \"requires\": [],\n    \"params\": {\n        \"only_when_multiple_empties\": {\"type\": \"bool\", \"default\": False},\n    },\n}\n\nfrom core.rules import RuleMachine\n\n\nclass MoveToEmptyStackRule:\n    \"\"\"Permite solo movimientos cuyo destino es una pila vacía.\"\"\"\n\n    name = \"move_to_empty_stack_rule\"\n\n    def __init__(self, only_when_multiple_empties=False):\n        self.only_when_multiple_empties = bool(only_when_multiple_empties)\n\n    @staticmethod\n    def _get_height(partial, idx):\n        if hasattr(partial, \"h\"):\n            return partial.h(idx)\n        stacks = getattr(partial, \"stacks\", None)\n        return len(stacks[idx]) if stacks is not None else 0\n\n    @staticmethod\n    def _get_empty_count(partial):\n        stacks = getattr(partial, \"stacks\", None)\n        if stacks is not None:\n            return sum(1 for s in stacks if len(s) == 0)\n        if hasattr(partial, \"S\"):\n            return sum(1 for i in range(partial.S) if partial.h(i) == 0)\n        return 0\n\n    def allowed(self, partial, memory, candidates):\n        empty_count = self._get_empty_count(partial)\n        if self.only_when_multiple_empties and empty_count < 2:\n            return []\n\n        allowed = []\n        for a in candidates:\n            sd = getattr(a, \"sd\", None)\n            if sd is None:\n                continue\n            if self._get_height(partial, sd) == 0:\n                allowed.append(a)\n        return allowed\n\n\ndef build_component(problem, **params):\n    rule = MoveToEmptyStackRule(\n        only_when_multiple_empties=params.get(\n            \"only_when_multiple_empties\",\n            COMPONENT[\"params\"][\"only_when_multiple_empties\"][\"default\"],\n        )\n    )\n    return RuleMachine(problem, [rule])\n",
+      "component": {
+        "name": "move_to_empty_stack_rule",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {
+          "only_when_multiple_empties": {
+            "type": "bool",
+            "default": false
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "rule": "safe_sorted_destination_rule",
+      "name": "safe_sorted_destination_rule",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 87.938,
+      "width": 0.091,
+      "precision": [
+        33,
+        101
+      ],
+      "params": {},
+      "source": "COMPONENT = {\n    \"name\": \"safe_sorted_destination_rule\",\n    \"slot\": \"construction_machine\",\n    \"compatible_skeletons\": [\"CONSTRUCT\"],\n    \"requires\": [],\n    \"params\": {},\n}\n\nfrom core.rules import RuleMachine\n\n\nclass SafeSortedDestinationRule:\n    \"\"\"Permite solo movimientos hacia una pila no vacía que siga ordenada tras recibir el contenedor.\"\"\"\n\n    name = \"safe_sorted_destination_rule\"\n\n    def allowed(self, partial, memory, candidates):\n        allowed = []\n        for a in candidates:\n            so = a.so\n            sd = a.sd\n            if so == sd:\n                continue\n            if partial.h(so) <= 0:\n                continue\n            if partial.h(sd) >= partial.H:\n                continue\n\n            src_group = partial.g(so)\n            if src_group < 0:\n                continue\n\n            # La pila destino debe estar ya ordenada y poder recibir el contenedor\n            # sin romper el orden no creciente de abajo hacia arriba.\n            if partial.h(sd) == 0:\n                continue\n            if not partial.is_sorted_stack(sd):\n                continue\n            if partial.g(sd) >= src_group:\n                allowed.append(a)\n\n        return allowed\n\n\ndef build_component(problem, **params):\n    return RuleMachine(problem, [SafeSortedDestinationRule()])\n",
+      "component": {
+        "name": "safe_sorted_destination_rule",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {}
+      }
+    },
+    {
+      "id": 3,
+      "rule": "safe_sorted_destination_rule",
+      "name": "safe_sorted_destination_rule_refined",
+      "op": "refine_rule",
+      "parent": 2,
+      "macro": false,
+      "alone": 101.812,
+      "width": 1.0,
+      "precision": [
+        32,
+        140
+      ],
+      "params": {},
+      "source": "COMPONENT = {'name': 'safe_sorted_destination_rule_refined', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {'prefer_empty': {'type': 'bool', 'default': True}, 'empty_bonus': {'type': 'float', 'range': [-10.0, 10.0], 'default': -1.0}, 'top_weight': {'type': 'float', 'range': [0.0, 10.0], 'default': 1.0}, 'sorted_bonus': {'type': 'float', 'range': [-10.0, 10.0], 'default': -1.0}, 'nonempty_bonus': {'type': 'float', 'range': [-10.0, 10.0], 'default': 0.0}}}\nfrom core.rules import RuleMachine\n\nclass SafeSortedDestinationRule:\n    name = 'safe_sorted_destination_rule'\n\n    def __init__(self, prefer_empty=True, empty_bonus=-1.0, top_weight=1.0, sorted_bonus=-1.0, same_group_bonus=-1.0, nonempty_bonus=0.0):\n        self.prefer_empty = prefer_empty\n        self.empty_bonus = empty_bonus\n        self.top_weight = top_weight\n        self.sorted_bonus = sorted_bonus\n        self.same_group_bonus = same_group_bonus\n        self.nonempty_bonus = nonempty_bonus\n\n    def _score(self, partial, a):\n        sd = a.sd\n        so = a.so\n        dest_h = partial.h(sd)\n        src_top = partial.g(so)\n        dest_top = partial.g(sd)\n        score = float(dest_top) * self.top_weight\n        if dest_h == 0:\n            if self.prefer_empty:\n                score += self.empty_bonus\n        else:\n            score += self.nonempty_bonus\n            if partial.is_sorted_stack(sd):\n                score += self.sorted_bonus\n            if dest_top == src_top:\n                score += self.same_group_bonus\n        return score\n\n    def allowed(self, partial, memory, candidates):\n        allowed = []\n        for a in candidates:\n            so = a.so\n            sd = a.sd\n            if so == sd:\n                continue\n            if partial.h(so) <= 0:\n                continue\n            if partial.h(sd) >= partial.H:\n                continue\n            allowed.append(a)\n        allowed.sort(key=lambda a: (self._score(partial, a), a.sd, a.so))\n        return allowed\n\ndef build_component(problem, **params):\n    return RuleMachine(problem, [SafeSortedDestinationRule(prefer_empty=params.get('prefer_empty', True), empty_bonus=params.get('empty_bonus', -1.0), top_weight=params.get('top_weight', 1.0), sorted_bonus=params.get('sorted_bonus', -1.0), same_group_bonus=params.get('same_group_bonus', -1.0), nonempty_bonus=params.get('nonempty_bonus', 0.0))])\n",
+      "component": {
+        "name": "safe_sorted_destination_rule_refined",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {
+          "prefer_empty": {
+            "type": "bool",
+            "default": true
+          },
+          "empty_bonus": {
+            "type": "float",
+            "range": [
+              -10.0,
+              10.0
+            ],
+            "default": -1.0
+          },
+          "top_weight": {
+            "type": "float",
+            "range": [
+              0.0,
+              10.0
+            ],
+            "default": 1.0
+          },
+          "sorted_bonus": {
+            "type": "float",
+            "range": [
+              -10.0,
+              10.0
+            ],
+            "default": -1.0
+          },
+          "nonempty_bonus": {
+            "type": "float",
+            "range": [
+              -10.0,
+              10.0
+            ],
+            "default": 0.0
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "rule": "dump_to_deepest_nonempty_stack_rule",
+      "name": "dump_to_deepest_nonempty_stack_rule",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 105.5,
+      "width": 0.353,
+      "precision": [
+        36,
+        140
+      ],
+      "params": {},
+      "source": "COMPONENT = {\n    \"name\": \"dump_to_deepest_nonempty_stack_rule\",\n    \"slot\": \"construction_machine\",\n    \"compatible_skeletons\": [\"CONSTRUCT\"],\n    \"requires\": [],\n    \"params\": {},\n}\n\nfrom core.rules import RuleMachine\n\n\nclass DumpToDeepestNonEmptyStackRule:\n    \"\"\"Permite solo movimientos a una pila no vacía con máxima holgura (más huecos).\"\"\"\n\n    name = \"dump_to_deepest_nonempty_stack_rule\"\n\n    def allowed(self, partial, memory, candidates):\n        non_empty = []\n        for a in candidates:\n            if partial.h(a.sd) > 0:\n                non_empty.append(a)\n        if not non_empty:\n            return []\n\n        best_free = max(partial.e(a.sd) for a in non_empty)\n        return [a for a in non_empty if partial.e(a.sd) == best_free]\n\n\ndef build_component(problem, **params):\n    return RuleMachine(problem, [DumpToDeepestNonEmptyStackRule()])\n",
+      "component": {
+        "name": "dump_to_deepest_nonempty_stack_rule",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {}
+      }
+    },
+    {
+      "id": 5,
+      "rule": "safe_sorted_destination_rule",
+      "name": "safe_sorted_destination_rule",
+      "op": "refine_rule",
+      "parent": 2,
+      "macro": true,
+      "alone": 104.062,
+      "width": 0.107,
+      "precision": [
+        25,
+        85
+      ],
+      "params": {},
+      "source": "COMPONENT = {'name': 'safe_sorted_destination_rule', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {'allow_empty_escape': {'type': 'bool', 'default': True, 'values': [True, False]}, 'prefer_lower_top': {'type': 'bool', 'default': True, 'values': [True, False]}}}\nfrom core.rules import RuleMachine\n\nclass SafeSortedDestinationRule:\n    _auto_safe_sorted_destination_rule_key_k1 = 3\n    'Permite movimientos hacia destinos seguros, priorizando pilas ordenadas y con mejor holgura.'\n    name = 'safe_sorted_destination_rule'\n\n    def __init__(self, prefer_nonempty: bool=True, allow_empty_escape: bool=True, prefer_lower_top: bool=True, prefer_more_slack: bool=True, macro_mode: bool=False):\n        self.prefer_nonempty = prefer_nonempty\n        self.allow_empty_escape = allow_empty_escape\n        self.prefer_lower_top = prefer_lower_top\n        self.prefer_more_slack = prefer_more_slack\n        self.macro_mode = macro_mode\n\n    def start(self, partial, memory):\n        if not self.macro_mode:\n            return memory\n        return {'bad0': partial.bad(), 'sorted0': partial.is_sorted()}\n\n    def done(self, partial, memory):\n        if not self.macro_mode:\n            return False\n        return partial.is_sorted() or partial.bad() >= memory.get('bad0', partial.bad())\n\n    def _key(self, partial, action):\n        so = action.so\n        sd = action.sd\n        dest_h = partial.h(sd)\n        dest_top = partial.g(sd)\n        src_top = partial.g(so)\n        src_ub = partial.ub(so)\n        safe_dest = 0\n        if dest_h == 0:\n            safe_dest = 2\n        elif partial.is_sorted_stack(sd) and dest_top >= src_top:\n            safe_dest = 0\n        elif partial.is_sorted_stack(sd):\n            safe_dest = 1\n        else:\n            safe_dest = self._auto_safe_sorted_destination_rule_key_k1\n        top_key = dest_top if self.prefer_lower_top else -dest_top\n        slack_key = -partial.e(sd) if self.prefer_more_slack else partial.e(sd)\n        empty_key = 0 if dest_h > 0 else 1 if self.allow_empty_escape else 2\n        nonempty_pref = 0 if not self.prefer_nonempty or dest_h > 0 else 1\n        src_key = -src_ub\n        return (safe_dest, empty_key, nonempty_pref, top_key, slack_key, src_key, sd)\n\n    def allowed(self, partial, memory, candidates):\n        allowed = []\n        for a in candidates:\n            so = a.so\n            sd = a.sd\n            if so == sd:\n                continue\n            if partial.h(so) <= 0:\n                continue\n            if partial.h(sd) >= partial.H:\n                continue\n            src_group = partial.g(so)\n            if src_group < 0:\n                continue\n            dest_h = partial.h(sd)\n            ok = False\n            if dest_h == 0:\n                ok = self.allow_empty_escape\n            elif partial.is_sorted_stack(sd):\n                ok = partial.g(sd) >= src_group\n            else:\n                ok = partial.g(sd) >= src_group and partial.ub(sd) == 0\n            if not ok:\n                continue\n            allowed.append(a)\n        allowed.sort(key=lambda a: self._key(partial, a))\n        if self.macro_mode and memory is not None:\n            memory['last_allowed'] = len(allowed)\n        return allowed\n\ndef _build_component_llm(problem, **params):\n    return RuleMachine(problem, [SafeSortedDestinationRule(prefer_nonempty=params.get('prefer_nonempty', True), allow_empty_escape=params.get('allow_empty_escape', True), prefer_lower_top=params.get('prefer_lower_top', True), prefer_more_slack=params.get('prefer_more_slack', True), macro_mode=params.get('macro_mode', False))])\n_AUTO = {'safe_sorted_destination_rule_key_k1': 3}\n_AUTO_OWNER = {'safe_sorted_destination_rule_key_k1': 'SafeSortedDestinationRule'}\n_AUTO_ATTR = {}\n_AUTO_CLASSES = {'SafeSortedDestinationRule': SafeSortedDestinationRule}\n_AUTO_FACTORY = '_build_component_llm'\n\ndef build_component(problem, **params):\n    \"\"\"Envoltura del framework: los números que el LLM dejó sueltos en los métodos son parámetros\n    (`_AUTO`, declarados en COMPONENT; `_AUTO_OWNER`: la clase de cada uno). Se fijan en las clases\n    mientras se construye (por si un `__init__` los usa) y en cada instancia: la máquina, sus\n    reglas y sus transiciones.\"\"\"\n    attrs = globals().get('_AUTO_ATTR', {})\n    auto = {k: params.pop(k, v) for k, v in _AUTO.items()}\n    lifted = [k for k in auto if k not in attrs]\n    saved = {k: getattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k) for k in lifted}\n    for k in lifted:\n        setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k, auto[k])\n    try:\n        obj = _build_component_llm(problem, **params)\n    finally:\n        for k, v in saved.items():\n            setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k, v)\n    parts = [obj, getattr(obj, 'transitions', None), *list(getattr(obj, 'rules', None) or [])]\n    for part in parts:\n        for k, v in auto.items():\n            if part is not None and isinstance(part, _AUTO_CLASSES[_AUTO_OWNER[k]]):\n                setattr(part, attrs.get(k, '_auto_' + k), v)\n    return obj\n",
+      "component": {
+        "name": "safe_sorted_destination_rule",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {
+          "allow_empty_escape": {
+            "type": "bool",
+            "default": true,
+            "values": [
+              true,
+              false
+            ]
+          },
+          "prefer_lower_top": {
+            "type": "bool",
+            "default": true,
+            "values": [
+              true,
+              false
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 6,
+      "rule": "move_to_equal_top_destination_rule",
+      "name": "move_to_equal_top_destination_rule",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 101.312,
+      "width": 1.0,
+      "precision": [
+        31,
+        140
+      ],
+      "params": {},
+      "source": "COMPONENT = {'name': 'move_to_equal_top_destination_rule', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {}}\nfrom core.rules import RuleMachine\n\nclass MoveToEqualTopDestinationRule:\n    \"\"\"Regla de construcción: prioriza movimientos cuyo destino tenga el mismo tope;\n    si no existen, devuelve todos los movimientos factibles para no bloquear la construcción.\"\"\"\n    name = 'move_to_equal_top_destination_rule'\n\n    def __init__(self, problem, prefer_nonempty_only=True):\n        self.problem = problem\n        self.prefer_nonempty_only = prefer_nonempty_only\n\n    def allowed(self, partial, memory, candidates):\n        feasible = []\n        equal_top = []\n        for a in candidates:\n            so = a.so\n            sd = a.sd\n            if so == sd:\n                continue\n            if partial.h(so) <= 0:\n                continue\n            if partial.h(sd) >= partial.H:\n                continue\n            if self.prefer_nonempty_only and partial.h(sd) == 0:\n                feasible.append(a)\n                continue\n            feasible.append(a)\n            if partial.h(sd) > 0 and partial.g(so) == partial.g(sd):\n                equal_top.append(a)\n        if equal_top:\n            return equal_top\n        return feasible\n\ndef build_component(problem, **params):\n    prefer_nonempty_only = params.get('prefer_nonempty_only', True)\n    return RuleMachine(problem, [MoveToEqualTopDestinationRule(problem, prefer_nonempty_only=prefer_nonempty_only)])\n",
+      "component": {
+        "name": "move_to_equal_top_destination_rule",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {}
+      }
+    }
+  ]
+}

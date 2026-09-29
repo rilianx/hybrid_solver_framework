@@ -3240,5 +3240,418 @@
       "cached_input_tokens": 15616,
       "reasoning_tokens": 13520
     }
+  },
+  {
+    "seed": false,
+    "rounds": 12,
+    "archive": [
+      "safe_sorted_destination_rule"
+    ],
+    "written": [
+      {
+        "name": "library_safe_sorted_destination_rule",
+        "path": "generated/cpmp_evolve/construction_machine/library_safe_sorted_destination_rule_r1.py",
+        "fitness": 86.312,
+        "params": {}
+      }
+    ],
+    "individuals": [
+      {
+        "round": 1,
+        "op": "new_rule",
+        "target": null,
+        "repaired": false,
+        "status": "rechazado",
+        "reason": "cand_0.py: rechazado en la capa 'syntactic'. Propiedades violadas:\n  - factory_runs: build_component(problem) lanzó KeyError: 'prefer_highest_destination'"
+      },
+      {
+        "round": 2,
+        "op": "new_rule",
+        "target": null,
+        "id": 0,
+        "rule": "min_top_destination_rule",
+        "name": "min_top_destination_rule",
+        "parent": null,
+        "macro": false,
+        "alone": 102.438,
+        "width": 0.181,
+        "precision": [
+          29,
+          140
+        ],
+        "params": {},
+        "best_with": 102.438,
+        "status": "en la biblioteca",
+        "best": [],
+        "fitness": null
+      },
+      {
+        "round": 3,
+        "op": "new_rule",
+        "target": null,
+        "id": 1,
+        "rule": "move_to_empty_stack_rule",
+        "name": "move_to_empty_stack_rule",
+        "parent": null,
+        "macro": false,
+        "alone": 94.25,
+        "width": 0.246,
+        "precision": [
+          1,
+          2
+        ],
+        "params": {},
+        "best_with": 94.25,
+        "status": "en la biblioteca",
+        "best": [],
+        "fitness": null
+      },
+      {
+        "round": 4,
+        "op": "refine_rule",
+        "target": "move_to_empty_stack_rule",
+        "repaired": false,
+        "status": "rechazado",
+        "reason": "cand_2.py: rechazado en la capa 'syntactic'. Propiedades violadas:\n  - factory_runs: build_component(problem) lanzó KeyError: 'allow_one_non_empty_escape'"
+      },
+      {
+        "round": 5,
+        "op": "new_rule",
+        "target": null,
+        "id": 2,
+        "rule": "safe_sorted_destination_rule",
+        "name": "safe_sorted_destination_rule",
+        "parent": null,
+        "macro": false,
+        "alone": 87.938,
+        "width": 0.091,
+        "precision": [
+          33,
+          101
+        ],
+        "params": {},
+        "best_with": 87.938,
+        "status": "mejor máquina",
+        "best": [
+          "safe_sorted_destination_rule"
+        ],
+        "fitness": 86.312
+      },
+      {
+        "round": 6,
+        "op": "refine_rule",
+        "target": "safe_sorted_destination_rule",
+        "repaired": true,
+        "id": 3,
+        "rule": "safe_sorted_destination_rule",
+        "name": "safe_sorted_destination_rule_refined",
+        "parent": 2,
+        "macro": false,
+        "alone": 101.812,
+        "width": 1.0,
+        "precision": [
+          32,
+          140
+        ],
+        "params": {},
+        "best_with": 101.188,
+        "status": "en la biblioteca",
+        "best": [
+          "safe_sorted_destination_rule"
+        ],
+        "fitness": 86.312
+      },
+      {
+        "round": 7,
+        "op": "new_rule",
+        "target": null,
+        "id": 4,
+        "rule": "dump_to_deepest_nonempty_stack_rule",
+        "name": "dump_to_deepest_nonempty_stack_rule",
+        "parent": null,
+        "macro": false,
+        "alone": 105.5,
+        "width": 0.353,
+        "precision": [
+          36,
+          140
+        ],
+        "params": {},
+        "best_with": 97.438,
+        "status": "en la biblioteca",
+        "best": [
+          "safe_sorted_destination_rule"
+        ],
+        "fitness": 86.312
+      },
+      {
+        "round": 8,
+        "op": "refine_rule",
+        "target": "safe_sorted_destination_rule",
+        "id": 5,
+        "rule": "safe_sorted_destination_rule",
+        "name": "safe_sorted_destination_rule",
+        "parent": 2,
+        "macro": true,
+        "alone": 104.062,
+        "width": 0.107,
+        "precision": [
+          25,
+          85
+        ],
+        "params": {},
+        "best_with": 89.562,
+        "status": "en la biblioteca",
+        "best": [
+          "safe_sorted_destination_rule"
+        ],
+        "fitness": 86.312
+      },
+      {
+        "round": 9,
+        "op": "refine_rule",
+        "target": "safe_sorted_destination_rule",
+        "repaired": false,
+        "status": "rechazado",
+        "reason": "cand_6.py: rechazado en la capa 'syntactic'. Propiedades violadas:\n  - rule_machine: build_component debe devolver una `core.rules.RuleMachine(problem, [reglas...])`: reglas simples y macros, cada una con `priority`"
+      },
+      {
+        "round": 10,
+        "op": "refine_rule",
+        "target": "safe_sorted_destination_rule",
+        "repaired": false,
+        "status": "rechazado",
+        "reason": "cand_6.py: rechazado en la capa 'syntactic'. Propiedades violadas:\n  - rule_machine: build_component debe devolver una `core.rules.RuleMachine(problem, [reglas...])`: reglas simples y macros, cada una con `priority`"
+      },
+      {
+        "round": 11,
+        "op": "new_rule",
+        "target": null,
+        "repaired": true,
+        "id": 6,
+        "rule": "move_to_equal_top_destination_rule",
+        "name": "move_to_equal_top_destination_rule",
+        "parent": null,
+        "macro": false,
+        "alone": 101.312,
+        "width": 1.0,
+        "precision": [
+          31,
+          140
+        ],
+        "params": {},
+        "best_with": 89.562,
+        "status": "en la biblioteca",
+        "best": [
+          "safe_sorted_destination_rule"
+        ],
+        "fitness": 86.312
+      },
+      {
+        "round": 12,
+        "op": "refine_rule",
+        "target": "safe_sorted_destination_rule",
+        "repaired": false,
+        "status": "rechazado",
+        "reason": "cand_7.py: rechazado en la capa 'contractual'. Propiedades violadas:\n  - construction_machine.memory_hashable: update devolvió una memoria no hashable (tuple) en inst_0: usa tuplas, frozensets o un dataclass(frozen=True)"
+      },
+      {
+        "library": [
+          {
+            "id": 0,
+            "rule": "min_top_destination_rule",
+            "name": "min_top_destination_rule",
+            "op": "new_rule",
+            "parent": null,
+            "macro": false,
+            "alone": 102.438,
+            "width": 0.181,
+            "precision": [
+              29,
+              140
+            ],
+            "params": {}
+          },
+          {
+            "id": 1,
+            "rule": "move_to_empty_stack_rule",
+            "name": "move_to_empty_stack_rule",
+            "op": "new_rule",
+            "parent": null,
+            "macro": false,
+            "alone": 94.25,
+            "width": 0.246,
+            "precision": [
+              1,
+              2
+            ],
+            "params": {}
+          },
+          {
+            "id": 2,
+            "rule": "safe_sorted_destination_rule",
+            "name": "safe_sorted_destination_rule",
+            "op": "new_rule",
+            "parent": null,
+            "macro": false,
+            "alone": 87.938,
+            "width": 0.091,
+            "precision": [
+              33,
+              101
+            ],
+            "params": {}
+          },
+          {
+            "id": 3,
+            "rule": "safe_sorted_destination_rule",
+            "name": "safe_sorted_destination_rule_refined",
+            "op": "refine_rule",
+            "parent": 2,
+            "macro": false,
+            "alone": 101.812,
+            "width": 1.0,
+            "precision": [
+              32,
+              140
+            ],
+            "params": {}
+          },
+          {
+            "id": 4,
+            "rule": "dump_to_deepest_nonempty_stack_rule",
+            "name": "dump_to_deepest_nonempty_stack_rule",
+            "op": "new_rule",
+            "parent": null,
+            "macro": false,
+            "alone": 105.5,
+            "width": 0.353,
+            "precision": [
+              36,
+              140
+            ],
+            "params": {}
+          },
+          {
+            "id": 5,
+            "rule": "safe_sorted_destination_rule",
+            "name": "safe_sorted_destination_rule",
+            "op": "refine_rule",
+            "parent": 2,
+            "macro": true,
+            "alone": 104.062,
+            "width": 0.107,
+            "precision": [
+              25,
+              85
+            ],
+            "params": {}
+          },
+          {
+            "id": 6,
+            "rule": "move_to_equal_top_destination_rule",
+            "name": "move_to_equal_top_destination_rule",
+            "op": "new_rule",
+            "parent": null,
+            "macro": false,
+            "alone": 101.312,
+            "width": 1.0,
+            "precision": [
+              31,
+              140
+            ],
+            "params": {}
+          }
+        ],
+        "best": [
+          "safe_sorted_destination_rule"
+        ],
+        "fitness": 86.312,
+        "minimal": 90.688,
+        "compositions": [
+          [
+            87.938,
+            [
+              2
+            ]
+          ],
+          [
+            88.375,
+            [
+              2,
+              1
+            ]
+          ],
+          [
+            89.562,
+            [
+              5,
+              0
+            ]
+          ],
+          [
+            89.562,
+            [
+              1,
+              5,
+              0
+            ]
+          ],
+          [
+            89.562,
+            [
+              5,
+              0,
+              1
+            ]
+          ],
+          [
+            89.562,
+            [
+              5,
+              0,
+              4
+            ]
+          ],
+          [
+            89.562,
+            [
+              5,
+              1,
+              0
+            ]
+          ],
+          [
+            89.562,
+            [
+              5,
+              0,
+              6
+            ]
+          ],
+          [
+            93.562,
+            [
+              1,
+              2
+            ]
+          ],
+          [
+            94.25,
+            [
+              1
+            ]
+          ]
+        ]
+      }
+    ],
+    "tokens": {
+      "calls": 19,
+      "input_tokens": 44372,
+      "output_tokens": 28514,
+      "total_tokens": 72886,
+      "cached_input_tokens": 5120,
+      "reasoning_tokens": 14483
+    }
   }
 ]
