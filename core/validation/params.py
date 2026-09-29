@@ -53,7 +53,7 @@ def _skipped(tree) -> set[int]:
     y los parámetros que ya extrajo el framework (`_AUTO`, `_auto_*`)."""
     skip: set[int] = set()
     for node in ast.walk(tree):
-        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and (t.id in ("COMPONENT", "_AUTO", "_AUTO_OWNER") or t.id.startswith(AUTO))
+        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and (t.id in ("COMPONENT", "_AUTO", "_AUTO_OWNER", "_AUTO_ATTR") or t.id.startswith(AUTO))
                                                 for t in node.targets):
             skip |= {id(n) for n in ast.walk(node.value)}
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
@@ -139,10 +139,12 @@ def build_component(problem, **params):
     (`_AUTO`, declarados en COMPONENT; `_AUTO_OWNER`: la clase de cada uno). Se fijan en las clases
     mientras se construye (por si un `__init__` los usa) y en cada instancia: la máquina, sus
     reglas y sus transiciones."""
+    attrs = globals().get("_AUTO_ATTR", {})  # parámetro -> atributo de la instancia (los defaults de un __init__)
     auto = {k: params.pop(k, v) for k, v in _AUTO.items()}
-    saved = {k: getattr(_AUTO_CLASSES[_AUTO_OWNER[k]], "_auto_" + k) for k in auto}
-    for k, v in auto.items():
-        setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], "_auto_" + k, v)
+    lifted = [k for k in auto if k not in attrs]
+    saved = {k: getattr(_AUTO_CLASSES[_AUTO_OWNER[k]], "_auto_" + k) for k in lifted}
+    for k in lifted:
+        setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], "_auto_" + k, auto[k])
     try:
         obj = _build_component_llm(problem, **params)
     finally:
@@ -152,7 +154,7 @@ def build_component(problem, **params):
     for part in parts:
         for k, v in auto.items():
             if part is not None and isinstance(part, _AUTO_CLASSES[_AUTO_OWNER[k]]):
-                setattr(part, "_auto_" + k, v)
+                setattr(part, attrs.get(k, "_auto_" + k), v)
     return obj
 '''
 
@@ -187,6 +189,35 @@ def _prefix(cls: ast.ClassDef) -> str:
             getattr(t, "id", None) == "states" for t in (b.targets if isinstance(b, ast.Assign) else [b.target])) for b in cls.body):
         return ""
     return cls.name.lower() + "_"
+
+
+def _init_defaults(cls: ast.ClassDef, prefix: str, taken: set) -> list[tuple[str, dict, str]]:
+    """Los defaults numéricos (o bool) de un `__init__` que se guardan tal cual en un atributo
+    (`def __init__(self, ..., w_bad=8.0): self.w_bad = w_bad`): son parámetros escondidos, porque
+    build_component no los pasa (corrida 72: ocho pesos así, fuera del tuner). (parámetro,
+    especificación, atributo)."""
+    init = next((b for b in cls.body if isinstance(b, ast.FunctionDef) and b.name == "__init__"), None)
+    if init is None or not init.args.args:
+        return []
+    self_name = init.args.args[0].arg
+    stored = {t.attr for n in ast.walk(init) if isinstance(n, ast.Assign) for t in n.targets
+              if isinstance(t, ast.Attribute) and isinstance(t.value, ast.Name) and t.value.id == self_name
+              and isinstance(n.value, ast.Name) and n.value.id == t.attr}
+    args = init.args.args[1:]
+    defaults = init.args.defaults
+    out = []
+    for arg, d in zip(args[len(args) - len(defaults):], defaults):
+        if arg.arg not in stored or not isinstance(d, ast.Constant):
+            continue
+        v = d.value
+        name = f"{prefix}{arg.arg}"
+        if name in taken or arg.arg in taken:  # ya es un parámetro (build_component lo pasa)
+            continue
+        if isinstance(v, bool):
+            out.append((name, {"type": "bool", "default": v}, arg.arg))
+        elif isinstance(v, (int, float)) and v != 0:
+            out.append((name, _range_for(v), arg.arg))
+    return out
 
 
 def extract_constants(source: str) -> tuple[str, dict]:
@@ -230,6 +261,7 @@ def extract_constants(source: str) -> tuple[str, dict]:
             return ast.copy_location(ast.Attribute(value=ast.Name(id=self.self_name, ctx=ast.Load()), attr=AUTO + name,
                                                    ctx=ast.Load()), node)
 
+    attr_of: dict[str, str] = {}  # parámetros que son defaults de un __init__: parámetro -> atributo
     for cls in classes:
         pre = "" if legacy else _prefix(cls)
         before = len(defaults)
@@ -237,8 +269,12 @@ def extract_constants(source: str) -> tuple[str, dict]:
             if not fn.args.args or any(getattr(d, "id", None) == "staticmethod" for d in fn.decorator_list):
                 continue
             Lift(pre + fn.name.strip("_"), fn.args.args[0].arg, cls.name).visit(fn)
-        mine = list(defaults)[before:]
+        mine = [k for k in list(defaults)[before:]]
         cls.body[0:0] = [ast.parse(f"{AUTO}{k} = {defaults[k]!r}").body[0] for k in mine]
+        if not legacy:
+            for k, spec, attr in _init_defaults(cls, pre, taken):
+                taken.add(k)
+                extracted[k], defaults[k], new_owner[k], attr_of[k] = spec, spec["default"], cls.name, attr
     if not extracted:
         return source, {}
     params = dict(comp.get("params") or {})
@@ -246,19 +282,39 @@ def extract_constants(source: str) -> tuple[str, dict]:
     _set_component(tree, {**comp, "params": params})
     if prior_node is not None:  # ya normalizado: se extienden sus tablas
         prior_node.value = ast.parse(repr({**prior, **defaults}), mode="eval").body
+        attr_node = _assign(tree, "_AUTO_ATTR")
+        if attr_node is not None:
+            attr_node.value = ast.parse(repr({**ast.literal_eval(attr_node.value), **attr_of}), mode="eval").body
+        elif attr_of:  # normalizado antes de extraer los defaults de __init__
+            tree.body.insert(tree.body.index(prior_node) + 1, ast.parse(f"_AUTO_ATTR = {attr_of!r}").body[0])
         if not legacy:
+            fac = _assign(tree, "_AUTO_FACTORY")
+            target = ast.literal_eval(fac.value) if fac is not None else "_build_component_llm"
+            wrapper = ast.parse(_WRAPPER_MULTI.replace("_build_component_llm(problem", target + "(problem")).body[0]
+            for i, node in enumerate(tree.body):  # la envoltura actual (una anterior no conocía _AUTO_ATTR)
+                if isinstance(node, ast.FunctionDef) and node.name == "build_component":
+                    tree.body[i] = wrapper
             all_owner = {**owners, **new_owner}
             owner_node.value = ast.parse(repr(all_owner), mode="eval").body
             classes_node = _assign(tree, "_AUTO_CLASSES")
             names = sorted(set(all_owner.values()))
             classes_node.value = ast.parse("{" + ", ".join(f"{n!r}: {n}" for n in names) + "}", mode="eval").body
         return ast.unparse(tree) + "\n", extracted
+    # corrida 72: el módulo ya tenía su propio `_build_component_llm` (y build_component lo
+    # llamaba); renombrar build_component a ese nombre lo volvía recursivo. Se usa uno libre.
+    used = {n.name for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.ClassDef))} | \
+        {n.id for n in ast.walk(tree) if isinstance(n, ast.Name)}
+    target, i = "_build_component_llm", 1
+    while target in used:
+        i += 1
+        target = f"_build_component_llm{i}"
     for node in tree.body:
         if isinstance(node, ast.FunctionDef) and node.name == "build_component":
-            node.name = "_build_component_llm"
+            node.name = target
     names = sorted(set(new_owner.values()))
-    tail = (f"\n\n_AUTO = {defaults!r}\n_AUTO_OWNER = {new_owner!r}\n"
-            f"_AUTO_CLASSES = {{{', '.join(f'{n!r}: {n}' for n in names)}}}\n" + _WRAPPER_MULTI)
+    tail = (f"\n\n_AUTO = {defaults!r}\n_AUTO_OWNER = {new_owner!r}\n_AUTO_ATTR = {attr_of!r}\n"
+            f"_AUTO_CLASSES = {{{', '.join(f'{n!r}: {n}' for n in names)}}}\n_AUTO_FACTORY = {target!r}\n"
+            + _WRAPPER_MULTI.replace("_build_component_llm(problem", target + "(problem"))
     return ast.unparse(tree) + tail, extracted
 
 
@@ -306,7 +362,7 @@ def normalize_machine_file(path, instances_problems: list[tuple[Any, Any]]) -> l
         return notes
     params = dict(component.get("params") or {})
     try:
-        sig = inspect.signature(getattr(module, "_build_component_llm", factory)).parameters
+        sig = inspect.signature(getattr(module, getattr(module, "_AUTO_FACTORY", "_build_component_llm"), factory)).parameters
     except (TypeError, ValueError):
         sig = {}
     filled = []

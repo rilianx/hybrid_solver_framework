@@ -424,6 +424,11 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
     `build_component` los fija, también para `__init__`. Se permiten sueltos 0, ±1, 2,
     tolerancias por debajo de 1e-3 y potencias de 10 desde 100, que sirven para ordenar
     lexicográficamente o como centinela;
+  - un default numérico o bool de un `__init__` que se guarda tal cual en un atributo
+    (`def __init__(self, w_bad=8.0): self.w_bad = w_bad`) también es un parámetro
+    (`<regla>_w_bad`), salvo que ya lo sea con ese nombre. En la corrida 72 así quedaban ocho
+    pesos de la regla fuera del tuner. Un módulo normalizado antes se vuelve a normalizar al
+    retomar el archivo (`--resume`) y gana esos parámetros;
   - un parámetro sin `default` toma el de la firma de `build_component`;
   - un parámetro que no cambia ninguna construcción, ni en los extremos de su rango (en las
     micro-instancias y la sonda), sale de COMPONENT y queda fijo en su default.

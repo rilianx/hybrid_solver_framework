@@ -174,3 +174,56 @@ def test_proposals_match_candidates_by_value_and_bogus_proposals_are_rejected():
     c = PACK.make_contexts(strict=False)[0]
     comp = {"name": "b", "slot": "construction_machine", "compatible_skeletons": ["CONSTRUCT"], "params": {}}
     assert "proposals_are_candidates" in validate_component(comp, RuleMachine(c.problem, [Bogus()], T("bogus")), c).feedback()
+
+
+INIT_MODULE = '''
+COMPONENT = {"name": "weighted", "slot": "construction_machine", "compatible_skeletons": ["CONSTRUCT"], "requires": [],
+             "params": {}}
+
+from core.machine import FALLBACK
+from core.rules import RuleMachine
+from examples.cpmp.construction import Move
+
+
+class Weighted:
+    name = "weighted"
+
+    def __init__(self, w_gap=8.0, max_bad=1, safe=True):
+        self.w_gap = w_gap
+        self.max_bad = max_bad
+        self.safe = safe
+
+    def propose(self, L, memory):
+        moves = [(so, sd) for so in range(L.S) for sd in range(L.S) if so != sd and L.stacks[so] and L.e(sd) > 0]
+        return [Move(so, sd) for so, sd in sorted(moves, key=lambda m: (self.w_gap * L.g(m[1]), m))]
+
+
+class Trans:
+    def select(self, L, memory, rules):
+        return ("weighted", memory) if rules.applies("weighted") else (FALLBACK, memory)
+
+
+def _build_component_llm(problem, **params):
+    return RuleMachine(problem, [Weighted()], Trans())
+
+
+def build_component(problem, **params):
+    return _build_component_llm(problem, **params)
+'''
+
+
+def test_init_defaults_of_a_rule_are_parameters_even_if_the_module_has_its_own_llm_factory(tmp_path):
+    """Corrida 72: los pesos de la regla eran defaults de `__init__` (fuera del tuner) y el módulo ya
+    tenía un `_build_component_llm`: renombrar build_component a ese nombre lo volvía recursivo."""
+    from core.validation.params import extract_constants
+
+    src, extracted = extract_constants(INIT_MODULE)
+    assert {"weighted_w_gap", "weighted_max_bad", "weighted_safe"} <= set(extracted)
+    assert extracted["weighted_safe"] == {"type": "bool", "default": True}
+    path = tmp_path / "weighted.py"
+    path.write_text(src)
+    mod = _load(path, "weighted_norm")
+    P = PACK.make_contexts()[0].problem
+    rule = mod.build_component(P, weighted_w_gap=2.5, weighted_safe=False).rules[0]
+    assert (rule.w_gap, rule.max_bad, rule.safe) == (2.5, 1, False)
+    assert mod.build_component(P).rules[0].w_gap == 8.0

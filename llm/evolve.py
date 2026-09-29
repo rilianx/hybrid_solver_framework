@@ -792,6 +792,7 @@ def save_archive(path: Path, archive: list[Individual], seed: bool) -> None:
 
 
 def load_archive(path: Path, tmp: Path, problem) -> tuple[list[Individual], bool]:
+    from core.validation.params import extract_constants
     from core.validation.syntactic import load_module
 
     data = json.loads(path.read_text())
@@ -799,11 +800,15 @@ def load_archive(path: Path, tmp: Path, problem) -> tuple[list[Individual], bool
     out = []
     for i, row in enumerate(data["archive"]):
         f = tmp / f"resume_{i}_{row['name']}.py"
-        f.write_text(row["source"])
+        try:  # normalizada con una versión anterior: se extiende (p.ej. los defaults de __init__)
+            source, _ = extract_constants(row["source"])
+        except SyntaxError:
+            source = row["source"]
+        f.write_text(source)
         module, r = load_module(f)
         if module is None:
             continue
-        out.append(Individual(i, row["name"], row["source"], module.build_component, module.COMPONENT,
+        out.append(Individual(i, row["name"], source, module.build_component, module.COMPONENT,
                               tuple(module.build_component(problem).states), op=row.get("op") or "base",
                               target=row.get("target"), todo=list(row.get("todo") or [])))
     if not out:

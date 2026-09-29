@@ -1329,5 +1329,245 @@
       "cached_input_tokens": 16128,
       "reasoning_tokens": 9859
     }
+  },
+  {
+    "seed": false,
+    "rounds": 12,
+    "archive": [
+      "supporting_safe_move_refined_v4",
+      "supporting_safe_move_refined_v3",
+      "minimal",
+      "supporting_safe_move_refined_v2"
+    ],
+    "written": [
+      {
+        "name": "supporting_safe_move_refined_v4",
+        "path": "generated/cpmp_evolve/construction_machine/supporting_safe_move_refined_v4_r1.py",
+        "fitness": 58.25,
+        "params": {}
+      },
+      {
+        "name": "supporting_safe_move_refined_v3",
+        "path": "generated/cpmp_evolve/construction_machine/supporting_safe_move_refined_v3_r1.py",
+        "fitness": 73.188,
+        "params": {
+          "w_ub": 2.0,
+          "w_fill": 0.5,
+          "w_src_ub": 1.5,
+          "w_dest_top": 0.25,
+          "w_future": 1.25,
+          "w_dest_sorted": 2.0,
+          "w_source_sorted": 0.75
+        }
+      },
+      {
+        "name": "supporting_safe_move_refined_v2",
+        "path": "generated/cpmp_evolve/construction_machine/supporting_safe_move_refined_v2_r1.py",
+        "fitness": 84.812,
+        "params": {
+          "w_fill": 3.3313513728909836,
+          "w_dest_top": 7.302785763532248,
+          "supporting_safe_move_propose_k1": 84.43710553986242,
+          "supporting_safe_move_propose_k4": 0.7558112911343948
+        }
+      }
+    ],
+    "individuals": [
+      {
+        "id": 0,
+        "name": "minimal",
+        "parent": null,
+        "op": "base",
+        "target": null,
+        "states": [],
+        "params": {},
+        "train": 92.5,
+        "fitness": 83.0,
+        "status": "base"
+      },
+      {
+        "id": 1,
+        "parent": 0,
+        "op": "add_rule",
+        "target": null,
+        "round": 1,
+        "repaired": false,
+        "normalized": [
+          "parámetros sin efecto sacados de COMPONENT (quedan fijos en su default): ['source_bad_weight', 'result_bad_weight', 'dest_sorted_bonus', 'empty_dest_bonus']"
+        ],
+        "status": "rechazado",
+        "reason": "cand_1.py: rechazado en la capa 'syntactic'. Propiedades violadas:\n  - no_loose_constants: números sueltos en el código: 1.5 (línea 67), 0.75 (línea 68). Todo número que decide algo (umbral, peso, tope, desempate) va en COMPONENT['params'] con 'range' y 'default', y llega por build_component(problem, **params), para que el tuner lo afine. Se permiten 0, ±1, 2, tolerancias (< 1e-3) y potencias de 10 desde 100 (orden lexicográfico o centinela)."
+      },
+      {
+        "id": 1,
+        "parent": 0,
+        "op": "add_rule",
+        "target": null,
+        "round": 2,
+        "repaired": false,
+        "status": "rechazado",
+        "reason": "cand_1.py: rechazado en la capa 'syntactic'. Propiedades violadas:\n  - same_slot: el slot debe ser construction_machine"
+      },
+      {
+        "id": 1,
+        "name": "supporting_safe_move",
+        "parent": 0,
+        "op": "add_rule",
+        "target": null,
+        "states": [
+          "supporting_safe_move"
+        ],
+        "params": {},
+        "train": 108.875,
+        "fitness": 106.25,
+        "round": 3,
+        "status": "archivo"
+      },
+      {
+        "id": 2,
+        "name": "supporting_safe_move_refined",
+        "parent": 1,
+        "op": "refine_rule",
+        "target": "supporting_safe_move",
+        "states": [
+          "supporting_safe_move"
+        ],
+        "params": {
+          "w_ub": 2.0,
+          "w_fill": 0.5,
+          "w_src_ub": 1.5,
+          "w_dest_top": 0.25
+        },
+        "train": 91.25,
+        "fitness": 90.688,
+        "round": 4,
+        "status": "archivo"
+      },
+      {
+        "id": 3,
+        "name": "supporting_safe_move_refined_v2",
+        "parent": 2,
+        "op": "refine_rule",
+        "target": "supporting_safe_move",
+        "states": [
+          "supporting_safe_move"
+        ],
+        "params": {
+          "w_fill": 3.3313513728909836,
+          "w_dest_top": 7.302785763532248,
+          "supporting_safe_move_propose_k1": 84.43710553986242,
+          "supporting_safe_move_propose_k4": 0.7558112911343948
+        },
+        "train": 58.875,
+        "fitness": 84.812,
+        "round": 5,
+        "status": "archivo"
+      },
+      {
+        "id": 4,
+        "parent": 3,
+        "op": "change_transitions",
+        "target": null,
+        "round": 6,
+        "repaired": false,
+        "status": "rechazado",
+        "reason": "change_transitions no cambia ninguna regla; el hijo modificó ['supporting_safe_move']"
+      },
+      {
+        "id": 4,
+        "parent": 3,
+        "op": "change_transitions",
+        "target": null,
+        "round": 7,
+        "repaired": false,
+        "status": "rechazado",
+        "reason": "cand_4.py: rechazado en la capa 'syntactic'. Propiedades violadas:\n  - params_accepted: build_component(problem, **params) no acepta los parámetros declarados: SupportingSafeMoveRule.__init__() got an unexpected keyword argument 'transition_min_sorted_supports'"
+      },
+      {
+        "id": 4,
+        "name": "supporting_safe_move_refined_v3",
+        "parent": 2,
+        "op": "refine_rule",
+        "target": "supporting_safe_move",
+        "states": [
+          "supporting_safe_move"
+        ],
+        "params": {
+          "w_ub": 2.0,
+          "w_fill": 0.5,
+          "w_src_ub": 1.5,
+          "w_dest_top": 0.25,
+          "w_future": 1.25,
+          "w_dest_sorted": 2.0,
+          "w_source_sorted": 0.75
+        },
+        "train": 77.75,
+        "fitness": 73.188,
+        "round": 8,
+        "status": "archivo"
+      },
+      {
+        "id": 5,
+        "name": "supporting_safe_move_refined_v4",
+        "parent": 3,
+        "op": "refine_rule",
+        "target": "supporting_safe_move",
+        "states": [
+          "supporting_safe_move"
+        ],
+        "params": {},
+        "train": 61.0,
+        "fitness": 58.25,
+        "round": 9,
+        "status": "archivo"
+      },
+      {
+        "id": 6,
+        "parent": 5,
+        "op": "change_transitions",
+        "target": null,
+        "round": 10,
+        "repaired": false,
+        "normalized": [
+          "parámetros sin efecto sacados de COMPONENT (quedan fijos en su default): ['ub_threshold', 'favor_sorted_when_below', 'fallback_margin']"
+        ],
+        "status": "rechazado",
+        "reason": "cand_6.py: rechazado en la capa 'syntactic'. Propiedades violadas:\n  - factory_runs: build_component(problem) lanzó KeyError: 'ub_threshold'"
+      },
+      {
+        "id": 6,
+        "parent": 4,
+        "op": "add_rule",
+        "target": null,
+        "round": 11,
+        "repaired": false,
+        "normalized": [
+          "parámetros sin efecto sacados de COMPONENT (quedan fijos en su default): ['w_unsorted_dest', 'w_source_height', 'w_bad', 'w_sorted', 'w_src_ub', 'safe_margin']"
+        ],
+        "status": "rechazado",
+        "reason": "cand_6.py: rechazado en la capa 'syntactic'. Propiedades violadas:\n  - no_loose_constants: números sueltos en el código: 0.5 (línea 165), 4 (línea 165), 0.25 (línea 166), 0.5 (línea 166), 0.75 (línea 166), 1.25 (línea 166), 1.5 (línea 166), 4 (línea 166). Todo número que decide algo (umbral, peso, tope, desempate) va en COMPONENT['params'] con 'range' y 'default', y llega por build_component(problem, **params), para que el tuner lo afine. Se permiten 0, ±1, 2, tolerancias (< 1e-3) y potencias de 10 desde 100 (orden lexicográfico o centinela)."
+      },
+      {
+        "id": 6,
+        "parent": 4,
+        "op": "add_rule",
+        "target": null,
+        "round": 12,
+        "repaired": false,
+        "normalized": [
+          "parámetros sin efecto sacados de COMPONENT (quedan fijos en su default): ['max_source_height', 'singleton_bonus']"
+        ],
+        "status": "rechazado",
+        "reason": "cand_6.py: rechazado en la capa 'contractual'. Propiedades violadas:\n  - construction_machine.proposals_are_candidates: la regla `singleton_release` propone [Move(so=0, sd=1)], y ninguna es un candidato de la vista (p.ej. [Move(so=1, sd=0), Move(so=1, sd=2), Move(so=3, sd=0)]): propón acciones de `view.candidates` (la misma clase de acción de la vista, o una con los mismos campos)"
+      }
+    ],
+    "tokens": {
+      "calls": 20,
+      "input_tokens": 102574,
+      "output_tokens": 49372,
+      "total_tokens": 151946,
+      "cached_input_tokens": 29952,
+      "reasoning_tokens": 18531
+    }
   }
 ]
