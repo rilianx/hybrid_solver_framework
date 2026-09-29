@@ -608,6 +608,15 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
     línea por pieza, evidencia, formato, problema y la API de la vista (docstrings, sin código).
     Salen la documentación de `core.rules`, el Protocol del slot y las pistas del slot, que
     hablaban de prioridades cuando aquí no se ponen.
+
+  **Corrida 80: 12 rondas, 55 mil tokens, 103,9 en test** (peor que el comodín). Las piezas sí
+  salieron angostas (7–20 % de los candidatos), pero como una taxonomía local: tope bien o mal
+  puesto × destino bueno, malo o vacío, con precisión baja. Combinadas a mano con esa biblioteca,
+  `bg` sola da 80,1 y `reduce` sola 86,9; las dos juntas, 18,4. Faltan las dos piezas, y cada una
+  sola casi no ayuda. Desde tuplas, el LLM no veía el efecto de cada movimiento. Ahora cada
+  contraejemplo muestra el estado que deja la acción elegida y el que deja la óptima, con la
+  cota inferior de cada uno: sin nada del pack, se ve p.ej. que el óptimo deja una pila vacía
+  aunque suba la cota.
 - **Un algoritmo de optimización de greedies** (etapa `evolve`, `llm/evolve.py`). Un greedy como
   FRG no sale de una vez; se llega por pasos: primero solo movimientos BG, después la prioridad
   dentro de ese estado, después un estado de vaciado que vuelve al inicial, y otra vez las

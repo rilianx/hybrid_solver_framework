@@ -222,21 +222,32 @@ def evidence(harness: Harness, pieces: tuple[Piece, ...], library: list[Piece], 
                 mem = m.entry(pc.rule, e["partial"], m.initial(e["partial"])[1][0])
                 if any(action_key(a) in opt for a in m.allowed(pc.rule, e["partial"], mem)):
                     allow.append(f"`{pc.rule}` #{pc.id}" + (" (ANCHA)" if pc.broad else ""))
-            rows.append((e, allow, len(cands)))
+            lb = getattr(view, "lower_bound", None)
+            after = [view.apply(e["partial"], a) for a in (e["chosen"], e["optimal"][0] if e["optimal"] else None) if a is not None]
+            bounds = [lb(x) for x in [e["partial"], *after]] if callable(lb) else None
+            rows.append((e, allow, len(cands), after, bounds))
     if not rows and not regret:
         return "", {}
     rows = _diverse(sorted(rows, key=lambda t: -t[0]["regret"]), N_EXAMPLES, key=lambda t: t[0]["state"])
     lines = [f"Movimientos de más respecto del óptimo: {total[0]} en {total[1]} pasos ("
              + ", ".join(f"`{st}` {v}" for st, v in sorted(regret.items(), key=lambda kv: -kv[1])) + ")."]
-    for e, allow, n in rows:
+    for e, allow, n, after, bounds in rows:
         who = "el comodín" if e["state"] == FALLBACK else f"`{e['state']}`"
-        cont = ", ".join(f"({a.so},{a.sd})" if hasattr(a, "so") else repr(a) for a in e.get("continuation", []))
+        cont = ", ".join(repr(a) for a in e.get("continuation", []))
         opt = ", ".join(repr(a) for a in e["optimal"][:3])
-        lines.append(f"- layout `{e['partial'].stacks if hasattr(e['partial'], 'stacks') else e['partial']}` "
-                     f"({n} candidatos): decidió {who}, eligió {e['chosen']!r} (+{e['regret']}); el óptimo haría {opt}, "
-                     f"que permite{'n' if len(allow) > 1 else ''} {', '.join(allow) if allow else 'NINGUNA pieza'}; "
-                     f"tramo óptimo: {cont}")
+        cb = (lambda i: f" (cota {bounds[i]:g})") if bounds else (lambda i: "")
+        lines.append(f"- estado `{_show(e['partial'])}`{cb(0)}, {n} candidatos; decidió {who}.\n"
+                     f"  eligió {e['chosen']!r} (+{e['regret']} movimientos de más) → `{_show(after[0])}`{cb(1)}\n"
+                     f"  óptimo {opt} → `{_show(after[1])}`{cb(2)}; lo permite"
+                     f"{'n' if len(allow) > 1 else ''} {', '.join(allow) if allow else 'NINGUNA pieza'}\n"
+                     f"  tramo óptimo desde el estado: {cont}")
     return "\n".join(lines), regret
+
+
+def _show(partial) -> str:
+    """El estado para el prompt: sus pilas si las tiene (CPMP), si no su repr."""
+    stacks = getattr(partial, "stacks", None)
+    return str(stacks) if stacks is not None else repr(partial)
 
 
 def api_summary(source: str) -> str:
