@@ -508,6 +508,39 @@ def check_construction_machine(impl, ctx: ValidationContext) -> list[CheckResult
         return ok(LAYER, f"{L}.states_reachable", f"estados alcanzados: {sorted(seen)}")
 
     results += guard(LAYER, f"{L}.states_reachable", _reach)
+
+    from core.rules import RuleMachine, action_key
+
+    if isinstance(impl, RuleMachine):
+        def _proposals():
+            """Una regla activa que propone algo, pero nada que sea un candidato de la vista, no decide
+            nada: todos los candidatos valen lo mismo (corrida 71: su propio namedtuple `Move`)."""
+            for inst in ctx.instances:
+                view = ctx.problem.construction_view(inst)
+                partial = view.empty()
+                memory = policy.init(partial)
+                for _ in range(20_000):
+                    if view.is_complete(partial):
+                        break
+                    cands = list(view.candidates(partial))
+                    if not cands:
+                        break
+                    state, (cmem, mems) = policy.step(partial, memory)
+                    if state in impl.index:
+                        prop = impl.propose(state, partial, mems[impl.index[state]])
+                        keys = {action_key(c) for c in cands}
+                        if prop and not any(action_key(a) in keys for a in prop):
+                            return fail(LAYER, f"{L}.proposals_are_candidates",
+                                        f"la regla `{state}` propone {prop[:3]!r}, y ninguna es un candidato de la vista (p.ej. "
+                                        f"{cands[:3]!r}): propón acciones de `view.candidates` (la misma clase de acción de la "
+                                        f"vista, o una con los mismos campos)")
+                    scores = [policy.score(partial, memory, c) for c in cands]
+                    a = cands[min(range(len(cands)), key=scores.__getitem__)]
+                    memory = policy.update(partial, memory, a)
+                    partial = view.apply(partial, a)
+            return ok(LAYER, f"{L}.proposals_are_candidates")
+
+        results += guard(LAYER, f"{L}.proposals_are_candidates", _proposals)
     return _collapse(results)
 
 

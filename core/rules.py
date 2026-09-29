@@ -43,6 +43,20 @@ from .machine import FALLBACK
 FAR = 1e6  # puntaje de lo que la regla activa no propone
 
 
+def action_key(a: Any):
+    """La acción por su valor: un dataclass o una tupla con nombre valen por sus campos. Corrida 71:
+    la regla definía su propio `Move = namedtuple(...)`, que nunca es igual al `Move` (dataclass) de
+    la vista; ninguna propuesta coincidía con un candidato, todos valían FAR y el greedy elegía en el
+    orden de la vista, sin la regla ni el comodín (107 movimientos contra 83 del comodín solo)."""
+    import dataclasses
+
+    if dataclasses.is_dataclass(a) and not isinstance(a, type):
+        return tuple(getattr(a, f.name) for f in dataclasses.fields(a))
+    if isinstance(a, tuple):
+        return tuple(a)
+    return a
+
+
 def _call(obj, name, default, *args):
     fn = getattr(obj, name, None)
     return default if fn is None else fn(*args)
@@ -124,10 +138,18 @@ class RuleMachine:
     def score(self, partial, state, memory, action) -> float:
         _, mems = memory
         ranked = self.propose(state, partial, mems[self.index[state]])
-        try:
-            return float(ranked.index(action))
-        except ValueError:
-            return FAR
+        keys = self._keys(ranked)
+        return float(keys.get(action_key(action), FAR))
+
+    def _keys(self, ranked: list) -> dict:
+        c = getattr(self, "_keys_cache", None)
+        if c is not None and c[0] is ranked:
+            return c[1]
+        keys: dict = {}
+        for i, a in enumerate(ranked):
+            keys.setdefault(action_key(a), i)
+        self._keys_cache = (ranked, keys)
+        return keys
 
     def update(self, partial, state, memory, action):
         cmem, mems = memory
@@ -167,8 +189,9 @@ def rule_quality(policy: Any, view: Any, oracle, max_steps: int = 20_000) -> dic
             break
         state, (cmem, mems) = policy.step(partial, memory)
         rv = RuleView(machine, partial, mems, state if state in machine.index else None)
+        by_key = {action_key(c): c for c in cands}
         for n in machine.states:
-            prop = [a for a in rv.proposal(n) if a in cands]
+            prop = [by_key[action_key(a)] for a in rv.proposal(n) if action_key(a) in by_key]
             if prop:
                 out[n]["applies"] += 1
                 dn = oracle(view.apply(partial, prop[0]))
@@ -188,4 +211,4 @@ def rule_quality(policy: Any, view: Any, oracle, max_steps: int = 20_000) -> dic
     return {"steps": steps, "rules": out}
 
 
-__all__ = ["RuleMachine", "RuleView", "NoTransitions", "rule_quality", "FAR"]
+__all__ = ["RuleMachine", "RuleView", "NoTransitions", "rule_quality", "action_key", "FAR"]

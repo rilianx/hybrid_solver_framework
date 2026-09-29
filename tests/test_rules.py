@@ -130,3 +130,47 @@ def test_the_prompt_has_the_quality_of_each_rule(tmp_path):
     profile(Harness(PACK), ind, PACK.make_instances(2, 9100, PACK.parse_size("5x5")))
     text = regret_text(ind)
     assert "Calidad de cada regla" in text and "| bg_move |" in text and "| reduce_stack |" in text
+
+
+def test_proposals_match_candidates_by_value_and_bogus_proposals_are_rejected():
+    """Corrida 71: una regla con su propio `Move = namedtuple(...)` nunca coincidía con el `Move`
+    (dataclass) de la vista y la máquina elegía en el orden de la vista. Ahora las acciones se
+    comparan por valor; una regla cuyas propuestas no son candidatos se rechaza."""
+    from collections import namedtuple
+
+    from core.machine import FALLBACK
+    from core.validation import validate_component
+    from examples.cpmp.frg import bg_moves
+
+    NT = namedtuple("Move", ["so", "sd"])
+
+    class NamedBG:
+        name = "bg"
+
+        def propose(self, L, m):
+            moves = bg_moves(L, False)
+            return [NT(so, sd) for so, sd in sorted(moves, key=moves.__getitem__)]
+
+    class Bogus:
+        name = "bogus"
+
+        def propose(self, L, m):
+            return [NT(99, 98)]
+
+    class T:
+        def __init__(self, n):
+            self.n = n
+
+        def select(self, L, memory, rules):
+            return (self.n, memory) if rules.applies(self.n) else (FALLBACK, memory)
+
+    inst = PACK.make_instances(1, 3, PACK.parse_size("5x5"))[0]
+    P = PACK.problem_factory(inst)
+    named = P.objective(GreedyConstructor(P, RuleMachine(P, [NamedBG()], T("bg"))).build(inst, Random(0)))
+    from examples.cpmp.machine import BGMove
+
+    real = P.objective(GreedyConstructor(P, RuleMachine(P, [BGMove(False)], T("bg_move"))).build(inst, Random(0)))
+    assert named == real  # mismo comportamiento con namedtuple que con la clase de la vista
+    c = PACK.make_contexts(strict=False)[0]
+    comp = {"name": "b", "slot": "construction_machine", "compatible_skeletons": ["CONSTRUCT"], "params": {}}
+    assert "proposals_are_candidates" in validate_component(comp, RuleMachine(c.problem, [Bogus()], T("bogus")), c).feedback()

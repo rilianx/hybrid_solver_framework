@@ -111,7 +111,8 @@ SLOT_HINTS = {
     "construction_machine": (
         "Escribes una MÁQUINA DE REGLAS constructiva (`core.rules.RuleMachine`): REGLAS DE ACCIÓN que proponen movimientos "
         "concretos y TRANSICIONES que eligen cuál usar. Cada regla es una clase con `name` y `propose(partial, memory)` -> "
-        "lista de acciones en orden de preferencia ([] = no aplica); opcionales: `init(partial)` (su memoria), "
+        "lista de acciones en orden de preferencia ([] = no aplica), que tienen que ser candidatos de la vista (usa su misma "
+        "clase de acción, importándola del módulo de la vista); opcionales: `init(partial)` (su memoria), "
         "`start(partial, memory)` (al activarse: p.ej. elegir el objetivo que va a atender), `update(partial, memory, "
         "action)` y `done(partial, memory)` (si sostiene un compromiso de varios pasos: cuándo terminó; por defecto termina "
         "tras cada paso). Las transiciones son una clase con `select(partial, memory, rules)` -> (nombre de regla o "

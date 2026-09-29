@@ -211,7 +211,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   constructivas*).
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 301 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 302 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -232,7 +232,7 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 301 passed (~280 s)
+python -m pytest -q                 # 302 passed (~285 s)
 
 # segundo problema: CVRP con flota libre (mismos CLI, otro pack)
 python -m examples.cvrp.tune --catalog handwritten --size 30 --trials 30 --ref-time 60
@@ -781,6 +781,19 @@ operador.
 **Corrida 70: primera con contraejemplos ricos, 12 rondas, 110 mil tokens.** Sin mejora: la mejor
 sigue en 52,0 (34,1 en 5×5 y 69,9 en 6×6; FRG 12,4 y 24,3). Los 5 `refine_priority` dieron de 67
 a 106. Eso llevó a separar reglas y transiciones.
+
+**Corrida 71: primera con máquinas de reglas, desde la mínima, 12 rondas, 128 mil tokens.** Perdida
+como señal por un error del framework. La primera regla (`good_place`) definía su propio
+`Move = namedtuple(...)`, que nunca es igual al `Move` (dataclass) de la vista. Ninguna propuesta
+coincidía con un candidato, todos valían lo mismo y el greedy elegía en el orden de la vista, sin
+la regla ni el comodín: 107 movimientos contra 83 del comodín solo. Los 8 refinamientos dieron
+exactamente 107,06 porque no cambiaban nada.
+
+Ahora las acciones se comparan por valor (`core.rules.action_key`: los campos de un dataclass o
+de una tupla con nombre). Una regla que propone algo que no es candidato se rechaza
+(`proposals_are_candidates`), y la pista pide usar la clase de acción de la vista. Con la
+comparación por valor, `good_place` da 106,1: es una regla mala de verdad, que mueve también
+contenedores bien puestos, algo que ahora los refinamientos sí pueden corregir.
 
 **Oráculo exacto: imitar al óptimo, no al respaldo** (`ProblemPack.oracle_distance`,
 `core.machine.machine_regret`). Un greedy que imite al best-first del respaldo sería el comodín
