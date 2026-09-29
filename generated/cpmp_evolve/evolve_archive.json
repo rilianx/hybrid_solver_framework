@@ -1,0 +1,68 @@
+{
+  "seed": false,
+  "archive": [
+    {
+      "name": "minimal",
+      "source": "\nCOMPONENT = {\"name\": \"minimal\", \"slot\": \"construction_machine\", \"compatible_skeletons\": [\"CONSTRUCT\"], \"requires\": [],\n             \"params\": {}}\n\nfrom core.rules import NoTransitions, RuleMachine\n\n\ndef build_component(problem):\n    \"\"\"Máquina mínima: sin reglas todavía; cada paso lo decide el comodín del framework.\"\"\"\n    return RuleMachine(problem, [], NoTransitions())\n",
+      "component": {
+        "name": "minimal",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {}
+      },
+      "states": [],
+      "params": {},
+      "fitness": 83.0,
+      "op": "base",
+      "target": null,
+      "todo": []
+    },
+    {
+      "name": "good_place_rule",
+      "source": "COMPONENT = {\n    \"name\": \"good_place_rule\",\n    \"slot\": \"construction_machine\",\n    \"compatible_skeletons\": [\"CONSTRUCT\"],\n    \"requires\": [],\n    \"params\": {},\n}\n\nfrom collections import namedtuple\nfrom typing import Any\n\nfrom core.rules import FALLBACK, RuleMachine\n\n\nMove = namedtuple(\"Move\", [\"so\", \"sd\"])\n\n\nclass GoodPlaceRule:\n    name = \"good_place\"\n\n    def __init__(self, problem):\n        self.problem = problem\n\n    def init(self, partial):\n        return ()\n\n    def start(self, partial, memory):\n        return memory\n\n    def update(self, partial, memory, action):\n        return memory\n\n    def done(self, partial, memory):\n        return True\n\n    def propose(self, partial, memory):\n        moves = []\n        n_stacks = partial.S\n\n        for so in range(n_stacks):\n            if not partial.stacks[so]:\n                continue\n\n            c = partial.stacks[so][-1]\n\n            for sd in range(n_stacks):\n                if not partial.valid(so, sd):\n                    continue\n\n                dest_sorted = partial.is_sorted_stack(sd)\n                dest_empty = len(partial.stacks[sd]) == 0\n                can_be_well_placed = dest_empty or (c <= partial.g(sd))\n\n                if not can_be_well_placed:\n                    continue\n\n                try:\n                    cp = partial.copy(track=False)\n                    cp.move(so, sd)\n                    after_bad = cp.bad()\n                    after_sorted = cp.sorted_n[sd]\n                    after_ub = cp.ub(sd)\n                except Exception:\n                    after_bad = partial.bad()\n                    after_sorted = partial.sorted_n[sd]\n                    after_ub = partial.ub(sd)\n\n                priority = (\n                    0 if dest_sorted else 1,\n                    0 if not dest_empty else 1,\n                    after_bad,\n                    -after_sorted,\n                    after_ub,\n                    so,\n                    sd,\n                )\n                moves.append((priority, Move(so=so, sd=sd)))\n\n        moves.sort(key=lambda x: x[0])\n        return [m for _, m in moves]\n\n\nclass GreedyGoodPlaceTransitions:\n    def __init__(self, rule_name: str):\n        self.rule_name = rule_name\n\n    def initial(self, partial):\n        return ()\n\n    def select(self, partial, memory, rules):\n        if rules.applies(self.rule_name):\n            return self.rule_name, memory\n        return FALLBACK, memory\n\n\ndef build_component(problem, **params):\n    rule = GoodPlaceRule(problem)\n    trans = GreedyGoodPlaceTransitions(rule.name)\n    return RuleMachine(problem, [rule], trans)\n",
+      "component": {
+        "name": "good_place_rule",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {}
+      },
+      "states": [
+        "good_place"
+      ],
+      "params": {},
+      "fitness": 107.062,
+      "op": "add_rule",
+      "target": null,
+      "todo": [
+        "good_place"
+      ]
+    },
+    {
+      "name": "good_place_refined_rule",
+      "source": "COMPONENT = {'name': 'good_place_refined_rule', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {}}\nfrom collections import namedtuple\nfrom core.rules import FALLBACK, RuleMachine\nMove = namedtuple('Move', ['so', 'sd'])\n\nclass GoodPlaceRule:\n    name = 'good_place'\n\n    def __init__(self, problem, prefer_non_empty: bool=True, prefer_sorted_dest: bool=True, prefer_tighter_fit: bool=True, source_bad_weight: float=1.0):\n        self.problem = problem\n        self.prefer_non_empty = prefer_non_empty\n        self.prefer_sorted_dest = prefer_sorted_dest\n        self.prefer_tighter_fit = prefer_tighter_fit\n        self.source_bad_weight = float(source_bad_weight)\n\n    def init(self, partial):\n        return ()\n\n    def start(self, partial, memory):\n        return memory\n\n    def update(self, partial, memory, action):\n        return memory\n\n    def done(self, partial, memory):\n        return True\n\n    def propose(self, partial, memory):\n        moves = []\n        n_stacks = partial.S\n        for so in range(n_stacks):\n            if not partial.stacks[so]:\n                continue\n            c = partial.stacks[so][-1]\n            source_bad = partial.ub(so)\n            for sd in range(n_stacks):\n                if not partial.valid(so, sd):\n                    continue\n                dest_empty = len(partial.stacks[sd]) == 0\n                dest_sorted = partial.is_sorted_stack(sd)\n                if not (dest_empty or c <= partial.g(sd)):\n                    continue\n                try:\n                    cp = partial.copy(track=False)\n                    cp.move(so, sd)\n                    after_bad = cp.bad()\n                    after_sorted = cp.sorted_n[sd]\n                    after_ub = cp.ub(sd)\n                    dest_height = cp.h(sd)\n                    src_height = cp.h(so)\n                    dest_top = cp.g(sd)\n                except Exception:\n                    after_bad = partial.bad()\n                    after_sorted = partial.sorted_n[sd]\n                    after_ub = partial.ub(sd)\n                    dest_height = len(partial.stacks[sd]) + 1\n                    src_height = max(0, len(partial.stacks[so]) - 1)\n                    dest_top = c\n                fit_gap = 0 if dest_empty else max(0, dest_top - c)\n                priority = (0 if self.prefer_sorted_dest and dest_sorted else 1, 0 if self.prefer_non_empty and (not dest_empty) else 1, after_bad, -after_sorted, after_ub, fit_gap if self.prefer_tighter_fit else 0, -source_bad * self.source_bad_weight, dest_height, src_height, c, so, sd)\n                moves.append((priority, Move(so=so, sd=sd)))\n        moves.sort(key=lambda x: x[0])\n        return [m for _, m in moves]\n\nclass GreedyGoodPlaceTransitions:\n\n    def __init__(self, rule_name: str):\n        self.rule_name = rule_name\n\n    def initial(self, partial):\n        return ()\n\n    def select(self, partial, memory, rules):\n        if rules.applies(self.rule_name):\n            return (self.rule_name, memory)\n        return (FALLBACK, memory)\n\ndef build_component(problem, **params):\n    defaults = {'prefer_non_empty': True, 'prefer_sorted_dest': True, 'prefer_tighter_fit': True, 'source_bad_weight': 1.0}\n    cfg = dict(defaults)\n    cfg.update(params)\n    rule = GoodPlaceRule(problem, prefer_non_empty=cfg['prefer_non_empty'], prefer_sorted_dest=cfg['prefer_sorted_dest'], prefer_tighter_fit=cfg['prefer_tighter_fit'], source_bad_weight=cfg['source_bad_weight'])\n    trans = GreedyGoodPlaceTransitions(rule.name)\n    return RuleMachine(problem, [rule], trans)\n",
+      "component": {
+        "name": "good_place_refined_rule",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {}
+      },
+      "states": [
+        "good_place"
+      ],
+      "params": {},
+      "fitness": 107.062,
+      "op": "refine_rule",
+      "target": "good_place",
+      "todo": []
+    }
+  ]
+}
