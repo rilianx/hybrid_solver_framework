@@ -312,14 +312,10 @@ ALL_SCORE = BG_ONLY.replace('"name": "bg_only"', '"name": "all_score"').replace(
         return sorted(candidates, key=lambda c: (L.g(c.sd) - L.g(c.so), c.so, c.sd))
 
     def _unused(self, L, memory, candidates):''')
-SPLIT = BG_AND_OTHER.replace('"name": "bg_only"', '"name": "split"').replace('name = "bg"', 'name = "fill"').replace(
-    "[BG(), Other()]", "[BG(), Other()]")
-
-
-def test_a_rule_that_allows_everything_is_reported_and_split(tmp_path):
+def test_a_rule_that_allows_everything_is_reported(tmp_path):
     """Corridas 72–75: la primera regla ordenaba todos los candidatos por una suma ponderada. No se
-    rechaza (puede ser un greedy válido): se informa y el calendario propone partirla."""
-    from llm.evolve import breadth_text, broad_rules, profile, schedule
+    rechaza (puede ser un greedy válido): el diagnóstico lo dice y recomienda varias reglas."""
+    from llm.evolve import breadth_text, broad_rules, profile
 
     path = tmp_path / "all.py"
     path.write_text(ALL_SCORE)
@@ -330,8 +326,15 @@ def test_a_rule_that_allows_everything_is_reported_and_split(tmp_path):
     spec.loader.exec_module(mod)
     ind = Individual(0, "all_score", ALL_SCORE, mod.build_component, mod.COMPONENT, ("bg",))
     profile(Harness(PACK), ind, PACK.make_instances(2, 9100, PACK.parse_size("4x4")))
-    assert broad_rules(ind) == ["bg"] and "TODOS los candidatos" in breadth_text(ind)
-    ops = {schedule(ind, Random(k)) for k in range(20)}
-    assert ("split_rule", "bg") in ops
-    assert scope_check("split_rule", "bg", ind, ("fill", "other"), SPLIT) is None
-    assert "dos o más" in scope_check("split_rule", "bg", ind, ("fill",), SPLIT.replace("[BG(), Other()]", "[BG()]"))
+    assert broad_rules(ind) == ["bg"] and "TODOS los candidatos" in breadth_text(ind) and "varias reglas" in breadth_text(ind)
+
+
+def test_repair_of_an_add_names_the_rules_to_keep_and_macros_get_more_refinements():
+    from llm.evolve import MACRO_TRIES, repair_prompt, schedule
+
+    text = repair_prompt("add_simple", None, "add_simple debe agregar exactamente una regla", "src", ("bg",))
+    assert "EXACTAMENTE IGUALES" in text and "`bg`" in text and "2 reglas" in text
+    parent = Individual(0, "m", BG_AND_MACRO, None, {}, ("bg", "other"), todo=["other"])
+    parent.profile = {"bg": {"steps": 3}}
+    parent.refine_failures = {"other": 2}  # una regla simple ya se habría soltado; la macro sigue
+    assert MACRO_TRIES > 2 and schedule(parent, Random(0)) == ("refine_rule", "other")
