@@ -224,6 +224,25 @@ def _passed_args(tree, cls_name: str, names: list[str], declared: set) -> set[st
     return out
 
 
+def _factory_keywords(tree, classes: list[ast.ClassDef]) -> None:
+    """En una función con `**params`, `Regla(w=3.0)` pasa a `Regla(w=params.get("<regla>_w", 3.0))`:
+    un número que la fábrica le da a una regla es un parámetro (corrida 74)."""
+    prefixes = {c.name: _prefix(c) for c in classes}
+    for fn in tree.body:
+        if not isinstance(fn, ast.FunctionDef) or fn.args.kwarg is None:
+            continue
+        kw = fn.args.kwarg.arg
+        for n in ast.walk(fn):
+            if not (isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id in prefixes):
+                continue
+            for k in n.keywords:
+                v = getattr(k.value, "value", None) if isinstance(k.value, ast.Constant) else None
+                if k.arg is None or isinstance(v, bool) or not isinstance(v, (int, float)) or _allowed(v):
+                    continue
+                call = ast.parse(f"{kw}.get({prefixes[n.func.id] + k.arg!r}, {v!r})", mode="eval").body
+                k.value = ast.copy_location(call, k.value)
+
+
 def _init_defaults(tree, cls: ast.ClassDef, prefix: str, taken: set) -> list[tuple[str, dict, str]]:
     """Los defaults numéricos (o bool) de un `__init__` que se guardan tal cual en un atributo
     (`def __init__(self, ..., w_bad=8.0): self.w_bad = w_bad`): son parámetros escondidos, porque
@@ -322,6 +341,8 @@ def extract_constants(source: str) -> tuple[str, dict]:
         tree, comp, old_auto = _strip_framework(tree, comp)
         stripped = True
         classes = [c for c in _target_classes(tree)]
+    if not legacy:
+        _factory_keywords(tree, classes)
     skip = _skipped(tree)
     prior_node, owner_node = _assign(tree, "_AUTO"), _assign(tree, "_AUTO_OWNER")
     prior = ast.literal_eval(prior_node.value) if prior_node is not None else {}

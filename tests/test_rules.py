@@ -260,3 +260,36 @@ def _load_src(tmp_path, src, name):
     path = tmp_path / f"{name}.py"
     path.write_text(src)
     return _load(path, name)
+
+
+def test_numbers_the_factory_gives_a_rule_are_parameters(tmp_path):
+    """Corrida 74: `Regla(w_gap=3.0)` dentro de build_component se rechazaba por número suelto."""
+    from core.validation.params import extract_constants, loose_constants
+
+    module = INIT_MODULE.replace("return RuleMachine(problem, [Weighted()], Trans())",
+                                 "return RuleMachine(problem, [Weighted(w_gap=3.0)], Trans())")
+    src, extracted = extract_constants(module)
+    assert loose_constants(src) == [] and extracted["weighted_w_gap"]["default"] == 3.0
+    P = PACK.make_contexts()[0].problem
+    mod = _load_src(tmp_path, src, "factory_kw")
+    assert mod.build_component(P).rules[0].w_gap == 3.0
+    assert mod.build_component(P, weighted_w_gap=5.0).rules[0].w_gap == 5.0
+
+
+def test_unproposed_candidates_are_ranked_by_the_fallback():
+    """Si la vista veta todas las propuestas de la regla activa (no volver a un layout visitado),
+    desempata el comodín entre los candidatos, no el orden de la vista."""
+    from core.machine import FAR, MachinePolicy
+
+    inst = PACK.make_instances(1, 10100, PACK.parse_size("5x5"))[0]
+    P = PACK.problem_factory(inst)
+    policy = MachinePolicy(FRGMachine(P), P)
+    view = P.construction_view(inst)
+    partial = view.empty()
+    memory = policy.init(partial)
+    state, (_, mems) = policy.step(partial, memory)
+    proposed = {(a.so, a.sd) for a in policy.machine.propose(state, partial, mems[policy.machine.index[state]])}
+    other = [c for c in view.candidates(partial) if (c.so, c.sd) not in proposed]
+    assert other
+    for c in other:
+        assert policy.score(partial, memory, c) == FAR + policy.fallback.score(partial, c)

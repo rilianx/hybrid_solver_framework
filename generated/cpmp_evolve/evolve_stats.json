@@ -1871,5 +1871,309 @@
       "cached_input_tokens": 17664,
       "reasoning_tokens": 15681
     }
+  },
+  {
+    "seed": false,
+    "rounds": 12,
+    "archive": [
+      "supporting_safe_move_refined_v4",
+      "supporting_safe_move_refined_v7_5",
+      "supporting_safe_move_refined_v8_short_source_unlock",
+      "minimal"
+    ],
+    "written": [
+      {
+        "name": "supporting_safe_move_refined_v4",
+        "path": "generated/cpmp_evolve/construction_machine/supporting_safe_move_refined_v4_r1.py",
+        "fitness": 58.25,
+        "params": {
+          "supporting_safe_move_w_bad": 8.0,
+          "supporting_safe_move_w_ub": 6.0,
+          "supporting_safe_move_w_dest_sorted": 1.5,
+          "supporting_safe_move_w_src_sorted": 2.5,
+          "supporting_safe_move_w_gap": 1.0,
+          "supporting_safe_move_w_fill": 0.75,
+          "supporting_safe_move_max_bad_increase": 1,
+          "supporting_safe_move_prefer_safe_only": true
+        }
+      },
+      {
+        "name": "supporting_safe_move_refined_v7_5",
+        "path": "generated/cpmp_evolve/construction_machine/supporting_safe_move_refined_v7_5_r1.py",
+        "fitness": 58.25,
+        "params": {}
+      },
+      {
+        "name": "supporting_safe_move_refined_v8_short_source_unlock",
+        "path": "generated/cpmp_evolve/construction_machine/supporting_safe_move_refined_v8_short_source_unlock_r1.py",
+        "fitness": 78.312,
+        "params": {
+          "short_source_unlock_short_source_min_height": 4
+        }
+      }
+    ],
+    "individuals": [
+      {
+        "id": 0,
+        "name": "minimal",
+        "parent": null,
+        "op": "base",
+        "target": null,
+        "states": [],
+        "params": {},
+        "train": 92.5,
+        "fitness": 83.0,
+        "status": "retomado"
+      },
+      {
+        "id": 1,
+        "name": "supporting_safe_move_refined_v4",
+        "parent": null,
+        "op": "refine_rule",
+        "target": "supporting_safe_move",
+        "states": [
+          "supporting_safe_move"
+        ],
+        "params": {
+          "supporting_safe_move_w_bad": 8.0,
+          "supporting_safe_move_w_ub": 6.0,
+          "supporting_safe_move_w_dest_sorted": 1.5,
+          "supporting_safe_move_w_src_sorted": 2.5,
+          "supporting_safe_move_w_gap": 1.0,
+          "supporting_safe_move_w_fill": 0.75,
+          "supporting_safe_move_max_bad_increase": 1,
+          "supporting_safe_move_prefer_safe_only": true
+        },
+        "train": 61.0,
+        "fitness": 58.25,
+        "status": "retomado"
+      },
+      {
+        "id": 2,
+        "name": "supporting_safe_move_refined_v6",
+        "parent": null,
+        "op": "refine_rule",
+        "target": "supporting_safe_move",
+        "states": [
+          "supporting_safe_move"
+        ],
+        "params": {
+          "supporting_safe_move_w_bad": 8.0,
+          "supporting_safe_move_w_ub": 6.0,
+          "supporting_safe_move_w_dest_sorted": 2.5,
+          "supporting_safe_move_w_src_sorted": 1.5,
+          "supporting_safe_move_w_gap": 1.0,
+          "supporting_safe_move_w_fill": 0.75,
+          "supporting_safe_move_w_dest_empty": 4.0,
+          "supporting_safe_move_w_src_ub": 1.5,
+          "supporting_safe_move_max_bad_increase": 1,
+          "supporting_safe_move_prefer_safe_only": true,
+          "gatedsafeplacementtransitions_bad_limit": 8,
+          "gatedsafeplacementtransitions_ub_limit": 4,
+          "gatedsafeplacementtransitions_sorted_stack_limit": 2,
+          "gatedsafeplacementtransitions_prefer_rule_when_feasible": true
+        },
+        "train": 61.0,
+        "fitness": 62.188,
+        "status": "retomado"
+      },
+      {
+        "id": 3,
+        "name": "supporting_safe_move_refined_v5_7",
+        "parent": null,
+        "op": "refine_rule",
+        "target": "supporting_safe_move",
+        "states": [
+          "supporting_safe_move"
+        ],
+        "params": {
+          "supporting_safe_move_w_bad": 8.0,
+          "supporting_safe_move_w_ub": 6.0,
+          "supporting_safe_move_w_src_unlock": 3.0,
+          "supporting_safe_move_w_dest_room": 2.0,
+          "supporting_safe_move_w_dest_sorted": 1.0,
+          "supporting_safe_move_w_src_sorted": 1.5,
+          "supporting_safe_move_w_gap": 0.5,
+          "supporting_safe_move_w_fill": 0.5,
+          "supporting_safe_move_prefer_safe_only": true
+        },
+        "train": 59.375,
+        "fitness": 61.812,
+        "status": "retomado"
+      },
+      {
+        "id": 4,
+        "parent": 1,
+        "op": "change_transitions",
+        "target": null,
+        "round": 1,
+        "repaired": false,
+        "status": "rechazado",
+        "reason": "cand_4.py: rechazado en la capa 'syntactic'. Propiedades violadas:\n  - rule_machine: build_component debe devolver una `core.rules.RuleMachine(problem, [reglas...], Transiciones(...))`: reglas de acción y transiciones separadas"
+      },
+      {
+        "id": 4,
+        "parent": 3,
+        "op": "add_rule",
+        "target": null,
+        "round": 2,
+        "repaired": false,
+        "normalized": [
+          "números sueltos extraídos como parámetros: ['supporting_safe_move_prefer_safe_only', 'supporting_safe_move_w_bad', 'supporting_safe_move_w_dest_room', 'supporting_safe_move_w_dest_sorted', 'supporting_safe_move_w_fill', 'supporting_safe_move_w_gap', 'supporting_safe_move_w_src_sorted', 'supporting_safe_move_w_src_unlock', 'supporting_safe_move_w_ub', 'unlocking_reduction_w_bad', 'unlocking_reduction_w_dst_room', 'unlocking_reduction_w_dst_sorted', 'unlocking_reduction_w_src_sorted', 'unlocking_reduction_w_src_ub', 'unlocking_reduction_w_ub']",
+          "parámetros sin efecto sacados de COMPONENT (quedan fijos en su default): ['supporting_safe_move_w_bad', 'supporting_safe_move_w_ub', 'supporting_safe_move_w_src_unlock', 'supporting_safe_move_w_dest_room', 'supporting_safe_move_w_dest_sorted', 'supporting_safe_move_w_src_sorted', 'supporting_safe_move_w_gap', 'supporting_safe_move_w_fill', 'supporting_safe_move_prefer_safe_only', 'unlocking_reduction_w_bad', 'unlocking_reduction_w_ub', 'unlocking_reduction_w_src_ub', 'unlocking_reduction_w_dst_sorted', 'unlocking_reduction_w_dst_room', 'unlocking_reduction_w_src_sorted']"
+        ],
+        "status": "rechazado",
+        "reason": "cand_4.py: rechazado en la capa 'contractual'. Propiedades violadas:\n  - construction_machine.states_reachable: los estados ['unlocking_reduction', 'supporting_safe_move'] nunca se alcanzan, ni en las micro-instancias ni en las de entrenamiento (greedy): revisa las condiciones de transition que llevan a ellos, o quítalos"
+      },
+      {
+        "id": 4,
+        "parent": 1,
+        "op": "add_rule",
+        "target": null,
+        "round": 3,
+        "repaired": false,
+        "normalized": [
+          "números sueltos extraídos como parámetros: ['supporting_safe_move_max_bad_increase', 'supporting_safe_move_prefer_safe_only', 'supporting_safe_move_w_bad', 'supporting_safe_move_w_dest_sorted', 'supporting_safe_move_w_fill', 'supporting_safe_move_w_gap', 'supporting_safe_move_w_src_sorted', 'supporting_safe_move_w_ub']",
+          "parámetros sin efecto sacados de COMPONENT (quedan fijos en su default): ['repair_move_w_bad', 'repair_move_w_ub', 'repair_move_w_dest_sorted', 'repair_move_w_src_sorted', 'repair_move_w_gap', 'repair_move_max_bad_increase', 'repair_move_prefer_repair_only', 'supporting_safe_move_w_bad', 'supporting_safe_move_w_ub', 'supporting_safe_move_w_dest_sorted', 'supporting_safe_move_w_src_sorted', 'supporting_safe_move_w_gap', 'supporting_safe_move_w_fill', 'supporting_safe_move_max_bad_increase', 'supporting_safe_move_prefer_safe_only']"
+        ],
+        "status": "rechazado",
+        "reason": "cand_4.py: rechazado en la capa 'contractual'. Propiedades violadas:\n  - construction_machine.states_reachable: los estados ['repair_supporting_move'] nunca se alcanzan, ni en las micro-instancias ni en las de entrenamiento (greedy): revisa las condiciones de transition que llevan a ellos, o quítalos"
+      },
+      {
+        "id": 4,
+        "name": "supporting_safe_move_refined_v7",
+        "parent": 3,
+        "op": "refine_rule",
+        "target": "supporting_safe_move",
+        "states": [
+          "supporting_safe_move"
+        ],
+        "params": {},
+        "train": 62.125,
+        "fitness": 67.562,
+        "round": 4,
+        "status": "no mejora su nicho"
+      },
+      {
+        "id": 5,
+        "parent": 3,
+        "op": "add_rule",
+        "target": null,
+        "round": 5,
+        "repaired": false,
+        "normalized": [
+          "parámetros sin efecto sacados de COMPONENT (quedan fijos en su default): ['unlock_bad_weight', 'unlock_ub_weight', 'unlock_room_weight', 'unlock_sorted_bonus', 'support_safe_only', 'support_src_unlock_weight', 'support_src_sorted_weight', 'support_gap_weight', 'support_fill_weight']"
+        ],
+        "status": "rechazado",
+        "reason": "cand_5.py: rechazado en la capa 'contractual'. Propiedades violadas:\n  - construction_machine.proposals_are_candidates: la regla `unlocking_reduction` propone [Move(so=4, sd=0), Move(so=4, sd=1), Move(so=4, sd=3)], y ninguna es un candidato de la vista (p.ej. [Move(so=0, sd=1), Move(so=0, sd=2), Move(so=0, sd=3)]): propón acciones de `view.candidates` (la misma clase de acción de la vista, o una con los mismos campos)"
+      },
+      {
+        "id": 5,
+        "name": "supporting_safe_move_refined_v7_5",
+        "parent": 1,
+        "op": "refine_rule",
+        "target": "supporting_safe_move",
+        "states": [
+          "supporting_safe_move"
+        ],
+        "params": {},
+        "train": 61.0,
+        "fitness": 58.25,
+        "round": 6,
+        "status": "archivo"
+      },
+      {
+        "id": 6,
+        "name": "supporting_safe_move_refined_v8_short_source_unlock",
+        "parent": 5,
+        "op": "add_rule",
+        "target": null,
+        "states": [
+          "short_source_unlock",
+          "supporting_safe_move"
+        ],
+        "params": {
+          "short_source_unlock_short_source_min_height": 4
+        },
+        "train": 69.875,
+        "fitness": 78.312,
+        "round": 7,
+        "status": "archivo"
+      },
+      {
+        "id": 7,
+        "parent": 5,
+        "op": "change_transitions",
+        "target": null,
+        "round": 8,
+        "repaired": false,
+        "status": "rechazado",
+        "reason": "cand_7.py: rechazado en la capa 'contractual'. Propiedades violadas:\n  - construction_machine.finite: excepción AttributeError: 'SupportingSafeMoveRule' object has no attribute 'propose'"
+      },
+      {
+        "id": 7,
+        "parent": 1,
+        "op": "refine_rule",
+        "target": "supporting_safe_move",
+        "round": 9,
+        "repaired": false,
+        "normalized": [
+          "parámetros sin efecto sacados de COMPONENT (quedan fijos en su default): ['w_bad', 'w_ub', 'w_src_ub', 'w_src_bad', 'w_dest_sorted', 'w_src_sorted', 'w_gap', 'w_fill', 'prefer_safe_only']"
+        ],
+        "status": "rechazado",
+        "reason": "cand_7.py: rechazado en la capa 'contractual'. Propiedades violadas:\n  - construction_machine.proposals_are_candidates: la regla `supporting_safe_move` propone [Move(so=1, sd=3), Move(so=1, sd=0), Move(so=1, sd=2)], y ninguna es un candidato de la vista (p.ej. [Move(so=0, sd=1), Move(so=0, sd=2), Move(so=0, sd=3)]): propón acciones de `view.candidates` (la misma clase de acción de la vista, o una con los mismos campos)"
+      },
+      {
+        "id": 7,
+        "name": "supporting_safe_move_refined_v9_source_pressure",
+        "parent": 1,
+        "op": "refine_rule",
+        "target": "supporting_safe_move",
+        "states": [
+          "supporting_safe_move"
+        ],
+        "params": {
+          "supporting_safe_move_w_ub": 6.0,
+          "supporting_safe_move_w_gap": 1.0,
+          "supporting_safe_move_w_fill": 0.75
+        },
+        "train": 73.875,
+        "fitness": 70.438,
+        "round": 10,
+        "status": "no mejora su nicho"
+      },
+      {
+        "id": 8,
+        "parent": 1,
+        "op": "add_rule",
+        "target": null,
+        "round": 11,
+        "repaired": false,
+        "normalized": [
+          "números sueltos extraídos como parámetros: ['supporting_safe_move_max_bad_increase', 'supporting_safe_move_prefer_safe_only', 'supporting_safe_move_w_bad', 'supporting_safe_move_w_dest_sorted', 'supporting_safe_move_w_fill', 'supporting_safe_move_w_gap', 'supporting_safe_move_w_src_sorted', 'supporting_safe_move_w_ub']",
+          "parámetros sin efecto sacados de COMPONENT (quedan fijos en su default): ['short_source_w_bad', 'short_source_w_ub', 'short_source_w_fit', 'short_source_w_height', 'supporting_safe_move_w_bad', 'supporting_safe_move_w_ub', 'supporting_safe_move_w_dest_sorted', 'supporting_safe_move_w_src_sorted', 'supporting_safe_move_w_gap', 'supporting_safe_move_w_fill', 'supporting_safe_move_max_bad_increase', 'supporting_safe_move_prefer_safe_only']"
+        ],
+        "status": "rechazado",
+        "reason": "add_rule no cambia las reglas que ya estaban; el hijo modificó ['supporting_safe_move']"
+      },
+      {
+        "id": 8,
+        "parent": 6,
+        "op": "refine_rule",
+        "target": "short_source_unlock",
+        "round": 12,
+        "repaired": false,
+        "status": "rechazado",
+        "reason": "cand_8.py: rechazado en la capa 'contractual'. Propiedades violadas:\n  - construction_machine.proposals_are_candidates: la regla `short_source_unlock` propone [Move(so=3, sd=0), Move(so=3, sd=1)], y ninguna es un candidato de la vista (p.ej. [Move(so=0, sd=1), Move(so=0, sd=3), Move(so=1, sd=0)]): propón acciones de `view.candidates` (la misma clase de acción de la vista, o una con los mismos campos)"
+      }
+    ],
+    "tokens": {
+      "calls": 21,
+      "input_tokens": 108800,
+      "output_tokens": 56002,
+      "total_tokens": 164802,
+      "cached_input_tokens": 11264,
+      "reasoning_tokens": 19669
+    }
   }
 ]

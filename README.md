@@ -819,6 +819,18 @@ rechazaron por cosas del framework, no del algoritmo:
   extrae un argumento que la fábrica ya pasa al construir la clase. El prompt muestra el padre
   sin tablas ni envoltura (`llm_view`).
 
+**Corrida 74: retoma la 73, 8 rondas en el tiempo del job, 165 mil tokens.** Entró por primera vez
+una segunda regla (`short_source_unlock` + `supporting_safe_move`, 78,3), pero peor que la mejor de
+una regla, que sigue en 58,25. De 21 respuestas, 11 se rechazaron. Tres fueron falsos positivos
+de `proposals_are_candidates`: la vista del CPMP veta volver a un layout ya visitado, y a veces
+veta todas las propuestas de una regla en un paso. Ahora se exige que la regla acierte a un
+candidato al menos una vez en la construcción. Además, si en un paso no acierta, entre los
+candidatos no propuestos desempata el comodín (FAR + cota), no el orden de la vista. Otro
+rechazo venía de números que la fábrica le pasa a una regla (`Regla(w=3.0)`); ahora son
+parámetros (`<regla>_w`). Con estos arreglos, las máquinas de dos reglas que se rechazaron dan
+entre 73,4 y 101 en test. La dificultad ya no es el framework: al LLM le cuesta que la segunda
+regla ayude. En 3 rechazos la segunda regla nunca se alcanzaba.
+
 Las tres máquinas de la corrida 72 en `CONSTRUCT`, con 8 instancias de test por tamaño. El
 afinado usa 40 muestras en 4+4 instancias de train, y la beam (nb = 3, ramas 6) corre con los
 parámetros afinados para el greedy:

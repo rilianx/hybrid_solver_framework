@@ -38,9 +38,7 @@ from __future__ import annotations
 
 from typing import Any, Sequence
 
-from .machine import FALLBACK
-
-FAR = 1e6  # puntaje de lo que la regla activa no propone
+from .machine import FALLBACK, FAR
 
 
 def action_key(a: Any):

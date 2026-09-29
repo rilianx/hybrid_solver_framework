@@ -41,6 +41,7 @@ from __future__ import annotations
 from typing import Any
 
 FALLBACK = "_default"
+FAR = 1e6  # puntaje de una acción que la regla activa no propone (`core.rules`)
 
 
 class LowerBoundScore:
@@ -101,7 +102,10 @@ class MachinePolicy:
         state, mem = self.step(partial, memory)
         if state == FALLBACK:
             return self.fallback.score(partial, action)
-        return self.machine.score(partial, state, mem, action)
+        s = self.machine.score(partial, state, mem, action)
+        if s >= FAR:  # la regla no propuso esta acción: entre las no propuestas desempata el comodín
+            s += self.fallback.score(partial, action)  # (corrida 74: si la vista veta todas sus propuestas)
+        return s
 
     def update(self, partial, memory, action):
         state, mem = self.step(partial, memory)
