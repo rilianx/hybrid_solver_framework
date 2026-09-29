@@ -45,6 +45,12 @@ def _load_cases():
     return load_cases()
 
 
+def _oracle(inst, partial):
+    from .oracle import oracle_distance
+
+    return oracle_distance(inst, partial)
+
+
 PACK = ProblemPack(
     name="cpmp",
     module="examples.cpmp",
@@ -64,4 +70,5 @@ PACK = ProblemPack(
     micro_size="4x4",
     load_cases=_load_cases,
     variants={"moves": (make_model_spec, "examples.cpmp.model_parts")},
+    oracle_distance=_oracle,
 )

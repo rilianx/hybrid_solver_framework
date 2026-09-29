@@ -11,6 +11,7 @@ import pytest
 
 from examples.cpmp.pack import PACK
 from llm import ScriptedClient
+from core.construction import GreedyConstructor
 from llm.evolve import MINIMAL, Harness, Individual, admit, evolve, scope_check, tune
 from tests.test_machine import MACHINE_MODULE
 
@@ -204,3 +205,69 @@ def test_mixed_sizes_and_the_self_sorted_line_reach_the_prompt(tmp_path):
            size="4x4,5x5", verbose=False, resume=True)
     prompt = client2.calls[0][1]
     assert "Completa sola" in prompt and "cvs_4x4" in prompt and "cvs_5x5" in prompt
+
+
+def test_the_oracle_is_exact_and_regret_adds_up_to_the_gap():
+    """Oráculo del CPMP (A*, h = mal puestos): coincide con el BFS de los casos; el arrepentimiento
+    por paso de una máquina suma exactamente movimientos − óptimo."""
+    from core.machine import MachinePolicy, machine_regret
+    from examples.cpmp.cases import bfs_optimum
+    from examples.cpmp.instance import CPMPInstance
+    from examples.cpmp.machine import FRGMachine
+    from examples.cpmp.oracle import optimal_distance, oracle_distance
+
+    for k in range(4):
+        inst = CPMPInstance.cvs_like(4, 4, Random(k))
+        assert optimal_distance(tuple(tuple(s) for s in inst.stacks), inst.H) == len(bfs_optimum(inst))
+    for inst in PACK.make_instances(3, 7, PACK.parse_size("4x4")):
+        P = PACK.problem_factory(inst)
+        r = machine_regret(MachinePolicy(FRGMachine(P), P), P.construction_view(inst), lambda p: oracle_distance(inst, p))
+        moves = P.objective(GreedyConstructor(P, FRGMachine(P)).build(inst, Random(0)))
+        opt = optimal_distance(tuple(tuple(s) for s in inst.stacks), inst.H)
+        assert sum(row["regret"] for row in r["by_state"].values()) == moves - opt
+        for e in r["examples"]:
+            assert e["regret"] > 0 and e["chosen"] not in e["optimal"]
+    big = PACK.make_instances(1, 7, PACK.parse_size("6x6"))[0]
+    assert oracle_distance(big, PACK.problem_factory(big).construction_view(big).empty()) is None  # fuera de alcance, sin buscar
+
+
+def test_counterexamples_reach_the_prompt(tmp_path):
+    client = ScriptedClient(responses=[_fenced(BG_ONLY)])
+    evolve(client, PACK, PACK.make_spec(), tmp_path, Harness(PACK), rounds=1, tune_samples=1, n_train=2, n_test=1,
+           size="4x4", verbose=False)
+    client2 = ScriptedClient(responses=[_fenced(BG_REFINED)])
+    evolve(client2, PACK, PACK.make_spec(), tmp_path, Harness(PACK), rounds=1, tune_samples=1, n_train=2, n_test=1,
+           size="4x4", verbose=False, resume=True)
+    prompt = client2.calls[0][1]
+    assert "Contra el óptimo" in prompt and "movimientos de más" in prompt
+
+
+BG_PLUS_BIG = BG_ONLY.replace('"name": "bg_only"', '"name": "bg_plus_big"').replace(
+    'states = ("bg",)', 'states = ("bg", "big")').replace(
+    '''        return ("bg", ()) if self._bg(L) else (FALLBACK, ())''',
+    '''        if L.H >= 5 and L.S >= 5 and not self._bg(L):  # solo en instancias de 5×5 o más
+            return "big", ()
+        return ("bg", ()) if self._bg(L) else (FALLBACK, ())''').replace(
+    '''    def score(self, L, state, memory, a):
+        d = self._bg(L).get((a.so, a.sd))''', '''    def score(self, L, state, memory, a):
+        if state == "big":
+            return float(L.h(a.sd))
+        d = self._bg(L).get((a.so, a.sd))''')
+
+
+def test_a_state_for_larger_instances_is_reachable_through_the_training_set(tmp_path):
+    """Corrida 68: estados que solo se activan con más contenedores se rechazaban porque las
+    micro-instancias (4×4, 5×4) no los alcanzan. Con las de entrenamiento, se aceptan."""
+    from llm.evolve import light_validation
+
+    from core.validation.params import normalize_machine_file
+
+    path = tmp_path / "big.py"
+    path.write_text(BG_PLUS_BIG)
+    contexts = PACK.make_contexts(strict=False)
+    normalize_machine_file(path, [(c.instances[0], c.problem) for c in contexts])  # como en el loop: el 5 pasa a parámetro
+    report, _, _ = light_validation(path, contexts)
+    assert "states_reachable" in report.feedback()
+    train = PACK.make_instances(2, 9100, PACK.parse_size("5x5"))
+    report, _, _ = light_validation(path, contexts, [(i, PACK.problem_factory(i)) for i in train])
+    assert report.passed, report.feedback()

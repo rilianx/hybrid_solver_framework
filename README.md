@@ -211,7 +211,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   constructivas*).
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 293 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 296 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -232,7 +232,7 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 293 passed (~275 s)
+python -m pytest -q                 # 296 passed (~280 s)
 
 # segundo problema: CVRP con flota libre (mismos CLI, otro pack)
 python -m examples.cvrp.tune --catalog handwritten --size 30 --trials 30 --ref-time 60
@@ -732,6 +732,40 @@ habría hecho pasar la sonda de 6×6 sin que la máquina sirviera ahí. Ajustes:
 - El respaldo de la vista del CPMP pasa de 20 mil a 100 mil nodos. Con 20 mil dependía del
   desempate al azar: en 6×6 ordenaba desde el inicial 7 de 20 instancias, con 100 mil 18 de 20.
   Es robustez de la vista, no calidad de la máquina.
+
+**Corrida 68: `evolve --resume --size 5x5,6x6`, 12 rondas, 115 mil tokens.** Con tamaños
+mezclados, la mejor de la 67 da 61,5 y FRG como greedy 18,3. Un `refine_priority(finish)` la
+baja a **55,5** (`repair_priority_finish_source_to_best_sorted`). Tres máquinas pasan la
+validación completa y quedan en el workspace; la sonda de 6×6 pasa en parte gracias al respaldo
+de 100 mil nodos, y el fitness las sigue penalizando donde no completan solas. De las 12
+rondas, 5 se perdieron porque un estado nuevo (`finish`, `drain`) nunca se alcanzaba en las
+micro-instancias (4×4, 5×4): son estados para instancias más grandes. Dentro de `evolve`, la
+alcanzabilidad ahora también se mira en las instancias de entrenamiento.
+
+**Oráculo exacto: imitar al óptimo, no al respaldo** (`ProblemPack.oracle_distance`,
+`core.machine.machine_regret`). Un greedy que imite al best-first del respaldo sería el comodín
+(la acción que menos sube la cota). Lo que sí sirve es la distancia exacta al objetivo, d(·).
+En el CPMP es A* con h = mal puestos (`examples/cpmp/oracle.py`; coincide con el BFS de los
+casos y alcanza hasta 5×5, ≈ 0,5 s desde el inicial). Con ella, cada decisión del greedy tiene
+un arrepentimiento exacto, regret(a) = 1 + d(s') − d(s) ≥ 0, y su suma es movimientos − óptimo:
+la asignación de culpa exacta por estado. En 4 instancias de 5×5 (óptimo 41 movimientos):
+
+| | movimientos | de más | culpa por estado |
+|---|---|---|---|
+| FRG como máquina | 46 | 5 | `fill` 3, `reduce` 2 |
+| mejor de la corrida 67 | 86 | 45 | `repair` 43, `finish` 2 |
+
+La corrida 67 gastó cinco rondas en refinar `finish`, que casi no pierde nada.
+
+`evolve` usa el oráculo en 2 instancias de entrenamiento (las más chicas; ≈ 5 s por máquina,
+después con caché):
+- tabla de movimientos de más por estado;
+- los 4 peores pasos como contraejemplos (layout, lo que eligió, cuánto costó y las acciones
+  que el óptimo sí haría);
+- `refine_priority` apunta al estado con más arrepentimiento.
+
+El fitness sigue siendo movimientos en 5×5 + 6×6. Reglas simples no pueden copiar una búsqueda
+con retroceso, y puntuar por coincidencia con el óptimo sobreajustaría a instancias chicas.
 
 **Validación de la vista constructiva generada: un puntaje constante no puede ciclar.** En la
 corrida 58 la vista del CPMP que escribió el LLM ofrecía movimientos que no empeoran el

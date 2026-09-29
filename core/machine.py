@@ -164,6 +164,48 @@ def machine_profile(policy: MachinePolicy, view: Any, max_steps: int = 100_000, 
     return (out, bool(view.is_complete(partial))) if with_end else out
 
 
+def machine_regret(policy: MachinePolicy, view: Any, oracle, max_steps: int = 20_000, n_examples: int = 3):
+    """Con un oráculo exacto `oracle(parcial) -> distancia al objetivo` (o None fuera de su alcance):
+    por estado, pasos y movimientos de más (regret(a) = costo(a) + d(siguiente) − d(actual) ≥ 0,
+    con costo 1 por acción; su suma es objetivo − óptimo) y los `n_examples` peores pasos como
+    contraejemplos, con las acciones que el óptimo sí haría. None si el oráculo no alcanza aquí."""
+    partial = view.empty()
+    d = oracle(partial)
+    if d is None:
+        return None
+    memory = policy.init(partial)
+    rows: dict[str, dict] = {}
+    worst: list[tuple] = []
+    for _ in range(max_steps):
+        if view.is_complete(partial):
+            break
+        cands = list(view.candidates(partial))
+        if not cands:
+            break
+        scores = [policy.score(partial, memory, c) for c in cands]
+        a = cands[min(range(len(cands)), key=scores.__getitem__)]
+        state = policy.state_of(partial, memory)
+        nxt = view.apply(partial, a)
+        dn = oracle(nxt)
+        if dn is None:
+            return None
+        regret = 1 + dn - d
+        row = rows.setdefault(state, {"steps": 0, "regret": 0, "wrong": 0})
+        row["steps"] += 1
+        row["regret"] += regret
+        row["wrong"] += regret > 0
+        if regret > 0:
+            worst.append((regret, state, partial, a, cands))
+        memory = policy.update(partial, memory, a)
+        partial, d = nxt, dn
+    examples = []
+    for regret, state, p, a, cands in sorted(worst, key=lambda t: -t[0])[:n_examples]:
+        base = oracle(p)
+        best = [c for c in cands if oracle(view.apply(p, c)) == base - 1]
+        examples.append({"state": state, "partial": p, "chosen": a, "regret": regret, "optimal": best})
+    return {"by_state": rows, "examples": examples, "complete": bool(view.is_complete(partial))}
+
+
 def compress_trace(steps: list[tuple[str, Any]], max_steps: int = 60) -> str:
     """`estado: acciones` por tramo, para un prompt."""
     lines, cur, run = [], None, []
@@ -179,4 +221,4 @@ def compress_trace(steps: list[tuple[str, Any]], max_steps: int = 60) -> str:
     return "\n".join(lines) + more + f"\n(total: {len(steps)} pasos)"
 
 
-__all__ = ["FALLBACK", "LowerBoundScore", "MachinePolicy", "machine_trace", "machine_profile", "compress_trace"]
+__all__ = ["FALLBACK", "LowerBoundScore", "MachinePolicy", "machine_trace", "machine_profile", "machine_regret", "compress_trace"]

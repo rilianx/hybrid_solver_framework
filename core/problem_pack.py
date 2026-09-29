@@ -54,6 +54,9 @@ class ProblemPack:
     # esqueletos del espacio de diseño por defecto (None = `core.assembler.SKELETONS`); p.ej. ["CONSTRUCT"]
     # para un problema que todavía no tiene vecindarios ni vista MIP
     skeletons: list[str] | None = None
+    # oráculo exacto opcional: (instancia, parcial) -> movimientos/costo mínimo hasta completar, o None fuera de su
+    # alcance. `llm.evolve` lo usa para el arrepentimiento exacto por estado y los contraejemplos (CPMP: A*, hasta 5×5)
+    oracle_distance: Callable[[Any, Any], Any] | None = None
 
     @property
     def default_workspace(self) -> str:

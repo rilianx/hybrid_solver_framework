@@ -123,6 +123,8 @@ class Individual:
     fitness: float = float("inf")  # media en test con los parámetros afinados
     profile: dict = field(default_factory=dict)
     self_sorted: dict = field(default_factory=dict)  # por tamaño: [instancias que completa sola, total]
+    regret: dict = field(default_factory=dict)  # con oráculo: estado → {steps, regret, wrong} (exacto)
+    examples: list = field(default_factory=list)  # con oráculo: los peores pasos, con lo que haría el óptimo
     rejections: list = field(default_factory=list)  # de sus hijos, para no repetirlos
     refine_failures: dict = field(default_factory=dict)  # estado → hijos fallidos de refine_priority
 
@@ -199,7 +201,10 @@ def tune(harness: Harness, factory, component: dict, train, test, samples: int, 
     return best, best_train, harness.mean(factory, best, test)
 
 
-def profile(harness: Harness, ind: Individual, instances) -> tuple[dict, str]:
+ORACLE_INSTANCES = 2  # el oráculo exacto cuesta: ≈ 50 s por máquina nueva en 2 instancias de 5×5 (después, caché)
+
+
+def profile(harness: Harness, ind: Individual, instances, oracle_instances: int | None = None) -> tuple[dict, str]:
     """Diagnóstico por estado del individuo (con sus parámetros afinados), sumado en `instances`,
     y la traza comprimida de la instancia donde más se pierde."""
     from core.machine import FALLBACK, MachinePolicy, compress_trace, machine_profile, machine_trace
@@ -225,6 +230,31 @@ def profile(harness: Harness, ind: Individual, instances) -> tuple[dict, str]:
                 t[k] += r[k]
         if worst is None or lost > worst[0]:
             worst = (lost, inst, P, view)
+    oracle = getattr(harness.pack, "oracle_distance", None)
+    ind.regret, ind.examples = {}, []
+    if callable(oracle):  # arrepentimiento exacto por estado y contraejemplos, donde el oráculo alcanza
+        from core.machine import machine_regret
+
+        budget = ORACLE_INSTANCES if oracle_instances is None else oracle_instances
+        used = 0
+        for inst in sorted(instances, key=lambda i: getattr(i, "N", 0)):  # las más chicas primero: donde alcanza
+            if used >= budget:
+                break
+            P = harness.pack.problem_factory(inst)
+            try:
+                r = machine_regret(MachinePolicy(ind.factory(P, **ind.params), P), P.construction_view(inst),
+                                   lambda p, inst=inst: oracle(inst, p))
+            except Exception:  # noqa: BLE001
+                r = None
+            if r is None:
+                continue
+            used += 1
+            for st, row in r["by_state"].items():
+                t = ind.regret.setdefault(st, {"steps": 0, "regret": 0, "wrong": 0})
+                for k in t:
+                    t[k] += row[k]
+            ind.examples += [dict(e, instance=getattr(inst, "name", "")) for e in r["examples"]]
+        ind.examples = sorted(ind.examples, key=lambda e: -e["regret"])[:4]
     trace = ""
     if worst is not None:
         _, inst, P, view = worst
@@ -233,6 +263,34 @@ def profile(harness: Harness, ind: Individual, instances) -> tuple[dict, str]:
         trace = f"Instancia donde más pierde:\n```\n{text[:600]}\n```\nTraza (greedy; `estado: acciones`):\n```\n{compress_trace(steps)}\n```"
     ind.profile = total
     return total, trace
+
+
+def regret_text(ind: Individual) -> str:
+    """El arrepentimiento exacto por estado (movimientos de más respecto del óptimo, que el oráculo
+    calcula donde alcanza) y los peores pasos con lo que el óptimo sí habría hecho."""
+    from core.machine import FALLBACK
+
+    if not ind.regret:
+        return ""
+    lines = ["\n\n# Contra el óptimo (oráculo exacto, en las instancias donde alcanza)",
+             "Movimientos de más que causa cada estado (su suma es movimientos − óptimo):",
+             "| estado | pasos | movimientos de más | pasos que se apartan del óptimo |", "|---|---|---|---|"]
+    for st, r in sorted(ind.regret.items(), key=lambda kv: -kv[1]["regret"]):
+        name = f"{st} (comodín del framework)" if st == FALLBACK else st
+        lines.append(f"| {name} | {r['steps']} | {r['regret']} | {r['wrong']} |")
+    if ind.examples:
+        lines.append("\nPasos donde la máquina se aparta del óptimo (contraejemplos: busca la regla simple que los evite):")
+        for e in ind.examples:
+            opt = ", ".join(repr(a) for a in e["optimal"][:5]) or "(ninguna)"
+            lines.append(f"- {e['instance']}, estado `{e['state']}`, parcial `{_short(e['partial'])}`: eligió {e['chosen']!r}, "
+                         f"que cuesta {e['regret']} movimiento(s) de más; el óptimo haría {opt}")
+    return "\n".join(lines)
+
+
+def _short(obj, n: int = 160) -> str:
+    state = getattr(obj, "state", None)
+    text = repr(state() if callable(state) else obj)
+    return text if len(text) <= n else text[:n] + "…"
 
 
 def self_sorted_text(ind: Individual) -> str:
@@ -260,9 +318,14 @@ def profile_text(prof: dict) -> str:
 
 
 # ---------------------------------------------------------------- validación liviana y alcance
-def light_validation(path: Path, contexts) -> tuple[ValidationReport, Any, dict | None]:
+def light_validation(path: Path, contexts, reach=None) -> tuple[ValidationReport, Any, dict | None]:
     """Dentro del loop: contrato del slot y parámetros extraíbles, sin calidad mínima ni la sonda
-    grande (lo decide el fitness). Lo que sale del loop pasa además la validación completa."""
+    grande (lo decide el fitness). Lo que sale del loop pasa además la validación completa.
+
+    `reach`: [(instancia, problema)] de entrenamiento. Un estado que no se alcanza en las
+    micro-instancias pero sí en esas no es código muerto: es un estado para instancias más
+    grandes (corrida 68: 5 de 12 rondas perdidas por un `finish` o un `drain` que solo se activan
+    con más contenedores)."""
     from core.validation.contractual import check_slot
     from core.validation.params import constants_check, machine_signature, params_check
     from core.validation.resources import static_cache_check
@@ -284,6 +347,7 @@ def light_validation(path: Path, contexts) -> tuple[ValidationReport, Any, dict 
     report.add(constants_check(module))
     if not report.passed:
         return report, module, component
+    reach_pending = False
     for ctx in contexts:
         try:
             impl = factory(ctx.problem)
@@ -294,9 +358,32 @@ def light_validation(path: Path, contexts) -> tuple[ValidationReport, Any, dict 
         report.extend(results)
         report.add(check_protocol(SLOT, impl))
         if report.passed:
-            report.extend(check_slot(SLOT, impl, ctx))
+            slot_results = check_slot(SLOT, impl, ctx)
+            unreached = [r for r in slot_results if not r.passed and r.name.endswith("states_reachable")]
+            if unreached and reach and len(unreached) == len([r for r in slot_results if not r.passed]):
+                slot_results = [r for r in slot_results if r not in unreached]
+                reach_pending = True
+            report.extend(slot_results)
         if not report.passed:
             return report, module, component
+    if reach_pending:
+        from core.machine import MachinePolicy, machine_trace
+
+        seen: set = set()
+        for ctx in contexts:
+            for inst in ctx.instances:
+                seen |= {s for s, _ in machine_trace(MachinePolicy(factory(ctx.problem), ctx.problem),
+                                                     ctx.problem.construction_view(inst), max_steps=20_000)}
+        for inst, P in reach:
+            seen |= {s for s, _ in machine_trace(MachinePolicy(factory(P), P), P.construction_view(inst), max_steps=20_000)}
+        states = tuple(getattr(factory(contexts[0].problem), "states", ()))
+        missing = [s for s in states if s not in seen]
+        if missing:
+            report.add(fail("contractual", "construction_machine.states_reachable",
+                            f"los estados {missing} nunca se alcanzan, ni en las micro-instancias ni en las de entrenamiento "
+                            f"(greedy): revisa las condiciones de transition que llevan a ellos, o quítalos"))
+            return report, module, component
+        report.add(ok("contractual", "construction_machine.states_reachable", "alcanzados en las instancias de entrenamiento"))
     where = [(ctx.instances[0], ctx.problem) for ctx in contexts if ctx.instances]
     try:
         report.extend(params_check(component, factory, where, machine_signature))
@@ -359,9 +446,12 @@ def schedule(parent: Individual, rng: Random) -> tuple[str, str | None]:
         if r <= acc:
             break
     target = None
-    if op == "refine_priority":  # el estado propio que más cota pierde
-        cands = sorted(own, key=lambda s: -parent.profile[s]["lost"]) or list(parent.states)
-        target = cands[0]
+    if op == "refine_priority":  # el estado propio que más pierde: exacto si hay oráculo, si no por la cota
+        if parent.regret:
+            cands = sorted((s for s in parent.regret if s != FALLBACK), key=lambda s: -parent.regret[s]["regret"])
+        else:
+            cands = sorted(own, key=lambda s: -parent.profile[s]["lost"])
+        target = (cands or list(parent.states))[0]
     return op, target
 
 
@@ -407,7 +497,7 @@ def archive_text(archive: list[Individual]) -> str:
     return "\n".join(rows)
 
 
-def _attempt(path: Path, source: str, contexts, op: str, target: str | None, parent: Individual):
+def _attempt(path: Path, source: str, contexts, op: str, target: str | None, parent: Individual, reach=None):
     """Normaliza (números sueltos → parámetros; parámetros inertes fuera), valida y verifica el
     alcance del operador. (motivo de rechazo o None, módulo, COMPONENT, estados, fuente normalizada, notas)."""
     from core.validation.params import normalize_machine_file
@@ -415,7 +505,7 @@ def _attempt(path: Path, source: str, contexts, op: str, target: str | None, par
     path.write_text(source)
     where = [(ctx.instances[0], ctx.problem) for ctx in contexts if ctx.instances]
     notes = normalize_machine_file(path, where)
-    report, module, component = light_validation(path, contexts)
+    report, module, component = light_validation(path, contexts, reach)
     norm = path.read_text()
     if not report.passed:
         return report.feedback()[:700], module, component, (), norm, notes
@@ -536,6 +626,7 @@ def evolve(client: LLMClient, pack, spec, workspace: str | Path, harness: Harnes
     contexts = [c for c in pack.make_contexts(strict=False)]
     tmp = ws / SLOT / "_evolve"
     saved = ws / "evolve_archive.json"
+    reach = [(inst, pack.problem_factory(inst)) for inst in train]
     if resume and saved.exists():
         archive, is_seed = load_archive(saved, tmp, contexts[0].problem)
     else:
@@ -557,7 +648,8 @@ def evolve(client: LLMClient, pack, spec, workspace: str | Path, harness: Harnes
         parent = select_parent(archive, rng)
         op, target = schedule(parent, rng)
         prof, trace = profile(harness, parent, train)
-        text = client.complete(SYSTEM_PROMPT, evolve_prompt(spec, parent, op, target, profile_text(prof) + self_sorted_text(parent),
+        text = client.complete(SYSTEM_PROMPT, evolve_prompt(spec, parent, op, target,
+                                                            profile_text(prof) + self_sorted_text(parent) + regret_text(parent),
                                                             trace, archive, is_seed))
         used = getattr(client, "last_usage", None)
         if isinstance(used, TokenUsage):
@@ -570,7 +662,7 @@ def evolve(client: LLMClient, pack, spec, workspace: str | Path, harness: Harnes
             res.individuals.append({**entry, "status": "sin código"})
             continue
         path = tmp / f"cand_{cid}.py"
-        reason, module, component, states, source, notes = _attempt(path, blocks[0], contexts, op, target, parent)
+        reason, module, component, states, source, notes = _attempt(path, blocks[0], contexts, op, target, parent, reach)
         if reason is not None:  # un turno de corrección dentro de la ronda (corrida 65: una línea `python` perdía la ronda)
             fix = client.complete(SYSTEM_PROMPT, repair_prompt(op, target, reason, blocks[0]))
             used = getattr(client, "last_usage", None)
@@ -578,7 +670,7 @@ def evolve(client: LLMClient, pack, spec, workspace: str | Path, harness: Harnes
                 tokens.add(used)
             fixed = extract_code_blocks(fix)
             if fixed:
-                reason, module, component, states, source, notes = _attempt(path, fixed[0], contexts, op, target, parent)
+                reason, module, component, states, source, notes = _attempt(path, fixed[0], contexts, op, target, parent, reach)
                 entry["repaired"] = reason is None
         if notes:
             entry["normalized"] = notes
