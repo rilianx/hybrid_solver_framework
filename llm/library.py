@@ -31,31 +31,26 @@ from typing import Any
 from core.validation.params import llm_view
 
 from .client import LLMClient, TokenUsage
-from .evolve import (SLOT, EvolveResult, Harness, Individual, _r, breadth_text, light_validation, profile, profile_text,
-                     regret_text, self_sorted_text, tune)
+from .evolve import ORACLE_INSTANCES, SLOT, EvolveResult, Harness, _r, light_validation, tune
 from .parser import extract_code_blocks
-from .prompts import SYSTEM_PROMPT, protocol_source, slot_hint
+from .prompts import SYSTEM_PROMPT
 
 MAX_PIECES = 3  # una composición combina hasta 3 piezas
 LIBRARY_MAX = 8  # piezas en la biblioteca (se sacan las que no aparecen en las mejores composiciones)
 PRIORITIES = tuple(100 // 2 ** k for k in range(3))  # prioridad de cada posición de una composición: 100, 50, 25
+BROAD = 0.5  # una pieza que permite en promedio más de esta fracción de los candidatos es ancha: solo va al final
+N_EXAMPLES = 4
 
 OPERATOR_TEXT = {
     "new_rule": (
-        "Escribe UNA regla NUEVA para la biblioteca: un tipo de movimiento. El compositor del framework la combina con "
-        "las otras piezas (hasta 3 por máquina, en todos los órdenes de prioridad) y se queda con la mejor combinación, "
-        "así que tú NO eliges prioridades ni escribes las otras reglas. Una regla buena es ANGOSTA: de los candidatos "
-        "permite solo los de su tipo (en orden de preferencia, o con `score`) y devuelve [] cuando no aplica; lo que no "
-        "cubre lo cubren las otras piezas o el comodín. Mira los contraejemplos de la mejor máquina: ¿qué tipo de "
-        "movimiento hace el óptimo en esos pasos que ninguna pieza de la biblioteca permite? No repitas una pieza que ya "
-        "está. Si el tipo de movimiento se sostiene varios pasos sobre el mismo objetivo, puede ser una macro "
-        "(`start`/`done`)."),
+        "Escribe UNA pieza NUEVA: un tipo de movimiento. Tiene que ser ANGOSTA: de los candidatos permite solo los de su "
+        "tipo y devuelve [] cuando no aplica; lo demás lo cubren otras piezas o el comodín. Mira los pasos de abajo donde "
+        "el óptimo hace un movimiento que NINGUNA pieza permite (o solo una ANCHA): ¿de qué tipo es? No repitas una pieza "
+        "que ya está. Si el tipo se sostiene varios pasos sobre el mismo objetivo, puede ser macro (`start`/`done`)."),
     "refine_rule": (
-        "Mejora la pieza `{target}` de la biblioteca (su versión actual está abajo). Mantén su `name`. Mira su "
-        "precisión y los contraejemplos donde ella decidió: si el óptimo no estaba entre lo que permitió, cambia el set "
-        "(angostar o ampliar); si estaba, cambia el orden. Puedes convertirla en macro (`start` fija su objetivo, "
-        "`done` dice cuándo terminó) si el óptimo sostiene su tipo de movimiento varios pasos sobre el mismo objetivo. "
-        "La versión nueva entra a la biblioteca junto a la anterior; el compositor elige."),
+        "Mejora la pieza `{target}` (abajo), manteniendo su `name`. En los pasos donde ella decidió mal: si el óptimo no "
+        "estaba entre lo que permitió, cambia el set (angostar o ampliar); si estaba, cambia el orden. Puede volverse macro "
+        "(`start` fija su objetivo, `done` dice cuándo terminó). La versión nueva entra junto a la anterior."),
 }
 
 
@@ -75,6 +70,8 @@ class Piece:
     params: dict = field(default_factory=dict)
     alone: float = float("inf")  # fitness sola (con el comodín), en train
     doc: str = ""
+    width: float = 0.0  # fracción media de los candidatos que permite cuando aplica
+    precision: tuple | None = None  # (su primera acción es óptima, pasos donde aplica), con el oráculo
 
     @property
     def key(self) -> str:
@@ -82,7 +79,12 @@ class Piece:
 
     def row(self) -> dict:
         return {"id": self.id, "rule": self.rule, "name": self.name, "op": self.op, "parent": self.parent,
-                "macro": self.macro, "alone": _r(self.alone), "params": self.params}
+                "macro": self.macro, "alone": _r(self.alone), "width": round(self.width, 3),
+                "precision": list(self.precision) if self.precision else None, "params": self.params}
+
+    @property
+    def broad(self) -> bool:
+        return self.width > BROAD
 
 
 def composition_factory(pieces: tuple[Piece, ...]):
@@ -111,13 +113,17 @@ def composition_factory(pieces: tuple[Piece, ...]):
 def compose(harness: Harness, library: list[Piece], instances, cache: dict, must: Piece | None = None,
             deadline: float | None = None) -> list[tuple[float, tuple[int, ...]]]:
     """Las combinaciones de hasta MAX_PIECES piezas (las que incluyen `must`, si se da) en todos los
-    órdenes, con el greedy en `instances`. Dos versiones de la misma regla no se combinan. Devuelve
-    el caché completo ordenado: [(media, ids en orden de prioridad)]."""
+    órdenes, con el greedy en `instances`. Dos versiones de la misma regla no se combinan, y una
+    pieza ancha solo va al final: arriba siempre aplica y las demás nunca actuarían (corrida 79: las
+    10 mejores composiciones empataban en 51,812, con la ancha primero). Devuelve el caché completo
+    ordenado: [(media, ids en orden de prioridad)]."""
     by_id = {pc.id: pc for pc in library}
     for k in range(1, MAX_PIECES + 1):
         for combo in permutations(library, k):
             ids = tuple(pc.id for pc in combo)
             if ids in cache or (must is not None and must not in combo) or len({pc.rule for pc in combo}) < k:
+                continue
+            if any(pc.broad for pc in combo[:-1]):  # una pieza ancha tapa a las de abajo (corrida 79): solo al final
                 continue
             if deadline is not None and time.monotonic() > deadline:
                 break
@@ -137,11 +143,118 @@ def _rule_info(source: str) -> tuple[str, bool]:
 
 
 def library_text(library: list[Piece], best: tuple[int, ...] | None) -> str:
-    lines = ["| pieza | tipo | qué hace | fitness sola (con el comodín) | en la mejor máquina |", "|---|---|---|---|---|"]
+    if not library:
+        return "(vacía: la máquina es solo el comodín)"
+    lines = []
     for pc in sorted(library, key=lambda p: p.alone):
-        where = f"posición {best.index(pc.id) + 1}" if best and pc.id in best else "—"
-        lines.append(f"| `{pc.rule}` (#{pc.id}) | {'macro' if pc.macro else 'simple'} | {pc.doc or '—'} | {pc.alone:.2f} | {where} |")
-    return "\n".join(lines) if library else "(vacía: todavía no hay piezas; la máquina es solo el comodín)"
+        prec = f"precisión {pc.precision[0]}/{pc.precision[1]}" if pc.precision and pc.precision[1] else "precisión —"
+        where = f", posición {best.index(pc.id) + 1} de la mejor" if best and pc.id in best else ""
+        lines.append(f"- `{pc.rule}` #{pc.id} ({'macro' if pc.macro else 'simple'}{', ANCHA' if pc.broad else ''}): "
+                     f"{pc.doc or '—'} Permite el {pc.width:.0%} de los candidatos, {prec}, sola {pc.alone:.1f}{where}.")
+    return "\n".join(lines)
+
+
+def measure_piece(harness: Harness, pc: Piece, train, oracle_insts) -> None:
+    """Ancho (en train) y precisión (con el oráculo) de la pieza sola."""
+    from core.machine import MachinePolicy
+    from core.rules import rule_breadth, rule_quality
+
+    share = applies = 0.0
+    for inst in train[:4]:
+        P = harness.pack.problem_factory(inst)
+        try:
+            b = rule_breadth(MachinePolicy(composition_factory((pc,))[0](P), P), P.construction_view(inst))
+        except Exception:  # noqa: BLE001
+            b = None
+        row = (b or {}).get(pc.rule) or {}
+        share += row.get("share", 0.0)
+        applies += row.get("applies", 0)
+    pc.width = share / applies if applies else 0.0
+    oracle = getattr(harness.pack, "oracle_distance", None)
+    if not callable(oracle):
+        return
+    opt = app = 0
+    for inst in oracle_insts:
+        P = harness.pack.problem_factory(inst)
+        try:
+            q = rule_quality(MachinePolicy(composition_factory((pc,))[0](P), P), P.construction_view(inst),
+                             lambda p, inst=inst: oracle(inst, p))
+        except Exception:  # noqa: BLE001
+            q = None
+        row = ((q or {}).get("rules") or {}).get(pc.rule) or {}
+        opt += row.get("optimal", 0)
+        app += row.get("applies", 0)
+    pc.precision = (opt, app)
+
+
+def evidence(harness: Harness, pieces: tuple[Piece, ...], library: list[Piece], oracle_insts) -> tuple[str, dict]:
+    """Los peores pasos de la máquina (`pieces`; vacía = el comodín solo) contra el óptimo, cada uno con
+    qué piezas de la biblioteca permitían una acción óptima. ("texto", {regla: movimientos de más})."""
+    from core.machine import FALLBACK, MachinePolicy, _diverse, machine_regret
+    from core.rules import RuleMachine, action_key
+
+    oracle = getattr(harness.pack, "oracle_distance", None)
+    if not callable(oracle):
+        return "", {}
+    factory = composition_factory(pieces)[0] if pieces else (lambda P, **_: RuleMachine(P, []))
+    rows, regret, total = [], {}, [0, 0]
+    for inst in oracle_insts:
+        P = harness.pack.problem_factory(inst)
+        view = P.construction_view(inst)
+        try:
+            r = machine_regret(MachinePolicy(factory(P), P), view, lambda p, inst=inst: oracle(inst, p),
+                               n_examples=N_EXAMPLES, continuation=6)
+        except Exception:  # noqa: BLE001
+            r = None
+        if r is None:
+            continue
+        for st, row in r["by_state"].items():
+            regret[st] = regret.get(st, 0) + row["regret"]
+            total[0] += row["regret"]
+            total[1] += row["steps"]
+        for e in r["examples"]:
+            cands = list(view.candidates(e["partial"]))
+            opt = {action_key(a) for a in e["optimal"]}
+            allow = []
+            for pc in library:
+                m = RuleMachine(P, [pc.factory(P, **pc.params).rules[0]])
+                m.bind(view)
+                mem = m.entry(pc.rule, e["partial"], m.initial(e["partial"])[1][0])
+                if any(action_key(a) in opt for a in m.allowed(pc.rule, e["partial"], mem)):
+                    allow.append(f"`{pc.rule}` #{pc.id}" + (" (ANCHA)" if pc.broad else ""))
+            rows.append((e, allow, len(cands)))
+    if not rows and not regret:
+        return "", {}
+    rows = _diverse(sorted(rows, key=lambda t: -t[0]["regret"]), N_EXAMPLES, key=lambda t: t[0]["state"])
+    lines = [f"Movimientos de más respecto del óptimo: {total[0]} en {total[1]} pasos ("
+             + ", ".join(f"`{st}` {v}" for st, v in sorted(regret.items(), key=lambda kv: -kv[1])) + ")."]
+    for e, allow, n in rows:
+        who = "el comodín" if e["state"] == FALLBACK else f"`{e['state']}`"
+        cont = ", ".join(f"({a.so},{a.sd})" if hasattr(a, "so") else repr(a) for a in e.get("continuation", []))
+        opt = ", ".join(repr(a) for a in e["optimal"][:3])
+        lines.append(f"- layout `{e['partial'].stacks if hasattr(e['partial'], 'stacks') else e['partial']}` "
+                     f"({n} candidatos): decidió {who}, eligió {e['chosen']!r} (+{e['regret']}); el óptimo haría {opt}, "
+                     f"que permite{'n' if len(allow) > 1 else ''} {', '.join(allow) if allow else 'NINGUNA pieza'}; "
+                     f"tramo óptimo: {cont}")
+    return "\n".join(lines), regret
+
+
+def api_summary(source: str) -> str:
+    """Las clases de la vista con su docstring y los campos, sin el código de los métodos."""
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return source
+    out = []
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef):
+            continue
+        fields = [ast.unparse(b) for b in node.body if isinstance(b, ast.AnnAssign)]
+        doc = ast.get_docstring(node) or ""
+        methods = [b.name for b in node.body if isinstance(b, ast.FunctionDef) and not b.name.startswith("_")]
+        out.append(f"class {node.name}:  " + "; ".join(fields) + (f"\n    {doc}" if doc else "")
+                   + (f"\n    métodos: {', '.join(methods)}" if methods and not doc else ""))
+    return "\n\n".join(out)
 
 
 EXAMPLE = '''
@@ -156,8 +269,11 @@ class MiRegla:
 
     name = "<nombre de la regla>"
 
-    def allowed(self, partial, memory, candidates):
-        return [a for a in candidates if ...]      # solo los de su tipo, en orden de preferencia; [] = no aplica
+    def allowed(self, partial, memory, candidates):   # los de su tipo, en orden de preferencia; [] = no aplica
+        return [a for a in candidates if ...]
+
+    # opcional: def score(self, partial, memory, action) -> float  (menor = mejor; si no, vale el orden)
+    # macro (compromiso de varios pasos): def start(self, partial, memory) -> memoria; def done(self, partial, memory) -> bool
 
 
 def build_component(problem, **params):
@@ -166,38 +282,26 @@ def build_component(problem, **params):
 
 
 def library_prompt(spec, op: str, target: Piece | None, library: list[Piece], best: tuple[int, ...] | None,
-                   best_fitness: float, diag: str, trace: str, rejections: list[str]) -> str:
-    import core.rules
-    from core.machine import FALLBACK
-
-    order = " > ".join(f"`{next(p.rule for p in library if p.id == i)}`" for i in best) if best else "(solo el comodín)"
+                   best_fitness: float, evid: str, rejections: list[str]) -> str:
+    order = " > ".join(f"`{next(p.rule for p in library if p.id == i)}`" for i in best) if best else "solo el comodín"
     parts = [
-        f"# Tarea\nEstás construyendo, pieza por pieza, un constructor greedy del problema **{spec.name}**. Cada pieza es UNA "
-        f"regla (`core.rules`): de las acciones posibles permite las de un tipo. El framework combina las piezas de la "
-        f"biblioteca (hasta {MAX_PIECES}, en todos los órdenes de prioridad) y se queda con la mejor máquina; lo que "
-        f"ninguna pieza permite lo decide el comodín (`{FALLBACK}`: la acción que menos sube la cota inferior).",
-        f"\n# Estructura (core.rules)\n{(core.rules.__doc__ or '').strip()}",
-        f"\n# Operador de este paso: `{op}`\n" + OPERATOR_TEXT[op].format(target=target.rule if target else ""),
+        f"# Tarea\nConstructor greedy para **{spec.name}**, armado con piezas. Cada pieza es UNA regla: de los candidatos "
+        f"permite los de un tipo de movimiento. El framework combina hasta {MAX_PIECES} piezas de la biblioteca en todos los "
+        "órdenes de prioridad y se queda con la mejor; lo que ninguna permite lo decide el comodín (la acción que menos "
+        "sube la cota inferior). Tú no eliges prioridades.",
+        f"\n# Operador: `{op}`\n" + OPERATOR_TEXT[op].format(target=target.rule if target else ""),
         f"\n# Biblioteca\n{library_text(library, best)}",
-        f"\n# Mejor máquina: {order} (fitness {best_fitness:.2f}, menor = mejor)\n{diag}\n\n{trace}",
+        f"\n# Mejor máquina: {order}, {best_fitness:.1f} movimientos (menor = mejor)\n{evid}",
     ]
     if target is not None:
-        parts.append(f"\n# Pieza a mejorar: `{target.rule}` (#{target.id})\n```python\n{llm_view(target.source)}\n```")
-    parts += [
-        f"\n# Formato de una pieza\n```python\n{EXAMPLE}```\nUna macro agrega `start(partial, memory) -> memoria` y "
-        "`done(partial, memory) -> bool`; `init`, `update` y `score` son opcionales. No pongas `priority`: la pone el "
-        "compositor.",
-        f"\n# Contrato del slot\n```python\n{protocol_source(SLOT)}```",
-        "\n# Reglas\n" + slot_hint(spec, SLOT),
-        f"\n# Problema\n{spec.description}",
-    ]
+        parts.append(f"\n# Pieza a mejorar: `{target.rule}` #{target.id}\n```python\n{llm_view(target.source)}\n```")
+    parts += [f"\n# Formato\n```python\n{EXAMPLE}```", f"\n# Problema\n{spec.description}"]
     if spec.construction_source:
-        parts.append(f"\n## Vista constructiva: el estado parcial y la acción\n```python\n{spec.construction_source}\n```")
+        parts.append(f"\n# Estado parcial y acción\n```python\n{api_summary(spec.construction_source)}\n```")
     if rejections:
-        parts.append("\n# Intentos ya rechazados (no los repitas)\n" + "\n".join(f"- {r}" for r in rejections[-4:]))
-    parts.append("\nDevuelve UN solo bloque ```python``` con el módulo completo de la pieza: COMPONENT (un nombre "
-                 "descriptivo nuevo), la clase de la regla y build_component(problem, **params), que devuelve "
-                 "`RuleMachine(problem, [TuRegla(...)])` con UNA sola regla.")
+        parts.append("\n# Rechazados hace poco\n" + "\n".join(f"- {r[:200]}" for r in rejections[-2:]))
+    parts.append("\nDevuelve UN bloque ```python``` con el módulo completo de la pieza (COMPONENT con un nombre nuevo, la "
+                 "clase y build_component). Todo número que decide algo va en COMPONENT['params'] con 'range' y 'default'.")
     return "\n".join(parts)
 
 
@@ -325,8 +429,10 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
     res = EvolveResult()
     cache: dict = {}
     minimal = harness.mean(lambda P, **_: RuleMachine(P, []), {}, train)
+    oracle_insts = sorted(train, key=lambda i: getattr(i, "N", 0))[:ORACLE_INSTANCES]
     for pc in library:
         pc.alone = cache.setdefault((pc.id,), harness.mean(composition_factory((pc,))[0], {}, train))
+        measure_piece(harness, pc, train, oracle_insts)
         res.individuals.append({**pc.row(), "status": "retomada"})
     ranked = compose(harness, library, train, cache, deadline=deadline) if library else []
     state = {"best": None, "fitness": float("inf"), "train": minimal, "params": {}}
@@ -360,20 +466,13 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
         else:
             op = "refine_rule"
             target = best_pieces[0] if best_pieces else rng.choice(library)
-        # diagnóstico de la mejor máquina (o del comodín solo)
-        if best_pieces:
-            factory, comp = composition_factory(best_pieces)
-            ind = Individual(-1, comp["name"], "", factory, comp, tuple(p.rule for p in best_pieces), params={})
-        else:
-            ind = Individual(-1, "minimal", "", lambda P, **_: RuleMachine(P, []), {"params": {}}, ())
-        prof, trace = profile(harness, ind, train)
-        if best_pieces and op == "refine_rule" and ind.regret:  # la pieza de la mejor máquina que más pierde
-            worst = max((s for s in ind.regret if s in {p.rule for p in best_pieces}), default=None,
-                        key=lambda s: ind.regret[s]["regret"])
+        # evidencia contra el óptimo en la mejor máquina (o en el comodín solo), anotada por pieza
+        evid, regret = evidence(harness, best_pieces, library, oracle_insts)
+        if best_pieces and op == "refine_rule" and regret:  # la pieza de la mejor máquina que más pierde
+            worst = max((s for s in regret if s in {p.rule for p in best_pieces}), default=None, key=regret.get)
             target = next((p for p in best_pieces if p.rule == worst), target)
-        diag = profile_text(prof) + self_sorted_text(ind) + breadth_text(ind) + regret_text(ind)
         prompt = library_prompt(spec, op, target, library, state["best"], state["fitness"] if best_pieces else minimal,
-                                diag, trace, rejections)
+                                evid, rejections)
         text = client.complete(SYSTEM_PROMPT, prompt)
         used = getattr(client, "last_usage", None)
         if isinstance(used, TokenUsage):
@@ -407,6 +506,7 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
                    macro=macro, op=op, parent=target.id if target else None, doc=doc)
         next_id += 1
         pc.alone = cache.setdefault((pc.id,), harness.mean(composition_factory((pc,))[0], {}, train))
+        measure_piece(harness, pc, train, oracle_insts)
         library.append(pc)
         ranked = compose(harness, library, train, cache, must=pc, deadline=deadline)
         improved = update_best(ranked)

@@ -591,6 +591,23 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
 
   Con las dos piezas escritas a mano como respuestas del LLM simulado, el compositor encuentra
   `bg` > `reduce` en dos rondas (`tests/test_library.py`).
+
+  **Corrida 79, la primera con la biblioteca, desde cero: 12 rondas, 111 mil tokens, 55,5.** La
+  primera pieza válida (`safe_relocate_greedy`) permitía el 100 % de los candidatos. Iba arriba
+  en toda composición y tapaba a las demás: las 10 mejores empataban en 51,812. Los
+  contraejemplos eran todos pasos que ella decidió, así que no se veía qué tipo de movimiento
+  faltaba, y 5 rondas se fueron en refinarla (60 a 106). Las piezas angostas daban solas entre
+  82 y 111. Cambios:
+  - una pieza **ancha** (permite en promedio más del 50 % de los candidatos) solo va al final de
+    una composición: queda como "comodín mejorado" y las angostas se prueban encima;
+  - cada pieza se mide sola: ancho y precisión con el oráculo (en cuántos de los pasos donde
+    aplica su primera acción es óptima);
+  - los contraejemplos se anotan por pieza: qué piezas de la biblioteca permitían una acción
+    óptima ("NINGUNA pieza", o solo una ANCHA, dice que falta un tipo de movimiento);
+  - **prompt compacto** (≈ 5 mil caracteres contra 20 mil): tarea, operador, biblioteca en una
+    línea por pieza, evidencia, formato, problema y la API de la vista (docstrings, sin código).
+    Salen la documentación de `core.rules`, el Protocol del slot y las pistas del slot, que
+    hablaban de prioridades cuando aquí no se ponen.
 - **Un algoritmo de optimización de greedies** (etapa `evolve`, `llm/evolve.py`). Un greedy como
   FRG no sale de una vez; se llega por pasos: primero solo movimientos BG, después la prioridad
   dentro de ese estado, después un estado de vaciado que vuelve al inicial, y otra vez las

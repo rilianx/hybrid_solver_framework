@@ -96,7 +96,7 @@ def test_from_two_narrow_pieces_the_composer_finds_bg_over_reduce(tmp_path):
     first = client.calls[0][1]
     assert "`new_rule`" in first and "ANGOSTA" in first and "(vacía" in first
     second = client.calls[1][1]
-    assert "`bg`" in second and "fitness sola" in second
+    assert "`bg`" in second and "Permite el" in second and "NINGUNA" in second
     assert res.written and "rejected" not in res.written[0], res.written  # la máquina compuesta pasa la validación completa
 
 
