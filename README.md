@@ -742,6 +742,12 @@ rondas, 5 se perdieron porque un estado nuevo (`finish`, `drain`) nunca se alcan
 micro-instancias (4×4, 5×4): son estados para instancias más grandes. Dentro de `evolve`, la
 alcanzabilidad ahora también se mira en las instancias de entrenamiento.
 
+**Corrida 69: primera con oráculo (sin puntajes ni continuación en los contraejemplos), 12
+rondas, 106 mil tokens.** De 55,5 a **52,0**, con un `change_transition` que da un umbral
+adaptativo para pasar a `finish`. Ninguna ronda se perdió por alcanzabilidad (antes 5 de 12).
+Hubo 4 rechazos: 2 por números sueltos fuera de la clase y 2 por salirse del alcance del
+operador.
+
 **Oráculo exacto: imitar al óptimo, no al respaldo** (`ProblemPack.oracle_distance`,
 `core.machine.machine_regret`). Un greedy que imite al best-first del respaldo sería el comodín
 (la acción que menos sube la cota). Lo que sí sirve es la distancia exacta al objetivo, d(·).
