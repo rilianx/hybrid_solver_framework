@@ -3240,5 +3240,642 @@
       "cached_input_tokens": 15616,
       "reasoning_tokens": 13520
     }
+  },
+  {
+    "seed": false,
+    "rounds": 12,
+    "archive": [
+      "unsorted_to_sorted_safe_placement",
+      "frontier_blocker_transfer",
+      "sorted_source_consolidation"
+    ],
+    "written": [
+      {
+        "name": "library_unsorted_to_sorted_safe_placement_frontier_blocker_transfer_sorted_source_consolidation",
+        "path": "generated/cpmp_evolve/construction_machine/library_unsorted_to_sorted_safe_placement_frontier_blocker_transfer_sorted_source_consolidation_r1.py",
+        "fitness": 20.062,
+        "params": {
+          "p9::single_bad_count": 1,
+          "p9::min_sorted_prefix": 1,
+          "p9::frontier_max_height": 2,
+          "p9::allow_bad_suffix_receivers": true,
+          "p9::prefer_sorted_source_bonus": 8.0,
+          "p9::prefer_single_blocker_source_bonus": 2.0,
+          "p9::prefer_safe_sorted_dest_bonus": 3.0,
+          "p9::prefer_capped_dest_bonus": 1.0,
+          "p9::prefer_short_source_weight": 2.0,
+          "p9::prefer_long_dest_prefix_weight": 1.0,
+          "p9::prefer_tighter_fit_weight": 0.1,
+          "p7::min_source_height": 1,
+          "p7::max_source_height": 3,
+          "p7::max_source_bad_suffix": 1,
+          "p7::min_exposed_sorted_prefix": 1,
+          "p7::allow_unsorted_receivers": true,
+          "p7::allow_sorted_receivers": true,
+          "p7::allow_empty_receiver": false,
+          "p7::prefer_safe_sorted_placement": true,
+          "p7::prefer_near_sorted_peel": true,
+          "p7::prefer_taller_receivers": true
+        },
+        "rejected": "módulo 'library_unsorted_to_sorted_safe_placement_frontier_blocker_transfer_sorted_source_consolidation_r1.py': rechazado en la capa 'contractual'. Propiedades violadas:\n  - construction_machine.states_reachable: los estados ['sorted_source_consolidation'] nunca se alcanzan en las micro-instancias (greedy y RCL): revisa las condiciones que llevan a ellos (en una máquina de reglas: su prioridad y c"
+      }
+    ],
+    "individuals": [
+      {
+        "round": 1,
+        "op": "new_rule",
+        "target": null,
+        "repaired": false,
+        "status": "rechazado",
+        "reason": "cand_0.py: rechazado en la capa 'syntactic'. Propiedades violadas:\n  - no_loose_constants: números sueltos en el código: 0.001 (línea 78). Todo número que decide algo (umbral, peso, tope, desempate) va en COMPONENT['params'] con 'range' y 'default', y llega por build_component(problem, **params), para que el tuner lo afine. Se permiten 0, ±1, 2, tolerancias (< 1e-3) y potencias de 10 desde 100 (orden lexicográfico o centinela)."
+      },
+      {
+        "round": 2,
+        "op": "new_rule",
+        "target": null,
+        "id": 0,
+        "rule": "sorted_source_consolidation",
+        "name": "sacrifice_sorted_source_to_consolidate",
+        "parent": null,
+        "macro": false,
+        "alone": 91.062,
+        "width": 0.086,
+        "precision": [
+          15,
+          45
+        ],
+        "params": {},
+        "best_with": 91.062,
+        "status": "en la biblioteca",
+        "best": [],
+        "fitness": null
+      },
+      {
+        "round": 3,
+        "op": "new_rule",
+        "target": null,
+        "id": 1,
+        "rule": "single_blocker_peel",
+        "name": "single_blocker_peel",
+        "parent": null,
+        "macro": false,
+        "alone": 101.562,
+        "width": 0.126,
+        "precision": [
+          13,
+          122
+        ],
+        "params": {
+          "min_source_height": 2,
+          "bad_containers_in_source": 1,
+          "require_sorted_destination": true,
+          "prefer_tighter_destination": true
+        },
+        "best_with": 84.938,
+        "status": "mejor máquina",
+        "best": [
+          "single_blocker_peel",
+          "sorted_source_consolidation"
+        ],
+        "fitness": 102.75
+      },
+      {
+        "round": 4,
+        "op": "new_rule",
+        "target": null,
+        "repaired": true,
+        "id": 2,
+        "rule": "frontier_blocker_transfer",
+        "name": "frontier_blocker_transfer",
+        "parent": null,
+        "macro": false,
+        "alone": 95.188,
+        "width": 0.111,
+        "precision": [
+          5,
+          10
+        ],
+        "params": {
+          "min_sorted_prefix": 1,
+          "prefer_tighter_fit_weight": 0.1
+        },
+        "best_with": 71.688,
+        "status": "mejor máquina",
+        "best": [
+          "single_blocker_peel",
+          "sorted_source_consolidation",
+          "frontier_blocker_transfer"
+        ],
+        "fitness": 79.75
+      },
+      {
+        "round": 5,
+        "op": "new_rule",
+        "target": null,
+        "id": 3,
+        "rule": "unsorted_to_sorted_safe_placement",
+        "name": "unsorted_to_sorted_safe_placement",
+        "parent": null,
+        "macro": false,
+        "alone": 86.688,
+        "width": 0.124,
+        "precision": [
+          6,
+          7
+        ],
+        "params": {},
+        "best_with": 23.75,
+        "status": "mejor máquina",
+        "best": [
+          "unsorted_to_sorted_safe_placement",
+          "sorted_source_consolidation",
+          "frontier_blocker_transfer"
+        ],
+        "fitness": 30.188
+      },
+      {
+        "round": 6,
+        "op": "new_rule",
+        "target": null,
+        "id": 4,
+        "rule": "sorted_to_sorted_safe_placement",
+        "name": "sorted_to_sorted_safe_placement",
+        "parent": null,
+        "macro": false,
+        "alone": 88.625,
+        "width": 0.09,
+        "precision": [
+          30,
+          96
+        ],
+        "params": {},
+        "best_with": 38.938,
+        "status": "en la biblioteca",
+        "best": [
+          "unsorted_to_sorted_safe_placement",
+          "sorted_source_consolidation",
+          "frontier_blocker_transfer"
+        ],
+        "fitness": 30.188
+      },
+      {
+        "round": 7,
+        "op": "new_rule",
+        "target": null,
+        "id": 5,
+        "rule": "capped_receiver_parking",
+        "name": "capped_receiver_parking",
+        "parent": null,
+        "macro": false,
+        "alone": 107.812,
+        "width": 0.135,
+        "precision": [
+          0,
+          0
+        ],
+        "params": {},
+        "best_with": 78.188,
+        "status": "en la biblioteca",
+        "best": [
+          "unsorted_to_sorted_safe_placement",
+          "sorted_source_consolidation",
+          "frontier_blocker_transfer"
+        ],
+        "fitness": 30.188
+      },
+      {
+        "round": 8,
+        "op": "new_rule",
+        "target": null,
+        "id": 6,
+        "rule": "sorted_to_unsorted_bad_suffix_append",
+        "name": "sorted_to_unsorted_bad_suffix_append",
+        "parent": null,
+        "macro": false,
+        "alone": 92.312,
+        "width": 0.106,
+        "precision": [
+          0,
+          47
+        ],
+        "params": {},
+        "best_with": 33.938,
+        "status": "en la biblioteca",
+        "best": [
+          "unsorted_to_sorted_safe_placement",
+          "sorted_source_consolidation",
+          "frontier_blocker_transfer"
+        ],
+        "fitness": 30.188
+      },
+      {
+        "round": 9,
+        "op": "refine_rule",
+        "target": "sorted_source_consolidation",
+        "id": 7,
+        "rule": "sorted_source_consolidation",
+        "name": "adaptive_sorted_source_consolidation",
+        "parent": 0,
+        "macro": false,
+        "alone": 102.0,
+        "width": 0.298,
+        "precision": [
+          19,
+          104
+        ],
+        "params": {
+          "min_source_height": 1,
+          "max_source_height": 3,
+          "max_source_bad_suffix": 1,
+          "min_exposed_sorted_prefix": 1,
+          "allow_unsorted_receivers": true,
+          "allow_sorted_receivers": true,
+          "allow_empty_receiver": false,
+          "prefer_safe_sorted_placement": true,
+          "prefer_near_sorted_peel": true,
+          "prefer_taller_receivers": true
+        },
+        "best_with": 19.125,
+        "status": "mejor máquina",
+        "best": [
+          "unsorted_to_sorted_safe_placement",
+          "frontier_blocker_transfer",
+          "sorted_source_consolidation"
+        ],
+        "fitness": 21.0
+      },
+      {
+        "round": 10,
+        "op": "new_rule",
+        "target": null,
+        "id": 8,
+        "rule": "two_high_single_blocker_safe_peel",
+        "name": "two_high_single_blocker_safe_peel",
+        "parent": null,
+        "macro": false,
+        "alone": 90.625,
+        "width": 0.0,
+        "precision": [
+          0,
+          0
+        ],
+        "params": {},
+        "best_with": 23.438,
+        "status": "en la biblioteca",
+        "best": [
+          "unsorted_to_sorted_safe_placement",
+          "frontier_blocker_transfer",
+          "sorted_source_consolidation"
+        ],
+        "fitness": 21.0
+      },
+      {
+        "round": 11,
+        "op": "refine_rule",
+        "target": "frontier_blocker_transfer",
+        "id": 9,
+        "rule": "frontier_blocker_transfer",
+        "name": "frontier_blocker_transfer_refined",
+        "parent": 2,
+        "macro": false,
+        "alone": 100.812,
+        "width": 0.185,
+        "precision": [
+          26,
+          118
+        ],
+        "params": {
+          "single_bad_count": 1,
+          "min_sorted_prefix": 1,
+          "frontier_max_height": 2,
+          "allow_bad_suffix_receivers": true,
+          "prefer_sorted_source_bonus": 8.0,
+          "prefer_single_blocker_source_bonus": 2.0,
+          "prefer_safe_sorted_dest_bonus": 3.0,
+          "prefer_capped_dest_bonus": 1.0,
+          "prefer_short_source_weight": 2.0,
+          "prefer_long_dest_prefix_weight": 1.0,
+          "prefer_tighter_fit_weight": 0.1
+        },
+        "best_with": 18.938,
+        "status": "mejor máquina",
+        "best": [
+          "unsorted_to_sorted_safe_placement",
+          "frontier_blocker_transfer",
+          "sorted_source_consolidation"
+        ],
+        "fitness": 20.062
+      },
+      {
+        "round": 12,
+        "op": "refine_rule",
+        "target": "unsorted_to_sorted_safe_placement",
+        "repaired": true,
+        "id": 10,
+        "rule": "unsorted_to_sorted_safe_placement",
+        "name": "unsorted_to_sorted_safe_placement_targeted",
+        "parent": 3,
+        "macro": true,
+        "alone": 96.812,
+        "width": 0.072,
+        "precision": [
+          2,
+          5
+        ],
+        "params": {},
+        "best_with": 29.875,
+        "status": "en la biblioteca",
+        "best": [
+          "unsorted_to_sorted_safe_placement",
+          "frontier_blocker_transfer",
+          "sorted_source_consolidation"
+        ],
+        "fitness": 20.062
+      },
+      {
+        "library": [
+          {
+            "id": 0,
+            "rule": "sorted_source_consolidation",
+            "name": "sacrifice_sorted_source_to_consolidate",
+            "op": "new_rule",
+            "parent": null,
+            "macro": false,
+            "alone": 91.062,
+            "width": 0.086,
+            "precision": [
+              15,
+              45
+            ],
+            "params": {
+              "min_source_height": 1,
+              "max_source_height": 2
+            }
+          },
+          {
+            "id": 1,
+            "rule": "single_blocker_peel",
+            "name": "single_blocker_peel",
+            "op": "new_rule",
+            "parent": null,
+            "macro": false,
+            "alone": 101.562,
+            "width": 0.126,
+            "precision": [
+              13,
+              122
+            ],
+            "params": {
+              "min_source_height": 2,
+              "bad_containers_in_source": 1,
+              "require_sorted_destination": true,
+              "prefer_tighter_destination": true
+            }
+          },
+          {
+            "id": 2,
+            "rule": "frontier_blocker_transfer",
+            "name": "frontier_blocker_transfer",
+            "op": "new_rule",
+            "parent": null,
+            "macro": false,
+            "alone": 95.188,
+            "width": 0.111,
+            "precision": [
+              5,
+              10
+            ],
+            "params": {
+              "min_sorted_prefix": 1,
+              "prefer_tighter_fit_weight": 0.1
+            }
+          },
+          {
+            "id": 3,
+            "rule": "unsorted_to_sorted_safe_placement",
+            "name": "unsorted_to_sorted_safe_placement",
+            "op": "new_rule",
+            "parent": null,
+            "macro": false,
+            "alone": 86.688,
+            "width": 0.124,
+            "precision": [
+              6,
+              7
+            ],
+            "params": {}
+          },
+          {
+            "id": 4,
+            "rule": "sorted_to_sorted_safe_placement",
+            "name": "sorted_to_sorted_safe_placement",
+            "op": "new_rule",
+            "parent": null,
+            "macro": false,
+            "alone": 88.625,
+            "width": 0.09,
+            "precision": [
+              30,
+              96
+            ],
+            "params": {}
+          },
+          {
+            "id": 5,
+            "rule": "capped_receiver_parking",
+            "name": "capped_receiver_parking",
+            "op": "new_rule",
+            "parent": null,
+            "macro": false,
+            "alone": 107.812,
+            "width": 0.135,
+            "precision": [
+              0,
+              0
+            ],
+            "params": {}
+          },
+          {
+            "id": 6,
+            "rule": "sorted_to_unsorted_bad_suffix_append",
+            "name": "sorted_to_unsorted_bad_suffix_append",
+            "op": "new_rule",
+            "parent": null,
+            "macro": false,
+            "alone": 92.312,
+            "width": 0.106,
+            "precision": [
+              0,
+              47
+            ],
+            "params": {}
+          },
+          {
+            "id": 7,
+            "rule": "sorted_source_consolidation",
+            "name": "adaptive_sorted_source_consolidation",
+            "op": "refine_rule",
+            "parent": 0,
+            "macro": false,
+            "alone": 102.0,
+            "width": 0.298,
+            "precision": [
+              19,
+              104
+            ],
+            "params": {
+              "min_source_height": 1,
+              "max_source_height": 3,
+              "max_source_bad_suffix": 1,
+              "min_exposed_sorted_prefix": 1,
+              "allow_unsorted_receivers": true,
+              "allow_sorted_receivers": true,
+              "allow_empty_receiver": false,
+              "prefer_safe_sorted_placement": true,
+              "prefer_near_sorted_peel": true,
+              "prefer_taller_receivers": true
+            }
+          },
+          {
+            "id": 8,
+            "rule": "two_high_single_blocker_safe_peel",
+            "name": "two_high_single_blocker_safe_peel",
+            "op": "new_rule",
+            "parent": null,
+            "macro": false,
+            "alone": 90.625,
+            "width": 0.0,
+            "precision": [
+              0,
+              0
+            ],
+            "params": {}
+          },
+          {
+            "id": 9,
+            "rule": "frontier_blocker_transfer",
+            "name": "frontier_blocker_transfer_refined",
+            "op": "refine_rule",
+            "parent": 2,
+            "macro": false,
+            "alone": 100.812,
+            "width": 0.185,
+            "precision": [
+              26,
+              118
+            ],
+            "params": {
+              "single_bad_count": 1,
+              "min_sorted_prefix": 1,
+              "frontier_max_height": 2,
+              "allow_bad_suffix_receivers": true,
+              "prefer_sorted_source_bonus": 8.0,
+              "prefer_single_blocker_source_bonus": 2.0,
+              "prefer_safe_sorted_dest_bonus": 3.0,
+              "prefer_capped_dest_bonus": 1.0,
+              "prefer_short_source_weight": 2.0,
+              "prefer_long_dest_prefix_weight": 1.0,
+              "prefer_tighter_fit_weight": 0.1
+            }
+          }
+        ],
+        "best": [
+          "unsorted_to_sorted_safe_placement",
+          "frontier_blocker_transfer",
+          "sorted_source_consolidation"
+        ],
+        "fitness": 20.062,
+        "minimal": 90.688,
+        "compositions": [
+          [
+            18.938,
+            [
+              3,
+              9,
+              7
+            ]
+          ],
+          [
+            19.125,
+            [
+              3,
+              2,
+              7
+            ]
+          ],
+          [
+            20.25,
+            [
+              3,
+              9
+            ]
+          ],
+          [
+            20.25,
+            [
+              3,
+              8,
+              9
+            ]
+          ],
+          [
+            20.25,
+            [
+              3,
+              9,
+              0
+            ]
+          ],
+          [
+            20.25,
+            [
+              3,
+              9,
+              1
+            ]
+          ],
+          [
+            20.25,
+            [
+              3,
+              9,
+              8
+            ]
+          ],
+          [
+            20.312,
+            [
+              3,
+              9,
+              4
+            ]
+          ],
+          [
+            20.312,
+            [
+              3,
+              9,
+              6
+            ]
+          ],
+          [
+            20.312,
+            [
+              8,
+              3,
+              9
+            ]
+          ]
+        ]
+      }
+    ],
+    "tokens": {
+      "calls": 15,
+      "input_tokens": 38223,
+      "output_tokens": 31250,
+      "total_tokens": 69473,
+      "cached_input_tokens": 1792,
+      "reasoning_tokens": 18841
+    }
   }
 ]
