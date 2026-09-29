@@ -322,3 +322,14 @@ def test_unproposed_candidates_are_ranked_by_the_fallback():
     assert other
     for c in other:
         assert policy.score(partial, memory, c) == FAR + policy.fallback.score(partial, c)
+
+
+def test_init_defaults_stored_with_a_leading_underscore_are_parameters(tmp_path):
+    """Corrida 76: `self._w = w` también es un default de `__init__` que va al tuner."""
+    from core.validation.params import extract_constants
+
+    module = INIT_MODULE.replace("self.w_gap = w_gap", "self._w_gap = w_gap").replace("self.w_gap *", "self._w_gap *")
+    src, extracted = extract_constants(module)
+    assert "weighted_w_gap" in extracted
+    P = PACK.make_contexts()[0].problem
+    assert _load_src(tmp_path, src, "underscore").build_component(P, weighted_w_gap=2.0).rules[0]._w_gap == 2.0

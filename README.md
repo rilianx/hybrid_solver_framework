@@ -508,6 +508,27 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
   - si una regla lo hace en más de la mitad de sus pasos, el calendario propone
     `split_rule(r)` (60 %, hasta 2 intentos fallidos por regla).
 
+  **Corrida 76: con la recomendación de varias reglas, desde la mínima, 12 rondas, 133 mil
+  tokens. Mejor máquina hasta ahora: 51,94** (FRG 18,3; la 72, 58,25). Por primera vez la primera
+  regla es selectiva: `safe_unlock_to_sorted_stack` permite solo algunos tipos de movimiento y
+  puntúa entre ellos. Arrancó en 72,75, mejor que el comodín solo (83); antes la primera regla
+  arrancaba peor (97 a 106). Con un refinamiento bajó a 51,94. No hizo falta `split_rule`.
+  Una macro (`reduce_bad_stack_macro`) dio 92,4 y su refinamiento 97,2. Hubo 4 rechazos: en 3
+  `add_simple` el LLM reemplazó la regla en vez de agregar una, y en 1 `add_macro` no devolvió
+  una `RuleMachine`. Los pesos que la regla guardaba como `self._w = w` quedaban fuera del
+  tuner; ahora también se extraen.
+
+  Con 8 instancias de test por tamaño:
+
+  | | 5×5 greedy | 5×5 beam | 6×6 greedy | 6×6 beam |
+  |---|---|---|---|---|
+  | FRG / BS-FRG | 12,4 | 10,9 | 24,3 | 21,8 |
+  | corrida 76 (defaults) | 26,6 | 11,1 | 77,3 | 23,5 |
+  | corrida 76 afinada (40 muestras) | 20,6 | 11,5 | 96,9 | 24,4 |
+
+  Como greedy mejora a la v4 de la 72 en 6×6 (77 contra 90). En la beam queda igual. Afinar en
+  4+4 instancias sobreajusta: mejora 5×5 y empeora 6×6.
+
   El alcance se verifica clase por clase y la prioridad aparte. Los contraejemplos del oráculo
   traen tramos óptimos de 8 pasos: varios pasos seguidos que atienden el mismo objetivo son una
   macro. La máquina mínima es una `RuleMachine` sin reglas. Las máquinas de las corridas 66–74

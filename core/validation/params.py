@@ -256,9 +256,10 @@ def _init_defaults(tree, cls: ast.ClassDef, prefix: str, taken: set) -> list[tup
     if init is None or not init.args.args:
         return []
     self_name = init.args.args[0].arg
-    stored = {t.attr for n in ast.walk(init) if isinstance(n, ast.Assign) for t in n.targets
+    # `self.w = w` o `self._w = w` (corrida 76: seis pesos con guion bajo quedaban fuera del tuner)
+    stored = {n.value.id: t.attr for n in ast.walk(init) if isinstance(n, ast.Assign) for t in n.targets
               if isinstance(t, ast.Attribute) and isinstance(t.value, ast.Name) and t.value.id == self_name
-              and isinstance(n.value, ast.Name) and n.value.id == t.attr}
+              and isinstance(n.value, ast.Name) and t.attr.lstrip("_") == n.value.id}
     args = init.args.args[1:]
     passed = _passed_args(tree, cls.name, [a.arg for a in args], taken)
     defaults = init.args.defaults
@@ -271,9 +272,9 @@ def _init_defaults(tree, cls: ast.ClassDef, prefix: str, taken: set) -> list[tup
         if name in taken or arg.arg in taken:  # ya es un parámetro (build_component lo pasa)
             continue
         if isinstance(v, bool):
-            out.append((name, {"type": "bool", "default": v}, arg.arg))
+            out.append((name, {"type": "bool", "default": v}, stored[arg.arg]))
         elif isinstance(v, (int, float)) and v != 0:
-            out.append((name, _range_for(v), arg.arg))
+            out.append((name, _range_for(v), stored[arg.arg]))
     return out
 
 
