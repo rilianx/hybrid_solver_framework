@@ -300,3 +300,38 @@ def test_a_state_for_larger_instances_is_reachable_through_the_training_set(tmp_
     train = PACK.make_instances(2, 9100, PACK.parse_size("5x5"))
     report, _, _ = light_validation(path, contexts, [(i, PACK.problem_factory(i)) for i in train])
     assert report.passed, report.feedback()
+
+
+ALL_SCORE = BG_ONLY.replace('"name": "bg_only"', '"name": "all_score"').replace('''    name = "bg"
+    priority = 100
+
+    def allowed(self, L, memory, candidates):''', '''    name = "bg"
+    priority = 100
+
+    def allowed(self, L, memory, candidates):
+        return sorted(candidates, key=lambda c: (L.g(c.sd) - L.g(c.so), c.so, c.sd))
+
+    def _unused(self, L, memory, candidates):''')
+SPLIT = BG_AND_OTHER.replace('"name": "bg_only"', '"name": "split"').replace('name = "bg"', 'name = "fill"').replace(
+    "[BG(), Other()]", "[BG(), Other()]")
+
+
+def test_a_rule_that_allows_everything_is_reported_and_split(tmp_path):
+    """Corridas 72–75: la primera regla ordenaba todos los candidatos por una suma ponderada. No se
+    rechaza (puede ser un greedy válido): se informa y el calendario propone partirla."""
+    from llm.evolve import breadth_text, broad_rules, profile, schedule
+
+    path = tmp_path / "all.py"
+    path.write_text(ALL_SCORE)
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("all_score_mod", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    ind = Individual(0, "all_score", ALL_SCORE, mod.build_component, mod.COMPONENT, ("bg",))
+    profile(Harness(PACK), ind, PACK.make_instances(2, 9100, PACK.parse_size("4x4")))
+    assert broad_rules(ind) == ["bg"] and "TODOS los candidatos" in breadth_text(ind)
+    ops = {schedule(ind, Random(k)) for k in range(20)}
+    assert ("split_rule", "bg") in ops
+    assert scope_check("split_rule", "bg", ind, ("fill", "other"), SPLIT) is None
+    assert "dos o más" in scope_check("split_rule", "bg", ind, ("fill",), SPLIT.replace("[BG(), Other()]", "[BG()]"))

@@ -493,6 +493,21 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
   - `change_priority`: solo prioridades;
   - `simplify`.
 
+  - `split_rule(r)`: parte en dos o tres reglas con prioridad una regla que casi siempre
+    permite todos los candidatos, porque es un puntaje compuesto disfrazado de regla.
+
+  Corrida 75, la primera con este formato, desde la mínima: 9 rondas, 119 mil tokens, mejor
+  **74,25**, peor que la 72 (58,25). La primera regla (`safe_placement`) permitía todos los
+  candidatos ordenados por una suma ponderada (mal puestos × 1e6 + cota × 1e5 + …). Como
+  siempre aplica, anula al comodín y a las prioridades, y arrancó en 97,4, peor que el comodín
+  solo (83). Apareció una macro (`buffer_relocation`, que llena una pila destino), con 102,6.
+  Una regla así puede ser un greedy válido, así que no se rechaza. En cambio:
+  - el prompt recomienda varias reglas con prioridad en vez de un puntaje compuesto;
+  - `core.rules.rule_breadth` mide en cuántos pasos cada regla permite todo y el diagnóstico
+    lo muestra;
+  - si una regla lo hace en más de la mitad de sus pasos, el calendario propone
+    `split_rule(r)` (60 %, hasta 2 intentos fallidos por regla).
+
   El alcance se verifica clase por clase y la prioridad aparte. Los contraejemplos del oráculo
   traen tramos óptimos de 8 pasos: varios pasos seguidos que atienden el mismo objetivo son una
   macro. La máquina mínima es una `RuleMachine` sin reglas. Las máquinas de las corridas 66–74

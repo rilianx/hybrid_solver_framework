@@ -58,7 +58,7 @@ from .parser import extract_code_blocks
 from .prompts import SYSTEM_PROMPT, protocol_source, slot_hint
 
 SLOT = "construction_machine"
-OPERATORS = ("add_simple", "add_macro", "refine_rule", "change_priority", "simplify")
+OPERATORS = ("add_simple", "add_macro", "split_rule", "refine_rule", "change_priority", "simplify")
 ADDS = ("add_simple", "add_macro")
 
 MINIMAL = '''
@@ -80,7 +80,8 @@ OPERATOR_TEXT = {
         "hace falta `score(parcial, memoria, acción)` (menor = mejor). Sin `start` ni `done`: se reevalúa en cada paso. "
         "Elige su prioridad respecto de las que ya hay (mayor = se prefiere; la primera, 100). No cambies las otras "
         "reglas. Mira el diagnóstico: dónde la máquina cae al comodín `{fallback}` y qué hace el óptimo que ninguna regla "
-        "permite. Una regla buena permite UN tipo de movimiento."),
+        "permite. Una regla buena permite UN tipo de movimiento: en vez de un puntaje compuesto que ordena todos los candidatos, "
+        "prefiere varias reglas con prioridades."),
     "add_macro": (
         "Agrega EXACTAMENTE UNA MACRO nueva: un compromiso de varios pasos. Es una regla con `name`, `priority`, "
         "`start(parcial, memoria) -> memoria` (al activarse fija su parámetro, p.ej. qué objetivo atender, y lo guarda en "
@@ -89,6 +90,12 @@ OPERATOR_TEXT = {
         "el controlador la sigue aunque otra regla tenga más prioridad. Elige su prioridad respecto de las que hay (p.ej. "
         "50 si solo debe activarse cuando las demás no aplican). No cambies las otras reglas. Mira los tramos óptimos del "
         "diagnóstico: una secuencia de pasos óptimos que atienden el mismo objetivo es una macro."),
+    "split_rule": (
+        "Parte la regla `{target}` en VARIAS reglas (dos o tres), cada una un tipo de movimiento con su prioridad, en vez "
+        "de un puntaje compuesto que ordena todos los candidatos. Cada término importante de su puntaje suele ser una "
+        "regla: p.ej. 'movimientos que dejan bien puesto un contenedor' (prioridad alta) y 'movimientos que despejan una "
+        "pila' (más baja). Lo que ninguna sepa hacer lo cubre el comodín. Si un tipo de movimiento se sostiene varios pasos "
+        "sobre el mismo objetivo, hazlo macro (`start`/`done`). No cambies las otras reglas ni sus prioridades."),
     "refine_rule": (
         "Cambia SOLO la regla `{target}` (su clase, sin su `priority`): qué permite, en qué orden, cuándo no aplica, qué "
         "recuerda, qué fija en `start`, cuándo termina. No cambies las otras reglas ni las prioridades. Mira su precisión "
@@ -127,6 +134,7 @@ class Individual:
     rejections: list = field(default_factory=list)  # de sus hijos, para no repetirlos
     refine_failures: dict = field(default_factory=dict)  # regla → hijos fallidos de refine_rule
     rules: dict = field(default_factory=dict)  # con oráculo: regla → {applies, optimal, chosen} (cobertura y precisión)
+    breadth: dict = field(default_factory=dict)  # regla → {applies, all}: en cuántos pasos permite TODOS los candidatos
 
     @property
     def niche(self) -> int:
@@ -285,7 +293,39 @@ def profile(harness: Harness, ind: Individual, instances, oracle_instances: int 
         text = repr(inst)
         trace = f"Instancia donde más pierde:\n```\n{text[:600]}\n```\nTraza (greedy; `estado: acciones`):\n```\n{compress_trace(steps)}\n```"
     ind.profile = total
+    from core.rules import rule_breadth
+
+    ind.breadth = {}
+    for inst in instances:
+        P = harness.pack.problem_factory(inst)
+        try:
+            b = rule_breadth(MachinePolicy(ind.factory(P, **ind.params), P), P.construction_view(inst))
+        except Exception:  # noqa: BLE001
+            b = None
+        for n, row in (b or {}).items():
+            t = ind.breadth.setdefault(n, {"applies": 0, "all": 0})
+            t["applies"] += row["applies"]
+            t["all"] += row["all"]
     return total, trace
+
+
+BROAD = 0.5  # una regla que permite todos los candidatos en más de esta fracción de sus pasos es un puntaje compuesto
+
+
+def broad_rules(ind: Individual) -> list[str]:
+    """Las reglas que casi siempre permiten todo, de la más a la menos."""
+    rows = [(r["all"] / r["applies"], n) for n, r in ind.breadth.items() if r["applies"] and r["all"] / r["applies"] > BROAD]
+    return [n for _, n in sorted(rows, reverse=True)]
+
+
+def breadth_text(ind: Individual) -> str:
+    broad = broad_rules(ind)
+    if not broad:
+        return ""
+    rows = ", ".join(f"`{n}` en {ind.breadth[n]['all']} de {ind.breadth[n]['applies']} pasos" for n in broad)
+    return ("\n\nReglas que permiten TODOS los candidatos casi siempre (un puntaje compuesto disfrazado de regla): "
+            f"{rows}. Mejor varias reglas, cada una un tipo de movimiento, con prioridades entre ellas: así cada una se "
+            "puede refinar sola y lo que ninguna sabe hacer lo cubre el comodín.")
 
 
 def regret_text(ind: Individual) -> str:
@@ -492,6 +532,18 @@ def scope_check(op: str, target: str | None, parent: Individual, child_states: t
             return f"{op} no cambia las reglas que ya estaban; el hijo modificó {changed}"
         if reprio:
             return f"{op} elige la prioridad de la regla nueva, no cambia las otras; el hijo cambió la de {reprio}"
+    elif op == "split_rule":
+        new = [n for n in cs if n not in ps]
+        kept = [n for n in cs if n in ps]
+        if len(new) < 2 - (target in cs) or not set(ps) - {target} <= set(cs):
+            return (f"split_rule({target}) reemplaza `{target}` por dos o más reglas y deja las otras ({list(ps)}; el hijo "
+                    f"tiene {list(cs)})")
+        others = [n for n in changed if n != target]
+        if others:
+            return f"split_rule({target}) no cambia las otras reglas; el hijo modificó {others}"
+        moved = [n for n in reprio if n != target]
+        if moved:
+            return f"split_rule({target}) no cambia las prioridades de las otras reglas; el hijo cambió la de {moved}"
     elif op == "refine_rule":
         if cs != ps:
             return f"refine_rule no cambia las reglas que hay ({list(ps)}; el hijo tiene {list(cs)})"
@@ -525,6 +577,9 @@ def schedule(parent: Individual, rng: Random) -> tuple[str, str | None]:
     pending = [s for s in parent.todo if parent.refine_failures.get(s, 0) < 2]
     if pending:  # tras 2 refinamientos fallidos de una regla, se pasa a otros operadores (corrida 67: 5 seguidos)
         return "refine_rule", pending[0]
+    broad = broad_rules(parent)
+    if broad and parent.refine_failures.get("split:" + broad[0], 0) < 2 and rng.random() < 0.6:
+        return "split_rule", broad[0]  # un puntaje compuesto disfrazado de regla: partirlo antes de pulirlo
     ops = [("add_simple", 0.15), ("add_macro", 0.25), ("refine_rule", 0.35)]
     if len(parent.states) > 1:
         ops += [("change_priority", 0.15), ("simplify", 0.1)]
@@ -746,7 +801,7 @@ def evolve(client: LLMClient, pack, spec, workspace: str | Path, harness: Harnes
         op, target = schedule(parent, rng)
         prof, trace = profile(harness, parent, train)
         text = client.complete(SYSTEM_PROMPT, evolve_prompt(spec, parent, op, target,
-                                                            profile_text(prof) + self_sorted_text(parent) + regret_text(parent),
+                                                            profile_text(prof) + self_sorted_text(parent) + breadth_text(parent) + regret_text(parent),
                                                             trace, archive, is_seed))
         used = getattr(client, "last_usage", None)
         if isinstance(used, TokenUsage):
@@ -772,8 +827,9 @@ def evolve(client: LLMClient, pack, spec, workspace: str | Path, harness: Harnes
         if notes:
             entry["normalized"] = notes
         if reason is not None:
-            if op == "refine_rule" and target:
-                parent.refine_failures[target] = parent.refine_failures.get(target, 0) + 1
+            if op in ("refine_rule", "split_rule") and target:
+                key = target if op == "refine_rule" else "split:" + target
+                parent.refine_failures[key] = parent.refine_failures.get(key, 0) + 1
             parent.rejections.append(f"{op}{'(' + target + ')' if target else ''}: {reason}")
             res.individuals.append({**entry, "status": "rechazado", "reason": reason})
             last = time.monotonic() - t0
@@ -786,7 +842,7 @@ def evolve(client: LLMClient, pack, spec, workspace: str | Path, harness: Harnes
             component = dict(component, name=name)
         child = Individual(cid, name, source, module.build_component, component, states, parent=parent.id, op=op, target=target)
         new_states = [s for s in states if s not in parent.states]
-        child.todo = new_states if op in ADDS else [s for s in parent.todo if s != target and s in states]
+        child.todo = new_states if op in ADDS + ("split_rule",) else [s for s in parent.todo if s != target and s in states]
         child.params, child.train, child.fitness = tune(harness, child.factory, component, train, test, tune_samples, rng)
         profile(harness, child, train)
         everyone.append(child)
@@ -794,8 +850,9 @@ def evolve(client: LLMClient, pack, spec, workspace: str | Path, harness: Harnes
         save_archive(saved, archive, is_seed)  # un job cortado no pierde el archivo
         res.individuals.append({**child.row(), "round": rnd, "status": "archivo" if admitted else "no mejora su nicho"})
         if not admitted:
-            if op == "refine_rule" and target:
-                parent.refine_failures[target] = parent.refine_failures.get(target, 0) + 1
+            if op in ("refine_rule", "split_rule") and target:
+                key = target if op == "refine_rule" else "split:" + target
+                parent.refine_failures[key] = parent.refine_failures.get(key, 0) + 1
             parent.rejections.append(f"{op}{'(' + target + ')' if target else ''}: `{name}` ({', '.join(states)}) dio fitness "
                                      f"{child.fitness:.2f}; no mejora a las máquinas de {child.niche} estados del archivo")
         last = time.monotonic() - t0
@@ -880,7 +937,7 @@ def main(pack, argv: list[str] | None = None, workspace: str | None = None, spec
     ap.add_argument("--size", default=None)
     ap.add_argument("--rng-seed", type=int, default=0)
     ap.add_argument("--workspace", default=workspace or pack.default_workspace)
-    ap.add_argument("--max-minutes", type=float, default=35.0)
+    ap.add_argument("--max-minutes", type=float, default=60.0)
     ap.add_argument("--provider", choices=["openai", "anthropic"], default="openai")
     ap.add_argument("--model", default=None)
     args = ap.parse_args(argv)

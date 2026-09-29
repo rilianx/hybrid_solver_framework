@@ -182,6 +182,40 @@ class RuleMachine:
         return memory[:i] + (new,) + memory[i + 1:]
 
 
+def rule_breadth(policy: Any, view: Any, max_steps: int = 20_000) -> dict | None:
+    """Por regla, a lo largo de la construcción greedy: en cuántos pasos permite algo y en cuántos
+    permite TODOS los candidatos. Una regla que casi siempre permite todo es un puntaje compuesto
+    disfrazado de regla (corridas 72–75: la primera regla del LLM ordenaba todos los movimientos
+    por una suma ponderada); partirla en varias reglas con prioridad (un tipo de movimiento cada
+    una) es lo que hace FRG. No se rechaza: se informa y `llm.evolve` propone partirla."""
+    machine = getattr(policy, "machine", None)
+    if not isinstance(machine, RuleMachine):
+        return None
+    policy.bind(view)
+    partial = view.empty()
+    memory = policy.init(partial)
+    out = {n: {"applies": 0, "all": 0} for n in machine.states}
+    for _ in range(max_steps):
+        if view.is_complete(partial):
+            break
+        cands = list(view.candidates(partial))
+        if not cands:
+            break
+        state, mems = policy.step(partial, memory)
+        for n in machine.states:
+            i = machine.index[n]
+            mem = mems[i] if n == state else machine.entry(n, partial, mems[i])
+            k = len(machine.allowed(n, partial, mem))
+            if k:
+                out[n]["applies"] += 1
+                out[n]["all"] += k == len(cands) and len(cands) > 1
+        scores = [policy.score(partial, memory, c) for c in cands]
+        a = cands[min(range(len(cands)), key=scores.__getitem__)]
+        memory = policy.update(partial, memory, a)
+        partial = view.apply(partial, a)
+    return out
+
+
 def rule_quality(policy: Any, view: Any, oracle, max_steps: int = 20_000) -> dict | None:
     """Con un oráculo exacto, por regla a lo largo de la construcción greedy: en cuántos pasos
     aplica (cobertura) y en cuántos de esos su primera acción es óptima (precisión). Dice si una
@@ -231,4 +265,4 @@ def rule_quality(policy: Any, view: Any, oracle, max_steps: int = 20_000) -> dic
     return {"steps": steps, "rules": out}
 
 
-__all__ = ["RuleMachine", "is_macro", "rule_quality", "action_key", "FAR"]
+__all__ = ["RuleMachine", "is_macro", "rule_breadth", "rule_quality", "action_key", "FAR"]
