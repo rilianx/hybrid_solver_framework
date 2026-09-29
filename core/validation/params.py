@@ -62,6 +62,10 @@ def _skipped(tree) -> set[int]:
         if isinstance(node, (ast.Subscript,)):  # índices: x[0], x[-1], x[2:]
             skip |= {id(n) for n in ast.walk(node.slice)}
     skip |= {id(d) for _, d in _params_get(tree)}
+    for cls in [n for n in ast.walk(tree) if isinstance(n, ast.ClassDef)]:  # `priority = 50`: estructura, no un peso
+        for b in cls.body:
+            if isinstance(b, ast.Assign) and any(getattr(t, "id", None) == "priority" for t in b.targets):
+                skip |= {id(n) for n in ast.walk(b.value)}
     return skip
 
 
@@ -183,8 +187,8 @@ def _assign(tree, name: str):
 
 
 def _target_classes(tree) -> list[ast.ClassDef]:
-    """Las clases cuyos números son parámetros: reglas (`propose`), transiciones (`select`) y
-    máquinas (atributo `states`)."""
+    """Las clases cuyos números son parámetros: reglas (`allowed`), transiciones de una versión
+    anterior (`select`) y máquinas (atributo `states`)."""
     out = []
     for node in tree.body:
         if not isinstance(node, ast.ClassDef):
@@ -192,7 +196,7 @@ def _target_classes(tree) -> list[ast.ClassDef]:
         methods = {b.name for b in node.body if isinstance(b, ast.FunctionDef)}
         has_states = any(isinstance(b, (ast.Assign, ast.AnnAssign)) and any(
             getattr(t, "id", None) == "states" for t in (b.targets if isinstance(b, ast.Assign) else [b.target])) for b in node.body)
-        if methods & {"propose", "select"} or has_states:
+        if methods & {"allowed", "propose", "select"} or has_states:
             out.append(node)
     return out
 

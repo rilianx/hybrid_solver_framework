@@ -119,6 +119,9 @@ class GreedyConstructor:
         """Completa `partial` con el bucle greedy: (solución, acciones, ¿terminó en el
         respaldo?). Es el *rollout* que usa la beam search para evaluar un parcial. `memory`:
         la de la política en `partial` (con `fresh`, se empieza con `policy.init(partial)`)."""
+        bind = getattr(self.policy, "bind", None)
+        if callable(bind):
+            bind(view)
         if fresh:
             memory = self.policy.init(partial)
         chosen: list = []

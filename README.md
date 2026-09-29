@@ -410,7 +410,7 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
 
   `MachinePolicy` corre la máquina como una `construction_policy`, y `as_policy` la reconoce,
   así que el greedy y la beam search la usan igual. El LLM escribe la máquina completa en un
-  solo módulo, porque estados, reglas y transiciones se diseñan juntos. Entra al catálogo como
+  solo módulo, porque estados y reglas se diseñan juntos. Entra al catálogo como
   `greedy_<nombre>` / `beam_<nombre>`.
 
   **Parámetros extraíbles** (`core/validation/params.py`). Todo número que decide algo (el
@@ -449,36 +449,54 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
   few-shot del prompt es una mochila por categorías con tres estados y sus números como
   parámetros. El ciclo sin vista MIP pide `construction_machine` junto a `greedy_score` y
   `construction_policy`.
-- **Máquinas de reglas: reglas de acción + transiciones** (`core/rules.py`). En la corrida 70,
-  los refinamientos de un estado empeoraban siempre (74 a 106 contra 52), porque el LLM
-  reescribía entera una función que puntuaba todos los candidatos y en ella mezclaba qué tipo de
-  movimiento hacer, cuál y cuándo cambiar. FRG separa esas cosas:
-  - **Reglas de acción**: clases con `name` y `propose(parcial, memoria)`, que devuelve las
-    acciones en orden de preferencia o `[]` si no aplica. Opcionales: `init`, `start` (al
-    activarse, p.ej. elegir la pila a reducir), `update` y `done` (si sostiene un compromiso de
-    varios pasos).
-  - **Transiciones**: una clase con `select(parcial, memoria, reglas)`, que devuelve el nombre
-    de la regla o `FALLBACK`. `reglas.active`, `reglas.applies(n)` y `reglas.done(n)` le dicen qué
-    pasa.
+- **Máquinas de reglas: reglas simples y macros con prioridad** (`core/rules.py`). En la
+  corrida 70, los refinamientos de un estado empeoraban siempre (74 a 106 contra 52), porque el
+  LLM reescribía entera una función que puntuaba todos los candidatos y en ella mezclaba qué tipo
+  de movimiento hacer, cuál y cuándo cambiar. FRG separa esas cosas. Una regla recibe el estado y
+  las acciones posibles, y elige cuáles considerar:
+  - **Regla simple**: `name`, `priority` y `allowed(parcial, memoria, candidatos)`, que devuelve
+    el subconjunto de los candidatos que considera, en orden, o `[]` si no aplica. Opcionales:
+    `score` (si no, vale el orden), `init` y `update`. Se reevalúa en cada paso (p.ej. `bg_move`).
+  - **Macro**: además `start(parcial, memoria)` (al activarse fija su parámetro, p.ej. la pila a
+    reducir) y `done(parcial, memoria)` (cuándo terminó). Es un movimiento grande que se ejecuta
+    de a un paso: se activa en un estado, restringe las acciones posibles, elige entre ellas y
+    tiene un criterio de término (p.ej. `reduce_stack`).
+  - **Controlador fijo**, sin código del LLM: sigue la macro activa mientras no termine y
+    permita algo; si no, activa la regla de mayor prioridad que permita algo; si ninguna, decide
+    el comodín (la acción que menos sube la cota).
 
-  `RuleMachine(problem, reglas, transiciones)` es una `ConstructionMachine` (estados = reglas),
-  así que el greedy, la beam search, la validación, los parámetros y los diagnósticos la usan sin
-  cambios. FRG a mano (`examples/cpmp/machine.py`) son `bg_move` y `reduce_stack` más tres líneas
-  de transiciones, con los mismos movimientos que FRG sin asignación (20 de 20 en 5×5). Los
-  números de cada regla y de las transiciones se extraen como parámetros de su clase (p.ej.
-  `reduce_stack_propose_k1`).
+  Antes (corridas 71–74) había reglas que proponían acciones sin ver los candidatos y una clase
+  de transiciones escrita por el LLM. De ahí salieron dos fallas: el `namedtuple` propio que
+  nunca coincidía con los candidatos, y las propuestas vetadas por la vista. Además, el LLM
+  copiaba transiciones de más. Con prioridades, "agregar una macro con prioridad 50" es una
+  decisión de una línea.
+
+  `RuleMachine(problem, reglas)` es una `ConstructionMachine` (estados = reglas), así que el
+  greedy, la beam search, la validación, los parámetros y los diagnósticos la usan sin cambios.
+  Recibe las acciones posibles por la vista con la que se construye (`bind(view)`, que hacen el
+  greedy, la beam search y los diagnósticos). FRG a mano (`examples/cpmp/machine.py`) es
+  `bg_move` (simple, 100) y `reduce_stack` (macro, 50), con los mismos movimientos que FRG sin
+  asignación (20 de 20 en 5×5). Los números de cada regla se extraen como parámetros de su clase
+  (p.ej. `reduce_stack_allowed_k1`); `priority` es estructura, no parámetro.
 
   El oráculo da además, por regla (`rule_quality`):
-  - **cobertura**: en cuántos pasos propone algo;
-  - **precisión**: cuando propone, qué fracción de las veces su primera propuesta es óptima;
-  - **elegida**: cuántas veces la usaron las transiciones.
+  - **cobertura**: en cuántos pasos permite algo;
+  - **precisión**: cuando permite, qué fracción de las veces su primera acción es óptima;
+  - **elegida**: cuántas veces decidió.
 
-  Una regla precisa y poco elegida es un problema de transiciones; una imprecisa, de la regla.
-  `evolve` exige esta estructura, con operadores `add_rule`, `refine_rule(r)`,
-  `change_transitions` y `simplify`, y verifica el alcance clase por clase: `refine_rule(r)` no
-  puede tocar otra regla ni las transiciones. La máquina mínima es una `RuleMachine` sin reglas.
-  Las máquinas de forma libre de las corridas 66–70 siguen valiendo como slot, pero no se
-  retoman en `evolve`.
+  Una regla precisa y poco elegida es un problema de prioridad; una imprecisa, de la regla.
+  `evolve` exige esta estructura. Sus operadores son:
+  - `add_simple`: una regla simple nueva;
+  - `add_macro`: una macro nueva. Es el paso que falta hacia FRG: "sacar de una pila" suelta no
+    sirve, sirve comprometida con la misma pila hasta un término;
+  - `refine_rule(r)`: solo la clase de r, sin su prioridad;
+  - `change_priority`: solo prioridades;
+  - `simplify`.
+
+  El alcance se verifica clase por clase y la prioridad aparte. Los contraejemplos del oráculo
+  traen tramos óptimos de 8 pasos: varios pasos seguidos que atienden el mismo objetivo son una
+  macro. La máquina mínima es una `RuleMachine` sin reglas. Las máquinas de las corridas 66–74
+  (forma libre o con clase de transiciones) no se retoman en `evolve`.
 - **Un algoritmo de optimización de greedies** (etapa `evolve`, `llm/evolve.py`). Un greedy como
   FRG no sale de una vez; se llega por pasos: primero solo movimientos BG, después la prioridad
   dentro de ese estado, después un estado de vaciado que vuelve al inicial, y otra vez las

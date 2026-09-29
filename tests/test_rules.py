@@ -1,6 +1,6 @@
-"""Máquinas de reglas (`core.rules.RuleMachine`): reglas de acción que proponen movimientos y
-transiciones que eligen cuál usar. FRG son dos reglas y tres líneas de transiciones; los números
-de reglas y transiciones se extraen como parámetros de cada clase; el oráculo mide cobertura y
+"""Máquinas de reglas (`core.rules.RuleMachine`): reglas simples y macros con prioridad, con un
+controlador fijo. FRG es una regla simple (`bg_move`, 100) y una macro (`reduce_stack`, 50); los
+números de cada regla se extraen como parámetros de su clase; el oráculo mide cobertura y
 precisión por regla; `evolve` exige esta estructura."""
 
 from __future__ import annotations
@@ -25,46 +25,33 @@ RULES_MODULE = '''
 COMPONENT = {"name": "two_rules", "slot": "construction_machine", "compatible_skeletons": ["CONSTRUCT"], "requires": [],
              "params": {}}
 
-from core.machine import FALLBACK
 from core.rules import RuleMachine
-from examples.cpmp.construction import Move
 
 
 class Fill:
     name = "fill"
+    priority = 100
 
-    def propose(self, L, memory):
-        out = []
-        for so in range(L.S):
-            if L.stacks[so] and not L.is_sorted_stack(so):
-                for sd in range(L.S):
-                    if sd != so and L.e(sd) > 0 and L.is_sorted_stack(sd) and L.g(sd) >= L.g(so) and L.g(sd) - L.g(so) <= 4:
-                        out.append((L.g(sd) - L.g(so), so, sd))
-        return [Move(so, sd) for _, so, sd in sorted(out)]
+    def allowed(self, L, memory, candidates):
+        out = [(L.g(c.sd) - L.g(c.so), c) for c in candidates if L.stacks[c.so] and not L.is_sorted_stack(c.so)
+               and L.is_sorted_stack(c.sd) and L.g(c.sd) >= L.g(c.so) and L.g(c.sd) - L.g(c.so) <= 4]
+        return [c for _, c in sorted(out, key=lambda t: (t[0], t[1].so, t[1].sd))]
 
 
 class Unblock:
     name = "unblock"
+    priority = 50
 
-    def propose(self, L, memory):
+    def allowed(self, L, memory, candidates):
         bad = [s for s in range(L.S) if L.stacks[s] and not L.is_sorted_stack(s)]
-        if not bad:
+        if not bad or L.bad() < 3:
             return []
         so = min(bad, key=lambda s: (L.sorted_n[s], s))
-        return [Move(so, sd) for sd in sorted(range(L.S), key=lambda s: (0.5 * L.h(s), s)) if sd != so and L.e(sd) > 0]
-
-
-class Trans:
-    def select(self, L, memory, rules):
-        if rules.applies("fill"):
-            return "fill", memory
-        if L.bad() >= 3 and rules.applies("unblock"):
-            return "unblock", memory
-        return FALLBACK, memory
+        return sorted((c for c in candidates if c.so == so), key=lambda c: (0.5 * L.h(c.sd), c.sd))
 
 
 def build_component(problem):
-    return RuleMachine(problem, [Fill(), Unblock()], Trans())
+    return RuleMachine(problem, [Fill(), Unblock()])
 '''
 
 
@@ -75,32 +62,36 @@ def _load(path, name):
     return mod
 
 
-def test_frg_is_two_rules_and_three_lines_of_transitions():
+def test_frg_is_a_simple_rule_and_a_macro_with_priorities():
+    from core.rules import is_macro
+
     same = 0
     for k in range(10):
         inst = CPMPInstance.cvs_like(5, 5, Random(k))
         P = CPMPModel(inst)
         m = FRGMachine(P)
         assert isinstance(m, RuleMachine) and m.states == ("bg_move", "reduce_stack")
+        assert [is_macro(r) for r in m.rules] == [False, True] and [r.priority for r in m.rules] == [100, 50]
         same += GreedyConstructor(P, m).build(inst, Random(0)) == FRGConstructor(P, assignment="never").build(inst, Random(0))
     assert same == 10
 
 
-def test_numbers_of_each_rule_and_of_the_transitions_become_their_own_parameters(tmp_path):
+def test_numbers_of_each_rule_become_their_own_parameters_and_priority_is_structure(tmp_path):
     from core.validation.params import extract_constants
 
     src, extracted = extract_constants(RULES_MODULE)
-    assert {"fill_propose_k1", "unblock_propose_k1", "trans_select_k1"} <= set(extracted)
+    assert {"fill_allowed_k1", "unblock_allowed_k1", "unblock_allowed_k2"} <= set(extracted)
+    assert not any("priority" in k for k in extracted) and "priority = 50" in src
     path = tmp_path / "rules.py"
     path.write_text(src)
     mod = _load(path, "rules_norm")
     P = PACK.make_contexts()[0].problem
-    m = mod.build_component(P, fill_propose_k1=7, trans_select_k1=5)
+    m = mod.build_component(P, fill_allowed_k1=7, unblock_allowed_k1=5)
     fill, unblock = m.rules
-    assert fill._auto_fill_propose_k1 == 7 and m.transitions._auto_trans_select_k1 == 5
-    assert unblock._auto_unblock_propose_k1 == 0.5  # default
-    again, more = extract_constants(src.replace("L.bad() >= self._auto_trans_select_k1", "L.bad() >= 6"))
-    assert list(more) == ["trans_select_k2"] and again.count("def build_component") == 1
+    assert fill._auto_fill_allowed_k1 == 7 and unblock._auto_unblock_allowed_k1 == 5
+    assert unblock._auto_unblock_allowed_k2 == 0.5  # default
+    again, more = extract_constants(src.replace("L.bad() < self._auto_unblock_allowed_k1", "L.bad() < 6"))
+    assert list(more) == ["unblock_allowed_k3"] and again.count("def build_component") == 1
 
 
 def test_rule_quality_says_how_often_each_rule_applies_and_is_right():
@@ -132,79 +123,116 @@ def test_the_prompt_has_the_quality_of_each_rule(tmp_path):
     assert "Calidad de cada regla" in text and "| bg_move |" in text and "| reduce_stack |" in text
 
 
-def test_proposals_match_candidates_by_value_and_bogus_proposals_are_rejected():
+def test_allowed_actions_match_candidates_by_value_and_bogus_ones_are_rejected():
     """Corrida 71: una regla con su propio `Move = namedtuple(...)` nunca coincidía con el `Move`
-    (dataclass) de la vista y la máquina elegía en el orden de la vista. Ahora las acciones se
-    comparan por valor; una regla cuyas propuestas no son candidatos se rechaza."""
+    (dataclass) de la vista. Las acciones se comparan por valor; una regla que permite cosas que
+    nunca son candidatos se rechaza."""
     from collections import namedtuple
 
-    from core.machine import FALLBACK
     from core.validation import validate_component
     from examples.cpmp.frg import bg_moves
+    from examples.cpmp.machine import BGMove
 
     NT = namedtuple("Move", ["so", "sd"])
 
     class NamedBG:
         name = "bg"
+        priority = 100
 
-        def propose(self, L, m):
+        def allowed(self, L, m, candidates):
             moves = bg_moves(L, False)
             return [NT(so, sd) for so, sd in sorted(moves, key=moves.__getitem__)]
 
     class Bogus:
         name = "bogus"
+        priority = 100
 
-        def propose(self, L, m):
+        def allowed(self, L, m, candidates):
             return [NT(99, 98)]
-
-    class T:
-        def __init__(self, n):
-            self.n = n
-
-        def select(self, L, memory, rules):
-            return (self.n, memory) if rules.applies(self.n) else (FALLBACK, memory)
 
     inst = PACK.make_instances(1, 3, PACK.parse_size("5x5"))[0]
     P = PACK.problem_factory(inst)
-    named = P.objective(GreedyConstructor(P, RuleMachine(P, [NamedBG()], T("bg"))).build(inst, Random(0)))
-    from examples.cpmp.machine import BGMove
-
-    real = P.objective(GreedyConstructor(P, RuleMachine(P, [BGMove(False)], T("bg_move"))).build(inst, Random(0)))
+    named = P.objective(GreedyConstructor(P, RuleMachine(P, [NamedBG()])).build(inst, Random(0)))
+    real = P.objective(GreedyConstructor(P, RuleMachine(P, [BGMove(False)])).build(inst, Random(0)))
     assert named == real  # mismo comportamiento con namedtuple que con la clase de la vista
     c = PACK.make_contexts(strict=False)[0]
     comp = {"name": "b", "slot": "construction_machine", "compatible_skeletons": ["CONSTRUCT"], "params": {}}
-    assert "proposals_are_candidates" in validate_component(comp, RuleMachine(c.problem, [Bogus()], T("bogus")), c).feedback()
+    fb = validate_component(comp, RuleMachine(c.problem, [Bogus()]), c).feedback()
+    assert "allowed_are_candidates" in fb or "states_reachable" in fb
+
+
+def test_an_active_macro_keeps_going_until_done_even_over_higher_priorities():
+    """La macro activa sigue aunque una regla de más prioridad aplique; al terminar, decide la
+    prioridad."""
+    from core.machine import MachinePolicy
+
+    class Any1:
+        name = "any"
+        priority = 100
+
+        def allowed(self, L, m, candidates):
+            return list(candidates) if L.bad() % 2 == 0 else []
+
+    class Drain:  # vacía la pila más alta, de a un contenedor
+        name = "drain"
+        priority = 50
+
+        def start(self, L, m):
+            return max(range(L.S), key=lambda s: (L.h(s), -s))
+
+        def allowed(self, L, m, candidates):
+            return [c for c in candidates if c.so == m]
+
+        def done(self, L, m):
+            return not L.stacks[m]
+
+    inst = PACK.make_instances(1, 10100, PACK.parse_size("5x5"))[0]
+    P = PACK.problem_factory(inst)
+    policy = MachinePolicy(RuleMachine(P, [Any1(), Drain()]), P)
+    view = P.construction_view(inst)
+    policy.bind(view)
+    partial, memory, states = view.empty(), None, []
+    memory = policy.init(partial)
+    for _ in range(40):
+        cands = list(view.candidates(partial))
+        if view.is_complete(partial) or not cands:
+            break
+        state, mems = policy.step(partial, memory)
+        if states and states[-1][0] == "drain" and not Drain().done(partial, states[-1][1]) and \
+                Drain().allowed(partial, states[-1][1], cands):
+            assert state == "drain" and mems[1] == states[-1][1]  # sostiene el compromiso
+        elif Any1().allowed(partial, None, cands):
+            assert state == "any"
+        states.append((state, mems[1]))
+        a = min(cands, key=lambda c: policy.score(partial, memory, c))
+        memory = policy.update(partial, memory, a)
+        partial = view.apply(partial, a)
+    assert {"any", "drain"} <= {st for st, _ in states}
 
 
 INIT_MODULE = '''
 COMPONENT = {"name": "weighted", "slot": "construction_machine", "compatible_skeletons": ["CONSTRUCT"], "requires": [],
              "params": {}}
 
-from core.machine import FALLBACK
 from core.rules import RuleMachine
 from examples.cpmp.construction import Move
 
 
 class Weighted:
     name = "weighted"
+    priority = 100
 
     def __init__(self, w_gap=8.0, max_bad=1, safe=True):
         self.w_gap = w_gap
         self.max_bad = max_bad
         self.safe = safe
 
-    def propose(self, L, memory):
-        moves = [(so, sd) for so in range(L.S) for sd in range(L.S) if so != sd and L.stacks[so] and L.e(sd) > 0]
-        return [Move(so, sd) for so, sd in sorted(moves, key=lambda m: (self.w_gap * L.g(m[1]), m))]
-
-
-class Trans:
-    def select(self, L, memory, rules):
-        return ("weighted", memory) if rules.applies("weighted") else (FALLBACK, memory)
+    def allowed(self, L, memory, candidates):
+        return sorted(candidates, key=lambda c: (self.w_gap * L.g(c.sd), c.so, c.sd))
 
 
 def _build_component_llm(problem, **params):
-    return RuleMachine(problem, [Weighted()], Trans())
+    return RuleMachine(problem, [Weighted()])
 
 
 def build_component(problem, **params):
@@ -237,8 +265,8 @@ def test_factory_defaults_passed_args_and_stale_tables_copied_by_the_llm(tmp_pat
     from core.validation.params import extract_constants, llm_view, loose_constants
 
     module = INIT_MODULE.replace(
-        "return RuleMachine(problem, [Weighted()], Trans())",
-        "return RuleMachine(problem, [Weighted(w_gap=params.get('w_gap', 4.0))], Trans())")
+        "return RuleMachine(problem, [Weighted()])",
+        "return RuleMachine(problem, [Weighted(w_gap=params.get('w_gap', 4.0))])")
     src, extracted = extract_constants(module)
     assert loose_constants(src) == []
     assert "w_gap" in extracted and "weighted_w_gap" not in extracted and "weighted_max_bad" in extracted
@@ -266,8 +294,8 @@ def test_numbers_the_factory_gives_a_rule_are_parameters(tmp_path):
     """Corrida 74: `Regla(w_gap=3.0)` dentro de build_component se rechazaba por número suelto."""
     from core.validation.params import extract_constants, loose_constants
 
-    module = INIT_MODULE.replace("return RuleMachine(problem, [Weighted()], Trans())",
-                                 "return RuleMachine(problem, [Weighted(w_gap=3.0)], Trans())")
+    module = INIT_MODULE.replace("return RuleMachine(problem, [Weighted()])",
+                                 "return RuleMachine(problem, [Weighted(w_gap=3.0)])")
     src, extracted = extract_constants(module)
     assert loose_constants(src) == [] and extracted["weighted_w_gap"]["default"] == 3.0
     P = PACK.make_contexts()[0].problem
@@ -285,10 +313,11 @@ def test_unproposed_candidates_are_ranked_by_the_fallback():
     P = PACK.problem_factory(inst)
     policy = MachinePolicy(FRGMachine(P), P)
     view = P.construction_view(inst)
+    policy.bind(view)
     partial = view.empty()
     memory = policy.init(partial)
-    state, (_, mems) = policy.step(partial, memory)
-    proposed = {(a.so, a.sd) for a in policy.machine.propose(state, partial, mems[policy.machine.index[state]])}
+    state, mems = policy.step(partial, memory)
+    proposed = {(a.so, a.sd) for a in policy.machine.allowed(state, partial, mems[policy.machine.index[state]])}
     other = [c for c in view.candidates(partial) if (c.so, c.sd) not in proposed]
     assert other
     for c in other:

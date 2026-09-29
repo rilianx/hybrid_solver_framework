@@ -61,8 +61,12 @@ class LowerBoundScore:
             self._view = (inst, self.problem.construction_view(inst))
         return self._view[1]
 
+    def bind(self, view: Any) -> None:
+        """La vista con la que se construye (si no, la del `problem.inst`)."""
+        self._view = ("bound", view)
+
     def score(self, partial, action) -> float:
-        view = self._get_view()
+        view = self._view[1] if self._view is not None and self._view[0] == "bound" else self._get_view()
         lb = getattr(view, "lower_bound", None)
         if not callable(lb):
             return 0.0
@@ -78,6 +82,14 @@ class MachinePolicy:
         self.states = tuple(machine.states)
         self.fallback = LowerBoundScore(problem if problem is not None else getattr(machine, "problem", None))
         self._cache: tuple | None = None  # (parcial, memoria, transición): score se llama por candidato
+
+    def bind(self, view: Any) -> None:
+        """La vista con la que se construye: para el comodín y para una máquina que necesita las
+        acciones posibles (`core.rules.RuleMachine`)."""
+        self.fallback.bind(view)
+        if callable(getattr(self.machine, "bind", None)):
+            self.machine.bind(view)
+        self._cache = None
 
     def init(self, partial):
         state, memory = self.machine.initial(partial)
@@ -120,6 +132,7 @@ class MachinePolicy:
 def machine_trace(policy: MachinePolicy, view: Any, max_steps: int = 100_000) -> list[tuple[str, Any]]:
     """Construye con el greedy de la máquina y devuelve [(estado, acción)] paso a paso: para los
     diagnósticos (cuántos pasos en cada estado, qué transiciones hubo, dónde se pierde)."""
+    policy.bind(view)
     partial, out = view.empty(), []
     memory = policy.init(partial)
     for _ in range(max_steps):
@@ -142,6 +155,7 @@ def machine_profile(policy: MachinePolicy, view: Any, max_steps: int = 100_000, 
     objetivo − cota inicial: cuánto de lo que se pierde es culpa de cada estado. Sin cota, solo
     los pasos. `with_end`: devuelve además si la máquina completó sola (sin llegar a un parcial
     sin candidatos, donde decide el respaldo de la vista)."""
+    policy.bind(view)
     lb = getattr(view, "lower_bound", None)
     lb = lb if callable(lb) else None
     partial = view.empty()
@@ -204,6 +218,7 @@ def machine_regret(policy: MachinePolicy, view: Any, oracle, max_steps: int = 20
     - ejemplos positivos: pasos donde acertó, por estado, para no romperlos al corregir.
 
     None si el oráculo no alcanza aquí."""
+    policy.bind(view)
     partial = view.empty()
     d = oracle(partial)
     if d is None:

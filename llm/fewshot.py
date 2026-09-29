@@ -202,12 +202,13 @@ from core.rules import RuleMachine
 
 
 class FillCategory:
-    \"\"\"Regla con compromiso: al activarse elige la categoría de mayor valor por peso medio entre las que
-    tienen al menos `min_fit` ítems que caben (`inst.category[i]`), y propone sus ítems (mayor valor
-    por peso primero) hasta que no quepa ninguno. La acción es `action.item`; el parcial expone
-    `partial.remaining` y `partial.chosen`.\"\"\"
+    """Macro: al activarse elige la categoría de mayor valor por peso medio entre las que tienen al
+    menos `min_fit` ítems que caben (`inst.category[i]`), y permite sus ítems (mayor valor por peso
+    primero) hasta que no quepa ninguno. La acción es `action.item`; el parcial expone
+    `partial.remaining` y `partial.chosen`."""
 
     name = "fill_category"
+    priority = 100
 
     def __init__(self, inst, min_fit):
         self.inst, self.min_fit = inst, min_fit
@@ -226,48 +227,43 @@ class FillCategory:
             return sum(self.inst.values[i] / max(self.inst.weights[i], 1e-9) for i in items) / len(items)
         return (max(cats, key=density) if cats else None,)
 
-    def propose(self, partial, memory):
+    def allowed(self, partial, memory, candidates):
         if memory[0] is None:
             return []
-        items = sorted(self._fitting(partial, memory[0]), key=lambda i: -self.inst.values[i] / max(self.inst.weights[i], 1e-9))
-        return [partial.action_for(i) for i in items]
+        mine = [a for a in candidates if self.inst.category[a.item] == memory[0]]
+        return sorted(mine, key=lambda a: -self.inst.values[a.item] / max(self.inst.weights[a.item], 1e-9))
 
     def done(self, partial, memory):
         return memory[0] is None or not self._fitting(partial, memory[0])
 
 
 class TopUp:
-    \"\"\"Regla sin memoria: el ítem de mayor valor que todavía cabe.\"\"\"
+    """Regla simple: el ítem de mayor valor que todavía cabe. Prioridad menor que FillCategory:
+    completa cuando no queda categoría que llenar."""
 
     name = "top_up"
+    priority = 50
 
-    def __init__(self, inst):
-        self.inst = inst
+    def __init__(self, inst, top_up_slack):
+        self.inst, self.threshold = inst, top_up_slack * inst.capacity
 
-    def propose(self, partial, memory):
-        items = [i for i in range(len(self.inst.weights)) if i not in partial.chosen and self.inst.weights[i] <= partial.remaining]
-        return [partial.action_for(i) for i in sorted(items, key=lambda i: -self.inst.values[i])]
+    def allowed(self, partial, memory, candidates):
+        return sorted(candidates, key=lambda a: -self.inst.values[a.item])
 
 
-class Transitions:
-    \"\"\"Llenar por categoría mientras quede holgura; con poca holgura (o sin categoría útil), completar.\"\"\"
+class TopUpWhenTight(TopUp):
+    """La misma regla, con prioridad sobre las demás cuando queda poca holgura."""
 
-    def __init__(self, capacity, top_up_slack):
-        self.threshold = top_up_slack * capacity
+    name = "top_up_tight"
+    priority = 200
 
-    def select(self, partial, memory, rules):
-        if partial.remaining < self.threshold:
-            return "top_up", memory
-        if rules.active == "fill_category" and not rules.done("fill_category"):
-            return "fill_category", memory
-        if rules.applies("fill_category"):
-            return "fill_category", memory
-        return "top_up", memory
+    def allowed(self, partial, memory, candidates):
+        return super().allowed(partial, memory, candidates) if partial.remaining < self.threshold else []
 
 
 def build_component(problem, min_fit: int = 2, top_up_slack: float = 0.2):
     inst = problem.inst
-    return RuleMachine(problem, [FillCategory(inst, min_fit), TopUp(inst)], Transitions(inst.capacity, top_up_slack))
+    return RuleMachine(problem, [TopUpWhenTight(inst, top_up_slack), FillCategory(inst, min_fit), TopUp(inst, top_up_slack)])
 '''
 
 FEWSHOT["greedy_score"] = '''

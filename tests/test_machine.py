@@ -130,22 +130,20 @@ def test_validation_accepts_frg_and_rejects_broken_machines(contexts):
         assert r.passed, r.feedback()
 
     from core.rules import RuleMachine
-    from examples.cpmp.machine import BGMove, FRGTransitions, ReduceStack
+    from examples.cpmp.machine import BGMove, ReduceStack
 
-    class Never:  # una regla que el controlador nunca elige
+    class Never:  # una regla que nunca permite nada
         name = "never"
+        priority = 10
 
-        def propose(self, L, m):
+        def allowed(self, L, m, candidates):
             return []
 
-    class BadChoice(FRGTransitions):
-        def select(self, L, memory, rules):
-            return "nope", memory
-
     c = contexts[0]
-    unreachable = RuleMachine(c.problem, [BGMove(), ReduceStack(), Never()], FRGTransitions())
+    unreachable = RuleMachine(c.problem, [BGMove(), ReduceStack(), Never()])
     assert "states_reachable" in validate_component(COMP, unreachable, c).feedback()
-    assert not validate_component(COMP, RuleMachine(c.problem, [BGMove(), ReduceStack()], BadChoice()), c).passed
+    with pytest.raises(ValueError):
+        RuleMachine(c.problem, [BGMove(), ReduceStack(), type("NoAllowed", (), {"name": "x"})()])
 
 
 def test_generated_machines_expose_their_numbers_as_parameters(tmp_path, contexts):

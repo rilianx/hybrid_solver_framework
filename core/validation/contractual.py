@@ -402,6 +402,8 @@ def check_construction_policy(impl, ctx: ValidationContext) -> list[CheckResult]
     for k, inst in enumerate(ctx.instances):
         def _props(k=k, inst=inst):
             view = ctx.problem.construction_view(inst)
+            if callable(getattr(impl, "bind", None)):
+                impl.bind(view)
             partial, rng = view.empty(), Random(k)
             m0, m1 = impl.init(partial), impl.init(partial)
             bad = _hashable(m0, "init", k)
@@ -504,7 +506,7 @@ def check_construction_machine(impl, ctx: ValidationContext) -> list[CheckResult
         if missing:
             return fail(LAYER, f"{L}.states_reachable",
                         f"los estados {missing} nunca se alcanzan en las micro-instancias (greedy y RCL): revisa las condiciones "
-                        f"de transition que llevan a ellos, o quítalos")
+                        f"que llevan a ellos (en una máquina de reglas: su prioridad y cuándo `allowed` devuelve algo), o quítalos")
         return ok(LAYER, f"{L}.states_reachable", f"estados alcanzados: {sorted(seen)}")
 
     results += guard(LAYER, f"{L}.states_reachable", _reach)
@@ -512,17 +514,17 @@ def check_construction_machine(impl, ctx: ValidationContext) -> list[CheckResult
     from core.rules import RuleMachine, action_key
 
     if isinstance(impl, RuleMachine):
-        def _proposals():
-            """Una regla que propone cosas pero nunca un candidato de la vista no decide nada: todos
-            los candidatos valen lo mismo (corrida 71: su propio namedtuple `Move`). Que en un paso
-            ninguna propuesta sea candidato es normal (la vista del CPMP veta volver a un layout ya
-            visitado; corrida 74: tres reglas rechazadas por eso), así que se exige al menos un
-            acierto en toda la construcción."""
-            proposed: dict[str, list] = {}
+        def _allowed():
+            """Una regla que permite acciones pero nunca un candidato de la vista no decide nada (corrida
+            71: su propio namedtuple `Move`; el controlador filtra lo permitido a los candidatos, así
+            que la regla nunca aplicaría). En un paso puede no acertar (la vista del CPMP veta volver a
+            un layout visitado); se exige un acierto en toda la construcción."""
+            raw: dict[str, list] = {}
             hit: set[str] = set()
             cands_seen: list = []
             for inst in ctx.instances:
                 view = ctx.problem.construction_view(inst)
+                policy.bind(view)
                 partial = view.empty()
                 memory = policy.init(partial)
                 for _ in range(20_000):
@@ -531,28 +533,29 @@ def check_construction_machine(impl, ctx: ValidationContext) -> list[CheckResult
                     cands = list(view.candidates(partial))
                     if not cands:
                         break
-                    state, (cmem, mems) = policy.step(partial, memory)
-                    if state in impl.index:
-                        prop = impl.propose(state, partial, mems[impl.index[state]])
-                        keys = {action_key(c) for c in cands}
-                        if prop:
-                            proposed.setdefault(state, prop)
+                    state, mems = policy.step(partial, memory)
+                    for n in impl.states:
+                        i = impl.index[n]
+                        mem = mems[i] if n == state else impl.entry(n, partial, mems[i])
+                        out = list(impl.rules[i].allowed(partial, mem, cands) or [])
+                        if out:
+                            raw.setdefault(n, out)
                             cands_seen = cands_seen or cands
-                            if any(action_key(a) in keys for a in prop):
-                                hit.add(state)
+                            keys = {action_key(c) for c in cands}
+                            if any(action_key(a) in keys for a in out):
+                                hit.add(n)
                     scores = [policy.score(partial, memory, c) for c in cands]
                     a = cands[min(range(len(cands)), key=scores.__getitem__)]
                     memory = policy.update(partial, memory, a)
                     partial = view.apply(partial, a)
-            for state, prop in proposed.items():
-                if state not in hit:
-                    return fail(LAYER, f"{L}.proposals_are_candidates",
-                                f"la regla `{state}` propone {prop[:3]!r}, y nunca es un candidato de la vista (p.ej. "
-                                f"{cands_seen[:3]!r}): propón acciones de `view.candidates` (la misma clase de acción de "
-                                f"la vista, o una con los mismos campos)")
-            return ok(LAYER, f"{L}.proposals_are_candidates")
+            for n, out in raw.items():
+                if n not in hit:
+                    return fail(LAYER, f"{L}.allowed_are_candidates",
+                                f"la regla `{n}` permite {out[:3]!r}, y nunca es un candidato de la vista (p.ej. "
+                                f"{cands_seen[:3]!r}): `allowed` debe devolver acciones de la lista `candidatos` que recibe")
+            return ok(LAYER, f"{L}.allowed_are_candidates")
 
-        results += guard(LAYER, f"{L}.proposals_are_candidates", _proposals)
+        results += guard(LAYER, f"{L}.allowed_are_candidates", _allowed)
     return _collapse(results)
 
 

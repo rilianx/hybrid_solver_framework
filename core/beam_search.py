@@ -111,6 +111,9 @@ class BeamSearchConstructor:
         bound = getattr(view, "lower_bound", None)
         key = getattr(view, "key", None) if self.dedup else None
 
+        for pol in (self._policy, getattr(self._greedy, "policy", None)):
+            if callable(getattr(pol, "bind", None)):
+                pol.bind(view)
         root = view.empty()
         if view.is_complete(root):
             return view.to_solution(root)
