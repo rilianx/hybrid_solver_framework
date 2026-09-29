@@ -540,20 +540,29 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
     # salida: la biblioteca (para retomar) y la mejor máquina, como un módulo que carga sus piezas
     save_library(saved, library)
     if state["best"]:
-        pieces = tuple(next(p for p in library if p.id == i) for i in state["best"] if any(p.id == i for p in library))
+        # la mejor, y si no pasa la validación completa (corrida 82: una pieza útil en 5×5 y 6×6 nunca se
+        # activa en las micro-instancias), la siguiente composición en train que sí la pase
+        by_id = {p.id: p for p in library}
+        tries = [state["best"]] + [ids for _, ids in ranked[:10] if ids != state["best"]]
         out_dir = ws / SLOT
         out_dir.mkdir(parents=True, exist_ok=True)
-        for p in pieces:
-            (out_dir / f"lib_{p.key}.py").write_text(p.source)
-        name = "library_" + "_".join(p.rule for p in pieces)
-        path = out_dir / f"{name}_r1.py"
-        path.write_text(composed_module(pieces, state["params"], name))
-        report, _, _ = validate_generated_module(path, contexts)
-        res.archive = [p.rule for p in pieces]
-        row = {"name": name, "path": str(path), "fitness": _r(state["fitness"]), "params": state["params"]}
-        if not report.passed:
-            row["rejected"] = report.feedback()[:400]
-        res.written.append(row)
+        for k, ids in enumerate(t for t in tries if all(i in by_id for i in t)):
+            pieces = tuple(by_id[i] for i in ids)
+            for p in pieces:
+                (out_dir / f"lib_{p.key}.py").write_text(p.source)
+            name = "library_" + "_".join(p.rule for p in pieces)
+            path = out_dir / f"{name}_r1.py"
+            params = state["params"] if k == 0 else {}
+            path.write_text(composed_module(pieces, params, name))
+            report, _, _ = validate_generated_module(path, contexts)
+            fitness = state["fitness"] if k == 0 else harness.mean(composition_factory(pieces)[0], {}, test)
+            row = {"name": name, "path": str(path), "fitness": _r(fitness), "params": params}
+            if report.passed:
+                res.archive = [p.rule for p in pieces]
+                res.written.append(row)
+                break
+            path.unlink()
+            res.written.append({**row, "path": None, "rejected": report.feedback()[:400]})
     res.individuals.append({"library": [p.row() for p in library], "best": res.archive, "fitness": _r(state["fitness"]),
                             "minimal": _r(minimal), "compositions": [(_r(v), list(ids)) for v, ids in ranked[:10]]})
     return res

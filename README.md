@@ -617,6 +617,38 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
   contraejemplo muestra el estado que deja la acción elegida y el que deja la óptima, con la
   cota inferior de cada uno: sin nada del pack, se ve p.ej. que el óptimo deja una pila vacía
   aunque suba la cota.
+
+  **Corrida 81 (`gpt-5.4-mini`, el default): 86,3.** Apareció una pieza casi igual a `bg`
+  (`safe_sorted_destination_rule`: permite mover a una pila ordenada donde el contenedor sigue
+  ordenado). Le faltaba exigir que el origen estuviera desordenado y ordenar por menor gasto de
+  grupo. No apareció nada como `reduce`, y 5 de 12 rondas se perdieron en errores de código
+  básicos.
+
+  **Corrida 82: el mismo mecanismo con `--model gpt-5.4`, desde cero: 12 rondas, 69 mil tokens
+  (38 mil de entrada, 31 mil de salida), 20,06 en test** (FRG 18,3). Hubo 1 rechazo. Las piezas
+  clave son las de FRG:
+  - `unsorted_to_sorted_safe_placement` es `bg`: el tope de una pila desordenada a una pila
+    ordenada donde sigue ordenada, con el menor g(destino) − g(origen) primero. Precisión 6/7.
+  - `frontier_blocker_transfer` hace de `reduce`: desarma pilas cortas ordenadas o con un solo
+    bloqueador.
+  - Una tercera, `sorted_source_consolidation`, sacrifica una pila ordenada corta para
+    consolidar.
+
+  El camino fue monótono. Primero hubo 3 piezas angostas sin la combinación buena (102,8 →
+  79,8). Con la pieza `bg` en la ronda 5, la máquina bajó a 30,2, y los refinamientos de las
+  otras dos la llevaron a 21,0 y 20,06. Con 8 instancias de test por tamaño:
+
+  | | 5×5 greedy | 5×5 beam | 6×6 greedy | 6×6 beam |
+  |---|---|---|---|---|
+  | FRG / BS-FRG | 12,4 | 10,9 | 24,3 | 21,8 |
+  | corrida 82 (3 piezas) | 12,9 | **10,6** | 27,3 | 22,3 |
+
+  En la beam search empata o supera a BS-FRG en 5×5. La mejor composición no pasaba la
+  validación completa: la tercera pieza nunca se activa en las micro-instancias. Ahora la
+  salida escribe la siguiente composición en train que sí la pase. Aquí es otra versión de la
+  pieza de reducción: 21,0 en test, en `generated/cpmp_evolve/construction_machine/`, con su
+  biblioteca en `evolve_library.json` para `--resume`. Con el mismo mecanismo, el modelo
+  cambió el resultado de 86,3 a 20,06: `gpt-5.4-mini` no llegaba a abstraer las piezas.
 - **Un algoritmo de optimización de greedies** (etapa `evolve`, `llm/evolve.py`). Un greedy como
   FRG no sale de una vez; se llega por pasos: primero solo movimientos BG, después la prioridad
   dentro de ese estado, después un estado de vaciado que vuelve al inicial, y otra vez las

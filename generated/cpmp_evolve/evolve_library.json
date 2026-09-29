@@ -1,0 +1,506 @@
+{
+  "library": [
+    {
+      "id": 0,
+      "rule": "sorted_source_consolidation",
+      "name": "sacrifice_sorted_source_to_consolidate",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 91.062,
+      "width": 0.086,
+      "precision": [
+        15,
+        45
+      ],
+      "params": {
+        "min_source_height": 1,
+        "max_source_height": 2
+      },
+      "source": "COMPONENT = {\n    \"name\": \"sacrifice_sorted_source_to_consolidate\",\n    \"slot\": \"construction_machine\",\n    \"compatible_skeletons\": [\"CONSTRUCT\"],\n    \"requires\": [],\n    \"params\": {\n        \"min_source_height\": {\"type\": \"int\", \"range\": [1, 10], \"default\": 1},\n        \"max_source_height\": {\"type\": \"int\", \"range\": [1, 10], \"default\": 2},\n    },\n}\n\nfrom core.rules import RuleMachine\n\n\nclass SortedSourceConsolidationRule:\n    \"\"\"Permite mover la cima de una pila fuente ya ordenada y baja a otra pila ordenada, aun desordenándola, para consolidar y liberar la fuente.\"\"\"\n\n    name = \"sorted_source_consolidation\"\n\n    def __init__(self, min_source_height: int, max_source_height: int):\n        self.min_source_height = min_source_height\n        self.max_source_height = max_source_height\n\n    def allowed(self, partial, memory, candidates):\n        actions = []\n        for action in candidates:\n            source_height = partial.h(action.so)\n            if source_height < self.min_source_height or source_height > self.max_source_height:\n                continue\n            if not partial.is_sorted_stack(action.so):\n                continue\n            if not partial.is_sorted_stack(action.sd):\n                continue\n            moved_group = partial.g(action.so)\n            destination_top = partial.g(action.sd)\n            if moved_group <= destination_top:\n                continue\n            actions.append(action)\n\n        return sorted(\n            actions,\n            key=lambda action: (\n                partial.h(action.so),\n                -partial.g(action.so),\n                partial.h(action.sd),\n                action.so,\n                action.sd,\n            ),\n        )\n\n\ndef build_component(problem, min_source_height=1, max_source_height=2, **params):\n    rule = SortedSourceConsolidationRule(\n        min_source_height=min_source_height,\n        max_source_height=max_source_height,\n    )\n    return RuleMachine(problem, [rule])\n",
+      "component": {
+        "name": "sacrifice_sorted_source_to_consolidate",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {
+          "min_source_height": {
+            "type": "int",
+            "range": [
+              1,
+              10
+            ],
+            "default": 1
+          },
+          "max_source_height": {
+            "type": "int",
+            "range": [
+              1,
+              10
+            ],
+            "default": 2
+          }
+        }
+      }
+    },
+    {
+      "id": 1,
+      "rule": "single_blocker_peel",
+      "name": "single_blocker_peel",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 101.562,
+      "width": 0.126,
+      "precision": [
+        13,
+        122
+      ],
+      "params": {
+        "min_source_height": 2,
+        "bad_containers_in_source": 1,
+        "require_sorted_destination": true,
+        "prefer_tighter_destination": true
+      },
+      "source": "COMPONENT = {\n    \"name\": \"single_blocker_peel\",\n    \"slot\": \"construction_machine\",\n    \"compatible_skeletons\": [\"CONSTRUCT\"],\n    \"requires\": [],\n    \"params\": {\n        \"min_source_height\": {\"type\": \"int\", \"range\": [1, 10], \"default\": 2},\n        \"bad_containers_in_source\": {\"type\": \"int\", \"range\": [1, 3], \"default\": 1},\n        \"require_sorted_destination\": {\"type\": \"bool\", \"default\": True},\n        \"prefer_tighter_destination\": {\"type\": \"bool\", \"default\": True},\n    },\n}\n\nfrom core.rules import RuleMachine\n\n\nclass SingleBlockerPeelRule:\n    \"\"\"Permite sacar el único bloqueador del tope de una pila casi ordenada.\"\"\"\n\n    name = \"single_blocker_peel\"\n\n    def __init__(\n        self,\n        min_source_height=2,\n        bad_containers_in_source=1,\n        require_sorted_destination=True,\n        prefer_tighter_destination=True,\n    ):\n        self.min_source_height = min_source_height\n        self.bad_containers_in_source = bad_containers_in_source\n        self.require_sorted_destination = require_sorted_destination\n        self.prefer_tighter_destination = prefer_tighter_destination\n\n    def _is_peel_source(self, partial, so):\n        height = partial.h(so)\n        if height < self.min_source_height:\n            return False\n        good_from_bottom = partial.sorted_n[so]\n        bad_in_source = height - good_from_bottom\n        if bad_in_source != self.bad_containers_in_source:\n            return False\n        return good_from_bottom == height - self.bad_containers_in_source\n\n    def allowed(self, partial, memory, candidates):\n        allowed = []\n        for action in candidates:\n            so = action.so\n            sd = action.sd\n            if not self._is_peel_source(partial, so):\n                continue\n            if self.require_sorted_destination and not partial.is_sorted_stack(sd):\n                continue\n            allowed.append(action)\n\n        if not self.prefer_tighter_destination:\n            return allowed\n\n        return sorted(\n            allowed,\n            key=lambda a: (\n                partial.e(a.sd),\n                -partial.h(a.sd),\n                partial.g(a.sd),\n                a.sd,\n                a.so,\n            ),\n        )\n\n\ndef build_component(\n    problem,\n    min_source_height=2,\n    bad_containers_in_source=1,\n    require_sorted_destination=True,\n    prefer_tighter_destination=True,\n):\n    rule = SingleBlockerPeelRule(\n        min_source_height=min_source_height,\n        bad_containers_in_source=bad_containers_in_source,\n        require_sorted_destination=require_sorted_destination,\n        prefer_tighter_destination=prefer_tighter_destination,\n    )\n    return RuleMachine(problem, [rule])\n",
+      "component": {
+        "name": "single_blocker_peel",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {
+          "min_source_height": {
+            "type": "int",
+            "range": [
+              1,
+              10
+            ],
+            "default": 2
+          },
+          "bad_containers_in_source": {
+            "type": "int",
+            "range": [
+              1,
+              3
+            ],
+            "default": 1
+          },
+          "require_sorted_destination": {
+            "type": "bool",
+            "default": true
+          },
+          "prefer_tighter_destination": {
+            "type": "bool",
+            "default": true
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "rule": "frontier_blocker_transfer",
+      "name": "frontier_blocker_transfer",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 95.188,
+      "width": 0.111,
+      "precision": [
+        5,
+        10
+      ],
+      "params": {
+        "min_sorted_prefix": 1,
+        "prefer_tighter_fit_weight": 0.1
+      },
+      "source": "from core.rules import RuleMachine\nCOMPONENT = {'name': 'frontier_blocker_transfer', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {'min_sorted_prefix': {'type': 'int', 'range': [0, 5], 'default': 1}, 'prefer_tighter_fit_weight': {'type': 'float', 'range': [0.0, 10.0], 'default': 0.1}}}\n\nclass FrontierBlockerTransfer:\n    name = 'frontier_blocker_transfer'\n\n    def __init__(self, single_bad_count, min_sorted_prefix, prefer_sorted_dest_bonus, prefer_long_prefix_weight, prefer_tighter_fit_weight):\n        self.single_bad_count = int(single_bad_count)\n        self.min_sorted_prefix = int(min_sorted_prefix)\n        self.prefer_sorted_dest_bonus = float(prefer_sorted_dest_bonus)\n        self.prefer_long_prefix_weight = float(prefer_long_prefix_weight)\n        self.prefer_tighter_fit_weight = float(prefer_tighter_fit_weight)\n\n    def _bad_count(self, partial, stack):\n        return partial.h(stack) - partial.sorted_n[stack]\n\n    def _is_single_blocker_source(self, partial, stack):\n        return partial.h(stack) > self.single_bad_count and self._bad_count(partial, stack) == self.single_bad_count and (partial.sorted_n[stack] >= self.min_sorted_prefix)\n\n    def _is_sorted_receiving_dest(self, partial, stack, group):\n        return partial.e(stack) > 0 and partial.is_sorted_stack(stack) and (partial.g(stack) >= group)\n\n    def _is_single_blocker_frontier_dest(self, partial, stack, group):\n        return partial.e(stack) > 0 and self._bad_count(partial, stack) == self.single_bad_count and (partial.sorted_n[stack] >= self.min_sorted_prefix) and (partial.g(stack) <= group)\n\n    def allowed(self, partial, memory, candidates):\n        allowed = []\n        for action in candidates:\n            so = action.so\n            sd = action.sd\n            if not self._is_single_blocker_source(partial, so):\n                continue\n            moved_group = partial.g(so)\n            if self._is_sorted_receiving_dest(partial, sd, moved_group) or self._is_single_blocker_frontier_dest(partial, sd, moved_group):\n                allowed.append(action)\n        return allowed\n\n    def score(self, partial, memory, action):\n        moved_group = partial.g(action.so)\n        dst_top = partial.g(action.sd)\n        dst_prefix = partial.sorted_n[action.sd]\n        score = 0.0\n        if partial.is_sorted_stack(action.sd) and dst_top >= moved_group:\n            score -= self.prefer_sorted_dest_bonus\n        score -= self.prefer_long_prefix_weight * float(dst_prefix)\n        score += self.prefer_tighter_fit_weight * float(abs(dst_top - moved_group))\n        return score\n\ndef build_component(problem, single_bad_count=1, min_sorted_prefix=1, prefer_sorted_dest_bonus=1.0, prefer_long_prefix_weight=1.0, prefer_tighter_fit_weight=0.1):\n    rule = FrontierBlockerTransfer(single_bad_count=single_bad_count, min_sorted_prefix=min_sorted_prefix, prefer_sorted_dest_bonus=prefer_sorted_dest_bonus, prefer_long_prefix_weight=prefer_long_prefix_weight, prefer_tighter_fit_weight=prefer_tighter_fit_weight)\n    return RuleMachine(problem, [rule])\n",
+      "component": {
+        "name": "frontier_blocker_transfer",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {
+          "min_sorted_prefix": {
+            "type": "int",
+            "range": [
+              0,
+              5
+            ],
+            "default": 1
+          },
+          "prefer_tighter_fit_weight": {
+            "type": "float",
+            "range": [
+              0.0,
+              10.0
+            ],
+            "default": 0.1
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "rule": "unsorted_to_sorted_safe_placement",
+      "name": "unsorted_to_sorted_safe_placement",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 86.688,
+      "width": 0.124,
+      "precision": [
+        6,
+        7
+      ],
+      "params": {},
+      "source": "COMPONENT = {'name': 'unsorted_to_sorted_safe_placement', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {}}\nfrom core.rules import RuleMachine\n\nclass UnsortedToSortedSafePlacement:\n    \"\"\"Permite mover la cima de una pila fuente desordenada a una pila destino ordenada si el destino sigue ordenado.\"\"\"\n    name = 'unsorted_to_sorted_safe_placement'\n\n    def __init__(self, prefer_non_empty_destination: bool=True):\n        self.prefer_non_empty_destination = prefer_non_empty_destination\n\n    def _keeps_destination_sorted(self, partial, so, sd):\n        if partial.h(so) == 0 or partial.h(sd) >= partial.H:\n            return False\n        if not partial.is_sorted_stack(sd):\n            return False\n        return partial.g(sd) >= partial.g(so)\n\n    def _is_unsorted_source(self, partial, so):\n        return partial.h(so) > 0 and (not partial.is_sorted_stack(so))\n\n    def allowed(self, partial, memory, candidates):\n        allowed = [action for action in candidates if self._is_unsorted_source(partial, action.so) and self._keeps_destination_sorted(partial, action.so, action.sd)]\n\n        def key(action):\n            gap = partial.g(action.sd) - partial.g(action.so)\n            dest_empty = partial.h(action.sd) == 0\n            if self.prefer_non_empty_destination:\n                return (dest_empty, gap, -partial.sorted_n[action.sd], -partial.h(action.sd), action.so, action.sd)\n            return (gap, dest_empty, -partial.sorted_n[action.sd], -partial.h(action.sd), action.so, action.sd)\n        allowed.sort(key=key)\n        return allowed\n\ndef build_component(problem, **params):\n    rule = UnsortedToSortedSafePlacement(prefer_non_empty_destination=params.get('prefer_non_empty_destination', True))\n    return RuleMachine(problem, [rule])\n",
+      "component": {
+        "name": "unsorted_to_sorted_safe_placement",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {}
+      }
+    },
+    {
+      "id": 4,
+      "rule": "sorted_to_sorted_safe_placement",
+      "name": "sorted_to_sorted_safe_placement",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 88.625,
+      "width": 0.09,
+      "precision": [
+        30,
+        96
+      ],
+      "params": {},
+      "source": "COMPONENT = {'name': 'sorted_to_sorted_safe_placement', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {}}\nfrom core.rules import RuleMachine\n\nclass SortedToSortedSafePlacementRule:\n    \"\"\"Permite mover la cima de una pila fuente ordenada a una pila destino ordenada si el destino sigue ordenado.\"\"\"\n    name = 'sorted_to_sorted_safe_placement'\n\n    def __init__(self, require_source_remains_sorted=True):\n        self.require_source_remains_sorted = require_source_remains_sorted\n\n    def allowed(self, partial, memory, candidates):\n        allowed = []\n        for action in candidates:\n            so = action.so\n            sd = action.sd\n            if so == sd:\n                continue\n            if partial.h(so) == 0:\n                continue\n            if partial.e(sd) == 0:\n                continue\n            if not partial.is_sorted_stack(so):\n                continue\n            if not partial.is_sorted_stack(sd):\n                continue\n            moved_group = partial.g(so)\n            destination_top = partial.g(sd)\n            if destination_top < moved_group:\n                continue\n            if self.require_source_remains_sorted:\n                next_layout_hash = partial.after(so, sd)\n                if partial.visited is not None and next_layout_hash in partial.visited:\n                    continue\n            allowed.append(action)\n        return allowed\n\ndef build_component(problem, **params):\n    rule = SortedToSortedSafePlacementRule(require_source_remains_sorted=params.get('require_source_remains_sorted', True))\n    return RuleMachine(problem, [rule])\n",
+      "component": {
+        "name": "sorted_to_sorted_safe_placement",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {}
+      }
+    },
+    {
+      "id": 5,
+      "rule": "capped_receiver_parking",
+      "name": "capped_receiver_parking",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 107.812,
+      "width": 0.135,
+      "precision": [
+        0,
+        0
+      ],
+      "params": {},
+      "source": "COMPONENT = {'name': 'capped_receiver_parking', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {}}\nfrom core.rules import RuleMachine\n\nclass CappedReceiverParkingRule:\n    \"\"\"Permite crear o seguir una pila receptora 'tapada': base ordenada + sufijo superior de aparcamiento.\"\"\"\n    name = 'capped_receiver_parking'\n\n    def __init__(self, prefer_existing_cap=True, prefer_tighter_start_fit=True):\n        self.prefer_existing_cap = prefer_existing_cap\n        self.prefer_tighter_start_fit = prefer_tighter_start_fit\n\n    def _source_resolves_after_pop(self, partial, so):\n        h = partial.h(so)\n        return h > 0 and partial.sorted_n[so] >= h - 1\n\n    def _suffix_is_nondecreasing_down_to_up(self, stack, start):\n        if start >= len(stack):\n            return False\n        idx = start + 1\n        while idx < len(stack):\n            if stack[idx - 1] < stack[idx]:\n                return False\n            idx += 1\n        return True\n\n    def _is_capped_receiver(self, partial, sd):\n        h = partial.h(sd)\n        k = partial.sorted_n[sd]\n        if h <= 0 or k <= 0 or k >= h:\n            return False\n        return self._suffix_is_nondecreasing_down_to_up(partial.stacks[sd], k)\n\n    def _is_start_of_cap(self, partial, so, sd):\n        if so == sd or partial.e(sd) <= 0:\n            return False\n        if not self._source_resolves_after_pop(partial, so):\n            return False\n        if not partial.is_sorted_stack(sd):\n            return False\n        x = partial.g(so)\n        y = partial.g(sd)\n        return x > y\n\n    def _is_continue_cap(self, partial, so, sd):\n        if so == sd or partial.e(sd) <= 0:\n            return False\n        if not self._source_resolves_after_pop(partial, so):\n            return False\n        if not self._is_capped_receiver(partial, sd):\n            return False\n        x = partial.g(so)\n        y = partial.g(sd)\n        return x <= y\n\n    def allowed(self, partial, memory, candidates):\n        starts = []\n        conts = []\n        for a in candidates:\n            if self._is_continue_cap(partial, a.so, a.sd):\n                conts.append(a)\n            elif self._is_start_of_cap(partial, a.so, a.sd):\n                starts.append(a)\n        if self.prefer_tighter_start_fit:\n            starts.sort(key=lambda a: partial.g(a.so) - partial.g(a.sd))\n        else:\n            starts.sort(key=lambda a: (a.sd, a.so))\n        conts.sort(key=lambda a: (-partial.sorted_n[a.sd], partial.g(a.sd) - partial.g(a.so), a.sd, a.so))\n        if self.prefer_existing_cap and conts:\n            return conts + starts\n        return starts + conts\n\n    def score(self, partial, memory, action):\n        if self._is_continue_cap(partial, action.so, action.sd):\n            return 0.0\n        return float(partial.g(action.so) - partial.g(action.sd))\n\ndef build_component(problem, **params):\n    rule = CappedReceiverParkingRule(prefer_existing_cap=params.get('prefer_existing_cap', True), prefer_tighter_start_fit=params.get('prefer_tighter_start_fit', True))\n    return RuleMachine(problem, [rule])\n",
+      "component": {
+        "name": "capped_receiver_parking",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {}
+      }
+    },
+    {
+      "id": 6,
+      "rule": "sorted_to_unsorted_bad_suffix_append",
+      "name": "sorted_to_unsorted_bad_suffix_append",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 92.312,
+      "width": 0.106,
+      "precision": [
+        0,
+        47
+      ],
+      "params": {},
+      "source": "COMPONENT = {\n    \"name\": \"sorted_to_unsorted_bad_suffix_append\",\n    \"slot\": \"construction_machine\",\n    \"compatible_skeletons\": [\"CONSTRUCT\"],\n    \"requires\": [],\n    \"params\": {}\n}\n\nfrom core.rules import RuleMachine\n\n\nclass SortedToUnsortedBadSuffixAppend:\n    \"\"\"Permite mover desde una pila fuente ordenada hacia una pila destino desordenada, apilando sobre su sufijo malo sin empeorar su prefijo bien puesto.\"\"\"\n\n    name = \"sorted_to_unsorted_bad_suffix_append\"\n\n    def _is_applicable(self, partial, action):\n        so = action.so\n        sd = action.sd\n\n        if so == sd:\n            return False\n        if partial.h(so) == 0:\n            return False\n        if partial.e(sd) == 0:\n            return False\n\n        if not partial.is_sorted_stack(so):\n            return False\n        if partial.is_sorted_stack(sd):\n            return False\n\n        moved = partial.g(so)\n        top_dst = partial.g(sd)\n\n        if moved < top_dst:\n            return False\n\n        if partial.sorted_n[sd] >= partial.h(sd):\n            return False\n\n        return True\n\n    def allowed(self, partial, memory, candidates):\n        return [action for action in candidates if self._is_applicable(partial, action)]\n\n\ndef build_component(problem, **params):\n    return RuleMachine(problem, [SortedToUnsortedBadSuffixAppend()])\n",
+      "component": {
+        "name": "sorted_to_unsorted_bad_suffix_append",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {}
+      }
+    },
+    {
+      "id": 7,
+      "rule": "sorted_source_consolidation",
+      "name": "adaptive_sorted_source_consolidation",
+      "op": "refine_rule",
+      "parent": 0,
+      "macro": false,
+      "alone": 102.0,
+      "width": 0.298,
+      "precision": [
+        19,
+        104
+      ],
+      "params": {
+        "min_source_height": 1,
+        "max_source_height": 3,
+        "max_source_bad_suffix": 1,
+        "min_exposed_sorted_prefix": 1,
+        "allow_unsorted_receivers": true,
+        "allow_sorted_receivers": true,
+        "allow_empty_receiver": false,
+        "prefer_safe_sorted_placement": true,
+        "prefer_near_sorted_peel": true,
+        "prefer_taller_receivers": true
+      },
+      "source": "COMPONENT = {\n    \"name\": \"adaptive_sorted_source_consolidation\",\n    \"slot\": \"construction_machine\",\n    \"compatible_skeletons\": [\"CONSTRUCT\"],\n    \"requires\": [],\n    \"params\": {\n        \"min_source_height\": {\"type\": \"int\", \"range\": [1, 10], \"default\": 1},\n        \"max_source_height\": {\"type\": \"int\", \"range\": [1, 10], \"default\": 3},\n        \"max_source_bad_suffix\": {\"type\": \"int\", \"range\": [0, 3], \"default\": 1},\n        \"min_exposed_sorted_prefix\": {\"type\": \"int\", \"range\": [0, 10], \"default\": 1},\n        \"allow_unsorted_receivers\": {\"type\": \"bool\", \"default\": True},\n        \"allow_sorted_receivers\": {\"type\": \"bool\", \"default\": True},\n        \"allow_empty_receiver\": {\"type\": \"bool\", \"default\": False},\n        \"prefer_safe_sorted_placement\": {\"type\": \"bool\", \"default\": True},\n        \"prefer_near_sorted_peel\": {\"type\": \"bool\", \"default\": True},\n        \"prefer_taller_receivers\": {\"type\": \"bool\", \"default\": True},\n    },\n}\n\nfrom core.rules import RuleMachine\n\n\nclass AdaptiveSortedSourceConsolidationRule:\n    \"\"\"Consolida pilas bajas usando fuentes ordenadas o casi ordenadas y receptores ordenados o con sufijo malo.\"\"\"\n\n    name = \"sorted_source_consolidation\"\n\n    def __init__(\n        self,\n        min_source_height: int,\n        max_source_height: int,\n        max_source_bad_suffix: int,\n        min_exposed_sorted_prefix: int,\n        allow_unsorted_receivers: bool,\n        allow_sorted_receivers: bool,\n        allow_empty_receiver: bool,\n        prefer_safe_sorted_placement: bool,\n        prefer_near_sorted_peel: bool,\n        prefer_taller_receivers: bool,\n    ):\n        self.min_source_height = min_source_height\n        self.max_source_height = max_source_height\n        self.max_source_bad_suffix = max_source_bad_suffix\n        self.min_exposed_sorted_prefix = min_exposed_sorted_prefix\n        self.allow_unsorted_receivers = allow_unsorted_receivers\n        self.allow_sorted_receivers = allow_sorted_receivers\n        self.allow_empty_receiver = allow_empty_receiver\n        self.prefer_safe_sorted_placement = prefer_safe_sorted_placement\n        self.prefer_near_sorted_peel = prefer_near_sorted_peel\n        self.prefer_taller_receivers = prefer_taller_receivers\n\n    def _source_profile(self, partial, so):\n        height = partial.h(so)\n        sorted_prefix = partial.sorted_n[so]\n        bad_suffix = height - sorted_prefix\n        is_sorted = partial.is_sorted_stack(so)\n        is_near_sorted = (\n            bad_suffix <= self.max_source_bad_suffix\n            and sorted_prefix >= self.min_exposed_sorted_prefix\n            and bad_suffix > 0\n        )\n        return height, sorted_prefix, bad_suffix, is_sorted, is_near_sorted\n\n    def _receiver_ok(self, partial, action):\n        dest_height = partial.h(action.sd)\n        if dest_height == 0 and not self.allow_empty_receiver:\n            return False\n\n        dest_sorted = partial.is_sorted_stack(action.sd)\n        if dest_sorted:\n            return self.allow_sorted_receivers\n\n        return self.allow_unsorted_receivers and partial.sorted_n[action.sd] < dest_height\n\n    def _source_ok(self, partial, so):\n        height, _, _, is_sorted, is_near_sorted = self._source_profile(partial, so)\n        if height < self.min_source_height or height > self.max_source_height:\n            return False\n        return is_sorted or is_near_sorted\n\n    def _sort_key(self, partial, action):\n        so = action.so\n        sd = action.sd\n\n        source_height, source_sorted_prefix, source_bad_suffix, source_is_sorted, source_is_near_sorted = self._source_profile(partial, so)\n        moved_group = partial.g(so)\n        dest_height = partial.h(sd)\n        dest_top = partial.g(sd)\n        dest_is_sorted = partial.is_sorted_stack(sd)\n        is_safe_sorted_placement = dest_is_sorted and moved_group <= dest_top\n        frees_source = source_height == self.min_source_height\n        exposes_sorted_source = source_bad_suffix > 0 and (source_height - source_bad_suffix) == source_sorted_prefix\n\n        if self.prefer_safe_sorted_placement:\n            safe_rank = not is_safe_sorted_placement\n        else:\n            safe_rank = is_safe_sorted_placement\n\n        if self.prefer_near_sorted_peel:\n            peel_rank = not source_is_near_sorted\n        else:\n            peel_rank = source_is_near_sorted\n\n        receiver_rank = not dest_is_sorted\n        free_rank = not frees_source\n        expose_rank = not exposes_sorted_source\n\n        receiver_height_rank = -dest_height if self.prefer_taller_receivers else dest_height\n\n        return (\n            safe_rank,\n            peel_rank,\n            receiver_rank,\n            free_rank,\n            expose_rank,\n            source_height,\n            moved_group,\n            receiver_height_rank,\n            so,\n            sd,\n        )\n\n    def allowed(self, partial, memory, candidates):\n        actions = []\n        for action in candidates:\n            if not self._source_ok(partial, action.so):\n                continue\n            if not self._receiver_ok(partial, action):\n                continue\n            actions.append(action)\n\n        return sorted(actions, key=lambda action: self._sort_key(partial, action))\n\n\ndef build_component(\n    problem,\n    min_source_height=1,\n    max_source_height=3,\n    max_source_bad_suffix=1,\n    min_exposed_sorted_prefix=1,\n    allow_unsorted_receivers=True,\n    allow_sorted_receivers=True,\n    allow_empty_receiver=False,\n    prefer_safe_sorted_placement=True,\n    prefer_near_sorted_peel=True,\n    prefer_taller_receivers=True,\n    **params\n):\n    rule = AdaptiveSortedSourceConsolidationRule(\n        min_source_height=min_source_height,\n        max_source_height=max_source_height,\n        max_source_bad_suffix=max_source_bad_suffix,\n        min_exposed_sorted_prefix=min_exposed_sorted_prefix,\n        allow_unsorted_receivers=allow_unsorted_receivers,\n        allow_sorted_receivers=allow_sorted_receivers,\n        allow_empty_receiver=allow_empty_receiver,\n        prefer_safe_sorted_placement=prefer_safe_sorted_placement,\n        prefer_near_sorted_peel=prefer_near_sorted_peel,\n        prefer_taller_receivers=prefer_taller_receivers,\n    )\n    return RuleMachine(problem, [rule])\n",
+      "component": {
+        "name": "adaptive_sorted_source_consolidation",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {
+          "min_source_height": {
+            "type": "int",
+            "range": [
+              1,
+              10
+            ],
+            "default": 1
+          },
+          "max_source_height": {
+            "type": "int",
+            "range": [
+              1,
+              10
+            ],
+            "default": 3
+          },
+          "max_source_bad_suffix": {
+            "type": "int",
+            "range": [
+              0,
+              3
+            ],
+            "default": 1
+          },
+          "min_exposed_sorted_prefix": {
+            "type": "int",
+            "range": [
+              0,
+              10
+            ],
+            "default": 1
+          },
+          "allow_unsorted_receivers": {
+            "type": "bool",
+            "default": true
+          },
+          "allow_sorted_receivers": {
+            "type": "bool",
+            "default": true
+          },
+          "allow_empty_receiver": {
+            "type": "bool",
+            "default": false
+          },
+          "prefer_safe_sorted_placement": {
+            "type": "bool",
+            "default": true
+          },
+          "prefer_near_sorted_peel": {
+            "type": "bool",
+            "default": true
+          },
+          "prefer_taller_receivers": {
+            "type": "bool",
+            "default": true
+          }
+        }
+      }
+    },
+    {
+      "id": 8,
+      "rule": "two_high_single_blocker_safe_peel",
+      "name": "two_high_single_blocker_safe_peel",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 90.625,
+      "width": 0.0,
+      "precision": [
+        0,
+        0
+      ],
+      "params": {},
+      "source": "COMPONENT = {\n    \"name\": \"two_high_single_blocker_safe_peel\",\n    \"slot\": \"construction_machine\",\n    \"compatible_skeletons\": [\"CONSTRUCT\"],\n    \"requires\": [],\n    \"params\": {\n        \"source_height\": {\"type\": \"int\", \"range\": [2, 6], \"default\": 2},\n        \"blocker_count\": {\"type\": \"int\", \"range\": [1, 2], \"default\": 1},\n    },\n}\n\nfrom core.rules import RuleMachine\n\n\nclass TwoHighSingleBlockerSafePeelRule:\n    \"\"\"Permite pelar el único bloqueador de una pila fuente muy baja y dejarlo en una pila destino ordenada sin desordenarla.\"\"\"\n\n    name = \"two_high_single_blocker_safe_peel\"\n\n    def __init__(self, problem, source_height=2, blocker_count=1):\n        self.problem = problem\n        self.source_height = source_height\n        self.blocker_count = blocker_count\n\n    def _is_target_source(self, partial, so):\n        h = partial.h(so)\n        if h != self.source_height:\n            return False\n        if partial.is_sorted_stack(so):\n            return False\n        return h - partial.sorted_n[so] == self.blocker_count\n\n    def _is_safe_sorted_destination(self, partial, so, sd):\n        if so == sd:\n            return False\n        if not partial.is_sorted_stack(sd):\n            return False\n        if partial.e(sd) <= 0:\n            return False\n        moved = partial.g(so)\n        return moved <= partial.g(sd)\n\n    def allowed(self, partial, memory, candidates):\n        selected = []\n        for action in candidates:\n            so = action.so\n            sd = action.sd\n            if self._is_target_source(partial, so) and self._is_safe_sorted_destination(partial, so, sd):\n                selected.append(action)\n\n        selected.sort(\n            key=lambda a: (\n                partial.g(a.sd) - partial.g(a.so),\n                -partial.sorted_n[a.sd],\n                a.sd,\n                a.so,\n            )\n        )\n        return selected\n\n\ndef build_component(problem, **params):\n    source_height = params.get(\"source_height\", COMPONENT[\"params\"][\"source_height\"][\"default\"])\n    blocker_count = params.get(\"blocker_count\", COMPONENT[\"params\"][\"blocker_count\"][\"default\"])\n    rule = TwoHighSingleBlockerSafePeelRule(\n        problem,\n        source_height=source_height,\n        blocker_count=blocker_count,\n    )\n    return RuleMachine(problem, [rule])\n",
+      "component": {
+        "name": "two_high_single_blocker_safe_peel",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {
+          "source_height": {
+            "type": "int",
+            "range": [
+              2,
+              6
+            ],
+            "default": 2
+          },
+          "blocker_count": {
+            "type": "int",
+            "range": [
+              1,
+              2
+            ],
+            "default": 1
+          }
+        }
+      }
+    },
+    {
+      "id": 9,
+      "rule": "frontier_blocker_transfer",
+      "name": "frontier_blocker_transfer_refined",
+      "op": "refine_rule",
+      "parent": 2,
+      "macro": false,
+      "alone": 100.812,
+      "width": 0.185,
+      "precision": [
+        26,
+        118
+      ],
+      "params": {
+        "single_bad_count": 1,
+        "min_sorted_prefix": 1,
+        "frontier_max_height": 2,
+        "allow_bad_suffix_receivers": true,
+        "prefer_sorted_source_bonus": 8.0,
+        "prefer_single_blocker_source_bonus": 2.0,
+        "prefer_safe_sorted_dest_bonus": 3.0,
+        "prefer_capped_dest_bonus": 1.0,
+        "prefer_short_source_weight": 2.0,
+        "prefer_long_dest_prefix_weight": 1.0,
+        "prefer_tighter_fit_weight": 0.1
+      },
+      "source": "from core.rules import RuleMachine\n\nCOMPONENT = {\n    \"name\": \"frontier_blocker_transfer_refined\",\n    \"slot\": \"construction_machine\",\n    \"compatible_skeletons\": [\"CONSTRUCT\"],\n    \"requires\": [],\n    \"params\": {\n        \"single_bad_count\": {\"type\": \"int\", \"range\": [1, 3], \"default\": 1},\n        \"min_sorted_prefix\": {\"type\": \"int\", \"range\": [0, 5], \"default\": 1},\n        \"frontier_max_height\": {\"type\": \"int\", \"range\": [1, 6], \"default\": 2},\n        \"allow_bad_suffix_receivers\": {\"type\": \"bool\", \"default\": True},\n        \"prefer_sorted_source_bonus\": {\"type\": \"float\", \"range\": [0.0, 20.0], \"default\": 8.0},\n        \"prefer_single_blocker_source_bonus\": {\"type\": \"float\", \"range\": [0.0, 20.0], \"default\": 2.0},\n        \"prefer_safe_sorted_dest_bonus\": {\"type\": \"float\", \"range\": [0.0, 20.0], \"default\": 3.0},\n        \"prefer_capped_dest_bonus\": {\"type\": \"float\", \"range\": [0.0, 20.0], \"default\": 1.0},\n        \"prefer_short_source_weight\": {\"type\": \"float\", \"range\": [0.0, 10.0], \"default\": 2.0},\n        \"prefer_long_dest_prefix_weight\": {\"type\": \"float\", \"range\": [0.0, 10.0], \"default\": 1.0},\n        \"prefer_tighter_fit_weight\": {\"type\": \"float\", \"range\": [0.0, 10.0], \"default\": 0.1},\n    },\n}\n\n\nclass FrontierBlockerTransferRefined:\n    \"\"\"Transfiere bloqueadores de frontera, priorizando fuentes cortas ordenadas o casi ordenadas.\"\"\"\n\n    name = \"frontier_blocker_transfer\"\n\n    def __init__(\n        self,\n        single_bad_count,\n        min_sorted_prefix,\n        frontier_max_height,\n        allow_bad_suffix_receivers,\n        prefer_sorted_source_bonus,\n        prefer_single_blocker_source_bonus,\n        prefer_safe_sorted_dest_bonus,\n        prefer_capped_dest_bonus,\n        prefer_short_source_weight,\n        prefer_long_dest_prefix_weight,\n        prefer_tighter_fit_weight,\n    ):\n        self.single_bad_count = int(single_bad_count)\n        self.min_sorted_prefix = int(min_sorted_prefix)\n        self.frontier_max_height = int(frontier_max_height)\n        self.allow_bad_suffix_receivers = bool(allow_bad_suffix_receivers)\n        self.prefer_sorted_source_bonus = float(prefer_sorted_source_bonus)\n        self.prefer_single_blocker_source_bonus = float(prefer_single_blocker_source_bonus)\n        self.prefer_safe_sorted_dest_bonus = float(prefer_safe_sorted_dest_bonus)\n        self.prefer_capped_dest_bonus = float(prefer_capped_dest_bonus)\n        self.prefer_short_source_weight = float(prefer_short_source_weight)\n        self.prefer_long_dest_prefix_weight = float(prefer_long_dest_prefix_weight)\n        self.prefer_tighter_fit_weight = float(prefer_tighter_fit_weight)\n\n    def _bad_count(self, partial, stack):\n        return partial.h(stack) - partial.sorted_n[stack]\n\n    def _is_sorted_frontier_source(self, partial, stack):\n        return (\n            partial.h(stack) > 0\n            and partial.h(stack) <= self.frontier_max_height\n            and partial.is_sorted_stack(stack)\n            and partial.sorted_n[stack] >= self.min_sorted_prefix\n        )\n\n    def _is_single_blocker_source(self, partial, stack):\n        return (\n            partial.h(stack) > self.single_bad_count\n            and self._bad_count(partial, stack) == self.single_bad_count\n            and partial.sorted_n[stack] >= self.min_sorted_prefix\n        )\n\n    def _is_eligible_source(self, partial, stack):\n        return self._is_sorted_frontier_source(partial, stack) or self._is_single_blocker_source(partial, stack)\n\n    def _is_safe_sorted_dest(self, partial, stack, group):\n        return partial.e(stack) > 0 and partial.is_sorted_stack(stack) and partial.g(stack) >= group\n\n    def _is_capped_or_bad_suffix_dest(self, partial, stack, group):\n        return (\n            self.allow_bad_suffix_receivers\n            and partial.e(stack) > 0\n            and partial.sorted_n[stack] >= self.min_sorted_prefix\n            and partial.g(stack) <= group\n        )\n\n    def _is_eligible_dest(self, partial, stack, group):\n        return self._is_safe_sorted_dest(partial, stack, group) or self._is_capped_or_bad_suffix_dest(partial, stack, group)\n\n    def allowed(self, partial, memory, candidates):\n        allowed = []\n        for action in candidates:\n            so = action.so\n            sd = action.sd\n            if not self._is_eligible_source(partial, so):\n                continue\n            moved_group = partial.g(so)\n            if self._is_eligible_dest(partial, sd, moved_group):\n                allowed.append(action)\n        return allowed\n\n    def score(self, partial, memory, action):\n        so = action.so\n        sd = action.sd\n        moved_group = partial.g(so)\n        dst_top = partial.g(sd)\n        dst_prefix = partial.sorted_n[sd]\n        src_height = partial.h(so)\n\n        score = 0.0\n\n        if self._is_sorted_frontier_source(partial, so):\n            score -= self.prefer_sorted_source_bonus\n        elif self._is_single_blocker_source(partial, so):\n            score -= self.prefer_single_blocker_source_bonus\n\n        if self._is_safe_sorted_dest(partial, sd, moved_group):\n            score -= self.prefer_safe_sorted_dest_bonus\n        elif self._is_capped_or_bad_suffix_dest(partial, sd, moved_group):\n            score -= self.prefer_capped_dest_bonus\n\n        score += self.prefer_short_source_weight * float(src_height)\n        score -= self.prefer_long_dest_prefix_weight * float(dst_prefix)\n        score += self.prefer_tighter_fit_weight * float(abs(dst_top - moved_group))\n\n        return score\n\n\ndef build_component(\n    problem,\n    single_bad_count=1,\n    min_sorted_prefix=1,\n    frontier_max_height=2,\n    allow_bad_suffix_receivers=True,\n    prefer_sorted_source_bonus=8.0,\n    prefer_single_blocker_source_bonus=2.0,\n    prefer_safe_sorted_dest_bonus=3.0,\n    prefer_capped_dest_bonus=1.0,\n    prefer_short_source_weight=2.0,\n    prefer_long_dest_prefix_weight=1.0,\n    prefer_tighter_fit_weight=0.1,\n):\n    rule = FrontierBlockerTransferRefined(\n        single_bad_count=single_bad_count,\n        min_sorted_prefix=min_sorted_prefix,\n        frontier_max_height=frontier_max_height,\n        allow_bad_suffix_receivers=allow_bad_suffix_receivers,\n        prefer_sorted_source_bonus=prefer_sorted_source_bonus,\n        prefer_single_blocker_source_bonus=prefer_single_blocker_source_bonus,\n        prefer_safe_sorted_dest_bonus=prefer_safe_sorted_dest_bonus,\n        prefer_capped_dest_bonus=prefer_capped_dest_bonus,\n        prefer_short_source_weight=prefer_short_source_weight,\n        prefer_long_dest_prefix_weight=prefer_long_dest_prefix_weight,\n        prefer_tighter_fit_weight=prefer_tighter_fit_weight,\n    )\n    return RuleMachine(problem, [rule])\n",
+      "component": {
+        "name": "frontier_blocker_transfer_refined",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {
+          "single_bad_count": {
+            "type": "int",
+            "range": [
+              1,
+              3
+            ],
+            "default": 1
+          },
+          "min_sorted_prefix": {
+            "type": "int",
+            "range": [
+              0,
+              5
+            ],
+            "default": 1
+          },
+          "frontier_max_height": {
+            "type": "int",
+            "range": [
+              1,
+              6
+            ],
+            "default": 2
+          },
+          "allow_bad_suffix_receivers": {
+            "type": "bool",
+            "default": true
+          },
+          "prefer_sorted_source_bonus": {
+            "type": "float",
+            "range": [
+              0.0,
+              20.0
+            ],
+            "default": 8.0
+          },
+          "prefer_single_blocker_source_bonus": {
+            "type": "float",
+            "range": [
+              0.0,
+              20.0
+            ],
+            "default": 2.0
+          },
+          "prefer_safe_sorted_dest_bonus": {
+            "type": "float",
+            "range": [
+              0.0,
+              20.0
+            ],
+            "default": 3.0
+          },
+          "prefer_capped_dest_bonus": {
+            "type": "float",
+            "range": [
+              0.0,
+              20.0
+            ],
+            "default": 1.0
+          },
+          "prefer_short_source_weight": {
+            "type": "float",
+            "range": [
+              0.0,
+              10.0
+            ],
+            "default": 2.0
+          },
+          "prefer_long_dest_prefix_weight": {
+            "type": "float",
+            "range": [
+              0.0,
+              10.0
+            ],
+            "default": 1.0
+          },
+          "prefer_tighter_fit_weight": {
+            "type": "float",
+            "range": [
+              0.0,
+              10.0
+            ],
+            "default": 0.1
+          }
+        }
+      }
+    }
+  ]
+}
