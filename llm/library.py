@@ -42,6 +42,14 @@ BROAD = 0.5  # una pieza que permite en promedio más de esta fracción de los c
 N_EXAMPLES = 4
 
 OPERATOR_TEXT = {
+    "choose": (
+        "Decide tú qué hacer en esta ronda: escribir una pieza NUEVA (un tipo de movimiento que falta) o MEJORAR una pieza "
+        "de la biblioteca (di cuál; su código está abajo si está en la mejor máquina). Usa la evidencia: movimientos de "
+        "más por pieza (en total y por paso), qué piezas permitían la acción óptima y el historial de rondas anteriores. "
+        "Una pieza nueva tiene que ser ANGOSTA: de los candidatos permite solo los de su tipo y devuelve [] cuando no "
+        "aplica. Al mejorar una pieza, mantén su `name`; la versión nueva entra junto a la anterior. Empieza la respuesta "
+        "con dos líneas:\nACCIÓN: nueva   (o)   ACCIÓN: mejorar <name de la pieza>\nPOR QUÉ: <una línea>\ny después el "
+        "bloque de código."),
     "new_rule": (
         "Escribe UNA pieza NUEVA: un tipo de movimiento. Tiene que ser ANGOSTA: de los candidatos permite solo los de su "
         "tipo y devuelve [] cuando no aplica; lo demás lo cubren otras piezas o el comodín. Mira los pasos de abajo donde "
@@ -212,7 +220,7 @@ def evidence(harness: Harness, pieces: tuple[Piece, ...], library: list[Piece], 
     if not callable(oracle):
         return "", {}
     factory = composition_factory(pieces)[0] if pieces else (lambda P, **_: RuleMachine(P, []))
-    rows, regret, total = [], {}, [0, 0]
+    rows, regret, steps, total = [], {}, {}, [0, 0]
     for inst in oracle_insts:
         P = harness.pack.problem_factory(inst)
         view = P.construction_view(inst)
@@ -225,6 +233,7 @@ def evidence(harness: Harness, pieces: tuple[Piece, ...], library: list[Piece], 
             continue
         for st, row in r["by_state"].items():
             regret[st] = regret.get(st, 0) + row["regret"]
+            steps[st] = steps.get(st, 0) + row["steps"]
             total[0] += row["regret"]
             total[1] += row["steps"]
         for e in r["examples"]:
@@ -245,7 +254,8 @@ def evidence(harness: Harness, pieces: tuple[Piece, ...], library: list[Piece], 
         return "", {}
     rows = _diverse(sorted(rows, key=lambda t: -t[0]["regret"]), N_EXAMPLES, key=lambda t: t[0]["state"])
     lines = [f"Movimientos de más respecto del óptimo: {total[0]} en {total[1]} pasos ("
-             + ", ".join(f"`{st}` {v}" for st, v in sorted(regret.items(), key=lambda kv: -kv[1])) + ")."]
+             + ", ".join(f"`{st}` {v} en {steps[st]} pasos ({v / max(1, steps[st]):.2f} por paso)"
+                         for st, v in sorted(regret.items(), key=lambda kv: -kv[1])) + ")."]
     for e, allow, n, after, bounds in rows:
         who = "el comodín" if e["state"] == FALLBACK else f"`{e['state']}`"
         cont = ", ".join(repr(a) for a in e.get("continuation", []))
@@ -307,7 +317,7 @@ def build_component(problem, **params):
 
 
 def library_prompt(spec, op: str, target: Piece | None, library: list[Piece], best: tuple[int, ...] | None,
-                   best_fitness: float, evid: str, rejections: list[str]) -> str:
+                   best_fitness: float, evid: str, rejections: list[str], history: list[str] | None = None) -> str:
     order = " > ".join(f"`{next(p.rule for p in library if p.id == i)}`" for i in best) if best else "solo el comodín"
     parts = [
         f"# Tarea\nConstructor greedy para **{spec.name}**, armado con piezas. Cada pieza es UNA regla: de los candidatos "
@@ -320,6 +330,12 @@ def library_prompt(spec, op: str, target: Piece | None, library: list[Piece], be
     ]
     if target is not None:
         parts.append(f"\n# Pieza a mejorar: `{target.rule}` #{target.id}\n```python\n{llm_view(target.source)}\n```")
+    if op == "choose" and best:
+        for i in best:
+            pc = next(p for p in library if p.id == i)
+            parts.append(f"\n# Pieza `{pc.rule}` #{pc.id} (en la mejor máquina)\n```python\n{llm_view(pc.source)}\n```")
+    if history:
+        parts.append("\n# Rondas anteriores\n" + "\n".join(f"- {h}" for h in history[-6:]))
     parts += [f"\n# Formato\n```python\n{EXAMPLE}```", f"\n# Problema\n{spec.description}"]
     if spec.construction_source:
         parts.append(f"\n# Estado parcial y acción\n```python\n{api_summary(spec.construction_source)}\n```")
@@ -328,6 +344,26 @@ def library_prompt(spec, op: str, target: Piece | None, library: list[Piece], be
     parts.append("\nDevuelve UN bloque ```python``` con el módulo completo de la pieza (COMPONENT con un nombre nuevo, la "
                  "clase y build_component). Todo número que decide algo va en COMPONENT['params'] con 'range' y 'default'.")
     return "\n".join(parts)
+
+
+def _act(op: str, target) -> str:
+    return f"mejorar `{target.rule}`" if op == "refine_rule" and target is not None else "pieza nueva"
+
+
+def parse_choice(text: str, library: list[Piece], best_pieces: tuple) -> tuple[str, Any, str | None]:
+    """(operador, pieza a mejorar o None, motivo) de las líneas `ACCIÓN:` y `POR QUÉ:` de la respuesta. Sin
+    una acción legible, o si la pieza nombrada no existe, es una pieza nueva."""
+    import re
+
+    m = re.search(r"ACCI[OÓ]N\s*:\s*(nueva|mejorar)\s*`?([\w.-]*)`?", text, re.I)
+    why = re.search(r"POR\s+QU[EÉ]\s*:\s*(.+)", text, re.I)
+    why = why.group(1).strip()[:200] if why else None
+    if m and m.group(1).lower() == "mejorar" and m.group(2):
+        name = m.group(2)
+        cands = [p for p in best_pieces if p.rule == name] or [p for p in library if p.rule == name]
+        if cands:
+            return "refine_rule", cands[-1], why
+    return "new_rule", None, why
 
 
 def _attempt_piece(path: Path, source: str, contexts, op: str, target: Piece | None, library: list[Piece], reach):
@@ -455,7 +491,9 @@ def build_component(problem, **params):
 def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness: Harness, rounds: int = 12,
                    tune_samples: int = 6, n_train: int = 8, n_test: int = 8, size: str | None = None, rng_seed: int = 0,
                    tokens: TokenUsage | None = None, deadline: float | None = None, verbose: bool = True,
-                   resume: bool = False) -> EvolveResult:
+                   resume: bool = False, choose: str = "llm") -> EvolveResult:
+    """`choose`: "llm" = el LLM decide en cada ronda si escribe una pieza nueva o mejora cuál;
+    "schedule" = el calendario (55 % nueva, 45 % mejorar la pieza de la mejor máquina que más pierde)."""
     from core.rules import RuleMachine
 
     from .generator import validate_generated_module
@@ -508,6 +546,7 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
 
     update_best(ranked)
     rejections: list[str] = []
+    history: list[str] = []
     next_id = max([pc.id for pc in library], default=-1) + 1
     last = 0.0
     for rnd in range(1, rounds + 1):
@@ -517,7 +556,11 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
         t0 = time.monotonic()
         res.rounds = rnd
         best_pieces = tuple(next(p for p in library if p.id == i) for i in state["best"]) if state["best"] else ()
-        if len(library) < 2 or rng.random() < 0.55:  # sin dos piezas no hay nada que combinar
+        if len(library) < 2:  # sin dos piezas no hay nada que combinar
+            op, target = "new_rule", None
+        elif choose == "llm":  # el LLM decide qué hacer (se lee de su respuesta)
+            op, target = "choose", None
+        elif rng.random() < 0.55:
             op, target = "new_rule", None
         else:
             op = "refine_rule"
@@ -528,12 +571,15 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
             worst = max((s for s in regret if s in {p.rule for p in best_pieces}), default=None, key=regret.get)
             target = next((p for p in best_pieces if p.rule == worst), target)
         prompt = library_prompt(spec, op, target, library, state["best"], state["fitness"] if best_pieces else minimal,
-                                evid, rejections)
+                                evid, rejections, history)
         text = client.complete(SYSTEM_PROMPT, prompt)
         used = getattr(client, "last_usage", None)
         if isinstance(used, TokenUsage):
             tokens.add(used)
-        entry = {"round": rnd, "op": op, "target": target.rule if target else None}
+        why = None
+        if op == "choose":  # la acción que eligió el LLM
+            op, target, why = parse_choice(text, library, best_pieces)
+        entry = {"round": rnd, "op": op, "target": target.rule if target else None, "why": why}
         blocks = extract_code_blocks(text)
         if not blocks:
             rejections.append(f"{op}: la respuesta no traía un bloque ```python```")
@@ -552,6 +598,7 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
                 entry["repaired"] = reason is None
         if reason is not None:
             rejections.append(f"{op}{'(' + target.rule + ')' if target else ''}: {reason}")
+            history.append(f"ronda {rnd}: {_act(op, target)} → rechazada ({reason.splitlines()[-1][:90]})")
             res.individuals.append({**entry, "status": "rechazado", "reason": reason})
             last = time.monotonic() - t0
             if verbose:
@@ -575,6 +622,9 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
                 library.remove(p)
         save_library(saved, library, cache, state, key)
         status = "mejor máquina" if improved else "en la biblioteca"
+        history.append(f"ronda {rnd}: {_act(op, target)} → `{rule}` #{pc.id}: sola {pc.alone:.1f}, mejor combinación con "
+                       f"ella {mine:.1f} en train; {'NUEVA MEJOR MÁQUINA' if improved else 'no mejora a la mejor'} "
+                       f"({state['train']:.1f} en train)")
         res.individuals.append({**entry, **pc.row(), "best_with": _r(mine), "status": status,
                                 "best": [next(p.rule for p in library if p.id == i) for i in state["best"]] if state["best"] else [],
                                 "fitness": _r(state["fitness"])})

@@ -186,3 +186,18 @@ def test_resume_reuses_the_evaluated_compositions_and_the_best(tmp_path):
                            tune_samples=1, n_train=2, n_test=2, size="5x5", verbose=False, resume=True)
     assert again.individuals[-1]["best"] == first.individuals[-1]["best"] == ["bg", "reduce"]
     assert len(calls) <= 3  # el comodín solo y la salida; nada de recomponer
+
+
+def test_the_llm_chooses_the_action_and_sees_the_history(tmp_path):
+    """Con `choose="llm"` el LLM decide si escribe una pieza nueva o mejora cuál (líneas ACCIÓN / POR QUÉ)."""
+    refined = BG_PIECE.replace('"name": "bg_fill"', '"name": "bg_fill_v2"').replace(
+        "key=lambda c: (moves[(c.so, c.sd)], c.so, c.sd)", "key=lambda c: (moves[(c.so, c.sd)], -c.so, c.sd)")
+    answer = "ACCIÓN: mejorar bg\nPOR QUÉ: desempatar por la pila de origen más alta\n" + _fenced(refined)
+    client = ScriptedClient(responses=[_fenced(BG_PIECE), _fenced(REDUCE_PIECE), answer, _fenced(WIDE_PIECE)])
+    res = evolve_library(client, PACK, PACK.make_spec(), tmp_path, Harness(PACK), rounds=4, tune_samples=1, n_train=2,
+                         n_test=2, size="5x5", verbose=False)
+    rows = [r for r in res.individuals if "round" in r]
+    assert rows[2]["op"] == "refine_rule" and rows[2]["target"] == "bg" and "desempatar" in rows[2]["why"]
+    third, fourth = client.calls[2][1], client.calls[3][1]
+    assert "ACCIÓN: nueva" in third and "por paso" in third and "# Pieza `bg`" in third
+    assert "# Rondas anteriores" in fourth and "mejorar `bg`" in fourth

@@ -669,6 +669,19 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
     mejores.
   - El caché de la biblioteca actual se precalculó localmente (13 minutos) y viene en el
     workspace.
+
+  **Corrida 84: retoma con el caché, `gpt-5.4`, 12 rondas en 31 minutos, 62 mil tokens, sin
+  mejora (20,06).** Los 6 `refine_rule` fueron todos sobre `bg`: el calendario apunta a la pieza
+  con más movimientos de más en total, y `bg` decide la mayoría de los pasos. La pieza de
+  reducción no se tocó. Ahora, por defecto (`--choose llm`), **el LLM decide la acción de cada
+  ronda**: pieza nueva o mejorar cuál. Responde con `ACCIÓN: nueva` o `ACCIÓN: mejorar <name>` y
+  `POR QUÉ: …`. Para decidir ve:
+  - los movimientos de más por pieza, en total y por paso;
+  - el código de las piezas de la mejor máquina;
+  - el historial de las últimas 6 rondas: qué se intentó y si mejoró.
+
+  Las dos primeras rondas siguen siendo `new_rule`. `--choose schedule` es el calendario
+  anterior.
 - **Un algoritmo de optimización de greedies** (etapa `evolve`, `llm/evolve.py`). Un greedy como
   FRG no sale de una vez; se llega por pasos: primero solo movimientos BG, después la prioridad
   dentro de ese estado, después un estado de vaciado que vuelve al inicial, y otra vez las

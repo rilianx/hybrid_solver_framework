@@ -950,6 +950,8 @@ def main(pack, argv: list[str] | None = None, workspace: str | None = None, spec
     ap.add_argument("--strategy", choices=["library", "machines"], default="library",
                     help="library: el LLM escribe reglas sueltas y el framework las combina (llm.library); machines: el LLM "
                          "escribe y modifica máquinas enteras")
+    ap.add_argument("--choose", choices=["llm", "schedule"], default="llm",
+                    help="estrategia library: quién decide la acción de cada ronda (el LLM o el calendario)")
     ap.add_argument("--seed", default=None, help="partir de una máquina escrita a mano del pack (p.ej. frg_machine)")
     ap.add_argument("--base", default=None, help="partir de una máquina generada del workspace")
     ap.add_argument("--resume", action="store_true", help="seguir desde el archivo de la corrida anterior (evolve_archive.json)")
@@ -984,7 +986,7 @@ def main(pack, argv: list[str] | None = None, workspace: str | None = None, spec
         res = evolve_library(client, pack, spec or pack.make_spec(), args.workspace, Harness(pack, args.mode, args.beam_width),
                              rounds=args.rounds, tune_samples=args.tune_samples, n_train=args.train, n_test=args.test,
                              size=args.size, rng_seed=args.rng_seed, tokens=tokens, resume=args.resume,
-                             deadline=time.monotonic() + 60 * args.max_minutes)
+                             deadline=time.monotonic() + 60 * args.max_minutes, choose=args.choose)
         print(json.dumps({k: v for k, v in res.as_dict().items() if k != "individuals"}, indent=2, ensure_ascii=False, default=str))
         save_stats(args.workspace, res, tokens, getattr(inner, "model", ""))
         return res
