@@ -682,6 +682,21 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
 
   Las dos primeras rondas siguen siendo `new_rule`. `--choose schedule` es el calendario
   anterior.
+
+  **Corrida 85: el LLM elige la acción, 12 rondas, 87 mil tokens, sin mejora (20,06).** Hizo 9
+  piezas nuevas y 3 refinamientos de `sorted_source_consolidation`; no tocó la de reducción.
+  Sus motivos: "la mejor máquina ya acierta siempre cuando sus piezas aplican; falta una pieza
+  para los pasos del comodín". Razonaba bien, pero con evidencia incompleta: el oráculo solo
+  alcanza 5×5, donde la máquina es casi óptima (12,9 contra 12,4 de FRG), y la pérdida estaba en
+  6×6 (27,3 contra 24,3). Ahora hay evidencia también donde el oráculo no alcanza
+  (`rollout_evidence`):
+  - en 12 pasos muestreados de las 2 instancias de train más grandes, cada candidato se completa
+    con la misma máquina;
+  - si otro termina con menos movimientos que el elegido, es un contraejemplo (una cota, no el
+    óptimo), con los dos estados resultantes y qué piezas lo permitían. Tarda ≈ 4 s.
+
+  En la máquina de la 82 muestra lo que antes no se veía: en 6×6, `frontier_blocker_transfer`
+  deja 26 movimientos de más en 11 pasos (2,4 por paso), contra 1 por paso de `bg`.
 - **Un algoritmo de optimización de greedies** (etapa `evolve`, `llm/evolve.py`). Un greedy como
   FRG no sale de una vez; se llega por pasos: primero solo movimientos BG, después la prioridad
   dentro de ese estado, después un estado de vaciado que vuelve al inicial, y otra vez las

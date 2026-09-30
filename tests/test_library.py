@@ -201,3 +201,24 @@ def test_the_llm_chooses_the_action_and_sees_the_history(tmp_path):
     third, fourth = client.calls[2][1], client.calls[3][1]
     assert "ACCIÓN: nueva" in third and "por paso" in third and "# Pieza `bg`" in third
     assert "# Rondas anteriores" in fourth and "mejorar `bg`" in fourth
+
+
+def test_rollout_evidence_covers_instances_beyond_the_oracle():
+    """Corrida 85: el oráculo solo alcanza 5×5 y ahí la máquina es casi óptima; la pérdida estaba en 6×6.
+    Por rollout (cada acción completada con la misma máquina) se ven los pasos donde otra acción termina mejor."""
+    import importlib.util
+    import tempfile
+    from pathlib import Path
+
+    from llm.library import Piece, rollout_evidence
+
+    with tempfile.TemporaryDirectory() as d:
+        path = Path(d) / "bg.py"
+        path.write_text(BG_PIECE)
+        spec = importlib.util.spec_from_file_location("bg_roll", path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        bg = Piece(0, "bg", "bg", BG_PIECE, mod.build_component, mod.COMPONENT)
+        big = PACK.make_instances(1, 9150, PACK.parse_size("6x6"))
+        text, regret = rollout_evidence(Harness(PACK), (bg,), [bg], big)
+    assert "rollout" in text and "terminaría en" in text and regret

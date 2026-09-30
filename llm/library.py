@@ -275,6 +275,85 @@ def _show(partial) -> str:
     return str(stacks) if stacks is not None else repr(partial)
 
 
+ROLLOUT_INSTANCES = 2  # instancias grandes (fuera del alcance del oráculo) donde se compara por rollout
+ROLLOUT_STEPS = 12  # pasos muestreados por instancia
+
+
+def rollout_evidence(harness: Harness, pieces: tuple[Piece, ...], library: list[Piece], instances) -> tuple[str, dict]:
+    """Evidencia donde el oráculo no alcanza: en pasos muestreados de la construcción greedy de la máquina,
+    cada candidato se completa con la misma máquina (rollout). Si otra acción termina con menos movimientos
+    que la elegida, es un contraejemplo (una cota, no el óptimo). Corrida 85: con el oráculo solo en 5×5, la
+    máquina parecía perfecta ("acierta siempre cuando sus piezas aplican") y la pérdida estaba en 6×6.
+    ("texto", {regla: movimientos de más por rollout})."""
+    from core.construction import GreedyConstructor
+    from core.machine import FALLBACK, _diverse
+    from core.rules import RuleMachine, action_key
+
+    if not pieces or not instances:
+        return "", {}
+    factory = composition_factory(pieces)[0]
+    rows, regret, steps_by, found = [], {}, {}, 0
+    for inst in instances:
+        P = harness.pack.problem_factory(inst)
+        view = P.construction_view(inst)
+        g = GreedyConstructor(P, factory(P), max_steps=20_000)
+        pol = g.policy
+        pol.bind(view)
+        partial = view.empty()
+        memory = pol.init(partial)
+        trail = []
+        for _ in range(20_000):  # la construcción greedy, guardando cada paso
+            if view.is_complete(partial):
+                break
+            cands = list(view.candidates(partial))
+            if not cands:
+                break
+            scores = g.scores(partial, cands, memory)
+            a = cands[min(range(len(cands)), key=scores.__getitem__)]
+            trail.append((partial, memory, cands, a, pol.state_of(partial, memory)))
+            memory = pol.update(partial, memory, a)
+            partial = view.apply(partial, a)
+        stride = max(1, len(trail) // ROLLOUT_STEPS)
+
+        def finish(p, mem, act):
+            pol.bind(view)
+            m2 = pol.update(p, mem, act)
+            sol = g.complete_from(view, view.apply(p, act), Random(0), memory=m2, fresh=False)[0]
+            return float(P.objective(sol)) if P.is_feasible(sol) else float("inf")
+
+        for p, mem, cands, a, st in trail[::stride]:
+            base = finish(p, mem, a)
+            alts = [(finish(p, mem, c), c) for c in cands if action_key(c) != action_key(a)]
+            steps_by[st] = steps_by.get(st, 0) + 1
+            if not alts:
+                continue
+            v, b = min(alts, key=lambda t: t[0])
+            if v < base:
+                found += 1
+                regret[st] = regret.get(st, 0) + (base - v)
+                allow = []
+                for pc in library:
+                    m = RuleMachine(P, [pc.factory(P, **pc.params).rules[0]])
+                    m.bind(view)
+                    mm = m.entry(pc.rule, p, m.initial(p)[1][0])
+                    if any(action_key(x) == action_key(b) for x in m.allowed(pc.rule, p, mm)):
+                        allow.append(f"`{pc.rule}` #{pc.id}" + (" (ANCHA)" if pc.broad else ""))
+                rows.append((base - v, st, p, a, base, b, v, allow, view.apply(p, a), view.apply(p, b)))
+    if not steps_by:
+        return "", {}
+    size = getattr(instances[0], "name", "") or "grandes"
+    lines = [f"En instancias sin óptimo ({size}), comparando por rollout (cada acción completada con la misma máquina): "
+             f"en {found} de {sum(steps_by.values())} pasos muestreados otra acción termina con menos movimientos ("
+             + ", ".join(f"`{st}` {regret.get(st, 0):g} de más en {n} pasos" for st, n in steps_by.items()) + ")."]
+    for d, st, p, a, base, b, v, allow, pa, pb in _diverse(sorted(rows, key=lambda t: -t[0]), N_EXAMPLES, key=lambda t: t[1]):
+        who = "el comodín" if st == FALLBACK else f"`{st}`"
+        lines.append(f"- estado `{_show(p)}`; decidió {who}.\n"
+                     f"  eligió {a!r} → `{_show(pa)}`, y la máquina termina en {base:g} movimientos\n"
+                     f"  con {b!r} → `{_show(pb)}` terminaría en {v:g}; lo permite"
+                     f"{'n' if len(allow) > 1 else ''} {', '.join(allow) if allow else 'NINGUNA pieza'}")
+    return "\n".join(lines), regret
+
+
 def api_summary(source: str) -> str:
     """Las clases de la vista con su docstring y los campos, sin el código de los métodos."""
     try:
@@ -516,6 +595,7 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
     screen = train[:: max(1, len(train) // 4)][:4]
     minimal = harness.mean(lambda P, **_: RuleMachine(P, []), {}, train)
     oracle_insts = sorted(train, key=lambda i: getattr(i, "N", 0))[:ORACLE_INSTANCES]
+    rollout_insts = sorted(train, key=lambda i: -getattr(i, "N", 0))[:ROLLOUT_INSTANCES]  # las más grandes
     for pc in library:
         row = rows.get(pc.id) or {}
         if prev is not None and row.get("alone") is not None:  # ya medida con estas instancias
@@ -567,6 +647,11 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
             target = best_pieces[0] if best_pieces else rng.choice(library)
         # evidencia contra el óptimo en la mejor máquina (o en el comodín solo), anotada por pieza
         evid, regret = evidence(harness, best_pieces, library, oracle_insts)
+        big_evid, big_regret = rollout_evidence(harness, best_pieces, library, rollout_insts)
+        if big_evid:
+            evid = evid + "\n\n" + big_evid
+            for k, v in big_regret.items():
+                regret[k] = regret.get(k, 0) + v
         if best_pieces and op == "refine_rule" and regret:  # la pieza de la mejor máquina que más pierde
             worst = max((s for s in regret if s in {p.rule for p in best_pieces}), default=None, key=regret.get)
             target = next((p for p in best_pieces if p.rule == worst), target)
