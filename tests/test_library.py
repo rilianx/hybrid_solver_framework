@@ -162,3 +162,27 @@ def test_a_piece_is_a_simple_rule_and_the_prompt_has_no_macros_or_priorities(tmp
     assert rows[0]["status"] == "rechazado" and "regla simple" in rows[0]["reason"]
     prompt = client.calls[0][1].lower()
     assert "macro" not in prompt and "prioridad" not in prompt and "priority" not in prompt
+
+
+def test_resume_reuses_the_evaluated_compositions_and_the_best(tmp_path):
+    """Corrida 83: al retomar se recalculaba la biblioteca entera y el job se agotaba en 3 rondas.
+    Ahora se guardan las composiciones evaluadas y la mejor, y se reusan con las mismas instancias."""
+    import json
+
+    client = ScriptedClient(responses=[_fenced(BG_PIECE), _fenced(REDUCE_PIECE)])
+    first = evolve_library(client, PACK, PACK.make_spec(), tmp_path, Harness(PACK), rounds=2, tune_samples=1, n_train=2,
+                           n_test=2, size="5x5", verbose=False)
+    saved = json.loads((tmp_path / "evolve_library.json").read_text())
+    assert saved["cache"] and saved["state"]["best"] and saved["key"] == "5x5|2"
+
+    calls = []
+
+    class Counting(Harness):
+        def mean(self, *a, **k):
+            calls.append(1)
+            return super().mean(*a, **k)
+
+    again = evolve_library(ScriptedClient(responses=[]), PACK, PACK.make_spec(), tmp_path, Counting(PACK), rounds=0,
+                           tune_samples=1, n_train=2, n_test=2, size="5x5", verbose=False, resume=True)
+    assert again.individuals[-1]["best"] == first.individuals[-1]["best"] == ["bg", "reduce"]
+    assert len(calls) <= 3  # el comodín solo y la salida; nada de recomponer

@@ -501,6 +501,308 @@
           }
         }
       }
+    },
+    {
+      "id": 10,
+      "rule": "unsorted_top_to_empty_buffer",
+      "name": "unsorted_top_to_empty_buffer",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 90.188,
+      "width": 0.183,
+      "precision": [
+        0,
+        0
+      ],
+      "params": {},
+      "source": "from core.rules import RuleMachine\nCOMPONENT = {'name': 'unsorted_top_to_empty_buffer', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {'min_bad_on_source': {'type': 'int', 'range': [1, 10], 'default': 2}, 'min_source_height': {'type': 'int', 'range': [1, 10], 'default': 2}, 'prefer_larger_top_group': {'type': 'bool', 'default': True}}}\n\nclass UnsortedTopToEmptyBuffer:\n    _auto_unsorted_top_to_empty_buffer_score_k1 = 10.0\n    'Move the top item of a disordered source stack to an empty destination stack.'\n    name = 'unsorted_top_to_empty_buffer'\n\n    def __init__(self, problem, min_bad_on_source=2, min_source_height=2, prefer_larger_top_group=True):\n        self.problem = problem\n        self.min_bad_on_source = int(min_bad_on_source)\n        self.min_source_height = int(min_source_height)\n        self.prefer_larger_top_group = bool(prefer_larger_top_group)\n\n    def _is_applicable(self, partial, action):\n        so = action.so\n        sd = action.sd\n        if so == sd:\n            return False\n        if partial.h(so) < self.min_source_height:\n            return False\n        if partial.h(sd) != 0:\n            return False\n        if partial.e(sd) <= 0:\n            return False\n        sorted_on_source = partial.sorted_n[so]\n        height_on_source = partial.h(so)\n        bad_on_source = height_on_source - sorted_on_source\n        if bad_on_source < self.min_bad_on_source:\n            return False\n        if sorted_on_source >= height_on_source:\n            return False\n        if partial.visited is not None:\n            nxt = partial.after(so, sd)\n            if nxt in partial.visited:\n                return False\n        return True\n\n    def _priority_tuple(self, partial, action):\n        so = action.so\n        sd = action.sd\n        bad_on_source = partial.h(so) - partial.sorted_n[so]\n        top_group = partial.g(so)\n        if self.prefer_larger_top_group:\n            group_key = -int(top_group)\n        else:\n            group_key = int(top_group)\n        return (group_key, -int(bad_on_source), -int(partial.h(so)), int(sd), int(so))\n\n    def allowed(self, partial, memory, candidates):\n        allowed = [a for a in candidates if self._is_applicable(partial, a)]\n        if not allowed:\n            return []\n        allowed.sort(key=lambda a: self._priority_tuple(partial, a))\n        return allowed\n\n    def score(self, partial, memory, action):\n        pr = self._priority_tuple(partial, action)\n        return float(pr[0] * 1000000000.0 + pr[1] * 1000000.0 + pr[2] * 1000.0 + pr[3] * self._auto_unsorted_top_to_empty_buffer_score_k1 + pr[4])\n\ndef _build_component_llm(problem, min_bad_on_source=2, min_source_height=2, prefer_larger_top_group=True, **params):\n    rule = UnsortedTopToEmptyBuffer(problem=problem, min_bad_on_source=min_bad_on_source, min_source_height=min_source_height, prefer_larger_top_group=prefer_larger_top_group)\n    return RuleMachine(problem, [rule])\n_AUTO = {'unsorted_top_to_empty_buffer_score_k1': 10.0}\n_AUTO_OWNER = {'unsorted_top_to_empty_buffer_score_k1': 'UnsortedTopToEmptyBuffer'}\n_AUTO_ATTR = {}\n_AUTO_CLASSES = {'UnsortedTopToEmptyBuffer': UnsortedTopToEmptyBuffer}\n_AUTO_FACTORY = '_build_component_llm'\n\ndef build_component(problem, **params):\n    \"\"\"Envoltura del framework: los números que el LLM dejó sueltos en los métodos son parámetros\n    (`_AUTO`, declarados en COMPONENT; `_AUTO_OWNER`: la clase de cada uno). Se fijan en las clases\n    mientras se construye (por si un `__init__` los usa) y en cada instancia: la máquina, sus\n    reglas y sus transiciones.\"\"\"\n    attrs = globals().get('_AUTO_ATTR', {})\n    auto = {k: params.pop(k, v) for k, v in _AUTO.items()}\n    lifted = [k for k in auto if k not in attrs]\n    saved = {k: getattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k) for k in lifted}\n    for k in lifted:\n        setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k, auto[k])\n    try:\n        obj = _build_component_llm(problem, **params)\n    finally:\n        for k, v in saved.items():\n            setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k, v)\n    parts = [obj, getattr(obj, 'transitions', None), *list(getattr(obj, 'rules', None) or [])]\n    for part in parts:\n        for k, v in auto.items():\n            if part is not None and isinstance(part, _AUTO_CLASSES[_AUTO_OWNER[k]]):\n                setattr(part, attrs.get(k, '_auto_' + k), v)\n    return obj\n",
+      "component": {
+        "name": "unsorted_top_to_empty_buffer",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {
+          "min_bad_on_source": {
+            "type": "int",
+            "range": [
+              1,
+              10
+            ],
+            "default": 2
+          },
+          "min_source_height": {
+            "type": "int",
+            "range": [
+              1,
+              10
+            ],
+            "default": 2
+          },
+          "prefer_larger_top_group": {
+            "type": "bool",
+            "default": true
+          }
+        }
+      }
+    },
+    {
+      "id": 11,
+      "rule": "sorted_release_to_empty_buffer",
+      "name": "sorted_release_to_empty_buffer",
+      "op": "new_rule",
+      "parent": null,
+      "macro": false,
+      "alone": 90.062,
+      "width": 0.102,
+      "precision": [
+        0,
+        0
+      ],
+      "params": {},
+      "source": "from core.rules import RuleMachine\nCOMPONENT = {'name': 'sorted_release_to_empty_buffer', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {'min_empty_stacks': {'type': 'int', 'range': [1, 3], 'default': 1}}}\n\nclass SortedReleaseToEmptyBufferRule:\n    _auto_sorted_release_to_empty_buffer_score_k1 = 0.001\n    name = 'sorted_release_to_empty_buffer'\n\n    def __init__(self, max_source_height: int=2, max_remaining_height: int=1, min_empty_stacks: int=1):\n        self.max_source_height = int(max_source_height)\n        self.max_remaining_height = int(max_remaining_height)\n        self.min_empty_stacks = int(min_empty_stacks)\n\n    def _empty_stacks(self, partial) -> int:\n        return sum((1 for i in range(partial.S) if partial.h(i) == 0))\n\n    def _is_allowed_type(self, partial, action) -> bool:\n        so = action.so\n        sd = action.sd\n        hs = partial.h(so)\n        if hs <= 0:\n            return False\n        if hs > self.max_source_height:\n            return False\n        if not partial.is_sorted_stack(so):\n            return False\n        if partial.h(sd) != 0:\n            return False\n        remaining = hs - 1\n        if remaining > self.max_remaining_height:\n            return False\n        if self._empty_stacks(partial) < self.min_empty_stacks:\n            return False\n        if partial.visited is not None:\n            nxt = partial.after(so, sd)\n            if nxt in partial.visited:\n                return False\n        return True\n\n    def allowed(self, partial, memory, candidates):\n        moves = [a for a in candidates if self._is_allowed_type(partial, a)]\n        moves.sort(key=lambda a: self.score(partial, memory, a))\n        return moves\n\n    def score(self, partial, memory, action) -> float:\n        so = action.so\n        sd = action.sd\n        remaining = partial.h(so) - 1\n        top_group = partial.g(so)\n        return float(remaining) * 1000000.0 - float(top_group) * 1000.0 + float(so) * 1.0 + float(sd) * self._auto_sorted_release_to_empty_buffer_score_k1\n\ndef _build_component_llm(problem, **params):\n    rule = SortedReleaseToEmptyBufferRule(max_source_height=params.get('max_source_height', 2), max_remaining_height=params.get('max_remaining_height', 1), min_empty_stacks=params.get('min_empty_stacks', 1))\n    return RuleMachine(problem, [rule])\n_AUTO = {'sorted_release_to_empty_buffer_score_k1': 0.001}\n_AUTO_OWNER = {'sorted_release_to_empty_buffer_score_k1': 'SortedReleaseToEmptyBufferRule'}\n_AUTO_ATTR = {}\n_AUTO_CLASSES = {'SortedReleaseToEmptyBufferRule': SortedReleaseToEmptyBufferRule}\n_AUTO_FACTORY = '_build_component_llm'\n\ndef build_component(problem, **params):\n    \"\"\"Envoltura del framework: los números que el LLM dejó sueltos en los métodos son parámetros\n    (`_AUTO`, declarados en COMPONENT; `_AUTO_OWNER`: la clase de cada uno). Se fijan en las clases\n    mientras se construye (por si un `__init__` los usa) y en cada instancia: la máquina, sus\n    reglas y sus transiciones.\"\"\"\n    attrs = globals().get('_AUTO_ATTR', {})\n    auto = {k: params.pop(k, v) for k, v in _AUTO.items()}\n    lifted = [k for k in auto if k not in attrs]\n    saved = {k: getattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k) for k in lifted}\n    for k in lifted:\n        setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k, auto[k])\n    try:\n        obj = _build_component_llm(problem, **params)\n    finally:\n        for k, v in saved.items():\n            setattr(_AUTO_CLASSES[_AUTO_OWNER[k]], '_auto_' + k, v)\n    parts = [obj, getattr(obj, 'transitions', None), *list(getattr(obj, 'rules', None) or [])]\n    for part in parts:\n        for k, v in auto.items():\n            if part is not None and isinstance(part, _AUTO_CLASSES[_AUTO_OWNER[k]]):\n                setattr(part, attrs.get(k, '_auto_' + k), v)\n    return obj\n",
+      "component": {
+        "name": "sorted_release_to_empty_buffer",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {
+          "min_empty_stacks": {
+            "type": "int",
+            "range": [
+              1,
+              3
+            ],
+            "default": 1
+          }
+        }
+      }
+    },
+    {
+      "id": 12,
+      "rule": "unsorted_to_sorted_safe_placement",
+      "name": "unsorted_to_sorted_safe_placement_refined",
+      "op": "refine_rule",
+      "parent": 3,
+      "macro": false,
+      "alone": 89.875,
+      "width": 0.116,
+      "precision": [
+        6,
+        7
+      ],
+      "params": {},
+      "source": "COMPONENT = {'name': 'unsorted_to_sorted_safe_placement_refined', 'slot': 'construction_machine', 'compatible_skeletons': ['CONSTRUCT'], 'requires': [], 'params': {'prioritize_tighter_group_fit': {'type': 'bool', 'default': True}}}\nfrom core.rules import RuleMachine\n\nclass UnsortedToSortedSafePlacementRefined:\n    \"\"\"Permite mover la cima de una pila fuente desordenada a una pila destino ordenada si el destino sigue ordenado, priorizando cierres limpios de la fuente.\"\"\"\n    name = 'unsorted_to_sorted_safe_placement'\n\n    def __init__(self, prefer_non_empty_destination: bool=True, prioritize_source_becomes_sorted: bool=True, prioritize_tighter_group_fit: bool=True, prefer_taller_destination: bool=True, filter_visited: bool=True):\n        self.prefer_non_empty_destination = prefer_non_empty_destination\n        self.prioritize_source_becomes_sorted = prioritize_source_becomes_sorted\n        self.prioritize_tighter_group_fit = prioritize_tighter_group_fit\n        self.prefer_taller_destination = prefer_taller_destination\n        self.filter_visited = filter_visited\n\n    def _is_unsorted_source(self, partial, so):\n        return partial.h(so) > 0 and (not partial.is_sorted_stack(so))\n\n    def _keeps_destination_sorted(self, partial, so, sd):\n        if partial.h(so) == 0 or partial.h(sd) >= partial.H:\n            return False\n        if not partial.is_sorted_stack(sd):\n            return False\n        return partial.g(sd) >= partial.g(so)\n\n    def _would_repeat(self, partial, so, sd):\n        return self.filter_visited and partial.visited is not None and (partial.after(so, sd) in partial.visited)\n\n    def _source_becomes_sorted(self, partial, so):\n        return partial.sorted_n[so] == partial.h(so) - 1\n\n    def allowed(self, partial, memory, candidates):\n        allowed = []\n        for action in candidates:\n            if not self._is_unsorted_source(partial, action.so):\n                continue\n            if not self._keeps_destination_sorted(partial, action.so, action.sd):\n                continue\n            if self._would_repeat(partial, action.so, action.sd):\n                continue\n            allowed.append(action)\n\n        def key(action):\n            so = action.so\n            sd = action.sd\n            dest_empty = partial.h(sd) == 0\n            gap = partial.g(sd) - partial.g(so)\n            source_finishes = self._source_becomes_sorted(partial, so)\n            parts = []\n            if self.prioritize_source_becomes_sorted:\n                parts.append(not source_finishes)\n            if self.prefer_non_empty_destination:\n                parts.append(dest_empty)\n            if self.prioritize_tighter_group_fit:\n                parts.append(gap)\n            if self.prefer_taller_destination:\n                parts.append(-partial.h(sd))\n            else:\n                parts.append(partial.h(sd))\n            parts.extend([-partial.sorted_n[sd], partial.h(so) - partial.sorted_n[so], so, sd])\n            return tuple(parts)\n        allowed.sort(key=key)\n        return allowed\n\ndef build_component(problem, **params):\n    rule = UnsortedToSortedSafePlacementRefined(prefer_non_empty_destination=params.get('prefer_non_empty_destination', True), prioritize_source_becomes_sorted=params.get('prioritize_source_becomes_sorted', True), prioritize_tighter_group_fit=params.get('prioritize_tighter_group_fit', True), prefer_taller_destination=params.get('prefer_taller_destination', True), filter_visited=params.get('filter_visited', True))\n    return RuleMachine(problem, [rule])\n",
+      "component": {
+        "name": "unsorted_to_sorted_safe_placement_refined",
+        "slot": "construction_machine",
+        "compatible_skeletons": [
+          "CONSTRUCT"
+        ],
+        "requires": [],
+        "params": {
+          "prioritize_tighter_group_fit": {
+            "type": "bool",
+            "default": true
+          }
+        }
+      }
     }
-  ]
+  ],
+  "key": "5x5,6x6|8",
+  "cache": [
+    [
+      [
+        0
+      ],
+      91.0625
+    ],
+    [
+      [
+        1
+      ],
+      101.5625
+    ],
+    [
+      [
+        2
+      ],
+      95.1875
+    ],
+    [
+      [
+        3
+      ],
+      86.6875
+    ],
+    [
+      [
+        4
+      ],
+      88.625
+    ],
+    [
+      [
+        5
+      ],
+      107.8125
+    ],
+    [
+      [
+        6
+      ],
+      92.3125
+    ],
+    [
+      [
+        7
+      ],
+      102.0
+    ],
+    [
+      [
+        8
+      ],
+      90.625
+    ],
+    [
+      [
+        9
+      ],
+      100.8125
+    ],
+    [
+      [
+        10
+      ],
+      90.1875
+    ],
+    [
+      [
+        11
+      ],
+      90.0625
+    ],
+    [
+      [
+        12
+      ],
+      89.875
+    ],
+    [
+      [
+        3,
+        9
+      ],
+      20.25
+    ],
+    [
+      [
+        3,
+        0,
+        9
+      ],
+      20.875
+    ],
+    [
+      [
+        3,
+        8,
+        9
+      ],
+      20.25
+    ],
+    [
+      [
+        3,
+        9,
+        0
+      ],
+      20.25
+    ],
+    [
+      [
+        3,
+        9,
+        1
+      ],
+      20.25
+    ],
+    [
+      [
+        3,
+        9,
+        4
+      ],
+      20.3125
+    ],
+    [
+      [
+        3,
+        9,
+        6
+      ],
+      20.3125
+    ],
+    [
+      [
+        3,
+        9,
+        7
+      ],
+      18.9375
+    ],
+    [
+      [
+        3,
+        9,
+        8
+      ],
+      20.25
+    ],
+    [
+      [
+        3,
+        9,
+        10
+      ],
+      20.25
+    ]
+  ],
+  "state": {
+    "best": [
+      3,
+      9,
+      7
+    ],
+    "fitness": 20.0625,
+    "train": 18.9375,
+    "params": {
+      "p9::single_bad_count": 1,
+      "p9::min_sorted_prefix": 1,
+      "p9::frontier_max_height": 2,
+      "p9::allow_bad_suffix_receivers": true,
+      "p9::prefer_sorted_source_bonus": 8.0,
+      "p9::prefer_single_blocker_source_bonus": 2.0,
+      "p9::prefer_safe_sorted_dest_bonus": 3.0,
+      "p9::prefer_capped_dest_bonus": 1.0,
+      "p9::prefer_short_source_weight": 2.0,
+      "p9::prefer_long_dest_prefix_weight": 1.0,
+      "p9::prefer_tighter_fit_weight": 0.1,
+      "p7::min_source_height": 1,
+      "p7::max_source_height": 3,
+      "p7::max_source_bad_suffix": 1,
+      "p7::min_exposed_sorted_prefix": 1,
+      "p7::allow_unsorted_receivers": true,
+      "p7::allow_sorted_receivers": true,
+      "p7::allow_empty_receiver": false,
+      "p7::prefer_safe_sorted_placement": true,
+      "p7::prefer_near_sorted_peel": true,
+      "p7::prefer_taller_receivers": true
+    }
+  }
 }

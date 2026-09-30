@@ -658,6 +658,17 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
   movimiento, 16 de 2 y 1 de 3, y 35 dejan la pila vacía, porque ataca pilas cortas o con un
   solo bloqueador. Entre medio entra `bg`. Es "sacar un bloqueador y llenar", no el compromiso
   de FRG con una pila. Probablemente de ahí viene la diferencia en 6×6.
+
+  **Corrida 83: retoma la 82 con `gpt-5.4`, 3 rondas, 15 mil tokens, sin mejora.** Al retomar se
+  recalculaban todas las composiciones de la biblioteca (unas 1.900 con 13 piezas), y eso agotó
+  el tiempo del job. Cambios:
+  - `evolve_library.json` guarda las composiciones evaluadas, la mejor y sus parámetros, junto
+    con las instancias con que se evaluaron. Al retomar con las mismas instancias no se recalcula
+    nada.
+  - El compositor filtra las combinaciones nuevas en 4 instancias y evalúa en train solo las 25
+    mejores.
+  - El caché de la biblioteca actual se precalculó localmente (13 minutos) y viene en el
+    workspace.
 - **Un algoritmo de optimización de greedies** (etapa `evolve`, `llm/evolve.py`). Un greedy como
   FRG no sale de una vez; se llega por pasos: primero solo movimientos BG, después la prioridad
   dentro de ese estado, después un estado de vaciado que vuelve al inicial, y otra vez las

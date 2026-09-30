@@ -110,14 +110,22 @@ def composition_factory(pieces: tuple[Piece, ...]):
     return factory, comp
 
 
+SCREEN_KEEP = 25  # combinaciones nuevas que pasan del filtro (4 instancias) al train completo
+
+
 def compose(harness: Harness, library: list[Piece], instances, cache: dict, must: Piece | None = None,
-            deadline: float | None = None) -> list[tuple[float, tuple[int, ...]]]:
+            deadline: float | None = None, screen=None) -> list[tuple[float, tuple[int, ...]]]:
     """Las combinaciones de hasta MAX_PIECES piezas (las que incluyen `must`, si se da) en todos los
     órdenes, con el greedy en `instances`. Dos versiones de la misma regla no se combinan, y una
     pieza ancha solo va al final: arriba siempre aplica y las demás nunca actuarían (corrida 79: las
     10 mejores composiciones empataban en 51,812, con la ancha primero). Devuelve el caché completo
-    ordenado: [(media, ids en orden de prioridad)]."""
+    ordenado: [(media, ids en orden de prioridad)].
+
+    Con `screen` (unas pocas instancias), las combinaciones nuevas se filtran primero ahí y solo las
+    SCREEN_KEEP mejores se evalúan en `instances`: el compositor se lleva casi todo el tiempo de una
+    ronda (corrida 83: al retomar, recalcular la biblioteca entera agotó el job en 3 rondas)."""
     by_id = {pc.id: pc for pc in library}
+    pending = []
     for k in range(1, MAX_PIECES + 1):
         for combo in permutations(library, k):
             ids = tuple(pc.id for pc in combo)
@@ -127,8 +135,15 @@ def compose(harness: Harness, library: list[Piece], instances, cache: dict, must
                 continue
             if deadline is not None and time.monotonic() > deadline:
                 break
-            factory, _ = composition_factory(combo)
-            cache[ids] = harness.mean(factory, {}, instances)
+            pending.append(combo)
+    if screen is not None and len(pending) > SCREEN_KEEP:
+        scored = sorted(((harness.mean(composition_factory(c)[0], {}, screen), i) for i, c in enumerate(pending)),
+                        key=lambda t: t[0])
+        pending = [pending[i] for _, i in scored[:SCREEN_KEEP]]
+    for combo in pending:
+        if deadline is not None and time.monotonic() > deadline:
+            break
+        cache[tuple(pc.id for pc in combo)] = harness.mean(composition_factory(combo)[0], {}, instances)
     return sorted(((v, ids) for ids, v in cache.items() if all(i in by_id for i in ids)), key=lambda t: t[0])
 
 
@@ -350,9 +365,27 @@ def repair_prompt(op: str, reason: str, source: str) -> str:
             f"módulo completo. Devuelve UN solo bloque ```python```.\n\n# Tu módulo\n```python\n{source}\n```")
 
 
-def save_library(path: Path, library: list[Piece]) -> None:
+def save_library(path: Path, library: list[Piece], cache: dict | None = None, state: dict | None = None,
+                 key: str = "") -> None:
+    """La biblioteca y, para retomar sin recalcular, las composiciones ya evaluadas y la mejor."""
     rows = [{**pc.row(), "source": pc.source, "component": pc.component} for pc in library]
-    path.write_text(json.dumps({"library": rows}, indent=2, ensure_ascii=False, default=str))
+    data = {"library": rows, "key": key, "cache": [[list(ids), v] for ids, v in (cache or {}).items()],
+            "state": {k: (list(v) if k == "best" and v else v) for k, v in (state or {}).items()}}
+    path.write_text(json.dumps(data, indent=2, ensure_ascii=False, default=str))
+
+
+def load_saved(path: Path, key: str) -> tuple[dict, dict | None, dict]:
+    """(caché de composiciones, mejor composición, {id: fila}) de una corrida anterior; el caché y la mejor
+    solo si se evaluaron con las mismas instancias (`key`)."""
+    data = json.loads(path.read_text())
+    rows = {r["id"]: r for r in data.get("library", [])}
+    if data.get("key") != key:
+        return {}, None, rows
+    cache = {tuple(ids): float(v) for ids, v in data.get("cache", [])}
+    st = data.get("state") or None
+    if st and st.get("best"):
+        st = dict(st, best=tuple(st["best"]))
+    return cache, st, rows
 
 
 def load_library(path: Path, tmp: Path, problem) -> list[Piece]:
@@ -438,17 +471,27 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
     tmp.mkdir(parents=True, exist_ok=True)
     saved = ws / "evolve_library.json"
     reach = [(inst, pack.problem_factory(inst)) for inst in train]
+    key = f"{','.join(sizes)}|{n_train}"
     library = load_library(saved, tmp, contexts[0].problem) if resume and saved.exists() else []
+    cache, prev, rows = load_saved(saved, key) if library else ({}, None, {})
     res = EvolveResult()
-    cache: dict = {}
+    screen = train[:: max(1, len(train) // 4)][:4]
     minimal = harness.mean(lambda P, **_: RuleMachine(P, []), {}, train)
     oracle_insts = sorted(train, key=lambda i: getattr(i, "N", 0))[:ORACLE_INSTANCES]
     for pc in library:
-        pc.alone = cache.setdefault((pc.id,), harness.mean(composition_factory((pc,))[0], {}, train))
-        measure_piece(harness, pc, train, oracle_insts)
+        row = rows.get(pc.id) or {}
+        if prev is not None and row.get("alone") is not None:  # ya medida con estas instancias
+            pc.alone, pc.width = float(row["alone"]), float(row.get("width") or 0.0)
+            pc.precision = tuple(row["precision"]) if row.get("precision") else None
+        else:
+            pc.alone = cache.setdefault((pc.id,), harness.mean(composition_factory((pc,))[0], {}, train))
+            measure_piece(harness, pc, train, oracle_insts)
         res.individuals.append({**pc.row(), "status": "retomada"})
-    ranked = compose(harness, library, train, cache, deadline=deadline) if library else []
+    ranked = compose(harness, library, train, cache, deadline=deadline, screen=screen) if library else []
     state = {"best": None, "fitness": float("inf"), "train": minimal, "params": {}}
+    if prev is not None and prev.get("best") and all(any(p.id == i for p in library) for i in prev["best"]):
+        state.update(best=prev["best"], fitness=float(prev["fitness"]), train=float(prev["train"]),
+                     params=dict(prev.get("params") or {}))
 
     def update_best(ranked):
         """La mejor composición en train, si mejora a la actual (al principio, al comodín solo): se afina."""
@@ -521,7 +564,7 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
         pc.alone = cache.setdefault((pc.id,), harness.mean(composition_factory((pc,))[0], {}, train))
         measure_piece(harness, pc, train, oracle_insts)
         library.append(pc)
-        ranked = compose(harness, library, train, cache, must=pc, deadline=deadline)
+        ranked = compose(harness, library, train, cache, must=pc, deadline=deadline, screen=screen)
         improved = update_best(ranked)
         mine = next((v for v, ids in ranked if pc.id in ids), float("inf"))
         # biblioteca acotada: fuera las piezas que no están en ninguna de las mejores composiciones
@@ -530,7 +573,7 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
             drop = sorted((p for p in library if p.id not in keep), key=lambda p: -p.alone)
             for p in drop[: len(library) - LIBRARY_MAX]:
                 library.remove(p)
-        save_library(saved, library)
+        save_library(saved, library, cache, state, key)
         status = "mejor máquina" if improved else "en la biblioteca"
         res.individuals.append({**entry, **pc.row(), "best_with": _r(mine), "status": status,
                                 "best": [next(p.rule for p in library if p.id == i) for i in state["best"]] if state["best"] else [],
@@ -540,7 +583,7 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
             print(f"[library] ronda {rnd}: {op} → `{rule}` sola {pc.alone:.2f}, mejor combinación con ella {mine:.2f}; "
                   f"mejor máquina {state['fitness']:.2f} {'✔' if improved else '·'}")
     # salida: la biblioteca (para retomar) y la mejor máquina, como un módulo que carga sus piezas
-    save_library(saved, library)
+    save_library(saved, library, cache, state, key)
     if state["best"]:
         # la mejor, y si no pasa la validación completa (corrida 82: una pieza útil en 5×5 y 6×6 nunca se
         # activa en las micro-instancias), la siguiente composición en train que sí la pase
