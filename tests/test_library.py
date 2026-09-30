@@ -220,5 +220,38 @@ def test_rollout_evidence_covers_instances_beyond_the_oracle():
         spec.loader.exec_module(mod)
         bg = Piece(0, "bg", "bg", BG_PIECE, mod.build_component, mod.COMPONENT)
         big = PACK.make_instances(1, 9150, PACK.parse_size("6x6"))
-        text, regret = rollout_evidence(Harness(PACK), (bg,), [bg], big)
+        text, regret, steps = rollout_evidence(Harness(PACK), (bg,), [bg], big)
     assert "rollout" in text and "terminaría en" in text and regret
+
+
+def test_a_new_piece_is_also_tried_inserted_into_the_best_machine():
+    """Corrida 86: la mejor máquina ya usaba 3 piezas (el máximo), así que una pieza nueva solo podía
+    reemplazar a otra. Ahora también se prueba insertada en cada posición de la mejor."""
+    import importlib.util
+    import tempfile
+    from pathlib import Path
+
+    from llm.library import Piece
+
+    pieces = []
+    with tempfile.TemporaryDirectory() as d:
+        for i, (name, src) in enumerate([("bg", BG_PIECE), ("reduce", REDUCE_PIECE), ("wide", WIDE_PIECE)]):
+            path = Path(d) / f"q{i}.py"
+            path.write_text(src)
+            spec = importlib.util.spec_from_file_location(f"piece_ins_{i}", path)
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            pieces.append(Piece(i, name, name, src, mod.build_component, mod.COMPONENT))
+        pieces[2].width = 1.0  # ancha: solo al final
+        import llm.library as L
+
+        old = L.MAX_PIECES
+        L.MAX_PIECES = 1
+        try:
+            cache: dict = {}
+            compose(Harness(PACK), pieces, PACK.make_instances(2, 9100, PACK.parse_size("5x5")), cache, must=pieces[1],
+                    best=(0, 2))
+        finally:
+            L.MAX_PIECES = old
+    assert {(1, 0, 2), (0, 1, 2)} <= set(cache)  # insertada antes de la pieza ancha, que queda al final
+    assert (0, 2, 1) not in cache  # la ancha solo va al final

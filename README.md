@@ -697,6 +697,17 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
 
   En la máquina de la 82 muestra lo que antes no se veía: en 6×6, `frontier_blocker_transfer`
   deja 26 movimientos de más en 11 pasos (2,4 por paso), contra 1 por paso de `bg`.
+
+  **Corrida 86: con evidencia por rollout, 8 rondas (sin tiempo para más), 73 mil tokens, sin
+  mejora.** Las 8 fueron piezas nuevas del mismo tipo: tapar una pila desordenada con el tope de
+  otra, sacadas de los contraejemplos de 6×6 ("un patrón claro y ausente"). Combinadas dan
+  20,25–21,7. Hubo dos límites:
+  - la mejor ya usaba 3 piezas, el máximo, así que una nueva solo podía reemplazar a otra;
+  - la pérdida por pieza quedaba mezclada en la evidencia.
+
+  Ahora el compositor prueba además la mejor máquina con la pieza nueva insertada en cada
+  posición (hasta 4 piezas), y el prompt abre con una tabla de movimientos de más por paso de
+  cada pieza, en las instancias chicas (óptimo) y en las grandes (rollout).
 - **Un algoritmo de optimización de greedies** (etapa `evolve`, `llm/evolve.py`). Un greedy como
   FRG no sale de una vez; se llega por pasos: primero solo movimientos BG, después la prioridad
   dentro de ese estado, después un estado de vaciado que vuelve al inicial, y otra vez las

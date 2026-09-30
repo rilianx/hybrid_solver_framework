@@ -37,7 +37,7 @@ from .prompts import SYSTEM_PROMPT
 
 MAX_PIECES = 3  # una composición combina hasta 3 piezas
 LIBRARY_MAX = 8  # piezas en la biblioteca (se sacan las que no aparecen en las mejores composiciones)
-PRIORITIES = tuple(100 // 2 ** k for k in range(3))  # prioridad de cada posición de una composición: 100, 50, 25
+PRIORITIES = tuple(100 // 2 ** k for k in range(4))  # prioridad de cada posición de una composición: 100, 50, 25, 12
 BROAD = 0.5  # una pieza que permite en promedio más de esta fracción de los candidatos es ancha: solo va al final
 N_EXAMPLES = 4
 
@@ -122,7 +122,7 @@ SCREEN_KEEP = 25  # combinaciones nuevas que pasan del filtro (4 instancias) al 
 
 
 def compose(harness: Harness, library: list[Piece], instances, cache: dict, must: Piece | None = None,
-            deadline: float | None = None, screen=None) -> list[tuple[float, tuple[int, ...]]]:
+            deadline: float | None = None, screen=None, best: tuple[int, ...] | None = None) -> list[tuple[float, tuple[int, ...]]]:
     """Las combinaciones de hasta MAX_PIECES piezas (las que incluyen `must`, si se da) en todos los
     órdenes, con el greedy en `instances`. Dos versiones de la misma regla no se combinan, y una
     pieza ancha solo va al final: arriba siempre aplica y las demás nunca actuarían (corrida 79: las
@@ -148,6 +148,15 @@ def compose(harness: Harness, library: list[Piece], instances, cache: dict, must
         scored = sorted(((harness.mean(composition_factory(c)[0], {}, screen), i) for i, c in enumerate(pending)),
                         key=lambda t: t[0])
         pending = [pending[i] for _, i in scored[:SCREEN_KEEP]]
+    # la pieza nueva insertada en cada posición de la mejor máquina (hasta MAX_PIECES + 1 piezas): una pieza
+    # que complementa a las que funcionan no tiene que desplazar a ninguna (corrida 86: la mejor ya usaba 3)
+    if must is not None and best and must.id not in best and all(i in by_id for i in best):
+        for pos in range(len(best) + 1):
+            combo = tuple(by_id[i] for i in best[:pos]) + (must,) + tuple(by_id[i] for i in best[pos:])
+            ids = tuple(pc.id for pc in combo)
+            if ids in cache or len({pc.rule for pc in combo}) < len(combo) or any(pc.broad for pc in combo[:-1]):
+                continue
+            pending.append(combo)
     for combo in pending:
         if deadline is not None and time.monotonic() > deadline:
             break
@@ -218,7 +227,7 @@ def evidence(harness: Harness, pieces: tuple[Piece, ...], library: list[Piece], 
 
     oracle = getattr(harness.pack, "oracle_distance", None)
     if not callable(oracle):
-        return "", {}
+        return "", {}, {}
     factory = composition_factory(pieces)[0] if pieces else (lambda P, **_: RuleMachine(P, []))
     rows, regret, steps, total = [], {}, {}, [0, 0]
     for inst in oracle_insts:
@@ -251,7 +260,7 @@ def evidence(harness: Harness, pieces: tuple[Piece, ...], library: list[Piece], 
             bounds = [lb(x) for x in [e["partial"], *after]] if callable(lb) else None
             rows.append((e, allow, len(cands), after, bounds))
     if not rows and not regret:
-        return "", {}
+        return "", {}, {}
     rows = _diverse(sorted(rows, key=lambda t: -t[0]["regret"]), N_EXAMPLES, key=lambda t: t[0]["state"])
     lines = [f"Movimientos de más respecto del óptimo: {total[0]} en {total[1]} pasos ("
              + ", ".join(f"`{st}` {v} en {steps[st]} pasos ({v / max(1, steps[st]):.2f} por paso)"
@@ -266,7 +275,7 @@ def evidence(harness: Harness, pieces: tuple[Piece, ...], library: list[Piece], 
                      f"  óptimo {opt} → `{_show(after[1])}`{cb(2)}; lo permite"
                      f"{'n' if len(allow) > 1 else ''} {', '.join(allow) if allow else 'NINGUNA pieza'}\n"
                      f"  tramo óptimo desde el estado: {cont}")
-    return "\n".join(lines), regret
+    return "\n".join(lines), regret, steps
 
 
 def _show(partial) -> str:
@@ -290,7 +299,7 @@ def rollout_evidence(harness: Harness, pieces: tuple[Piece, ...], library: list[
     from core.rules import RuleMachine, action_key
 
     if not pieces or not instances:
-        return "", {}
+        return "", {}, {}
     factory = composition_factory(pieces)[0]
     rows, regret, steps_by, found = [], {}, {}, 0
     for inst in instances:
@@ -340,7 +349,7 @@ def rollout_evidence(harness: Harness, pieces: tuple[Piece, ...], library: list[
                         allow.append(f"`{pc.rule}` #{pc.id}" + (" (ANCHA)" if pc.broad else ""))
                 rows.append((base - v, st, p, a, base, b, v, allow, view.apply(p, a), view.apply(p, b)))
     if not steps_by:
-        return "", {}
+        return "", {}, {}
     size = getattr(instances[0], "name", "") or "grandes"
     lines = [f"En instancias sin óptimo ({size}), comparando por rollout (cada acción completada con la misma máquina): "
              f"en {found} de {sum(steps_by.values())} pasos muestreados otra acción termina con menos movimientos ("
@@ -351,7 +360,27 @@ def rollout_evidence(harness: Harness, pieces: tuple[Piece, ...], library: list[
                      f"  eligió {a!r} → `{_show(pa)}`, y la máquina termina en {base:g} movimientos\n"
                      f"  con {b!r} → `{_show(pb)}` terminaría en {v:g}; lo permite"
                      f"{'n' if len(allow) > 1 else ''} {', '.join(allow) if allow else 'NINGUNA pieza'}")
-    return "\n".join(lines), regret
+    return "\n".join(lines), regret, steps_by
+
+
+def loss_table(pieces, small, small_steps, big, big_steps) -> str:
+    """Movimientos de más por paso que decidió cada pieza, en las instancias con óptimo y en las grandes
+    (por rollout): arriba del prompt, para que se vea qué pieza pierde más (corrida 86: la de reducción
+    perdía 2,4 por paso en 6×6 contra 1 de `bg`, pero el LLM solo escribía piezas nuevas)."""
+    from core.machine import FALLBACK
+
+    names = [p.rule for p in pieces] + [FALLBACK]
+    rows = []
+    for n in names:
+        a = f"{small.get(n, 0) / small_steps[n]:.2f} ({small_steps[n]} pasos)" if small_steps.get(n) else "—"
+        b = f"{big.get(n, 0) / big_steps[n]:.2f} ({big_steps[n]} pasos)" if big_steps.get(n) else "—"
+        if a != "—" or b != "—":
+            rows.append(f"| {'comodín' if n == FALLBACK else '`' + n + '`'} | {a} | {b} |")
+    if not rows:
+        return ""
+    return ("Movimientos de más por paso que decidió cada pieza (mayor = pierde más):\n"
+            "| pieza | instancias chicas (contra el óptimo) | instancias grandes (por rollout) |\n|---|---|---|\n"
+            + "\n".join(rows) + "\n\n")
 
 
 def api_summary(source: str) -> str:
@@ -646,12 +675,14 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
             op = "refine_rule"
             target = best_pieces[0] if best_pieces else rng.choice(library)
         # evidencia contra el óptimo en la mejor máquina (o en el comodín solo), anotada por pieza
-        evid, regret = evidence(harness, best_pieces, library, oracle_insts)
-        big_evid, big_regret = rollout_evidence(harness, best_pieces, library, rollout_insts)
+        evid, regret, small_steps = evidence(harness, best_pieces, library, oracle_insts)
+        big_evid, big_regret, big_steps = rollout_evidence(harness, best_pieces, library, rollout_insts)
+        loss = loss_table(best_pieces, regret, small_steps, big_regret, big_steps)
         if big_evid:
             evid = evid + "\n\n" + big_evid
             for k, v in big_regret.items():
                 regret[k] = regret.get(k, 0) + v
+        evid = loss + evid
         if best_pieces and op == "refine_rule" and regret:  # la pieza de la mejor máquina que más pierde
             worst = max((s for s in regret if s in {p.rule for p in best_pieces}), default=None, key=regret.get)
             target = next((p for p in best_pieces if p.rule == worst), target)
@@ -696,7 +727,7 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
         pc.alone = cache.setdefault((pc.id,), harness.mean(composition_factory((pc,))[0], {}, train))
         measure_piece(harness, pc, train, oracle_insts)
         library.append(pc)
-        ranked = compose(harness, library, train, cache, must=pc, deadline=deadline, screen=screen)
+        ranked = compose(harness, library, train, cache, must=pc, deadline=deadline, screen=screen, best=state["best"])
         improved = update_best(ranked)
         mine = next((v for v, ids in ranked if pc.id in ids), float("inf"))
         # biblioteca acotada: fuera las piezas que no están en ninguna de las mejores composiciones
