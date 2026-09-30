@@ -601,7 +601,7 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
   - una pieza **ancha** (permite en promedio más del 50 % de los candidatos) solo va al final de
     una composición: queda como "comodín mejorado" y las angostas se prueban encima;
   - cada pieza se mide sola: ancho y precisión con el oráculo (en cuántos de los pasos donde
-    aplica su primera acción es óptima);
+    aplica su primera acción es óptima; después se sacó el oráculo, ver más abajo);
   - los contraejemplos se anotan por pieza: qué piezas de la biblioteca permitían una acción
     óptima ("NINGUNA pieza", o solo una ANCHA, dice que falta un tipo de movimiento);
   - **prompt compacto** (≈ 5 mil caracteres contra 20 mil): tarea, operador, biblioteca en una
@@ -708,6 +708,23 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
   Ahora el compositor prueba además la mejor máquina con la pieza nueva insertada en cada
   posición (hasta 4 piezas), y el prompt abre con una tabla de movimientos de más por paso de
   cada pieza, en las instancias chicas (óptimo) y en las grandes (rollout).
+
+  **Corrida 87: con inserción y tabla de pérdida, 10 rondas, 98 mil tokens, sin mejora en test.**
+  El LLM eligió 9 piezas nuevas y 1 refinamiento (de la pieza que la tabla mostraba como la que más
+  perdía por paso). Otra vez todas del mismo tipo: tapar o aparcar sobre una pila desordenada. La
+  inserción funcionó: `prefix_capped_unsorted_receiver` entró como cuarta pieza y bajó train de
+  18,94 a 18,81, pero en test subió de 20,06 a 21,19 (sobreajuste a train). La máquina validada
+  sigue siendo la de 3 piezas (21,0): las de 4 no pasan la validación completa porque sus últimas
+  piezas no se activan en las micro-instancias.
+
+  **Sin oráculo: solo rollouts.** La biblioteca ya no usa la resolución óptima (A* en 5×5) ni en
+  la evidencia ni al medir piezas. Toda la comparación es por rollout: en 12 pasos muestreados de
+  una instancia de train de cada tamaño, cada candidato se completa con la misma máquina (o con el
+  comodín solo, si todavía no hay mejor máquina), y un contraejemplo es una acción que termina con
+  menos movimientos que la elegida. Así la evidencia es la misma en cualquier tamaño y compara
+  contra lo que la máquina misma lograría, no contra un óptimo que solo existe en instancias
+  chicas. La tabla de arriba del prompt queda con una sola columna (movimientos de más por paso,
+  por rollout), y cada pieza se describe por su ancho y su fitness sola (sin precisión).
 - **Un algoritmo de optimización de greedies** (etapa `evolve`, `llm/evolve.py`). Un greedy como
   FRG no sale de una vez; se llega por pasos: primero solo movimientos BG, después la prioridad
   dentro de ese estado, después un estado de vaciado que vuelve al inicial, y otra vez las

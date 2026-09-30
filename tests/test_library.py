@@ -97,6 +97,7 @@ def test_from_two_narrow_pieces_the_composer_finds_bg_over_reduce(tmp_path):
     assert "`new_rule`" in first and "ANGOSTA" in first and "(vacía" in first
     second = client.calls[1][1]
     assert "`bg`" in second and "Permite el" in second and "NINGUNA" in second
+    assert "rollout" in second and "óptimo" not in second  # sin oráculo: se compara solo por rollout
     assert res.written and "rejected" not in res.written[0], res.written  # la máquina compuesta pasa la validación completa
 
 
@@ -205,7 +206,8 @@ def test_the_llm_chooses_the_action_and_sees_the_history(tmp_path):
 
 def test_rollout_evidence_covers_instances_beyond_the_oracle():
     """Corrida 85: el oráculo solo alcanza 5×5 y ahí la máquina es casi óptima; la pérdida estaba en 6×6.
-    Por rollout (cada acción completada con la misma máquina) se ven los pasos donde otra acción termina mejor."""
+    Por rollout (cada acción completada con la misma máquina) se ven los pasos donde otra acción termina mejor,
+    en cualquier tamaño y también con el comodín solo."""
     import importlib.util
     import tempfile
     from pathlib import Path
@@ -222,6 +224,9 @@ def test_rollout_evidence_covers_instances_beyond_the_oracle():
         big = PACK.make_instances(1, 9150, PACK.parse_size("6x6"))
         text, regret, steps = rollout_evidence(Harness(PACK), (bg,), [bg], big)
     assert "rollout" in text and "terminaría en" in text and regret
+    with tempfile.TemporaryDirectory():
+        text, regret, steps = rollout_evidence(Harness(PACK), (), [bg], PACK.make_instances(1, 9100, PACK.parse_size("5x5")))
+    assert "decidió el comodín" in text and steps
 
 
 def test_a_new_piece_is_also_tried_inserted_into_the_best_machine():

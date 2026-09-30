@@ -3,7 +3,7 @@
     biblioteca ← {}                                         # reglas (piezas), no máquinas
     repetir:
         operador ← new_rule | refine_rule(r)
-        pieza    ← LLM(biblioteca, mejor composición y su diagnóstico con el oráculo, operador)
+        pieza    ← LLM(biblioteca, mejor composición y su diagnóstico por rollout, operador)
         validación liviana (la pieza es una máquina de UNA regla) → a la biblioteca
         compositor (sin LLM): las combinaciones de hasta 3 piezas que la incluyen, en todos los
                      órdenes de prioridad, con el greedy en train → la mejor composición se afina
@@ -31,7 +31,7 @@ from typing import Any
 from core.validation.params import llm_view
 
 from .client import LLMClient, TokenUsage
-from .evolve import ORACLE_INSTANCES, SLOT, EvolveResult, Harness, _r, light_validation, tune
+from .evolve import SLOT, EvolveResult, Harness, _r, light_validation, tune
 from .parser import extract_code_blocks
 from .prompts import SYSTEM_PROMPT
 
@@ -45,7 +45,7 @@ OPERATOR_TEXT = {
     "choose": (
         "Decide tú qué hacer en esta ronda: escribir una pieza NUEVA (un tipo de movimiento que falta) o MEJORAR una pieza "
         "de la biblioteca (di cuál; su código está abajo si está en la mejor máquina). Usa la evidencia: movimientos de "
-        "más por pieza (en total y por paso), qué piezas permitían la acción óptima y el historial de rondas anteriores. "
+        "más por pieza (en total y por paso), qué piezas permitían la mejor alternativa y el historial de rondas anteriores. "
         "Una pieza nueva tiene que ser ANGOSTA: de los candidatos permite solo los de su tipo y devuelve [] cuando no "
         "aplica. Al mejorar una pieza, mantén su `name`; la versión nueva entra junto a la anterior. Empieza la respuesta "
         "con dos líneas:\nACCIÓN: nueva   (o)   ACCIÓN: mejorar <name de la pieza>\nPOR QUÉ: <una línea>\ny después el "
@@ -53,11 +53,11 @@ OPERATOR_TEXT = {
     "new_rule": (
         "Escribe UNA pieza NUEVA: un tipo de movimiento. Tiene que ser ANGOSTA: de los candidatos permite solo los de su "
         "tipo y devuelve [] cuando no aplica; lo demás lo cubren otras piezas o el comodín. Mira los pasos de abajo donde "
-        "el óptimo hace un movimiento que NINGUNA pieza permite (o solo una ANCHA): ¿de qué tipo es? No repitas una pieza "
+        "la mejor alternativa es un movimiento que NINGUNA pieza permite (o solo una ANCHA): ¿de qué tipo es? No repitas una pieza "
         "que ya está."),
     "refine_rule": (
-        "Mejora la pieza `{target}` (abajo), manteniendo su `name`. En los pasos donde ella decidió mal: si el óptimo no "
-        "estaba entre lo que permitió, cambia el set (angostar o ampliar); si estaba, cambia el orden. La versión nueva "
+        "Mejora la pieza `{target}` (abajo), manteniendo su `name`. En los pasos donde ella decidió mal: si la mejor "
+        "alternativa no estaba entre lo que permitió, cambia el set (angostar o ampliar); si estaba, cambia el orden. La versión nueva "
         "entra junto a la anterior."),
 }
 
@@ -79,7 +79,6 @@ class Piece:
     alone: float = float("inf")  # fitness sola (con el comodín), en train
     doc: str = ""
     width: float = 0.0  # fracción media de los candidatos que permite cuando aplica
-    precision: tuple | None = None  # (su primera acción es óptima, pasos donde aplica), con el oráculo
 
     @property
     def key(self) -> str:
@@ -87,8 +86,7 @@ class Piece:
 
     def row(self) -> dict:
         return {"id": self.id, "rule": self.rule, "name": self.name, "op": self.op, "parent": self.parent,
-                "macro": self.macro, "alone": _r(self.alone), "width": round(self.width, 3),
-                "precision": list(self.precision) if self.precision else None, "params": self.params}
+                "macro": self.macro, "alone": _r(self.alone), "width": round(self.width, 3), "params": self.params}
 
     @property
     def broad(self) -> bool:
@@ -179,17 +177,16 @@ def library_text(library: list[Piece], best: tuple[int, ...] | None) -> str:
         return "(vacía: la máquina es solo el comodín)"
     lines = []
     for pc in sorted(library, key=lambda p: p.alone):
-        prec = f"precisión {pc.precision[0]}/{pc.precision[1]}" if pc.precision and pc.precision[1] else "precisión —"
         where = f", posición {best.index(pc.id) + 1} de la mejor" if best and pc.id in best else ""
         lines.append(f"- `{pc.rule}` #{pc.id}{' (ANCHA)' if pc.broad else ''}: "
-                     f"{pc.doc or '—'} Permite el {pc.width:.0%} de los candidatos, {prec}, sola {pc.alone:.1f}{where}.")
+                     f"{pc.doc or '—'} Permite el {pc.width:.0%} de los candidatos, sola {pc.alone:.1f}{where}.")
     return "\n".join(lines)
 
 
-def measure_piece(harness: Harness, pc: Piece, train, oracle_insts) -> None:
-    """Ancho (en train) y precisión (con el oráculo) de la pieza sola."""
+def measure_piece(harness: Harness, pc: Piece, train) -> None:
+    """Ancho de la pieza sola (en train): qué fracción de los candidatos permite cuando aplica."""
     from core.machine import MachinePolicy
-    from core.rules import rule_breadth, rule_quality
+    from core.rules import rule_breadth
 
     share = applies = 0.0
     for inst in train[:4]:
@@ -202,80 +199,6 @@ def measure_piece(harness: Harness, pc: Piece, train, oracle_insts) -> None:
         share += row.get("share", 0.0)
         applies += row.get("applies", 0)
     pc.width = share / applies if applies else 0.0
-    oracle = getattr(harness.pack, "oracle_distance", None)
-    if not callable(oracle):
-        return
-    opt = app = 0
-    for inst in oracle_insts:
-        P = harness.pack.problem_factory(inst)
-        try:
-            q = rule_quality(MachinePolicy(composition_factory((pc,))[0](P), P), P.construction_view(inst),
-                             lambda p, inst=inst: oracle(inst, p))
-        except Exception:  # noqa: BLE001
-            q = None
-        row = ((q or {}).get("rules") or {}).get(pc.rule) or {}
-        opt += row.get("optimal", 0)
-        app += row.get("applies", 0)
-    pc.precision = (opt, app)
-
-
-def evidence(harness: Harness, pieces: tuple[Piece, ...], library: list[Piece], oracle_insts) -> tuple[str, dict]:
-    """Los peores pasos de la máquina (`pieces`; vacía = el comodín solo) contra el óptimo, cada uno con
-    qué piezas de la biblioteca permitían una acción óptima. ("texto", {regla: movimientos de más})."""
-    from core.machine import FALLBACK, MachinePolicy, _diverse, machine_regret
-    from core.rules import RuleMachine, action_key
-
-    oracle = getattr(harness.pack, "oracle_distance", None)
-    if not callable(oracle):
-        return "", {}, {}
-    factory = composition_factory(pieces)[0] if pieces else (lambda P, **_: RuleMachine(P, []))
-    rows, regret, steps, total = [], {}, {}, [0, 0]
-    for inst in oracle_insts:
-        P = harness.pack.problem_factory(inst)
-        view = P.construction_view(inst)
-        try:
-            r = machine_regret(MachinePolicy(factory(P), P), view, lambda p, inst=inst: oracle(inst, p),
-                               n_examples=N_EXAMPLES, continuation=6)
-        except Exception:  # noqa: BLE001
-            r = None
-        if r is None:
-            continue
-        for st, row in r["by_state"].items():
-            regret[st] = regret.get(st, 0) + row["regret"]
-            steps[st] = steps.get(st, 0) + row["steps"]
-            total[0] += row["regret"]
-            total[1] += row["steps"]
-        for e in r["examples"]:
-            cands = list(view.candidates(e["partial"]))
-            opt = {action_key(a) for a in e["optimal"]}
-            allow = []
-            for pc in library:
-                m = RuleMachine(P, [pc.factory(P, **pc.params).rules[0]])
-                m.bind(view)
-                mem = m.entry(pc.rule, e["partial"], m.initial(e["partial"])[1][0])
-                if any(action_key(a) in opt for a in m.allowed(pc.rule, e["partial"], mem)):
-                    allow.append(f"`{pc.rule}` #{pc.id}" + (" (ANCHA)" if pc.broad else ""))
-            lb = getattr(view, "lower_bound", None)
-            after = [view.apply(e["partial"], a) for a in (e["chosen"], e["optimal"][0] if e["optimal"] else None) if a is not None]
-            bounds = [lb(x) for x in [e["partial"], *after]] if callable(lb) else None
-            rows.append((e, allow, len(cands), after, bounds))
-    if not rows and not regret:
-        return "", {}, {}
-    rows = _diverse(sorted(rows, key=lambda t: -t[0]["regret"]), N_EXAMPLES, key=lambda t: t[0]["state"])
-    lines = [f"Movimientos de más respecto del óptimo: {total[0]} en {total[1]} pasos ("
-             + ", ".join(f"`{st}` {v} en {steps[st]} pasos ({v / max(1, steps[st]):.2f} por paso)"
-                         for st, v in sorted(regret.items(), key=lambda kv: -kv[1])) + ")."]
-    for e, allow, n, after, bounds in rows:
-        who = "el comodín" if e["state"] == FALLBACK else f"`{e['state']}`"
-        cont = ", ".join(repr(a) for a in e.get("continuation", []))
-        opt = ", ".join(repr(a) for a in e["optimal"][:3])
-        cb = (lambda i: f" (cota {bounds[i]:g})") if bounds else (lambda i: "")
-        lines.append(f"- estado `{_show(e['partial'])}`{cb(0)}, {n} candidatos; decidió {who}.\n"
-                     f"  eligió {e['chosen']!r} (+{e['regret']} movimientos de más) → `{_show(after[0])}`{cb(1)}\n"
-                     f"  óptimo {opt} → `{_show(after[1])}`{cb(2)}; lo permite"
-                     f"{'n' if len(allow) > 1 else ''} {', '.join(allow) if allow else 'NINGUNA pieza'}\n"
-                     f"  tramo óptimo desde el estado: {cont}")
-    return "\n".join(lines), regret, steps
 
 
 def _show(partial) -> str:
@@ -284,23 +207,24 @@ def _show(partial) -> str:
     return str(stacks) if stacks is not None else repr(partial)
 
 
-ROLLOUT_INSTANCES = 2  # instancias grandes (fuera del alcance del oráculo) donde se compara por rollout
+ROLLOUT_PER_SIZE = 1  # instancias de train de cada tamaño donde se compara por rollout
 ROLLOUT_STEPS = 12  # pasos muestreados por instancia
 
 
 def rollout_evidence(harness: Harness, pieces: tuple[Piece, ...], library: list[Piece], instances) -> tuple[str, dict]:
-    """Evidencia donde el oráculo no alcanza: en pasos muestreados de la construcción greedy de la máquina,
-    cada candidato se completa con la misma máquina (rollout). Si otra acción termina con menos movimientos
-    que la elegida, es un contraejemplo (una cota, no el óptimo). Corrida 85: con el oráculo solo en 5×5, la
-    máquina parecía perfecta ("acierta siempre cuando sus piezas aplican") y la pérdida estaba en 6×6.
-    ("texto", {regla: movimientos de más por rollout})."""
+    """La evidencia: en pasos muestreados de la construcción greedy de la máquina (`pieces`; vacía = el
+    comodín solo), cada candidato se completa con la misma máquina (rollout). Si otra acción termina con
+    menos movimientos que la elegida, es un contraejemplo. Sin oráculo exacto: corrida 85, con el óptimo
+    solo en 5×5 la máquina parecía perfecta ("acierta siempre cuando sus piezas aplican") y la pérdida
+    estaba en 6×6; el rollout vale en cualquier tamaño y compara contra lo que la máquina misma lograría.
+    ("texto", {regla: movimientos de más}, {regla: pasos muestreados})."""
     from core.construction import GreedyConstructor
     from core.machine import FALLBACK, _diverse
     from core.rules import RuleMachine, action_key
 
-    if not pieces or not instances:
+    if not instances:
         return "", {}, {}
-    factory = composition_factory(pieces)[0]
+    factory = composition_factory(pieces)[0] if pieces else (lambda P, **_: RuleMachine(P, []))
     rows, regret, steps_by, found = [], {}, {}, 0
     for inst in instances:
         P = harness.pack.problem_factory(inst)
@@ -350,8 +274,7 @@ def rollout_evidence(harness: Harness, pieces: tuple[Piece, ...], library: list[
                 rows.append((base - v, st, p, a, base, b, v, allow, view.apply(p, a), view.apply(p, b)))
     if not steps_by:
         return "", {}, {}
-    size = getattr(instances[0], "name", "") or "grandes"
-    lines = [f"En instancias sin óptimo ({size}), comparando por rollout (cada acción completada con la misma máquina): "
+    lines = [f"Comparando por rollout (cada acción completada con la misma máquina): "
              f"en {found} de {sum(steps_by.values())} pasos muestreados otra acción termina con menos movimientos ("
              + ", ".join(f"`{st}` {regret.get(st, 0):g} de más en {n} pasos" for st, n in steps_by.items()) + ")."]
     for d, st, p, a, base, b, v, allow, pa, pb in _diverse(sorted(rows, key=lambda t: -t[0]), N_EXAMPLES, key=lambda t: t[1]):
@@ -363,24 +286,18 @@ def rollout_evidence(harness: Harness, pieces: tuple[Piece, ...], library: list[
     return "\n".join(lines), regret, steps_by
 
 
-def loss_table(pieces, small, small_steps, big, big_steps) -> str:
-    """Movimientos de más por paso que decidió cada pieza, en las instancias con óptimo y en las grandes
-    (por rollout): arriba del prompt, para que se vea qué pieza pierde más (corrida 86: la de reducción
-    perdía 2,4 por paso en 6×6 contra 1 de `bg`, pero el LLM solo escribía piezas nuevas)."""
+def loss_table(pieces, regret, steps) -> str:
+    """Movimientos de más por paso que decidió cada pieza (por rollout): arriba del prompt, para que se vea
+    qué pieza pierde más (corrida 86: la de reducción perdía 2,4 por paso en 6×6 contra 1 de `bg`, pero el
+    LLM solo escribía piezas nuevas)."""
     from core.machine import FALLBACK
 
-    names = [p.rule for p in pieces] + [FALLBACK]
-    rows = []
-    for n in names:
-        a = f"{small.get(n, 0) / small_steps[n]:.2f} ({small_steps[n]} pasos)" if small_steps.get(n) else "—"
-        b = f"{big.get(n, 0) / big_steps[n]:.2f} ({big_steps[n]} pasos)" if big_steps.get(n) else "—"
-        if a != "—" or b != "—":
-            rows.append(f"| {'comodín' if n == FALLBACK else '`' + n + '`'} | {a} | {b} |")
+    rows = [f"| {'comodín' if n == FALLBACK else '`' + n + '`'} | {regret.get(n, 0) / steps[n]:.2f} | {steps[n]} |"
+            for n in [p.rule for p in pieces] + [FALLBACK] if steps.get(n)]
     if not rows:
         return ""
-    return ("Movimientos de más por paso que decidió cada pieza (mayor = pierde más):\n"
-            "| pieza | instancias chicas (contra el óptimo) | instancias grandes (por rollout) |\n|---|---|---|\n"
-            + "\n".join(rows) + "\n\n")
+    return ("Movimientos de más por paso que decidió cada pieza (por rollout; mayor = pierde más):\n"
+            "| pieza | por paso | pasos muestreados |\n|---|---|---|\n" + "\n".join(rows) + "\n\n")
 
 
 def api_summary(source: str) -> str:
@@ -623,16 +540,15 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
     res = EvolveResult()
     screen = train[:: max(1, len(train) // 4)][:4]
     minimal = harness.mean(lambda P, **_: RuleMachine(P, []), {}, train)
-    oracle_insts = sorted(train, key=lambda i: getattr(i, "N", 0))[:ORACLE_INSTANCES]
-    rollout_insts = sorted(train, key=lambda i: -getattr(i, "N", 0))[:ROLLOUT_INSTANCES]  # las más grandes
+    per = max(1, len(train) // max(1, len(sizes)))  # train va por tamaño: las primeras de cada uno
+    rollout_insts = [i for k in range(len(sizes)) for i in train[k * per:k * per + ROLLOUT_PER_SIZE]]
     for pc in library:
         row = rows.get(pc.id) or {}
         if prev is not None and row.get("alone") is not None:  # ya medida con estas instancias
             pc.alone, pc.width = float(row["alone"]), float(row.get("width") or 0.0)
-            pc.precision = tuple(row["precision"]) if row.get("precision") else None
         else:
             pc.alone = cache.setdefault((pc.id,), harness.mean(composition_factory((pc,))[0], {}, train))
-            measure_piece(harness, pc, train, oracle_insts)
+            measure_piece(harness, pc, train)
         res.individuals.append({**pc.row(), "status": "retomada"})
     ranked = compose(harness, library, train, cache, deadline=deadline, screen=screen) if library else []
     state = {"best": None, "fitness": float("inf"), "train": minimal, "params": {}}
@@ -674,15 +590,9 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
         else:
             op = "refine_rule"
             target = best_pieces[0] if best_pieces else rng.choice(library)
-        # evidencia contra el óptimo en la mejor máquina (o en el comodín solo), anotada por pieza
-        evid, regret, small_steps = evidence(harness, best_pieces, library, oracle_insts)
-        big_evid, big_regret, big_steps = rollout_evidence(harness, best_pieces, library, rollout_insts)
-        loss = loss_table(best_pieces, regret, small_steps, big_regret, big_steps)
-        if big_evid:
-            evid = evid + "\n\n" + big_evid
-            for k, v in big_regret.items():
-                regret[k] = regret.get(k, 0) + v
-        evid = loss + evid
+        # evidencia por rollout en la mejor máquina (o en el comodín solo), anotada por pieza
+        evid, regret, steps = rollout_evidence(harness, best_pieces, library, rollout_insts)
+        evid = loss_table(best_pieces, regret, steps) + evid
         if best_pieces and op == "refine_rule" and regret:  # la pieza de la mejor máquina que más pierde
             worst = max((s for s in regret if s in {p.rule for p in best_pieces}), default=None, key=regret.get)
             target = next((p for p in best_pieces if p.rule == worst), target)
@@ -725,7 +635,7 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
                    macro=macro, op=op, parent=target.id if target else None, doc=doc)
         next_id += 1
         pc.alone = cache.setdefault((pc.id,), harness.mean(composition_factory((pc,))[0], {}, train))
-        measure_piece(harness, pc, train, oracle_insts)
+        measure_piece(harness, pc, train)
         library.append(pc)
         ranked = compose(harness, library, train, cache, must=pc, deadline=deadline, screen=screen, best=state["best"])
         improved = update_best(ranked)
