@@ -767,6 +767,16 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
 
   Con las tres piezas como respuestas del LLM simulado, el compositor encuentra `bg` > `reduce`
   con `frg_place` (`tests/test_library.py`).
+
+  **Corrida 88: orígenes y colocación desde cero, 10 rondas, 65 mil tokens, 76,6 en test** (mucho
+  peor que las 20,06 de la 82). El LLM escribió 5 orígenes y una colocación, que refinó dos
+  veces. Los orígenes miran solo la pila de origen: la brecha entre el tope y el de abajo
+  (`large_bad_top_gap`, `small_bad_top_gap`) o si el tope tapa desorden
+  (`capped_misordered_source`). Ninguno se define, como `bg`, por si el contenedor tiene dónde
+  quedar bien puesto, ni elige una pila para vaciar. Desde el comodín (90 movimientos), la
+  evidencia por rollout compara acciones completadas con una máquina mala, y los contraejemplos
+  apuntan en direcciones dispersas. La mejor se elige en train (68,4) y en test oscila entre
+  75,6 y 83,4.
 - **Un algoritmo de optimización de greedies** (etapa `evolve`, `llm/evolve.py`). Un greedy como
   FRG no sale de una vez; se llega por pasos: primero solo movimientos BG, después la prioridad
   dentro de ese estado, después un estado de vaciado que vuelve al inicial, y otra vez las
