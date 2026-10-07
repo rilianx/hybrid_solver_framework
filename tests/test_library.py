@@ -87,7 +87,7 @@ def _fenced(src):
 def test_from_two_narrow_pieces_the_composer_finds_bg_over_reduce(tmp_path):
     client = ScriptedClient(responses=[_fenced(BG_PIECE), _fenced(REDUCE_PIECE), _fenced(WIDE_PIECE)])
     res = evolve_library(client, PACK, PACK.make_spec(), tmp_path, Harness(PACK), rounds=3, tune_samples=1, n_train=3,
-                         n_test=3, size="5x5", verbose=False, rng_seed=1)
+                         n_test=3, size="5x5", verbose=False, parts=False, rng_seed=1)
     rows = [r for r in res.individuals if "round" in r]
     assert [r["op"] for r in rows[:2]] == ["new_rule", "new_rule"]  # sin dos piezas no hay qué combinar
     summary = res.individuals[-1]
@@ -112,13 +112,13 @@ def test_a_piece_must_be_one_rule_and_new_rules_need_a_new_name(tmp_path):
 def build_component''')
     client = ScriptedClient(responses=[_fenced(two), _fenced(two), _fenced(BG_PIECE), _fenced(BG_PIECE), _fenced(BG_PIECE)])
     res = evolve_library(client, PACK, PACK.make_spec(), tmp_path, Harness(PACK), rounds=2, tune_samples=1, n_train=2,
-                         n_test=2, size="4x4", verbose=False)
+                         n_test=2, size="4x4", verbose=False, parts=False)
     rows = [r for r in res.individuals if "round" in r]
     assert rows[0]["status"] == "rechazado" and "UNA regla" in rows[0]["reason"]
     assert rows[1]["status"] != "rechazado"
     client2 = ScriptedClient(responses=[_fenced(BG_PIECE)] * 4)
     res2 = evolve_library(client2, PACK, PACK.make_spec(), tmp_path / "b", Harness(PACK), rounds=2, tune_samples=1,
-                          n_train=2, n_test=2, size="4x4", verbose=False)
+                          n_train=2, n_test=2, size="4x4", verbose=False, parts=False)
     rows2 = [r for r in res2.individuals if "round" in r]
     assert rows2[1]["status"] == "rechazado" and "ya hay una pieza" in rows2[1]["reason"]
 
@@ -158,7 +158,7 @@ def test_a_piece_is_a_simple_rule_and_the_prompt_has_no_macros_or_priorities(tmp
     def allowed(self, L, memory, candidates):''')
     client = ScriptedClient(responses=[_fenced(macro), _fenced(macro), _fenced(BG_PIECE)])
     res = evolve_library(client, PACK, PACK.make_spec(), tmp_path, Harness(PACK), rounds=2, tune_samples=1, n_train=2,
-                         n_test=2, size="4x4", verbose=False)
+                         n_test=2, size="4x4", verbose=False, parts=False)
     rows = [r for r in res.individuals if "round" in r]
     assert rows[0]["status"] == "rechazado" and "regla simple" in rows[0]["reason"]
     prompt = client.calls[0][1].lower()
@@ -172,7 +172,7 @@ def test_resume_reuses_the_evaluated_compositions_and_the_best(tmp_path):
 
     client = ScriptedClient(responses=[_fenced(BG_PIECE), _fenced(REDUCE_PIECE)])
     first = evolve_library(client, PACK, PACK.make_spec(), tmp_path, Harness(PACK), rounds=2, tune_samples=1, n_train=2,
-                           n_test=2, size="5x5", verbose=False)
+                           n_test=2, size="5x5", verbose=False, parts=False)
     saved = json.loads((tmp_path / "evolve_library.json").read_text())
     assert saved["cache"] and saved["state"]["best"] and saved["key"] == "5x5|2"
 
@@ -184,7 +184,7 @@ def test_resume_reuses_the_evaluated_compositions_and_the_best(tmp_path):
             return super().mean(*a, **k)
 
     again = evolve_library(ScriptedClient(responses=[]), PACK, PACK.make_spec(), tmp_path, Counting(PACK), rounds=0,
-                           tune_samples=1, n_train=2, n_test=2, size="5x5", verbose=False, resume=True)
+                           tune_samples=1, n_train=2, n_test=2, size="5x5", verbose=False, parts=False, resume=True)
     assert again.individuals[-1]["best"] == first.individuals[-1]["best"] == ["bg", "reduce"]
     assert len(calls) <= 3  # el comodín solo y la salida; nada de recomponer
 
@@ -196,7 +196,7 @@ def test_the_llm_chooses_the_action_and_sees_the_history(tmp_path):
     answer = "ACCIÓN: mejorar bg\nPOR QUÉ: desempatar por la pila de origen más alta\n" + _fenced(refined)
     client = ScriptedClient(responses=[_fenced(BG_PIECE), _fenced(REDUCE_PIECE), answer, _fenced(WIDE_PIECE)])
     res = evolve_library(client, PACK, PACK.make_spec(), tmp_path, Harness(PACK), rounds=4, tune_samples=1, n_train=2,
-                         n_test=2, size="5x5", verbose=False)
+                         n_test=2, size="5x5", verbose=False, parts=False)
     rows = [r for r in res.individuals if "round" in r]
     assert rows[2]["op"] == "refine_rule" and rows[2]["target"] == "bg" and "desempatar" in rows[2]["why"]
     third, fourth = client.calls[2][1], client.calls[3][1]
@@ -260,3 +260,133 @@ def test_a_new_piece_is_also_tried_inserted_into_the_best_machine():
             L.MAX_PIECES = old
     assert {(1, 0, 2), (0, 1, 2)} <= set(cache)  # insertada antes de la pieza ancha, que queda al final
     assert (0, 2, 1) not in cache  # la ancha solo va al final
+
+
+# --- orígenes y colocación (core.parts) --------------------------------------------------
+BG_ORIGIN = '''
+COMPONENT = {"name": "bg_origin", "slot": "construction_machine", "compatible_skeletons": ["CONSTRUCT"], "requires": [],
+             "params": {}}
+
+from core.parts import origin_machine
+
+
+class BGOrigin:
+    """Pilas desordenadas cuyo tope puede quedar bien puesto sobre una ordenada, la de menor gasto de grupo primero."""
+
+    name = "bg"
+
+    def sources(self, L, memory):
+        out = []
+        for so in range(L.S):
+            if not L.stacks[so] or L.is_sorted_stack(so):
+                continue
+            c = L.g(so)
+            gaps = [L.g(sd) - c for sd in range(L.S)
+                    if sd != so and L.e(sd) > 0 and L.is_sorted_stack(sd) and L.g(sd) >= c]
+            if gaps:
+                out.append((min(gaps), so))
+        return [so for _, so in sorted(out)]
+
+
+def build_component(problem, **params):
+    return origin_machine(problem, BGOrigin())
+'''
+
+REDUCE_ORIGIN = '''
+COMPONENT = {"name": "reduce_origin", "slot": "construction_machine", "compatible_skeletons": ["CONSTRUCT"], "requires": [],
+             "params": {}}
+
+from core.parts import origin_machine
+from examples.cpmp.frg import select_reduce_stack
+
+
+class ReduceOrigin:
+    """La pila que elige FRG para reducir."""
+
+    name = "reduce"
+
+    def sources(self, L, memory):
+        sr = select_reduce_stack(L, [0] * L.S)
+        return [] if sr is None else [sr]
+
+
+def build_component(problem, **params):
+    return origin_machine(problem, ReduceOrigin())
+'''
+
+FRG_PLACE = '''
+COMPONENT = {"name": "frg_place", "slot": "construction_machine", "compatible_skeletons": ["CONSTRUCT"], "requires": [],
+             "params": {}}
+
+from core.parts import placement_machine
+from examples.cpmp.frg import destination_rank
+
+
+class FRGPlace:
+    """Donde quede bien puesto y más ajustado; si no, donde menos estorbe."""
+
+    name = "frg_place"
+
+    def rank(self, L, action):
+        return destination_rank(L, L.g(action.so), action.sd)
+
+
+def build_component(problem, **params):
+    return placement_machine(problem, FRGPlace())
+'''
+
+
+def test_frg_is_two_origins_and_one_placement():
+    """FRG separado en qué se mueve y adónde: `bg` > `reduce` como orígenes con la colocación de FRG queda a
+    nivel de FRG; con la colocación por defecto (la cota) ya baja de 83 a ~21; al revés no sirve."""
+    import importlib.util
+    import tempfile
+    from pathlib import Path
+
+    from core.parts import assemble, kind_of
+
+    mods = {}
+    with tempfile.TemporaryDirectory() as d:
+        for name, src in (("bg", BG_ORIGIN), ("reduce", REDUCE_ORIGIN), ("place", FRG_PLACE)):
+            path = Path(d) / f"part_{name}.py"
+            path.write_text(src)
+            spec = importlib.util.spec_from_file_location(f"part_{name}", path)
+            mods[name] = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mods[name])
+    P0 = PACK.make_contexts(strict=False)[0].problem
+    assert [kind_of(mods[n].build_component(P0)) for n in ("bg", "reduce", "place")] == ["origin", "origin", "place"]
+    test = PACK.make_instances(4, 10100, PACK.parse_size("5x5"))
+    H = Harness(PACK)
+
+    def machine(*names):
+        return lambda P, **_: assemble(P, [mods[n].build_component(P) for n in names], [100, 50, 25])
+
+    frg_like = H.mean(machine("place", "bg", "reduce"), {}, test)
+    default = H.mean(machine("bg", "reduce"), {}, test)
+    backwards = H.mean(machine("place", "reduce", "bg"), {}, test)
+    assert frg_like < 14 and default < 16 and backwards > 2 * frg_like, (frg_like, default, backwards)
+
+
+def test_with_parts_the_composer_finds_bg_reduce_and_the_placement(tmp_path):
+    client = ScriptedClient(responses=[_fenced(BG_ORIGIN), _fenced(REDUCE_ORIGIN),
+                                       "ACCIÓN: colocación nueva\nPOR QUÉ: hay contraejemplos con el mismo origen\n"
+                                       + _fenced(FRG_PLACE)])
+    res = evolve_library(client, PACK, PACK.make_spec(), tmp_path, Harness(PACK), rounds=3, tune_samples=1, n_train=3,
+                         n_test=3, size="5x5", verbose=False, rng_seed=1)
+    rows = [r for r in res.individuals if "round" in r]
+    assert [r["op"] for r in rows] == ["new_origin", "new_origin", "new_place"], rows
+    assert [r["kind"] for r in rows] == ["origin", "origin", "place"]
+    summary = res.individuals[-1]
+    assert summary["best"] == ["frg_place", "bg", "reduce"], summary["best"]
+    first, third = client.calls[0][1], client.calls[2][1]
+    assert "ORIGEN" in first and "origin_machine" in first and "la pila de la que sale" in first
+    assert "colocación nueva" in third and "placement_machine" in third and "colocación (por defecto)" in third
+    assert res.written and "rejected" not in res.written[0], res.written
+
+
+def test_with_parts_a_piece_must_be_the_kind_asked_for(tmp_path):
+    client = ScriptedClient(responses=[_fenced(BG_PIECE), _fenced(BG_PIECE)])  # un movimiento completo, no un origen
+    res = evolve_library(client, PACK, PACK.make_spec(), tmp_path, Harness(PACK), rounds=1, tune_samples=1, n_train=2,
+                         n_test=2, size="4x4", verbose=False)
+    row = [r for r in res.individuals if "round" in r][0]
+    assert row["status"] == "rechazado" and "ORIGEN" in row["reason"] and "origin_machine" in row["reason"]

@@ -42,6 +42,25 @@ BROAD = 0.5  # una pieza que permite en promedio más de esta fracción de los c
 N_EXAMPLES = 4
 
 OPERATOR_TEXT = {
+    # con orígenes y colocación (`core.parts`)
+    "choose_parts": (
+        "Decide tú qué hacer en esta ronda: un ORIGEN nuevo (un tipo de origen que falta), una COLOCACIÓN nueva, o MEJORAR "
+        "una pieza de la biblioteca (di cuál; el código de las de la mejor máquina está abajo). Usa la evidencia: la tabla "
+        "de pérdida (por origen y de la colocación), los contraejemplos (con el MISMO origen son de la colocación; con otro, "
+        "dicen qué origen faltaba o cuál eligió mal) y el historial. Un origen nuevo tiene que ser ANGOSTO: devuelve [] "
+        "cuando no aplica. Al mejorar una pieza, mantén su `name`; la versión nueva entra junto a la anterior. Empieza la "
+        "respuesta con dos líneas:\nACCIÓN: origen nuevo   (o)   ACCIÓN: colocación nueva   (o)   ACCIÓN: mejorar <name>"
+        "\nPOR QUÉ: <una línea>\ny después el bloque de código."),
+    "new_origin": (
+        "Escribe UN origen NUEVO: de qué orígenes conviene mover ahora, en orden de preferencia. Tiene que ser ANGOSTO: "
+        "devuelve [] cuando no aplica; lo demás lo cubren otros orígenes o el comodín. Mira los contraejemplos con otro "
+        "origen que NINGUNA pieza permite: ¿qué tipo de origen es? No repitas uno que ya está."),
+    "new_place": (
+        "Escribe UNA colocación NUEVA: `rank(parcial, acción)` ordena las acciones de un mismo origen (menor = mejor). "
+        "Mira los contraejemplos con el MISMO origen: ¿por qué ese destino es mejor?"),
+    "refine_place": (
+        "Mejora la colocación `{target}` (abajo), manteniendo su `name`, con los contraejemplos de MISMO origen: ¿por qué "
+        "el otro destino termina mejor? La versión nueva entra junto a la anterior."),
     "choose": (
         "Decide tú qué hacer en esta ronda: escribir una pieza NUEVA (un tipo de movimiento que falta) o MEJORAR una pieza "
         "de la biblioteca (di cuál; su código está abajo si está en la mejor máquina). Usa la evidencia: movimientos de "
@@ -79,6 +98,7 @@ class Piece:
     alone: float = float("inf")  # fitness sola (con el comodín), en train
     doc: str = ""
     width: float = 0.0  # fracción media de los candidatos que permite cuando aplica
+    kind: str = "rule"  # "origin" (de dónde), "place" (adónde) o "rule" (una regla de movimientos completos)
 
     @property
     def key(self) -> str:
@@ -86,7 +106,7 @@ class Piece:
 
     def row(self) -> dict:
         return {"id": self.id, "rule": self.rule, "name": self.name, "op": self.op, "parent": self.parent,
-                "macro": self.macro, "alone": _r(self.alone), "width": round(self.width, 3), "params": self.params}
+                "macro": self.macro, "kind": self.kind, "alone": _r(self.alone), "width": round(self.width, 3), "params": self.params}
 
     @property
     def broad(self) -> bool:
@@ -96,16 +116,14 @@ class Piece:
 def composition_factory(pieces: tuple[Piece, ...]):
     """(fábrica, COMPONENT) de la máquina que combina `pieces` con prioridades en ese orden. Los
     parámetros de cada pieza van con su prefijo (`p3::w_bad`)."""
-    from core.rules import RuleMachine
+    from core.parts import assemble
 
     def factory(problem, **params):
-        rules = []
-        for k, pc in enumerate(pieces):
+        machines = []
+        for pc in pieces:
             sub = {name.split("::", 1)[1]: v for name, v in params.items() if name.startswith(pc.key + "::")}
-            rule = pc.factory(problem, **{**pc.params, **sub}).rules[0]
-            rule.priority = PRIORITIES[k]  # la prioridad la pone el compositor
-            rules.append(rule)
-        return RuleMachine(problem, rules)
+            machines.append(pc.factory(problem, **{**pc.params, **sub}))
+        return assemble(problem, machines, PRIORITIES)  # la prioridad la pone el compositor; la colocación, para todos
 
     specs = {}
     for pc in pieces:
@@ -131,17 +149,27 @@ def compose(harness: Harness, library: list[Piece], instances, cache: dict, must
     SCREEN_KEEP mejores se evalúan en `instances`: el compositor se lleva casi todo el tiempo de una
     ronda (corrida 83: al retomar, recalcular la biblioteca entera agotó el job en 3 rondas)."""
     by_id = {pc.id: pc for pc in library}
+    movers = [pc for pc in library if pc.kind != "place"]
+    places = _top_places([pc for pc in library if pc.kind == "place"], cache)
+    place_opts = [None] + places[:PLACE_KEEP]
+    if must is not None and must.kind == "place" and must not in place_opts:
+        place_opts.append(must)
     pending = []
     for k in range(1, MAX_PIECES + 1):
-        for combo in permutations(library, k):
-            ids = tuple(pc.id for pc in combo)
-            if ids in cache or (must is not None and must not in combo) or len({pc.rule for pc in combo}) < k:
+        for combo in permutations(movers, k):
+            if len({pc.rule for pc in combo}) < k:
                 continue
             if any(pc.broad for pc in combo[:-1]):  # una pieza ancha tapa a las de abajo (corrida 79): solo al final
                 continue
             if deadline is not None and time.monotonic() > deadline:
                 break
-            pending.append(combo)
+            for pl in place_opts:  # la colocación (si hay) va primero en los ids
+                full = ((pl,) if pl is not None else ()) + combo
+                if tuple(pc.id for pc in full) in cache or (must is not None and must not in full):
+                    continue
+                pending.append(full)
+    if must is not None and must.kind == "place" and (must.id,) not in cache:
+        pending.append((must,))  # la colocación sola
     if screen is not None and len(pending) > SCREEN_KEEP:
         scored = sorted(((harness.mean(composition_factory(c)[0], {}, screen), i) for i, c in enumerate(pending)),
                         key=lambda t: t[0])
@@ -149,10 +177,16 @@ def compose(harness: Harness, library: list[Piece], instances, cache: dict, must
     # la pieza nueva insertada en cada posición de la mejor máquina (hasta MAX_PIECES + 1 piezas): una pieza
     # que complementa a las que funcionan no tiene que desplazar a ninguna (corrida 86: la mejor ya usaba 3)
     if must is not None and best and must.id not in best and all(i in by_id for i in best):
-        for pos in range(len(best) + 1):
-            combo = tuple(by_id[i] for i in best[:pos]) + (must,) + tuple(by_id[i] for i in best[pos:])
+        head = tuple(by_id[i] for i in best if by_id[i].kind == "place")
+        body = tuple(by_id[i] for i in best if by_id[i].kind != "place")
+        if must.kind == "place":  # la mejor máquina con la colocación nueva
+            variants = [(must,) + body]
+        else:
+            variants = [head + body[:pos] + (must,) + body[pos:] for pos in range(len(body) + 1)]
+        for combo in variants:
+            moving = [pc for pc in combo if pc.kind != "place"]
             ids = tuple(pc.id for pc in combo)
-            if ids in cache or len({pc.rule for pc in combo}) < len(combo) or any(pc.broad for pc in combo[:-1]):
+            if ids in cache or len({pc.rule for pc in moving}) < len(moving) or any(pc.broad for pc in moving[:-1]):
                 continue
             pending.append(combo)
     for combo in pending:
@@ -162,12 +196,23 @@ def compose(harness: Harness, library: list[Piece], instances, cache: dict, must
     return sorted(((v, ids) for ids, v in cache.items() if all(i in by_id for i in ids)), key=lambda t: t[0])
 
 
+PLACE_KEEP = 2  # colocaciones de la biblioteca (las mejores) que el compositor prueba, además de la de por defecto
+
+
+def _top_places(places: list[Piece], cache: dict) -> list[Piece]:
+    """Las colocaciones, la de mejor composición en el caché primero (si no tiene, por su fitness sola)."""
+    def best(pc):
+        vals = [v for ids, v in cache.items() if ids and ids[0] == pc.id]
+        return min(vals) if vals else pc.alone
+    return sorted(places, key=best)
+
+
 def _rule_info(source: str) -> tuple[str, bool]:
     """(docstring de la clase de la regla, ¿es macro?)"""
     for node in ast.parse(source).body:
         if isinstance(node, ast.ClassDef):
             methods = {b.name for b in node.body if isinstance(b, ast.FunctionDef)}
-            if "allowed" in methods:
+            if methods & {"allowed", "sources", "rank"}:
                 return (ast.get_docstring(node) or "").split("\n")[0], bool(methods & {"start", "done"})
     return "", False
 
@@ -176,15 +221,25 @@ def library_text(library: list[Piece], best: tuple[int, ...] | None) -> str:
     if not library:
         return "(vacía: la máquina es solo el comodín)"
     lines = []
+    movers = [i for i in best or () if any(p.id == i and p.kind != "place" for p in library)]
     for pc in sorted(library, key=lambda p: p.alone):
-        where = f", posición {best.index(pc.id) + 1} de la mejor" if best and pc.id in best else ""
-        lines.append(f"- `{pc.rule}` #{pc.id}{' (ANCHA)' if pc.broad else ''}: "
-                     f"{pc.doc or '—'} Permite el {pc.width:.0%} de los candidatos, sola {pc.alone:.1f}{where}.")
+        if pc.kind == "place":
+            where = ", la de la mejor máquina" if best and pc.id in best else ""
+            lines.append(f"- colocación `{pc.rule}` #{pc.id}: {pc.doc or '—'} Sola (todas las acciones, ordenadas por "
+                         f"ella) {pc.alone:.1f}{where}.")
+            continue
+        where = f", prioridad {movers.index(pc.id) + 1} de la mejor" if pc.id in movers else ""
+        lines.append(f"- {'origen ' if pc.kind == 'origin' else ''}`{pc.rule}` #{pc.id}{' (ANCHO)' if pc.broad else ''}: "
+                     f"{pc.doc or '—'} Permite el {pc.width:.0%} de los candidatos, solo {pc.alone:.1f}{where}.")
     return "\n".join(lines)
 
 
 def measure_piece(harness: Harness, pc: Piece, train) -> None:
-    """Ancho de la pieza sola (en train): qué fracción de los candidatos permite cuando aplica."""
+    """Ancho de la pieza sola (en train): qué fracción de los candidatos permite cuando aplica. Una
+    colocación permite todo (solo ordena)."""
+    if pc.kind == "place":
+        pc.width = 1.0
+        return
     from core.machine import MachinePolicy
     from core.rules import rule_breadth
 
@@ -207,6 +262,7 @@ def _show(partial) -> str:
     return str(stacks) if stacks is not None else repr(partial)
 
 
+PLACE_KEY = "_colocacion"  # la pérdida de la colocación (contraejemplos con el mismo origen)
 ROLLOUT_PER_SIZE = 1  # instancias de train de cada tamaño donde se compara por rollout
 ROLLOUT_STEPS = 12  # pasos muestreados por instancia
 
@@ -217,13 +273,18 @@ def rollout_evidence(harness: Harness, pieces: tuple[Piece, ...], library: list[
     menos movimientos que la elegida, es un contraejemplo. Sin oráculo exacto: corrida 85, con el óptimo
     solo en 5×5 la máquina parecía perfecta ("acierta siempre cuando sus piezas aplican") y la pérdida
     estaba en 6×6; el rollout vale en cualquier tamaño y compara contra lo que la máquina misma lograría.
+
+    Con orígenes y colocación (`core.parts`), un contraejemplo con el MISMO origen que la acción elegida
+    es de la colocación (otro destino) y cuenta en `PLACE_KEY`; uno con otro origen, del origen que decidió.
     ("texto", {regla: movimientos de más}, {regla: pasos muestreados})."""
     from core.construction import GreedyConstructor
     from core.machine import FALLBACK, _diverse
+    from core.parts import supports_parts
     from core.rules import RuleMachine, action_key
 
     if not instances:
         return "", {}, {}
+    origins = {pc.rule for pc in pieces if pc.kind == "origin"}
     factory = composition_factory(pieces)[0] if pieces else (lambda P, **_: RuleMachine(P, []))
     rows, regret, steps_by, found = [], {}, {}, 0
     for inst in instances:
@@ -261,28 +322,38 @@ def rollout_evidence(harness: Harness, pieces: tuple[Piece, ...], library: list[
             if not alts:
                 continue
             v, b = min(alts, key=lambda t: t[0])
+            same = st in origins and supports_parts(view) and view.source(a) == view.source(b)
+            if st in origins:  # la colocación actúa en cada paso que decide un origen
+                steps_by[PLACE_KEY] = steps_by.get(PLACE_KEY, 0) + 1
             if v < base:
                 found += 1
-                regret[st] = regret.get(st, 0) + (base - v)
+                who = PLACE_KEY if same else st
+                regret[who] = regret.get(who, 0) + (base - v)
                 allow = []
                 for pc in library:
-                    m = RuleMachine(P, [pc.factory(P, **pc.params).rules[0]])
+                    if pc.kind == "place":  # una colocación permite todo
+                        continue
+                    m = pc.factory(P, **pc.params)
                     m.bind(view)
                     mm = m.entry(pc.rule, p, m.initial(p)[1][0])
                     if any(action_key(x) == action_key(b) for x in m.allowed(pc.rule, p, mm)):
                         allow.append(f"`{pc.rule}` #{pc.id}" + (" (ANCHA)" if pc.broad else ""))
-                rows.append((base - v, st, p, a, base, b, v, allow, view.apply(p, a), view.apply(p, b)))
+                rows.append((base - v, st, p, a, base, b, v, allow, view.apply(p, a), view.apply(p, b), same))
     if not steps_by:
         return "", {}, {}
+    total = sum(n for st, n in steps_by.items() if st != PLACE_KEY)
     lines = [f"Comparando por rollout (cada acción completada con la misma máquina): "
-             f"en {found} de {sum(steps_by.values())} pasos muestreados otra acción termina con menos movimientos ("
-             + ", ".join(f"`{st}` {regret.get(st, 0):g} de más en {n} pasos" for st, n in steps_by.items()) + ")."]
-    for d, st, p, a, base, b, v, allow, pa, pb in _diverse(sorted(rows, key=lambda t: -t[0]), N_EXAMPLES, key=lambda t: t[1]):
+             f"en {found} de {total} pasos muestreados otra acción termina con menos movimientos ("
+             + ", ".join(f"`{st}` {regret.get(st, 0):g} de más en {n} pasos" for st, n in steps_by.items() if st != PLACE_KEY)
+             + (f"; de la colocación, con el mismo origen: {regret.get(PLACE_KEY, 0):g} de más" if origins else "") + ")."]
+    for d, st, p, a, base, b, v, allow, pa, pb, same in _diverse(sorted(rows, key=lambda t: -t[0]), N_EXAMPLES,
+                                                                  key=lambda t: (t[1], t[10])):
         who = "el comodín" if st == FALLBACK else f"`{st}`"
+        tail = ("MISMO origen: la colocación eligió otro destino" if same else
+                f"lo permite{'n' if len(allow) > 1 else ''} {', '.join(allow) if allow else 'NINGUNA pieza'}")
         lines.append(f"- estado `{_show(p)}`; decidió {who}.\n"
                      f"  eligió {a!r} → `{_show(pa)}`, y la máquina termina en {base:g} movimientos\n"
-                     f"  con {b!r} → `{_show(pb)}` terminaría en {v:g}; lo permite"
-                     f"{'n' if len(allow) > 1 else ''} {', '.join(allow) if allow else 'NINGUNA pieza'}")
+                     f"  con {b!r} → `{_show(pb)}` terminaría en {v:g}; {tail}")
     return "\n".join(lines), regret, steps_by
 
 
@@ -292,8 +363,10 @@ def loss_table(pieces, regret, steps) -> str:
     LLM solo escribía piezas nuevas)."""
     from core.machine import FALLBACK
 
-    rows = [f"| {'comodín' if n == FALLBACK else '`' + n + '`'} | {regret.get(n, 0) / steps[n]:.2f} | {steps[n]} |"
-            for n in [p.rule for p in pieces] + [FALLBACK] if steps.get(n)]
+    place = next((p.rule for p in pieces if p.kind == "place"), "por defecto")
+    label = {FALLBACK: "comodín", PLACE_KEY: f"colocación (`{place}`)" if place != "por defecto" else "colocación (por defecto)"}
+    rows = [f"| {label.get(n, '`' + n + '`')} | {regret.get(n, 0) / steps[n]:.2f} | {steps[n]} |"
+            for n in [p.rule for p in pieces if p.kind != "place"] + [FALLBACK, PLACE_KEY] if steps.get(n)]
     if not rows:
         return ""
     return ("Movimientos de más por paso que decidió cada pieza (por rollout; mayor = pierde más):\n"
@@ -317,6 +390,48 @@ def api_summary(source: str) -> str:
                    + (f"\n    métodos: {', '.join(methods)}" if methods and not doc else ""))
     return "\n\n".join(out)
 
+
+EXAMPLE_ORIGIN = '''
+COMPONENT = {"name": "<nombre descriptivo>", "slot": "construction_machine", "compatible_skeletons": ["CONSTRUCT"],
+             "requires": [], "params": {}}
+
+from core.parts import origin_machine
+
+
+class MiOrigen:
+    """Una línea: de qué orígenes mueve."""
+
+    name = "<nombre del origen>"
+
+    def sources(self, partial, memory):   # los orígenes de su tipo, en orden de preferencia; [] = no aplica
+        return [...]
+
+    # opcional: def init(self, partial) -> memoria;  def update(self, partial, memory, action) -> memoria
+
+
+def build_component(problem, **params):
+    return origin_machine(problem, MiOrigen())
+'''
+
+EXAMPLE_PLACE = '''
+COMPONENT = {"name": "<nombre descriptivo>", "slot": "construction_machine", "compatible_skeletons": ["CONSTRUCT"],
+             "requires": [], "params": {}}
+
+from core.parts import placement_machine
+
+
+class MiColocacion:
+    """Una línea: adónde conviene llevar lo que sale de un origen."""
+
+    name = "<nombre de la colocación>"
+
+    def rank(self, partial, action):   # clave (número o tupla) entre las acciones de un mismo origen; menor = mejor
+        return ...
+
+
+def build_component(problem, **params):
+    return placement_machine(problem, MiColocacion())
+'''
 
 EXAMPLE = '''
 COMPONENT = {"name": "<nombre descriptivo>", "slot": "construction_machine", "compatible_skeletons": ["CONSTRUCT"],
@@ -342,14 +457,35 @@ def build_component(problem, **params):
 
 
 def library_prompt(spec, op: str, target: Piece | None, library: list[Piece], best: tuple[int, ...] | None,
-                   best_fitness: float, evid: str, rejections: list[str], history: list[str] | None = None) -> str:
-    order = " > ".join(f"`{next(p.rule for p in library if p.id == i)}`" for i in best) if best else "solo el comodín"
+                   best_fitness: float, evid: str, rejections: list[str], history: list[str] | None = None,
+                   source_doc: str | None = None) -> str:
+    """`source_doc`: con orígenes y colocación (`core.parts`), qué es el origen de una acción; None = piezas que
+    son reglas de movimientos completos."""
+    by_id = {p.id: p for p in library}
+    if source_doc is None:
+        order = " > ".join(f"`{by_id[i].rule}`" for i in best) if best else "solo el comodín"
+        task = (f"# Tarea\nConstructor greedy para **{spec.name}**, armado con piezas. Cada pieza es UNA regla: de los "
+                f"candidatos permite los de un tipo de movimiento. El framework prueba combinaciones de hasta {MAX_PIECES} "
+                "piezas de la biblioteca y se queda con la mejor; lo que ninguna permite lo decide el comodín (la acción que "
+                "menos sube la cota inferior).")
+        example = EXAMPLE
+    else:
+        movers = [by_id[i] for i in best or () if by_id[i].kind != "place"]
+        place = next((by_id[i] for i in best or () if by_id[i].kind == "place"), None)
+        order = (" > ".join(f"`{p.rule}`" for p in movers) if movers else "solo el comodín") + (
+            f", con la colocación `{place.rule}`" if place else ", con la colocación por defecto")
+        task = (f"# Tarea\nConstructor greedy para **{spec.name}**, armado con piezas. Cada acción son dos decisiones: de "
+                f"DÓNDE sale (su origen: {source_doc}) y ADÓNDE va. Hay dos tipos de pieza: un ORIGEN elige de qué orígenes "
+                "mover ahora (o no aplica); una COLOCACIÓN ordena las acciones de un mismo origen. El framework prueba "
+                f"combinaciones de hasta {MAX_PIECES} orígenes, en todos los órdenes de prioridad, con una colocación (de la "
+                "biblioteca, o la de por defecto: la acción que menos sube la cota inferior) y se queda con la mejor; cuando "
+                "ningún origen aplica decide el comodín (la acción que menos sube la cota inferior).")
+        example = {"new_origin": EXAMPLE_ORIGIN, "new_place": EXAMPLE_PLACE, "refine_place": EXAMPLE_PLACE,
+                   "refine_rule": EXAMPLE_ORIGIN}.get(op, EXAMPLE_ORIGIN + "\n# o una colocación:\n" + EXAMPLE_PLACE)
+    text_op = "choose_parts" if source_doc is not None and op == "choose" else op
     parts = [
-        f"# Tarea\nConstructor greedy para **{spec.name}**, armado con piezas. Cada pieza es UNA regla: de los candidatos "
-        f"permite los de un tipo de movimiento. El framework prueba combinaciones de hasta {MAX_PIECES} piezas de la "
-        "biblioteca y se queda con la mejor; lo que ninguna permite lo decide el comodín (la acción que menos sube la cota "
-        "inferior).",
-        f"\n# Operador: `{op}`\n" + OPERATOR_TEXT[op].format(target=target.rule if target else ""),
+        task,
+        f"\n# Operador: `{op}`\n" + OPERATOR_TEXT[text_op].format(target=target.rule if target else ""),
         f"\n# Biblioteca\n{library_text(library, best)}",
         f"\n# Mejor máquina: {order}, {best_fitness:.1f} movimientos (menor = mejor)\n{evid}",
     ]
@@ -361,7 +497,7 @@ def library_prompt(spec, op: str, target: Piece | None, library: list[Piece], be
             parts.append(f"\n# Pieza `{pc.rule}` #{pc.id} (en la mejor máquina)\n```python\n{llm_view(pc.source)}\n```")
     if history:
         parts.append("\n# Rondas anteriores\n" + "\n".join(f"- {h}" for h in history[-6:]))
-    parts += [f"\n# Formato\n```python\n{EXAMPLE}```", f"\n# Problema\n{spec.description}"]
+    parts += [f"\n# Formato\n```python\n{example}```", f"\n# Problema\n{spec.description}"]
     if spec.construction_source:
         parts.append(f"\n# Estado parcial y acción\n```python\n{api_summary(spec.construction_source)}\n```")
     if rejections:
@@ -372,13 +508,28 @@ def library_prompt(spec, op: str, target: Piece | None, library: list[Piece], be
 
 
 def _act(op: str, target) -> str:
-    return f"mejorar `{target.rule}`" if op == "refine_rule" and target is not None else "pieza nueva"
+    if op in ("refine_rule", "refine_place") and target is not None:
+        return f"mejorar `{target.rule}`"
+    return {"new_origin": "origen nuevo", "new_place": "colocación nueva"}.get(op, "pieza nueva")
 
 
-def parse_choice(text: str, library: list[Piece], best_pieces: tuple) -> tuple[str, Any, str | None]:
+def parse_choice(text: str, library: list[Piece], best_pieces: tuple, parts: bool = False) -> tuple[str, Any, str | None]:
     """(operador, pieza a mejorar o None, motivo) de las líneas `ACCIÓN:` y `POR QUÉ:` de la respuesta. Sin
-    una acción legible, o si la pieza nombrada no existe, es una pieza nueva."""
+    una acción legible, o si la pieza nombrada no existe, es una pieza nueva (con `parts`, un origen nuevo)."""
     import re
+
+    if parts:
+        m = re.search(r"ACCI[OÓ]N\s*:\s*(origen\s+nuevo|nuevo\s+origen|colocaci[oó]n\s+nueva|nueva\s+colocaci[oó]n|mejorar)"
+                      r"\s*`?([\w.-]*)`?", text, re.I)
+        why = re.search(r"POR\s+QU[EÉ]\s*:\s*(.+)", text, re.I)
+        why = why.group(1).strip()[:200] if why else None
+        if m and m.group(1).lower().startswith("mejorar") and m.group(2):
+            cands = [p for p in best_pieces if p.rule == m.group(2)] or [p for p in library if p.rule == m.group(2)]
+            if cands:
+                return ("refine_place" if cands[-1].kind == "place" else "refine_rule"), cands[-1], why
+        if m and "coloca" in m.group(1).lower():
+            return "new_place", None, why
+        return "new_origin", None, why
 
     m = re.search(r"ACCI[OÓ]N\s*:\s*(nueva|mejorar)\s*`?([\w.-]*)`?", text, re.I)
     why = re.search(r"POR\s+QU[EÉ]\s*:\s*(.+)", text, re.I)
@@ -391,8 +542,10 @@ def parse_choice(text: str, library: list[Piece], best_pieces: tuple) -> tuple[s
     return "new_rule", None, why
 
 
-def _attempt_piece(path: Path, source: str, contexts, op: str, target: Piece | None, library: list[Piece], reach):
+def _attempt_piece(path: Path, source: str, contexts, op: str, target: Piece | None, library: list[Piece], reach,
+                   parts: bool = False):
     """(motivo de rechazo o None, módulo, COMPONENT, nombre de la regla, fuente normalizada)."""
+    from core.parts import kind_of
     from core.validation.params import normalize_machine_file
 
     path.write_text(source)
@@ -403,9 +556,18 @@ def _attempt_piece(path: Path, source: str, contexts, op: str, target: Piece | N
     if not report.passed:
         return report.feedback()[:700], module, component, None, norm
     try:
-        rules = module.build_component(contexts[0].problem).rules
+        machine = module.build_component(contexts[0].problem)
+        rules = machine.rules
     except Exception as exc:  # noqa: BLE001
         return f"build_component(problem) lanzó {type(exc).__name__}: {exc}", module, component, None, norm
+    if parts:
+        want = "place" if op in ("new_place", "refine_place") else "origin"
+        if kind_of(machine) != want:
+            return (("esta pieza es una COLOCACIÓN: una clase con `rank(partial, action)` y build_component devuelve "
+                     "`placement_machine(problem, Colocacion())` (de `core.parts`)") if want == "place" else
+                    ("esta pieza es un ORIGEN: una clase con `sources(partial, memory)` y build_component devuelve "
+                     "`origin_machine(problem, Origen())` (de `core.parts`); el destino lo decide la colocación")), \
+                module, component, None, norm
     if len(rules) != 1:
         return (f"una pieza es UNA regla: build_component devuelve RuleMachine(problem, [regla]) con una sola (tiene "
                 f"{len(rules)}: {[r.name for r in rules]})"), module, component, None, norm
@@ -413,11 +575,11 @@ def _attempt_piece(path: Path, source: str, contexts, op: str, target: Piece | N
     if callable(getattr(rules[0], "start", None)) or callable(getattr(rules[0], "done", None)):
         return ("una pieza es una regla simple, sin `start` ni `done`: se evalúa en cada paso con `allowed` (y `score` "
                 "si hace falta)"), module, component, None, norm
-    if op == "new_rule" and any(pc.rule == rule for pc in library):
+    if op in ("new_rule", "new_origin", "new_place") and any(pc.rule == rule for pc in library):
         return f"ya hay una pieza `{rule}` en la biblioteca: una regla nueva necesita otro `name` (y otro tipo de movimiento)", \
             module, component, None, norm
-    if op == "refine_rule" and target is not None and rule != target.rule:
-        return f"refine_rule({target.rule}) mantiene el `name` de la regla (el hijo se llama `{rule}`)", module, component, None, norm
+    if op in ("refine_rule", "refine_place") and target is not None and rule != target.rule:
+        return f"{op}({target.rule}) mantiene el `name` de la regla (el hijo se llama `{rule}`)", module, component, None, norm
     return None, module, component, rule, norm
 
 
@@ -450,6 +612,7 @@ def load_saved(path: Path, key: str) -> tuple[dict, dict | None, dict]:
 
 
 def load_library(path: Path, tmp: Path, problem) -> list[Piece]:
+    from core.parts import kind_of
     from core.validation.syntactic import load_module
 
     tmp.mkdir(parents=True, exist_ok=True)
@@ -461,13 +624,13 @@ def load_library(path: Path, tmp: Path, problem) -> list[Piece]:
         if module is None:
             continue
         try:
-            rules = module.build_component(problem).rules
+            machine = module.build_component(problem)
         except Exception:  # noqa: BLE001
             continue
         doc, macro = _rule_info(row["source"])
-        out.append(Piece(row["id"], rules[0].name, row["name"], row["source"], module.build_component, module.COMPONENT,
-                         macro=macro, op=row.get("op") or "new_rule", parent=row.get("parent"),
-                         params=dict(row.get("params") or {}), doc=doc))
+        out.append(Piece(row["id"], machine.rules[0].name, row["name"], row["source"], module.build_component,
+                         module.COMPONENT, macro=macro, op=row.get("op") or "new_rule", parent=row.get("parent"),
+                         params=dict(row.get("params") or {}), doc=doc, kind=kind_of(machine)))
     return out
 
 
@@ -486,7 +649,7 @@ COMPONENT = {comp!r}
 import importlib.util
 from pathlib import Path
 
-from core.rules import RuleMachine
+from core.parts import assemble
 
 _PIECES = {files!r}
 
@@ -503,22 +666,27 @@ _MODULES = [(_load(f), key) for f, key in _PIECES]
 
 
 def build_component(problem, **params):
-    rules = []
-    for k, (mod, key) in enumerate(_MODULES):
+    machines = []
+    for mod, key in _MODULES:
         sub = {{n.split("::", 1)[1]: v for n, v in params.items() if n.startswith(key + "::")}}
-        rule = mod.build_component(problem, **sub).rules[0]
-        rule.priority = 100 // 2 ** k  # en el orden del compositor
-        rules.append(rule)
-    return RuleMachine(problem, rules)
+        machines.append(mod.build_component(problem, **sub))
+    # en el orden del compositor (100, 50, 25, ...); la colocación, si hay, para todos los orígenes
+    return assemble(problem, machines, [100 // 2 ** k for k in range(len(machines))])
 '''
 
 
 def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness: Harness, rounds: int = 12,
                    tune_samples: int = 6, n_train: int = 8, n_test: int = 8, size: str | None = None, rng_seed: int = 0,
                    tokens: TokenUsage | None = None, deadline: float | None = None, verbose: bool = True,
-                   resume: bool = False, choose: str = "llm") -> EvolveResult:
+                   resume: bool = False, choose: str = "llm", parts: bool | None = None) -> EvolveResult:
     """`choose`: "llm" = el LLM decide en cada ronda si escribe una pieza nueva o mejora cuál;
-    "schedule" = el calendario (55 % nueva, 45 % mejorar la pieza de la mejor máquina que más pierde)."""
+    "schedule" = el calendario (55 % nueva, 45 % mejorar la pieza de la mejor máquina que más pierde).
+
+    `parts`: piezas de origen y de colocación (`core.parts`) en vez de reglas de movimientos completos; por
+    defecto, si la vista del pack separa el origen de una acción (`view.source`)."""
+    import inspect
+
+    from core.parts import kind_of, supports_parts
     from core.rules import RuleMachine
 
     from .generator import validate_generated_module
@@ -530,6 +698,10 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
     train = [i for k, s in enumerate(sizes) for i in pack.make_instances(n_train, 9100 + 50 * k, pack.parse_size(s))]
     test = [i for k, s in enumerate(sizes) for i in pack.make_instances(n_test, 10100 + 50 * k, pack.parse_size(s))]
     contexts = list(pack.make_contexts(strict=False))
+    view0 = pack.problem_factory(train[0]).construction_view(train[0])
+    if parts is None:
+        parts = supports_parts(view0)
+    source_doc = (inspect.getdoc(type(view0).source) or "`view.source(acción)`").split("\n")[0].rstrip(".") if parts else None
     tmp = ws / SLOT / "_library"
     tmp.mkdir(parents=True, exist_ok=True)
     saved = ws / "evolve_library.json"
@@ -581,30 +753,40 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
         t0 = time.monotonic()
         res.rounds = rnd
         best_pieces = tuple(next(p for p in library if p.id == i) for i in state["best"]) if state["best"] else ()
-        if len(library) < 2:  # sin dos piezas no hay nada que combinar
-            op, target = "new_rule", None
+        new = "new_origin" if parts else "new_rule"
+        movers = [p for p in library if p.kind != "place"]
+        u = rng.random()
+        if len(movers) < 2:  # sin dos piezas no hay nada que combinar
+            op, target = new, None
         elif choose == "llm":  # el LLM decide qué hacer (se lee de su respuesta)
             op, target = "choose", None
-        elif rng.random() < 0.55:
-            op, target = "new_rule", None
+        elif u < (0.45 if parts else 0.55):
+            op, target = new, None
+        elif parts and u < 0.65:
+            op, target = "new_place", None
         else:
             op = "refine_rule"
-            target = best_pieces[0] if best_pieces else rng.choice(library)
+            target = next((p for p in best_pieces if p.kind != "place"), None) or rng.choice(movers)
         # evidencia por rollout en la mejor máquina (o en el comodín solo), anotada por pieza
         evid, regret, steps = rollout_evidence(harness, best_pieces, library, rollout_insts)
         evid = loss_table(best_pieces, regret, steps) + evid
         if best_pieces and op == "refine_rule" and regret:  # la pieza de la mejor máquina que más pierde
-            worst = max((s for s in regret if s in {p.rule for p in best_pieces}), default=None, key=regret.get)
-            target = next((p for p in best_pieces if p.rule == worst), target)
+            worst = max((s for s in regret if s in {p.rule for p in best_pieces} | {PLACE_KEY}), default=None,
+                        key=lambda s: regret[s] / max(1, steps.get(s, 1)))
+            if worst == PLACE_KEY:  # pierde más la colocación: se mejora la de la mejor máquina, o se escribe una
+                place = next((p for p in best_pieces if p.kind == "place"), None)
+                op, target = ("refine_place", place) if place else ("new_place", None)
+            else:
+                target = next((p for p in best_pieces if p.rule == worst), target)
         prompt = library_prompt(spec, op, target, library, state["best"], state["fitness"] if best_pieces else minimal,
-                                evid, rejections, history)
+                                evid, rejections, history, source_doc=source_doc)
         text = client.complete(SYSTEM_PROMPT, prompt)
         used = getattr(client, "last_usage", None)
         if isinstance(used, TokenUsage):
             tokens.add(used)
         why = None
         if op == "choose":  # la acción que eligió el LLM
-            op, target, why = parse_choice(text, library, best_pieces)
+            op, target, why = parse_choice(text, library, best_pieces, parts=parts)
         entry = {"round": rnd, "op": op, "target": target.rule if target else None, "why": why}
         blocks = extract_code_blocks(text)
         if not blocks:
@@ -612,7 +794,7 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
             res.individuals.append({**entry, "status": "sin código"})
             continue
         path = tmp / f"cand_{next_id}.py"
-        reason, module, component, rule, source = _attempt_piece(path, blocks[0], contexts, op, target, library, reach)
+        reason, module, component, rule, source = _attempt_piece(path, blocks[0], contexts, op, target, library, reach, parts)
         if reason is not None:
             fix = client.complete(SYSTEM_PROMPT, repair_prompt(op, reason, blocks[0]))
             used = getattr(client, "last_usage", None)
@@ -620,7 +802,7 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
                 tokens.add(used)
             fixed = extract_code_blocks(fix)
             if fixed:
-                reason, module, component, rule, source = _attempt_piece(path, fixed[0], contexts, op, target, library, reach)
+                reason, module, component, rule, source = _attempt_piece(path, fixed[0], contexts, op, target, library, reach, parts)
                 entry["repaired"] = reason is None
         if reason is not None:
             rejections.append(f"{op}{'(' + target.rule + ')' if target else ''}: {reason}")
@@ -632,7 +814,8 @@ def evolve_library(client: LLMClient, pack, spec, workspace: str | Path, harness
             continue
         doc, macro = _rule_info(source)
         pc = Piece(next_id, rule, component.get("name") or f"piece_{next_id}", source, module.build_component, component,
-                   macro=macro, op=op, parent=target.id if target else None, doc=doc)
+                   macro=macro, op=op, parent=target.id if target else None, doc=doc,
+                   kind=kind_of(module.build_component(contexts[0].problem)))
         next_id += 1
         pc.alone = cache.setdefault((pc.id,), harness.mean(composition_factory((pc,))[0], {}, train))
         measure_piece(harness, pc, train)

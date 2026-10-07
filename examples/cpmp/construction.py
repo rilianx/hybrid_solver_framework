@@ -121,6 +121,10 @@ class CPMPConstructionView:
         return [Move(so, sd) for so in range(L.S) for sd in range(L.S)
                 if L.valid(so, sd) and L.after(so, sd) not in seen]
 
+    def source(self, a: Move) -> int:
+        """la pila de la que sale el contenedor (`a.so`)."""
+        return a.so
+
     def apply(self, L: Layout, a: Move) -> Layout:
         q = L.copy()
         q.move(a.so, a.sd)

@@ -725,6 +725,48 @@ el bucle y la regla de selección; el problema aporta la vista constructiva y el
   contra lo que la máquina misma lograría, no contra un óptimo que solo existe en instancias
   chicas. La tabla de arriba del prompt queda con una sola columna (movimientos de más por paso,
   por rollout), y cada pieza se describe por su ancho y su fitness sola (sin precisión).
+
+  **Orígenes y colocación** (`core/parts.py`, `--pieces auto|parts|rules`). Un movimiento de FRG
+  son dos decisiones: de qué pila sale (el origen) y adónde va. El destino lo decide siempre la
+  misma colocación (`destination_rank`); `bg` y la reducción solo difieren en cómo eligen el
+  origen. Así FRG son tres piezas simples:
+
+  | pieza | tipo | qué hace |
+  |---|---|---|
+  | `frg_place` | colocación: `rank(parcial, acción)` | donde quede bien puesto y más ajustado; si no, donde menos estorbe |
+  | `bg` | origen: `sources(parcial, memoria)` | pilas desordenadas cuyo tope puede quedar bien puesto |
+  | `reduce` | origen | la pila que elige FRG para reducir |
+
+  A mano, 8 instancias de test por tamaño:
+
+  | máquina | 5×5 | 6×6 | media |
+  |---|---|---|---|
+  | orígenes `bg` > `reduce`, colocación por defecto (la cota) | 13,1 | 29,3 | 21,2 |
+  | orígenes `bg` > `reduce`, colocación de FRG | 11,9 | 26,1 | 19,0 |
+  | `reduce` > `bg` (al revés) | 78,9 | 116,3 | 97,6 |
+  | FRG | 12,4 | 24,3 | 18,3 |
+
+  Antes cada pieza decidía origen y destino juntos, y el LLM reinventaba la colocación dentro de
+  cada una: las 9 piezas de la corrida 87 ("tapar o aparcar sobre una pila desordenada") eran
+  variantes de destino metidas en piezas de origen, y la reducción, que es solo un origen, no
+  tenía cómo escribirse.
+
+  - El pack dice qué es el origen de una acción con `view.source(acción)` (en el CPMP, `a.so`).
+    Con `--pieces auto` (el default), la biblioteca usa orígenes y colocación si la vista lo tiene.
+  - Un origen es una regla de `core.rules` (`SourceRule`): permite los candidatos de sus orígenes,
+    en su orden, y entre los de un mismo origen ordena la colocación. Sin pieza de colocación, la
+    de por defecto: la acción que menos sube la cota inferior. Como son reglas comunes, el greedy,
+    la beam search y la validación no cambian.
+  - El compositor prueba hasta 3 orígenes en todos los órdenes, con la colocación por defecto o
+    una de las 2 mejores de la biblioteca (`assemble`, el mismo código que usa el módulo exportado).
+  - Operadores: `new_origin`, `new_place`, `refine_rule` (un origen) y `refine_place`; con
+    `--choose llm` el LLM responde `ACCIÓN: origen nuevo | colocación nueva | mejorar <name>`.
+  - En la evidencia, un contraejemplo con el MISMO origen que la acción elegida es de la
+    colocación (otro destino) y cuenta en su propia fila de la tabla de pérdida; uno con otro
+    origen dice qué origen faltaba ("lo permite NINGUNA pieza") o cuál eligió mal.
+
+  Con las tres piezas como respuestas del LLM simulado, el compositor encuentra `bg` > `reduce`
+  con `frg_place` (`tests/test_library.py`).
 - **Un algoritmo de optimización de greedies** (etapa `evolve`, `llm/evolve.py`). Un greedy como
   FRG no sale de una vez; se llega por pasos: primero solo movimientos BG, después la prioridad
   dentro de ese estado, después un estado de vaciado que vuelve al inicial, y otra vez las
