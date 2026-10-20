@@ -3240,5 +3240,497 @@
       "cached_input_tokens": 15616,
       "reasoning_tokens": 13520
     }
+  },
+  {
+    "seed": false,
+    "rounds": 10,
+    "archive": [
+      "buffer_aware_bad_top_placement",
+      "large_bad_top_gap",
+      "capped_misordered_source"
+    ],
+    "written": [
+      {
+        "name": "library_buffer_aware_bad_top_placement_large_bad_top_gap_capped_misordered_source",
+        "path": "generated/cpmp_evolve/construction_machine/library_buffer_aware_bad_top_placement_large_bad_top_gap_capped_misordered_source_r1.py",
+        "fitness": 76.562,
+        "params": {
+          "p8::prefer_sorted_when_source_good": true,
+          "p8::prefer_taller_support_for_compatible": true,
+          "p8::prefer_buffer_for_capped_misordered": true,
+          "p8::min_cover_gap_for_buffer_preference": 2,
+          "p8::prefer_smaller_incompatible_gap": true,
+          "p0::min_gap": 6,
+          "p1::min_cover_gap": 0,
+          "p1::min_compatible_dests": 1
+        }
+      }
+    ],
+    "individuals": [
+      {
+        "round": 1,
+        "op": "new_origin",
+        "target": null,
+        "why": null,
+        "id": 0,
+        "rule": "large_bad_top_gap",
+        "name": "origin_large_bad_top_gap",
+        "parent": null,
+        "macro": false,
+        "kind": "origin",
+        "alone": 97.125,
+        "width": 0.198,
+        "params": {},
+        "best_with": 97.125,
+        "status": "en la biblioteca",
+        "best": [],
+        "fitness": null
+      },
+      {
+        "round": 2,
+        "op": "new_origin",
+        "target": null,
+        "why": null,
+        "repaired": false,
+        "status": "rechazado",
+        "reason": "cand_1.py: rechazado en la capa 'syntactic'. Propiedades violadas:\n  - no_loose_constants: números sueltos en el código: 9 (línea 56), 10 (línea 56). Todo número que decide algo (umbral, peso, tope, desempate) va en COMPONENT['params'] con 'range' y 'default', y llega por build_component(problem, **params), para que el tuner lo afine. Se permiten 0, ±1, 2, tolerancias (< 1e-3) y potencias de 10 desde 100 (orden lexicográfico o centinela)."
+      },
+      {
+        "round": 3,
+        "op": "new_origin",
+        "target": null,
+        "why": null,
+        "id": 1,
+        "rule": "capped_misordered_source",
+        "name": "capped_misordered_source",
+        "parent": null,
+        "macro": false,
+        "kind": "origin",
+        "alone": 89.438,
+        "width": 0.186,
+        "params": {
+          "min_cover_gap": 0,
+          "min_compatible_dests": 1
+        },
+        "best_with": 86.0,
+        "status": "mejor máquina",
+        "best": [
+          "capped_misordered_source",
+          "large_bad_top_gap"
+        ],
+        "fitness": 91.938
+      },
+      {
+        "round": 4,
+        "op": "new_place",
+        "target": null,
+        "why": "Los contraejemplos con el MISMO origen culpan a la colocación, y además el comodín falla justo en elegir destinos “buffer”; propongo una colocación que separa el caso de tope malo y favorece apoyos al",
+        "id": 2,
+        "rule": "buffer_aware_bad_top_placement",
+        "name": "buffer_aware_bad_top_placement",
+        "parent": null,
+        "macro": false,
+        "kind": "place",
+        "alone": 94.438,
+        "width": 1.0,
+        "params": {
+          "prefer_sorted_when_source_good": true,
+          "prefer_taller_support_for_compatible": true
+        },
+        "best_with": 84.438,
+        "status": "mejor máquina",
+        "best": [
+          "buffer_aware_bad_top_placement",
+          "large_bad_top_gap",
+          "capped_misordered_source"
+        ],
+        "fitness": 91.375
+      },
+      {
+        "round": 5,
+        "op": "new_origin",
+        "target": null,
+        "why": "La mayor pérdida viene de los orígenes y hay un contraejemplo claro no cubierto por la biblioteca: un tope mal puesto con brecha pequeña (p. ej. 22 sobre 21), así que propongo un origen angosto para e",
+        "id": 3,
+        "rule": "small_bad_top_gap",
+        "name": "origin_small_bad_top_gap",
+        "parent": null,
+        "macro": false,
+        "kind": "origin",
+        "alone": 87.875,
+        "width": 0.216,
+        "params": {
+          "max_gap": 3,
+          "min_destinations": 1
+        },
+        "best_with": 83.562,
+        "status": "mejor máquina",
+        "best": [
+          "buffer_aware_bad_top_placement",
+          "small_bad_top_gap"
+        ],
+        "fitness": 75.625
+      },
+      {
+        "round": 6,
+        "op": "refine_rule",
+        "target": "large_bad_top_gap",
+        "why": "Los contraejemplos señalan un origen que ya existe pero probablemente era demasiado ancho; conviene afinarlo para que solo active los “bad tops” con brecha grande cuando no hay colocación buena compat",
+        "id": 4,
+        "rule": "large_bad_top_gap",
+        "name": "origin_large_bad_top_gap_v2",
+        "parent": 0,
+        "macro": false,
+        "kind": "origin",
+        "alone": 93.75,
+        "width": 0.184,
+        "params": {},
+        "best_with": 85.938,
+        "status": "en la biblioteca",
+        "best": [
+          "buffer_aware_bad_top_placement",
+          "small_bad_top_gap"
+        ],
+        "fitness": 75.625
+      },
+      {
+        "round": 7,
+        "op": "refine_rule",
+        "target": "large_bad_top_gap",
+        "why": "Los contraejemplos los explica un origen de “tope muy malo y casi sin apoyos compatibles factibles”; estrechar `large_bad_top_gap` hacia esos casos debería meter justo esas jugadas sin degradar tanto ",
+        "id": 5,
+        "rule": "large_bad_top_gap",
+        "name": "origin_large_bad_top_gap",
+        "parent": 4,
+        "macro": false,
+        "kind": "origin",
+        "alone": 92.938,
+        "width": 0.211,
+        "params": {
+          "min_gap": 5,
+          "max_compatible_destinations": 1,
+          "min_total_destinations": 1,
+          "min_unlocked_bad": 1
+        },
+        "best_with": 80.812,
+        "status": "mejor máquina",
+        "best": [
+          "capped_misordered_source",
+          "large_bad_top_gap"
+        ],
+        "fitness": 83.438
+      },
+      {
+        "round": 8,
+        "op": "new_origin",
+        "target": null,
+        "why": "faltan casos de “tope bien puesto que tapa desorden pero no tiene destino compatible”, que la mejor máquina no cubre y explican al menos un contraejemplo fuerte con otra fuente de error mucho mayor qu",
+        "id": 6,
+        "rule": "buffered_capped_misordered_source",
+        "name": "buffered_capped_misordered_source",
+        "parent": null,
+        "macro": false,
+        "kind": "origin",
+        "alone": 95.125,
+        "width": 0.166,
+        "params": {
+          "max_compatible_dests": 0
+        },
+        "best_with": 73.625,
+        "status": "mejor máquina",
+        "best": [
+          "buffer_aware_bad_top_placement",
+          "buffered_capped_misordered_source",
+          "large_bad_top_gap"
+        ],
+        "fitness": 80.688
+      },
+      {
+        "round": 9,
+        "op": "refine_place",
+        "target": "buffer_aware_bad_top_placement",
+        "why": "Los contraejemplos con el MISMO origen señalan a la colocación; el patrón repetido es que, al aparcar en buffer un contenedor incompatible, conviene priorizar apoyo más alto (menor gap) antes que pila",
+        "id": 7,
+        "rule": "buffer_aware_bad_top_placement",
+        "name": "buffer_aware_bad_top_placement",
+        "parent": 2,
+        "macro": false,
+        "kind": "place",
+        "alone": 94.438,
+        "width": 1.0,
+        "params": {},
+        "best_with": 74.562,
+        "status": "en la biblioteca",
+        "best": [
+          "buffer_aware_bad_top_placement",
+          "buffered_capped_misordered_source",
+          "large_bad_top_gap"
+        ],
+        "fitness": 80.688
+      },
+      {
+        "round": 10,
+        "op": "refine_place",
+        "target": "buffer_aware_bad_top_placement",
+        "why": "Los contraejemplos con el MISMO origen muestran que falla la colocación; en particular, cuando el tope sale de una pila “bien tapada pero desordenada”, conviene sesgar hacia buffers con menor violació",
+        "id": 8,
+        "rule": "buffer_aware_bad_top_placement",
+        "name": "buffer_aware_bad_top_placement",
+        "parent": 2,
+        "macro": false,
+        "kind": "place",
+        "alone": 91.25,
+        "width": 1.0,
+        "params": {
+          "prefer_sorted_when_source_good": true,
+          "prefer_taller_support_for_compatible": true,
+          "prefer_buffer_for_capped_misordered": true,
+          "min_cover_gap_for_buffer_preference": 2,
+          "prefer_smaller_incompatible_gap": true
+        },
+        "best_with": 68.438,
+        "status": "mejor máquina",
+        "best": [
+          "buffer_aware_bad_top_placement",
+          "large_bad_top_gap",
+          "capped_misordered_source"
+        ],
+        "fitness": 76.562
+      },
+      {
+        "library": [
+          {
+            "id": 0,
+            "rule": "large_bad_top_gap",
+            "name": "origin_large_bad_top_gap",
+            "op": "new_origin",
+            "parent": null,
+            "macro": false,
+            "kind": "origin",
+            "alone": 97.125,
+            "width": 0.198,
+            "params": {
+              "min_gap": 6
+            }
+          },
+          {
+            "id": 1,
+            "rule": "capped_misordered_source",
+            "name": "capped_misordered_source",
+            "op": "new_origin",
+            "parent": null,
+            "macro": false,
+            "kind": "origin",
+            "alone": 89.438,
+            "width": 0.186,
+            "params": {
+              "min_cover_gap": 0,
+              "min_compatible_dests": 1
+            }
+          },
+          {
+            "id": 2,
+            "rule": "buffer_aware_bad_top_placement",
+            "name": "buffer_aware_bad_top_placement",
+            "op": "new_place",
+            "parent": null,
+            "macro": false,
+            "kind": "place",
+            "alone": 94.438,
+            "width": 1.0,
+            "params": {
+              "prefer_sorted_when_source_good": true,
+              "prefer_taller_support_for_compatible": true
+            }
+          },
+          {
+            "id": 3,
+            "rule": "small_bad_top_gap",
+            "name": "origin_small_bad_top_gap",
+            "op": "new_origin",
+            "parent": null,
+            "macro": false,
+            "kind": "origin",
+            "alone": 87.875,
+            "width": 0.216,
+            "params": {
+              "max_gap": 3,
+              "min_destinations": 1
+            }
+          },
+          {
+            "id": 4,
+            "rule": "large_bad_top_gap",
+            "name": "origin_large_bad_top_gap_v2",
+            "op": "refine_rule",
+            "parent": 0,
+            "macro": false,
+            "kind": "origin",
+            "alone": 93.75,
+            "width": 0.184,
+            "params": {}
+          },
+          {
+            "id": 5,
+            "rule": "large_bad_top_gap",
+            "name": "origin_large_bad_top_gap",
+            "op": "refine_rule",
+            "parent": 4,
+            "macro": false,
+            "kind": "origin",
+            "alone": 92.938,
+            "width": 0.211,
+            "params": {
+              "min_gap": 5,
+              "max_compatible_destinations": 1,
+              "min_total_destinations": 1,
+              "min_unlocked_bad": 1
+            }
+          },
+          {
+            "id": 6,
+            "rule": "buffered_capped_misordered_source",
+            "name": "buffered_capped_misordered_source",
+            "op": "new_origin",
+            "parent": null,
+            "macro": false,
+            "kind": "origin",
+            "alone": 95.125,
+            "width": 0.166,
+            "params": {
+              "max_compatible_dests": 0
+            }
+          },
+          {
+            "id": 7,
+            "rule": "buffer_aware_bad_top_placement",
+            "name": "buffer_aware_bad_top_placement",
+            "op": "refine_place",
+            "parent": 2,
+            "macro": false,
+            "kind": "place",
+            "alone": 94.438,
+            "width": 1.0,
+            "params": {}
+          },
+          {
+            "id": 8,
+            "rule": "buffer_aware_bad_top_placement",
+            "name": "buffer_aware_bad_top_placement",
+            "op": "refine_place",
+            "parent": 2,
+            "macro": false,
+            "kind": "place",
+            "alone": 91.25,
+            "width": 1.0,
+            "params": {
+              "prefer_sorted_when_source_good": true,
+              "prefer_taller_support_for_compatible": true,
+              "prefer_buffer_for_capped_misordered": true,
+              "min_cover_gap_for_buffer_preference": 2,
+              "prefer_smaller_incompatible_gap": true
+            }
+          }
+        ],
+        "best": [
+          "buffer_aware_bad_top_placement",
+          "large_bad_top_gap",
+          "capped_misordered_source"
+        ],
+        "fitness": 76.562,
+        "minimal": 90.688,
+        "compositions": [
+          [
+            68.438,
+            [
+              8,
+              0,
+              1
+            ]
+          ],
+          [
+            73.625,
+            [
+              2,
+              6,
+              0
+            ]
+          ],
+          [
+            74.562,
+            [
+              7,
+              0,
+              1,
+              6
+            ]
+          ],
+          [
+            77.25,
+            [
+              6,
+              5,
+              1
+            ]
+          ],
+          [
+            77.562,
+            [
+              6,
+              5
+            ]
+          ],
+          [
+            78.938,
+            [
+              2,
+              4,
+              6
+            ]
+          ],
+          [
+            79.062,
+            [
+              8,
+              5,
+              1
+            ]
+          ],
+          [
+            79.125,
+            [
+              8,
+              1,
+              0,
+              6
+            ]
+          ],
+          [
+            79.25,
+            [
+              6,
+              1,
+              5
+            ]
+          ],
+          [
+            79.938,
+            [
+              1,
+              6,
+              5
+            ]
+          ]
+        ]
+      }
+    ],
+    "tokens": {
+      "calls": 11,
+      "input_tokens": 42281,
+      "output_tokens": 22609,
+      "total_tokens": 64890,
+      "cached_input_tokens": 1792,
+      "reasoning_tokens": 13355
+    }
   }
 ]
