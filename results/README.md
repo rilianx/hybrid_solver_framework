@@ -46,6 +46,9 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run44/`](tune_run44/) | 29 oct | ciclo completo con Opus 5.5: modelo (corrida 94) y componentes (97) de rutas | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | todo el ciclo con un solo LLM, sin optimización |
 | [`tune_run45/`](tune_run45/) | 29 oct | ciclo completo con Opus 5.5: modelo (95) y componentes (98) de gran tour | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | todo el ciclo con un solo LLM, sin optimización |
 | [`tune_run46/`](tune_run46/) | 29 oct | ciclo completo con Opus 5.5: modelo (96) y componentes (99) del CLSP | SA, ILS, VNS, LNS_MIP | 10+10, 10×15 | 5 s | 40 × 3 réplicas | todo el ciclo con un solo LLM, sin optimización |
+| [`tune_run47/`](tune_run47/) | 29 oct | job shop (makespan): catálogo escrito a mano (secuencias, camino crítico) | SA, ILS, VNS, LNS_MIP | 10+10, 10×10 | 5 s | 40 × 3 réplicas | referencia del tercer problema |
+| [`tune_run48/`](tune_run48/) | 29 oct | ciclo completo con Opus 5.5 en job shop, secuencias por máquina: modelo (100) y componentes (102) | SA, ILS, VNS, LNS_MIP | 10+10, 10×10 | 5 s | 40 × 3 réplicas | tercer problema, sin nada a mano salvo instancias y casos |
+| [`tune_run49/`](tune_run49/) | 29 oct | ciclo completo con Opus 5.5 en job shop, permutación con repetición: modelo (101) y componentes (103) | SA, ILS, VNS, LNS_MIP | 10+10, 10×10 | 5 s | 40 × 3 réplicas | otra representación del tercer problema |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -512,6 +515,46 @@ Corridas 97–99: componentes de Opus sobre esos modelos (rutas 12/12, gran tour
   combinación que había costado varias corridas de GPT, la etapa de optimización y los arreglos de
   memoria. La velocidad extra del modelo no se traduce en gap porque los catálogos ya eran rápidos
   (en el CLSP manda el MIP de LNS_MIP).
+
+### Tercer problema, job shop (makespan): el ciclo con Opus 5.5 le gana a lo escrito a mano
+
+`examples/jobshop` entra directamente por piezas: no hay un `ProblemModel` monolítico, el del pack
+base es el de las piezas de referencia. Dos representaciones con la misma instancia, casos y vista
+MIP (disyuntiva big-M): `sequences` (una secuencia por máquina, plan semiactivo; un ciclo con las
+rutas es la familia `orden`) y `operations` (permutación con repetición de Bierwirth, decodificador).
+Seis casos de 3×3 a 4×4 con óptimo por fuerza bruta. El catálogo a mano usa la estructura clásica:
+despacho (fin más temprano, más trabajo restante), intercambio N5 e inserción en bloques críticos,
+patada en el camino crítico, destrucción por ventana de tiempo y por máquinas.
+
+Opus 5.5, `effort: medium`:
+
+| | Modelo | Componentes |
+|---|---|---|
+| `sequences` (100, 102) | 3 llamadas, todo en la ronda 1, 0,30 USD | 12/12, 0,79 USD |
+| `operations` (101, 103) | 5 llamadas, 0,54 USD | 12/12, 0,76 USD |
+
+En `operations` la vista heurística tardó 3 rondas: una respuesta con ciclo pasa por `from_answer`
+a otra permutación y el modelo la reportó primero como `secuencia` y después invirtió el error; los
+casos lo atraparon las dos veces. En las dos representaciones Opus llegó solo al camino crítico
+(intercambios y reinserciones en bloques), sin ver el catálogo a mano.
+
+Tuning 10×10 (gaps contra el mejor conocido común de cada par; diferencia por instancia con IC95):
+
+| Comparación | Gaps | Diferencia |
+|---|---|---|
+| `sequences` (48) contra escrito a mano (47) | 2,56 contra 3,57 % | −1,01 [−2,53, +0,42] |
+| `operations` (49) contra escrito a mano (47) | 2,00 contra 3,78 % | −1,77 [−3,83, +0,16] |
+| **`operations` (49) contra `sequences` (48)** | **1,99 contra 2,75 %** | **−0,76 [−1,51, −0,03]** |
+
+- Los dos catálogos generados quedan por delante del escrito a mano en las tres réplicas, pero con
+  10 instancias el intervalo cruza cero apenas. La única diferencia que se separa del ruido es entre
+  representaciones: la permutación con repetición le gana a las secuencias.
+- Lo elegido: con secuencias, el mismo esquema que a mano (VNS/ILS desde el greedy de más trabajo
+  restante, con una cota de la cola del trabajo, e intercambio en el camino crítico); con la
+  permutación, SA con inserción de una operación en la permutación (`dispatch_token_insertion`),
+  desde el greedy con cota inferior del makespan o desde una al azar. Toda permutación es factible,
+  y SA se mueve sin chocar con ciclos.
+- Costo del tercer problema completo: 1,1–1,3 USD por representación (modelo + componentes).
 
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 
