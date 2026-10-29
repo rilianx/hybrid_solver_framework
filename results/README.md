@@ -43,6 +43,9 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run41/`](tune_run41/) | 29 oct | ciclo CVRP rutas: componentes de Claude Opus 5.5 (corrida 91) sobre el modelo de la corrida 51 | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | otro LLM para los componentes |
 | [`tune_run42/`](tune_run42/) | 29 oct | ciclo CVRP gran tour: componentes de Claude Opus 5.5 (corrida 92) sobre el modelo de la corrida 50 | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | otro LLM para los componentes |
 | [`tune_run43/`](tune_run43/) | 29 oct | ciclo CLSP setups: componentes de Claude Opus 5.5 (corrida 93) sobre el modelo de la corrida 57 | SA, ILS, VNS, LNS_MIP | 10+10, 10×15 | 5 s | 40 × 3 réplicas | otro LLM para los componentes |
+| [`tune_run44/`](tune_run44/) | 29 oct | ciclo completo con Opus 5.5: modelo (corrida 94) y componentes (97) de rutas | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | todo el ciclo con un solo LLM, sin optimización |
+| [`tune_run45/`](tune_run45/) | 29 oct | ciclo completo con Opus 5.5: modelo (95) y componentes (98) de gran tour | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | todo el ciclo con un solo LLM, sin optimización |
+| [`tune_run46/`](tune_run46/) | 29 oct | ciclo completo con Opus 5.5: modelo (96) y componentes (99) del CLSP | SA, ILS, VNS, LNS_MIP | 10+10, 10×15 | 5 s | 40 × 3 réplicas | todo el ciclo con un solo LLM, sin optimización |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -478,6 +481,37 @@ run 38 (modelo de la corrida 51, SA por tiempo, carrera), cambiando solo los com
   USD por generación de componentes.
 - El costo de una generación es sobre todo de salida (83 %): reordenar los prompts para la caché
   ahorraría ~0,06 USD por corrida; el nivel de `effort` pesa más.
+
+### Ciclo completo con Claude Opus 5.5: modelo y componentes, sin la etapa de optimización
+
+Corridas 94–96 (modelo por piezas, `effort: medium`): los tres aceptados en la primera ronda de cada
+etapa (vista heurística, MIP y constructiva), 3 llamadas y 0,25–0,32 USD cada uno; con GPT-5.4-mini
+la vista MIP había llegado a 6 rondas y la constructiva del CLSP no se había aceptado. Sin pasar por
+la optimización, ya son más rápidos que los de GPT optimizados y que los escritos a mano:
+
+| Evaluaciones/s | Rutas | Gran tour | CLSP |
+|---|---|---|---|
+| Opus 5.5 | **62 687** | **12 215** | **182** |
+| GPT, original | 6 429 | 369 | 47 (caché sin límite) |
+| GPT, optimizado | 32 451 | 8 805 | 50 |
+| Escrito a mano | 36 237 | 11 351 | 96 |
+
+Corridas 97–99: componentes de Opus sobre esos modelos (rutas 12/12, gran tour 10/12, CLSP 12/12;
+0,57–0,86 USD). Runs 44–46, mismo tuning que las anteriores:
+
+| Problema | Opus todo (44–46) | Modelo GPT + componentes Opus (41–43) | Escrito a mano (30 / 39) | Opus todo − escrito a mano |
+|---|---|---|---|---|
+| CVRP rutas | 0,97 % | 0,77 % | 1,31 % | −0,34 [−0,80, +0,10] |
+| CVRP gran tour | 0,47 % | 0,41 % | 1,31 % | **−0,84 [−1,23, −0,45]** |
+| CLSP | 0,70 % | 0,53 % | 0,68 % | +0,02 [−0,24, +0,30] |
+
+- Contra el modelo de GPT con componentes de Opus no se distingue del ruido en ninguno de los tres
+  (+0,20, +0,06, +0,16 puntos, intervalos que cruzan cero). Contra lo escrito a mano: gana en gran
+  tour, empata en rutas (una réplica en 1,44 %; las otras dos en 0,7 %) y en el CLSP.
+- **Un solo LLM y un costo de 0,9–1,2 USD por problema** (modelo + componentes) dan lo mismo que la
+  combinación que había costado varias corridas de GPT, la etapa de optimización y los arreglos de
+  memoria. La velocidad extra del modelo no se traduce en gap porque los catálogos ya eran rápidos
+  (en el CLSP manda el MIP de LNS_MIP).
 
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 

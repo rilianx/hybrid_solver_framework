@@ -1,0 +1,52 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("SA", "ILS", "VNS", "LNS_MIP")
+constructor "--constructor=" c ("trivial", "random", "greedy_insertion_cost_per_demand", "greedy_polar_sweep_angle_gap", "greedy_savings_isolation_seed_far") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP")
+greedy_insertion_cost_per_demand.rule "--greedy_insertion_cost_per_demand.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_insertion_cost_per_demand"
+greedy_insertion_cost_per_demand.alpha "--greedy_insertion_cost_per_demand.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_insertion_cost_per_demand"
+greedy_insertion_cost_per_demand.demand_power "--greedy_insertion_cost_per_demand.demand_power=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_insertion_cost_per_demand"
+greedy_insertion_cost_per_demand.close_margin "--greedy_insertion_cost_per_demand.close_margin=" r (0.01, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_insertion_cost_per_demand"
+greedy_polar_sweep_angle_gap.rule "--greedy_polar_sweep_angle_gap.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_polar_sweep_angle_gap"
+greedy_polar_sweep_angle_gap.alpha "--greedy_polar_sweep_angle_gap.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_polar_sweep_angle_gap"
+greedy_polar_sweep_angle_gap.start_angle "--greedy_polar_sweep_angle_gap.start_angle=" r (-3.1416, 3.1416) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_polar_sweep_angle_gap"
+greedy_polar_sweep_angle_gap.dist_weight "--greedy_polar_sweep_angle_gap.dist_weight=" r (0.0, 2.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_polar_sweep_angle_gap"
+greedy_polar_sweep_angle_gap.close_margin "--greedy_polar_sweep_angle_gap.close_margin=" r (0.01, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_polar_sweep_angle_gap"
+greedy_savings_isolation_seed_far.rule "--greedy_savings_isolation_seed_far.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_savings_isolation_seed_far"
+greedy_savings_isolation_seed_far.alpha "--greedy_savings_isolation_seed_far.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_savings_isolation_seed_far"
+greedy_savings_isolation_seed_far.isolation_weight "--greedy_savings_isolation_seed_far.isolation_weight=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_savings_isolation_seed_far"
+greedy_savings_isolation_seed_far.fill_weight "--greedy_savings_isolation_seed_far.fill_weight=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_savings_isolation_seed_far"
+greedy_savings_isolation_seed_far.close_margin "--greedy_savings_isolation_seed_far.close_margin=" r (0.01, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_savings_isolation_seed_far"
+neighborhood "--neighborhood=" c ("giant_tour_depot_2opt", "or_opt_segment_relocation", "two_opt_star_tail_exchange") | skeleton %in% c("SA", "ILS", "VNS")
+giant_tour_depot_2opt.max_span "--giant_tour_depot_2opt.max_span=" i (2, 200) | skeleton %in% c("SA", "ILS", "VNS") & neighborhood == "giant_tour_depot_2opt"
+or_opt_segment_relocation.max_seg_len "--or_opt_segment_relocation.max_seg_len=" i (1, 3) | skeleton %in% c("SA", "ILS", "VNS") & neighborhood == "or_opt_segment_relocation"
+or_opt_segment_relocation.allow_new_route "--or_opt_segment_relocation.allow_new_route=" c ("TRUE", "FALSE") | skeleton %in% c("SA", "ILS", "VNS") & neighborhood == "or_opt_segment_relocation"
+two_opt_star_tail_exchange.allow_reverse "--two_opt_star_tail_exchange.allow_reverse=" c ("TRUE", "FALSE") | skeleton %in% c("SA", "ILS", "VNS") & neighborhood == "two_opt_star_tail_exchange"
+perturbation "--perturbation=" c ("giant_tour_double_bridge_resplit", "random_relocate_k_capacity_aware", "spatial_ruin_noisy_cheapest_reinsert") | skeleton %in% c("ILS")
+giant_tour_double_bridge_resplit.max_moves "--giant_tour_double_bridge_resplit.max_moves=" i (1, 10) | skeleton %in% c("ILS") & perturbation == "giant_tour_double_bridge_resplit"
+giant_tour_double_bridge_resplit.split "--giant_tour_double_bridge_resplit.split=" c ("optimal", "greedy") | skeleton %in% c("ILS") & perturbation == "giant_tour_double_bridge_resplit"
+giant_tour_double_bridge_resplit.shuffle_routes "--giant_tour_double_bridge_resplit.shuffle_routes=" c ("TRUE", "FALSE") | skeleton %in% c("ILS") & perturbation == "giant_tour_double_bridge_resplit"
+random_relocate_k_capacity_aware.scale "--random_relocate_k_capacity_aware.scale=" r (0.5, 3.0) | skeleton %in% c("ILS") & perturbation == "random_relocate_k_capacity_aware"
+random_relocate_k_capacity_aware.new_route_prob "--random_relocate_k_capacity_aware.new_route_prob=" r (0.0, 0.3) | skeleton %in% c("ILS") & perturbation == "random_relocate_k_capacity_aware"
+spatial_ruin_noisy_cheapest_reinsert.scale "--spatial_ruin_noisy_cheapest_reinsert.scale=" r (0.5, 3.0) | skeleton %in% c("ILS") & perturbation == "spatial_ruin_noisy_cheapest_reinsert"
+spatial_ruin_noisy_cheapest_reinsert.noise "--spatial_ruin_noisy_cheapest_reinsert.noise=" r (0.0, 0.5) | skeleton %in% c("ILS") & perturbation == "spatial_ruin_noisy_cheapest_reinsert"
+destruction "--destruction=" c ("random_customer_arc_destruction", "route_cluster_arc_destruction", "shaw_relatedness_arc_destruction") | skeleton %in% c("LNS_MIP")
+random_customer_arc_destruction.neighbor_prob "--random_customer_arc_destruction.neighbor_prob=" r (0.0, 1.0) | skeleton %in% c("LNS_MIP") & destruction == "random_customer_arc_destruction"
+route_cluster_arc_destruction.partial_last "--route_cluster_arc_destruction.partial_last=" c ("TRUE", "FALSE") | skeleton %in% c("LNS_MIP") & destruction == "route_cluster_arc_destruction"
+route_cluster_arc_destruction.seed_mode "--route_cluster_arc_destruction.seed_mode=" c ("random", "worst_avg_cost") | skeleton %in% c("LNS_MIP") & destruction == "route_cluster_arc_destruction"
+shaw_relatedness_arc_destruction.determinism "--shaw_relatedness_arc_destruction.determinism=" r (1.0, 12.0) | skeleton %in% c("LNS_MIP") & destruction == "shaw_relatedness_arc_destruction"
+shaw_relatedness_arc_destruction.route_weight "--shaw_relatedness_arc_destruction.route_weight=" r (0.0, 1.0) | skeleton %in% c("LNS_MIP") & destruction == "shaw_relatedness_arc_destruction"
+shaw_relatedness_arc_destruction.demand_weight "--shaw_relatedness_arc_destruction.demand_weight=" r (0.0, 1.0) | skeleton %in% c("LNS_MIP") & destruction == "shaw_relatedness_arc_destruction"
+SA.T0 "--SA.T0=" r (1.0, 1000.0) | skeleton == "SA"  # log-scale
+SA.cooling "--SA.cooling=" c ("time", "iterations") | skeleton == "SA"
+SA.T_end "--SA.T_end=" r (1e-05, 0.1) | skeleton == "SA"  # log-scale
+SA.alpha "--SA.alpha=" r (0.8, 0.999) | skeleton == "SA"
+SA.iters_per_T "--SA.iters_per_T=" i (1, 50) | skeleton == "SA"
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+ILS.ls_sample "--ILS.ls_sample=" i (4, 256) | skeleton == "ILS"  # log-scale
+VNS.shake_strength "--VNS.shake_strength=" i (1, 4) | skeleton == "VNS"
+VNS.ls_time_share "--VNS.ls_time_share=" r (0.02, 0.3) | skeleton == "VNS"
+VNS.ls_sample "--VNS.ls_sample=" i (4, 256) | skeleton == "VNS"  # log-scale
+LNS_MIP.destroy_ratio "--LNS_MIP.destroy_ratio=" r (0.05, 0.6) | skeleton == "LNS_MIP"
+LNS_MIP.mip_time_share "--LNS_MIP.mip_time_share=" r (0.04, 1.0) | skeleton == "LNS_MIP"  # log-scale
