@@ -1,0 +1,193 @@
+{
+  "greedy_score": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 1,
+    "llm_seconds": 45.1,
+    "rejections_by_layer": {},
+    "rounds_per_accepted": {
+      "part_period_balancing_score": 1,
+      "silver_meal_period_average_score": 1,
+      "capacity_tightness_marginal_score": 1
+    },
+    "abandoned": [],
+    "patches": 0,
+    "accepted_files": [
+      "generated/clsp_setups_opusmodel/greedy_score/part_period_balancing_score_r1.py",
+      "generated/clsp_setups_opusmodel/greedy_score/silver_meal_period_average_score_r1.py",
+      "generated/clsp_setups_opusmodel/greedy_score/capacity_tightness_marginal_score_r1.py"
+    ],
+    "tokens": {
+      "calls": 1,
+      "input_tokens": 9522,
+      "output_tokens": 5121,
+      "total_tokens": 14643,
+      "cost_usd": 0.1405
+    }
+  },
+  "neighborhood": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 2,
+    "llm_seconds": 50.3,
+    "rejections_by_layer": {
+      "quality": 1
+    },
+    "rounds_per_accepted": {
+      "single_setup_toggle": 1,
+      "item_window_lot_consolidation": 1,
+      "setup_shift_or_merge": 2
+    },
+    "abandoned": [],
+    "patches": 1,
+    "accepted_files": [
+      "generated/clsp_setups_opusmodel/neighborhood/single_setup_toggle_r1.py",
+      "generated/clsp_setups_opusmodel/neighborhood/item_window_lot_consolidation_r1.py",
+      "generated/clsp_setups_opusmodel/neighborhood/setup_shift_or_merge_r2.py"
+    ],
+    "tokens": {
+      "calls": 2,
+      "input_tokens": 11935,
+      "output_tokens": 5236,
+      "total_tokens": 17171,
+      "cost_usd": 0.1525
+    },
+    "combinations": {
+      "single_setup_toggle": {
+        "compatible_skeletons": [
+          "SA",
+          "ILS",
+          "TS",
+          "VNS",
+          "GRASP",
+          "MIP_PERTURB"
+        ],
+        "gains": {
+          "SA/trivial": 0.3622,
+          "SA/random": 0.0,
+          "VNS/trivial": 0.3828,
+          "VNS/random": 0.0,
+          "TS/trivial": 0.0339,
+          "TS/random": 0.0,
+          "GRASP/trivial": 0.1556,
+          "GRASP/random": 0.0
+        }
+      },
+      "item_window_lot_consolidation": {
+        "compatible_skeletons": [
+          "SA",
+          "ILS",
+          "TS",
+          "VNS",
+          "GRASP",
+          "MIP_PERTURB"
+        ],
+        "gains": {
+          "SA/trivial": 0.3399,
+          "SA/random": 0.0,
+          "VNS/trivial": 0.3031,
+          "VNS/random": 0.0,
+          "TS/trivial": 0.0941,
+          "TS/random": 0.0,
+          "GRASP/trivial": 0.1561,
+          "GRASP/random": 0.0
+        }
+      },
+      "setup_shift_or_merge": {
+        "compatible_skeletons": [
+          "SA",
+          "ILS",
+          "TS",
+          "VNS",
+          "GRASP",
+          "MIP_PERTURB"
+        ],
+        "gains": {
+          "SA/trivial": 0.0218,
+          "SA/random": 0.0,
+          "VNS/trivial": 0.0218,
+          "VNS/random": 0.0,
+          "TS/trivial": 0.0227,
+          "TS/random": 0.0,
+          "GRASP/trivial": 0.0227,
+          "GRASP/random": 0.0
+        }
+      }
+    }
+  },
+  "perturbation": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 1,
+    "llm_seconds": 31.6,
+    "rejections_by_layer": {},
+    "rounds_per_accepted": {
+      "random_setup_flip_k": 1,
+      "adjacent_setup_shift": 1,
+      "item_row_periodic_rebuild": 1
+    },
+    "abandoned": [],
+    "patches": 0,
+    "accepted_files": [
+      "generated/clsp_setups_opusmodel/perturbation/random_setup_flip_k_r1.py",
+      "generated/clsp_setups_opusmodel/perturbation/adjacent_setup_shift_r1.py",
+      "generated/clsp_setups_opusmodel/perturbation/item_row_periodic_rebuild_r1.py"
+    ],
+    "tokens": {
+      "calls": 1,
+      "input_tokens": 8237,
+      "output_tokens": 3227,
+      "total_tokens": 11464,
+      "cost_usd": 0.0975
+    }
+  },
+  "destruction": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 2,
+    "llm_seconds": 66.3,
+    "rejections_by_layer": {
+      "quality": 1
+    },
+    "rounds_per_accepted": {
+      "time_window_destruction": 1,
+      "costly_item_rows_destruction": 1,
+      "capacity_bottleneck_destruction": 2
+    },
+    "abandoned": [],
+    "patches": 1,
+    "accepted_files": [
+      "generated/clsp_setups_opusmodel/destruction/time_window_destruction_r1.py",
+      "generated/clsp_setups_opusmodel/destruction/costly_item_rows_destruction_r1.py",
+      "generated/clsp_setups_opusmodel/destruction/capacity_bottleneck_destruction_r2.py"
+    ],
+    "tokens": {
+      "calls": 2,
+      "input_tokens": 11897,
+      "output_tokens": 6624,
+      "total_tokens": 18521,
+      "cost_usd": 0.1801
+    }
+  },
+  "_run": {
+    "problem": "clsp_setups",
+    "model": "claude-opus-5-5",
+    "provider": "anthropic",
+    "from_scratch": true,
+    "catalog_diversity": "annotate",
+    "planner": false,
+    "wall_seconds": 232.6,
+    "tokens": {
+      "calls": 6,
+      "input_tokens": 41591,
+      "output_tokens": 20208,
+      "total_tokens": 61799,
+      "cost_usd": 0.5705
+    },
+    "note": "costo estimado con LLM_PRICE_IN/LLM_PRICE_OUT (USD por millón de tokens)"
+  }
+}
