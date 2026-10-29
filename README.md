@@ -65,8 +65,11 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
 - **`core/problem_pack.py`** — `ProblemPack`: lo que el framework recibe de un
   problema (ProblemModel, catálogo de referencia, spec para el LLM, contextos de
   validación, generador de instancias, partida trivial). `llm.catalog`, `llm.cli`,
-  `llm.model_cli` y `tuning.cli` son genéricos sobre el pack; hay dos:
-  `examples/lotsizing/pack.py` (CLSP) y `examples/cvrp/pack.py` (CVRP).
+  `llm.model_cli` y `tuning.cli` son genéricos sobre el pack; hay tres:
+  `examples/lotsizing/pack.py` (CLSP), `examples/cvrp/pack.py` (CVRP) y
+  `examples/jobshop/pack.py` (job shop, makespan). El del job shop entra
+  directamente por piezas: su `ProblemModel` es el de las piezas de referencia
+  (`llm.cycle.parts_pack`), sin un modelo monolítico escrito a mano.
 - **`core/validation/`** — Las cinco capas de validación autónoma de §7:
   *sintáctica* (import, esquema `COMPONENT`, métodos del Protocol del
   slot), *contractual* (propiedades de la tabla §4 por slot, muestreadas
@@ -177,7 +180,10 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   `examples/cvrp/tour_parts.py`, el CVRP como gran tour + Split (Prins), una
   representación con decodificador (`ModelSpec.decoder`): el validador exige
   que la decodificación no sea peor que la respuesta del caso y acepta que
-  una respuesta infactible no sea representable.
+  una respuesta infactible no sea representable. El job shop tiene dos:
+  `sequences` (una secuencia por máquina, plan semiactivo; un ciclo con las
+  rutas es la familia `orden`) y `operations` (permutación con repetición de
+  Bierwirth, con decodificador).
 - **Ciclo completo** (`llm/cycle.py`; diagrama de estados en
   [`docs/ciclo_completo.md`](docs/ciclo_completo.md)) — de la descripción y los casos a un
   solver afinado, por representación: `model` genera el ProblemModel por
@@ -208,7 +214,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   `lru_cache(maxsize=None)` de módulo agotó los runners en la run 34).
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 226 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 236 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -229,10 +235,14 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 226 passed (~200 s)
+python -m pytest -q                 # 236 passed (~160 s)
 
 # segundo problema: CVRP con flota libre (mismos CLI, otro pack)
 python -m examples.cvrp.tune --catalog handwritten --size 30 --trials 30 --ref-time 60
+# tercer problema: job shop (makespan), trabajos×máquinas
+python -m examples.jobshop.cases    # regenera cases.json (óptimos por fuerza bruta)
+python -m examples.jobshop.tune --catalog handwritten --size 10x10 --trials 30 --ref-time 60
+python -m llm.cycle model --problem jobshop --variant sequences --workspace generated/jobshop_sequences_cycle --provider anthropic
 
 export OPENAI_API_KEY=...
 python -m examples.lotsizing.generate --slots neighborhood destruction --n 3   # generación real
