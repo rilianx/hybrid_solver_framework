@@ -172,7 +172,7 @@ class AnthropicClient(_ThreadLocalUsage):
 
     - Streaming: con max_tokens grande, un request sin streaming puede pasar el timeout HTTP.
     - Pensamiento adaptativo (en Opus 5.5 no se puede apagar); la profundidad se controla con `effort`,
-      que en Opus 5.5 vale `medium` por defecto: aquí `high`, porque se le pide código validado.
+      que en Opus 5.5 vale `medium` por defecto: aquí `high` (o LLM_EFFORT), porque se le pide código validado.
     - Sin temperature: Opus 5.5 la rechaza (400).
     - Respaldo del lado del servidor (`fallbacks: "default"`): si un clasificador de seguridad declina
       el pedido, la API lo reintenta en otro modelo dentro de la misma llamada. `fallbacks=None` lo apaga.
@@ -180,7 +180,7 @@ class AnthropicClient(_ThreadLocalUsage):
 
     model: str = "claude-opus-5-5"
     max_tokens: int = 64000
-    effort: str | None = "high"  # low | medium | high | xhigh | max
+    effort: str | None = field(default_factory=lambda: os.environ.get("LLM_EFFORT") or "high")  # low | medium | high | xhigh | max
     fallbacks: str | None = "default"
     api_key: str | None = None
     workspace_id: str | None = None  # default: ANTHROPIC_WORKSPACE_ID

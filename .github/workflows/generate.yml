@@ -41,6 +41,10 @@ on:
         description: "Modelo (vacío = default del proveedor: gpt-5.4-mini en openai, claude-opus-5-5 en anthropic)"
         default: ""
         type: string
+      effort:
+        description: "Con provider=anthropic: profundidad del pensamiento (low | medium | high | xhigh | max; vacío = high)"
+        default: ""
+        type: string
       price_in:
         description: "USD por millón de tokens de ENTRADA (vacío = no estimar costo)"
         default: ""
@@ -169,6 +173,7 @@ jobs:
           PROVIDER: ${{ inputs.provider }}
           MODEL: ${{ inputs.model }}
           PROBLEM: ${{ inputs.problem }}
+          LLM_EFFORT: ${{ inputs.effort }}
           LLM_PRICE_IN: ${{ inputs.price_in || vars.LLM_PRICE_IN }}
           LLM_PRICE_OUT: ${{ inputs.price_out || vars.LLM_PRICE_OUT }}
         working-directory: ${{ env.ROOT }}
