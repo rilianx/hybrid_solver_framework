@@ -1,0 +1,42 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("SA", "ILS", "VNS", "LNS_MIP")
+constructor "--constructor=" c ("trivial", "random", "greedy_capacity_tightness_marginal_score", "greedy_part_period_balancing_score", "greedy_silver_meal_period_average_score") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP")
+greedy_capacity_tightness_marginal_score.rule "--greedy_capacity_tightness_marginal_score.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_capacity_tightness_marginal_score"
+greedy_capacity_tightness_marginal_score.alpha "--greedy_capacity_tightness_marginal_score.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_capacity_tightness_marginal_score"
+greedy_capacity_tightness_marginal_score.tight_weight "--greedy_capacity_tightness_marginal_score.tight_weight=" r (0.0, 3.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_capacity_tightness_marginal_score"
+greedy_capacity_tightness_marginal_score.time_weight "--greedy_capacity_tightness_marginal_score.time_weight=" r (0.0, 2.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_capacity_tightness_marginal_score"
+greedy_part_period_balancing_score.rule "--greedy_part_period_balancing_score.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_part_period_balancing_score"
+greedy_part_period_balancing_score.alpha "--greedy_part_period_balancing_score.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_part_period_balancing_score"
+greedy_part_period_balancing_score.setup_weight "--greedy_part_period_balancing_score.setup_weight=" r (0.3, 3.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_part_period_balancing_score"
+greedy_silver_meal_period_average_score.rule "--greedy_silver_meal_period_average_score.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_silver_meal_period_average_score"
+greedy_silver_meal_period_average_score.alpha "--greedy_silver_meal_period_average_score.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_silver_meal_period_average_score"
+greedy_silver_meal_period_average_score.close_bias "--greedy_silver_meal_period_average_score.close_bias=" r (0.5, 2.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_silver_meal_period_average_score"
+neighborhood "--neighborhood=" c ("item_window_lot_consolidation", "setup_shift_or_merge", "single_setup_toggle") | skeleton %in% c("SA", "ILS", "VNS")
+item_window_lot_consolidation.max_len "--item_window_lot_consolidation.max_len=" i (2, 8) | skeleton %in% c("SA", "ILS", "VNS") & neighborhood == "item_window_lot_consolidation"
+setup_shift_or_merge.window "--setup_shift_or_merge.window=" i (1, 6) | skeleton %in% c("SA", "ILS", "VNS") & neighborhood == "setup_shift_or_merge"
+perturbation "--perturbation=" c ("adjacent_setup_shift", "item_row_periodic_rebuild", "random_setup_flip_k") | skeleton %in% c("ILS")
+adjacent_setup_shift.merge_prob "--adjacent_setup_shift.merge_prob=" r (0.0, 0.5) | skeleton %in% c("ILS") & perturbation == "adjacent_setup_shift"
+item_row_periodic_rebuild.max_period "--item_row_periodic_rebuild.max_period=" i (1, 8) | skeleton %in% c("ILS") & perturbation == "item_row_periodic_rebuild"
+item_row_periodic_rebuild.repair "--item_row_periodic_rebuild.repair=" c ("TRUE", "FALSE") | skeleton %in% c("ILS") & perturbation == "item_row_periodic_rebuild"
+random_setup_flip_k.scale "--random_setup_flip_k.scale=" r (0.5, 3.0) | skeleton %in% c("ILS") & perturbation == "random_setup_flip_k"
+destruction "--destruction=" c ("capacity_bottleneck_destruction", "costly_item_rows_destruction", "time_window_destruction") | skeleton %in% c("LNS_MIP")
+capacity_bottleneck_destruction.ratio "--capacity_bottleneck_destruction.ratio=" r (0.05, 0.6) | skeleton %in% c("LNS_MIP") & destruction == "capacity_bottleneck_destruction"
+capacity_bottleneck_destruction.spread "--capacity_bottleneck_destruction.spread=" i (0, 3) | skeleton %in% c("LNS_MIP") & destruction == "capacity_bottleneck_destruction"
+costly_item_rows_destruction.ratio "--costly_item_rows_destruction.ratio=" r (0.05, 0.6) | skeleton %in% c("LNS_MIP") & destruction == "costly_item_rows_destruction"
+costly_item_rows_destruction.noise "--costly_item_rows_destruction.noise=" r (0.0, 1.0) | skeleton %in% c("LNS_MIP") & destruction == "costly_item_rows_destruction"
+time_window_destruction.ratio "--time_window_destruction.ratio=" r (0.05, 0.6) | skeleton %in% c("LNS_MIP") & destruction == "time_window_destruction"
+SA.T0 "--SA.T0=" r (1.0, 1000.0) | skeleton == "SA"  # log-scale
+SA.cooling "--SA.cooling=" c ("time", "iterations") | skeleton == "SA"
+SA.T_end "--SA.T_end=" r (1e-05, 0.1) | skeleton == "SA"  # log-scale
+SA.alpha "--SA.alpha=" r (0.8, 0.999) | skeleton == "SA"
+SA.iters_per_T "--SA.iters_per_T=" i (1, 50) | skeleton == "SA"
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+ILS.ls_sample "--ILS.ls_sample=" i (4, 256) | skeleton == "ILS"  # log-scale
+VNS.shake_strength "--VNS.shake_strength=" i (1, 4) | skeleton == "VNS"
+VNS.ls_time_share "--VNS.ls_time_share=" r (0.02, 0.3) | skeleton == "VNS"
+VNS.ls_sample "--VNS.ls_sample=" i (4, 256) | skeleton == "VNS"  # log-scale
+LNS_MIP.destroy_ratio "--LNS_MIP.destroy_ratio=" r (0.05, 0.6) | skeleton == "LNS_MIP"
+LNS_MIP.mip_time_share "--LNS_MIP.mip_time_share=" r (0.04, 1.0) | skeleton == "LNS_MIP"  # log-scale
