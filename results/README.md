@@ -41,6 +41,8 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run39/`](tune_run39/) | 27 sep | CLSP escrito a mano | SA, ILS, VNS, LNS_MIP | 10+10, 10×15 | 5 s | 40 × 3 réplicas | referencia para el ciclo del CLSP |
 | [`tune_run40/`](tune_run40/) | 28 sep | ciclo CLSP setups: modelo 52 (+54 constructiva, 57 memoria), componentes 55 | SA, ILS, VNS, LNS_MIP | 10+10, 10×15 | 5 s | 40 × 3 réplicas | ciclo completo en el segundo problema |
 | [`tune_run41/`](tune_run41/) | 29 oct | ciclo CVRP rutas: componentes de Claude Opus 5.5 (corrida 91) sobre el modelo de la corrida 51 | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | otro LLM para los componentes |
+| [`tune_run42/`](tune_run42/) | 29 oct | ciclo CVRP gran tour: componentes de Claude Opus 5.5 (corrida 92) sobre el modelo de la corrida 50 | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | otro LLM para los componentes |
+| [`tune_run43/`](tune_run43/) | 29 oct | ciclo CLSP setups: componentes de Claude Opus 5.5 (corrida 93) sobre el modelo de la corrida 57 | SA, ILS, VNS, LNS_MIP | 10+10, 10×15 | 5 s | 40 × 3 réplicas | otro LLM para los componentes |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -438,7 +440,7 @@ que avanza, no empieza componentes después de `--max-minutes` (35) y el log sal
   evaluación lo pagan los dos).
 - El afinado no le gana al mejor no afinado del catálogo generado (−0,11 [−0,51, +0,27]).
 
-### Componentes generados con Claude Opus 5.5: rutas pasa de 5,3 puntos detrás a ganarle a lo escrito a mano
+### Componentes generados con Claude Opus 5.5: el ciclo le gana o empata a lo escrito a mano en los tres casos
 
 Corrida 91: los componentes del ciclo de rutas con Claude Opus 5.5 (`effort: medium`, mismos prompts,
 mismo modelo por piezas que las generaciones con GPT-5.4-mini). **12 de 12 aceptados en 5 llamadas**
@@ -455,8 +457,25 @@ run 38 (modelo de la corrida 51, SA por tiempo, carrera), cambiando solo los com
   rutas en un mismo vecindario) y `ruin_recreate_radial_blink` (ruina y recreación radial).
   Lo que le faltaba al catálogo de rutas era eso: con GPT su mejor vecindario era un intercambio
   de clientes entre rutas.
-- Con esto el ciclo completo le gana a lo escrito a mano en las dos representaciones del CVRP
-  (gran tour −0,76, run 37; rutas −0,53, run 41) y queda a 0,34 puntos en el CLSP (run 40).
+- **Gran tour** (corrida 92: 11 de 12, 9 llamadas, 0,80 USD; run 42, mismo tuning que la run 37):
+  0,43 contra 0,58 % con los de GPT (−0,15 [−0,25, −0,04]) y **0,41 contra 1,32 % de lo escrito a
+  mano (−0,90 [−1,23, −0,57])**. Las tres réplicas eligen VNS con 2-opt sobre el tour; aquí GPT ya
+  tenía un buen vecindario y la mejora es menor que en rutas.
+- **CLSP** (corrida 93: 12 de 12, 4 llamadas, 0,55 USD; run 43, mismo tuning que la run 40):
+  0,53 contra 1,02 % con los de GPT (−0,49 [−0,79, −0,24]) y 0,53 contra 0,67 % de lo escrito a mano
+  (−0,15 [−0,47, +0,15], ruido). Los dos lados eligen LNS_MIP; las destrucciones de Opus
+  (`period_window_destruction`, `wasteful_cell_destruction`) igualan a la escrita a mano.
+
+| Problema | Ciclo con GPT-5.4-mini | Ciclo con Claude Opus 5.5 | Escrito a mano |
+|---|---|---|---|
+| CVRP rutas | 6,55 % (run 38) | **0,74 %** (run 41) | 1,30 % (run 30) |
+| CVRP gran tour | 0,58 % (run 37) | **0,43 %** (run 42) | 1,32 % (run 30) |
+| CLSP | 1,02 % (run 40) | **0,53 %** (run 43) | 0,67 % (run 39) |
+
+  (gap afinado medio de 3 réplicas; las diferencias contra lo escrito a mano usan el mejor conocido
+  común de cada par, ver arriba.) **Con los componentes de Opus 5.5, el ciclo completo le gana a lo
+  escrito a mano en las dos representaciones del CVRP y queda a la par en el CLSP**, por 0,55 a 0,80
+  USD por generación de componentes.
 - El costo de una generación es sobre todo de salida (83 %): reordenar los prompts para la caché
   ahorraría ~0,06 USD por corrida; el nivel de `effort` pesa más.
 

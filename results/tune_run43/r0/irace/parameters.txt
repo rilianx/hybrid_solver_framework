@@ -1,0 +1,48 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("SA", "ILS", "VNS", "LNS_MIP")
+constructor "--constructor=" c ("trivial", "random", "greedy_capacity_pressure_priced", "greedy_eoq_lot_target_deviation", "greedy_part_period_setup_vs_holding") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP")
+greedy_capacity_pressure_priced.rule "--greedy_capacity_pressure_priced.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_capacity_pressure_priced"
+greedy_capacity_pressure_priced.alpha "--greedy_capacity_pressure_priced.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_capacity_pressure_priced"
+greedy_capacity_pressure_priced.pressure_weight "--greedy_capacity_pressure_priced.pressure_weight=" r (0.0, 3.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_capacity_pressure_priced"
+greedy_capacity_pressure_priced.pressure_exp "--greedy_capacity_pressure_priced.pressure_exp=" r (1.0, 3.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_capacity_pressure_priced"
+greedy_eoq_lot_target_deviation.rule "--greedy_eoq_lot_target_deviation.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_eoq_lot_target_deviation"
+greedy_eoq_lot_target_deviation.alpha "--greedy_eoq_lot_target_deviation.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_eoq_lot_target_deviation"
+greedy_eoq_lot_target_deviation.eoq_scale "--greedy_eoq_lot_target_deviation.eoq_scale=" r (0.5, 2.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_eoq_lot_target_deviation"
+greedy_eoq_lot_target_deviation.asym "--greedy_eoq_lot_target_deviation.asym=" r (0.5, 2.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_eoq_lot_target_deviation"
+greedy_part_period_setup_vs_holding.rule "--greedy_part_period_setup_vs_holding.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_part_period_setup_vs_holding"
+greedy_part_period_setup_vs_holding.alpha "--greedy_part_period_setup_vs_holding.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_part_period_setup_vs_holding"
+greedy_part_period_setup_vs_holding.holding_weight "--greedy_part_period_setup_vs_holding.holding_weight=" r (0.5, 2.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_part_period_setup_vs_holding"
+greedy_part_period_setup_vs_holding.lookahead "--greedy_part_period_setup_vs_holding.lookahead=" i (0, 3) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_part_period_setup_vs_holding"
+neighborhood "--neighborhood=" c ("block_lot_consolidation", "same_period_item_pair_toggle", "wagner_whitin_row_reopt") | skeleton %in% c("SA", "ILS", "VNS")
+block_lot_consolidation.max_len "--block_lot_consolidation.max_len=" i (1, 6) | skeleton %in% c("SA", "ILS", "VNS") & neighborhood == "block_lot_consolidation"
+wagner_whitin_row_reopt.n_factors "--wagner_whitin_row_reopt.n_factors=" i (1, 5) | skeleton %in% c("SA", "ILS", "VNS") & neighborhood == "wagner_whitin_row_reopt"
+perturbation "--perturbation=" c ("adjacent_setup_shift", "item_cycle_rebuild", "period_window_reshuffle") | skeleton %in% c("ILS")
+adjacent_setup_shift.merge_prob "--adjacent_setup_shift.merge_prob=" r (0.0, 1.0) | skeleton %in% c("ILS") & perturbation == "adjacent_setup_shift"
+adjacent_setup_shift.max_attempts_factor "--adjacent_setup_shift.max_attempts_factor=" i (2, 20) | skeleton %in% c("ILS") & perturbation == "adjacent_setup_shift"
+item_cycle_rebuild.max_cycle "--item_cycle_rebuild.max_cycle=" i (2, 8) | skeleton %in% c("ILS") & perturbation == "item_cycle_rebuild"
+item_cycle_rebuild.anchor_first_demand "--item_cycle_rebuild.anchor_first_demand=" c ("TRUE", "FALSE") | skeleton %in% c("ILS") & perturbation == "item_cycle_rebuild"
+period_window_reshuffle.open_prob "--period_window_reshuffle.open_prob=" r (0.2, 0.9) | skeleton %in% c("ILS") & perturbation == "period_window_reshuffle"
+period_window_reshuffle.keep_prob "--period_window_reshuffle.keep_prob=" r (0.0, 0.8) | skeleton %in% c("ILS") & perturbation == "period_window_reshuffle"
+destruction "--destruction=" c ("period_window_destruction", "related_items_row_destruction", "wasteful_cell_destruction") | skeleton %in% c("LNS_MIP")
+period_window_destruction.ratio "--period_window_destruction.ratio=" r (0.05, 0.6) | skeleton %in% c("LNS_MIP") & destruction == "period_window_destruction"
+period_window_destruction.item_fraction "--period_window_destruction.item_fraction=" r (0.3, 1.0) | skeleton %in% c("LNS_MIP") & destruction == "period_window_destruction"
+related_items_row_destruction.ratio "--related_items_row_destruction.ratio=" r (0.05, 0.6) | skeleton %in% c("LNS_MIP") & destruction == "related_items_row_destruction"
+related_items_row_destruction.determinism "--related_items_row_destruction.determinism=" r (1.0, 10.0) | skeleton %in% c("LNS_MIP") & destruction == "related_items_row_destruction"
+wasteful_cell_destruction.ratio "--wasteful_cell_destruction.ratio=" r (0.05, 0.6) | skeleton %in% c("LNS_MIP") & destruction == "wasteful_cell_destruction"
+wasteful_cell_destruction.greediness "--wasteful_cell_destruction.greediness=" r (0.5, 4.0) | skeleton %in% c("LNS_MIP") & destruction == "wasteful_cell_destruction"
+wasteful_cell_destruction.neighbor_prob "--wasteful_cell_destruction.neighbor_prob=" r (0.0, 1.0) | skeleton %in% c("LNS_MIP") & destruction == "wasteful_cell_destruction"
+SA.T0 "--SA.T0=" r (1.0, 1000.0) | skeleton == "SA"  # log-scale
+SA.cooling "--SA.cooling=" c ("time", "iterations") | skeleton == "SA"
+SA.T_end "--SA.T_end=" r (1e-05, 0.1) | skeleton == "SA"  # log-scale
+SA.alpha "--SA.alpha=" r (0.8, 0.999) | skeleton == "SA"
+SA.iters_per_T "--SA.iters_per_T=" i (1, 50) | skeleton == "SA"
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+ILS.ls_sample "--ILS.ls_sample=" i (4, 256) | skeleton == "ILS"  # log-scale
+VNS.shake_strength "--VNS.shake_strength=" i (1, 4) | skeleton == "VNS"
+VNS.ls_time_share "--VNS.ls_time_share=" r (0.02, 0.3) | skeleton == "VNS"
+VNS.ls_sample "--VNS.ls_sample=" i (4, 256) | skeleton == "VNS"  # log-scale
+LNS_MIP.destroy_ratio "--LNS_MIP.destroy_ratio=" r (0.05, 0.6) | skeleton == "LNS_MIP"
+LNS_MIP.mip_time_share "--LNS_MIP.mip_time_share=" r (0.04, 1.0) | skeleton == "LNS_MIP"  # log-scale
