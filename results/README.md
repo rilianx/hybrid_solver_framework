@@ -516,7 +516,7 @@ Corridas 97–99: componentes de Opus sobre esos modelos (rutas 12/12, gran tour
   memoria. La velocidad extra del modelo no se traduce en gap porque los catálogos ya eran rápidos
   (en el CLSP manda el MIP de LNS_MIP).
 
-### Tercer problema, job shop (makespan): el ciclo con Opus 5.5 le gana a lo escrito a mano
+### Tercer problema, job shop (makespan): el ciclo con Opus 5.5 queda por delante de lo escrito a mano
 
 `examples/jobshop` entra directamente por piezas: no hay un `ProblemModel` monolítico, el del pack
 base es el de las piezas de referencia. Dos representaciones con la misma instancia, casos y vista
