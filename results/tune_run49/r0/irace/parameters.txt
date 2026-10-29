@@ -1,0 +1,46 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("SA", "ILS", "VNS", "LNS_MIP")
+constructor "--constructor=" c ("trivial", "random", "greedy_earliest_completion_compact", "greedy_makespan_lower_bound_lookahead", "greedy_most_work_remaining_with_start_penalty") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP")
+greedy_earliest_completion_compact.rule "--greedy_earliest_completion_compact.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_earliest_completion_compact"
+greedy_earliest_completion_compact.alpha "--greedy_earliest_completion_compact.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_earliest_completion_compact"
+greedy_earliest_completion_compact.idle_weight "--greedy_earliest_completion_compact.idle_weight=" r (0.0, 3.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_earliest_completion_compact"
+greedy_earliest_completion_compact.growth_weight "--greedy_earliest_completion_compact.growth_weight=" r (0.0, 3.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_earliest_completion_compact"
+greedy_makespan_lower_bound_lookahead.rule "--greedy_makespan_lower_bound_lookahead.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_makespan_lower_bound_lookahead"
+greedy_makespan_lower_bound_lookahead.alpha "--greedy_makespan_lower_bound_lookahead.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_makespan_lower_bound_lookahead"
+greedy_makespan_lower_bound_lookahead.job_weight "--greedy_makespan_lower_bound_lookahead.job_weight=" r (0.5, 1.5) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_makespan_lower_bound_lookahead"
+greedy_makespan_lower_bound_lookahead.machine_weight "--greedy_makespan_lower_bound_lookahead.machine_weight=" r (0.5, 1.5) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_makespan_lower_bound_lookahead"
+greedy_makespan_lower_bound_lookahead.start_tiebreak "--greedy_makespan_lower_bound_lookahead.start_tiebreak=" r (0.0, 0.5) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_makespan_lower_bound_lookahead"
+greedy_most_work_remaining_with_start_penalty.rule "--greedy_most_work_remaining_with_start_penalty.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_most_work_remaining_with_start_penalty"
+greedy_most_work_remaining_with_start_penalty.alpha "--greedy_most_work_remaining_with_start_penalty.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_most_work_remaining_with_start_penalty"
+greedy_most_work_remaining_with_start_penalty.start_weight "--greedy_most_work_remaining_with_start_penalty.start_weight=" r (0.0, 2.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_most_work_remaining_with_start_penalty"
+greedy_most_work_remaining_with_start_penalty.idle_weight "--greedy_most_work_remaining_with_start_penalty.idle_weight=" r (0.0, 2.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_most_work_remaining_with_start_penalty"
+neighborhood "--neighborhood=" c ("critical_block_adjacent_swap", "critical_block_reinsertion", "dispatch_token_insertion") | skeleton %in% c("SA", "ILS", "VNS")
+critical_block_reinsertion.ends_only "--critical_block_reinsertion.ends_only=" c ("TRUE", "FALSE") | skeleton %in% c("SA", "ILS", "VNS") & neighborhood == "critical_block_reinsertion"
+dispatch_token_insertion.window "--dispatch_token_insertion.window=" i (1, 512) | skeleton %in% c("SA", "ILS", "VNS") & neighborhood == "dispatch_token_insertion"
+perturbation "--perturbation=" c ("contiguous_segment_shuffle", "critical_arc_reversal_kick", "random_distinct_pair_swaps") | skeleton %in% c("ILS")
+contiguous_segment_shuffle.segment_scale "--contiguous_segment_shuffle.segment_scale=" r (1.0, 4.0) | skeleton %in% c("ILS") & perturbation == "contiguous_segment_shuffle"
+contiguous_segment_shuffle.max_retries "--contiguous_segment_shuffle.max_retries=" i (3, 50) | skeleton %in% c("ILS") & perturbation == "contiguous_segment_shuffle"
+critical_arc_reversal_kick.critical_prob "--critical_arc_reversal_kick.critical_prob=" r (0.0, 1.0) | skeleton %in% c("ILS") & perturbation == "critical_arc_reversal_kick"
+random_distinct_pair_swaps.max_retries "--random_distinct_pair_swaps.max_retries=" i (5, 100) | skeleton %in% c("ILS") & perturbation == "random_distinct_pair_swaps"
+destruction "--destruction=" c ("critical_block_neighborhood_destruction", "related_jobs_shaw_destruction", "time_window_destruction") | skeleton %in% c("LNS_MIP")
+critical_block_neighborhood_destruction.ratio "--critical_block_neighborhood_destruction.ratio=" r (0.05, 0.6) | skeleton %in% c("LNS_MIP") & destruction == "critical_block_neighborhood_destruction"
+critical_block_neighborhood_destruction.max_radius "--critical_block_neighborhood_destruction.max_radius=" i (1, 6) | skeleton %in% c("LNS_MIP") & destruction == "critical_block_neighborhood_destruction"
+related_jobs_shaw_destruction.ratio "--related_jobs_shaw_destruction.ratio=" r (0.05, 0.6) | skeleton %in% c("LNS_MIP") & destruction == "related_jobs_shaw_destruction"
+related_jobs_shaw_destruction.determinism "--related_jobs_shaw_destruction.determinism=" r (1.0, 10.0) | skeleton %in% c("LNS_MIP") & destruction == "related_jobs_shaw_destruction"
+time_window_destruction.ratio "--time_window_destruction.ratio=" r (0.05, 0.6) | skeleton %in% c("LNS_MIP") & destruction == "time_window_destruction"
+time_window_destruction.growth "--time_window_destruction.growth=" r (1.1, 3.0) | skeleton %in% c("LNS_MIP") & destruction == "time_window_destruction"
+SA.T0 "--SA.T0=" r (1.0, 1000.0) | skeleton == "SA"  # log-scale
+SA.cooling "--SA.cooling=" c ("time", "iterations") | skeleton == "SA"
+SA.T_end "--SA.T_end=" r (1e-05, 0.1) | skeleton == "SA"  # log-scale
+SA.alpha "--SA.alpha=" r (0.8, 0.999) | skeleton == "SA"
+SA.iters_per_T "--SA.iters_per_T=" i (1, 50) | skeleton == "SA"
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+ILS.ls_sample "--ILS.ls_sample=" i (4, 256) | skeleton == "ILS"  # log-scale
+VNS.shake_strength "--VNS.shake_strength=" i (1, 4) | skeleton == "VNS"
+VNS.ls_time_share "--VNS.ls_time_share=" r (0.02, 0.3) | skeleton == "VNS"
+VNS.ls_sample "--VNS.ls_sample=" i (4, 256) | skeleton == "VNS"  # log-scale
+LNS_MIP.destroy_ratio "--LNS_MIP.destroy_ratio=" r (0.05, 0.6) | skeleton == "LNS_MIP"
+LNS_MIP.mip_time_share "--LNS_MIP.mip_time_share=" r (0.04, 1.0) | skeleton == "LNS_MIP"  # log-scale
