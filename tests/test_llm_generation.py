@@ -790,3 +790,6 @@ def test_the_anthropic_client_sends_an_opus_5_5_request(monkeypatch):
     assert sent["system"] == "sistema" and sent["messages"] == [{"role": "user", "content": "usuario"}]
     assert client.last_usage.input_tokens == 120 and client.usage.output_tokens == 40
     assert client.usage.cost_usd("claude-opus-5-5") == pytest.approx((120 * 4 + 40 * 20) / 1e6)
+    # corrida 89: una clave sin workspace exige el encabezado anthropic-workspace-id
+    monkeypatch.setenv("ANTHROPIC_WORKSPACE_ID", "wrkspc_prueba")
+    assert make_client("anthropic")._client.default_headers.get("anthropic-workspace-id") == "wrkspc_prueba"

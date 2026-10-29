@@ -166,8 +166,9 @@ def usage_from_anthropic(resp) -> TokenUsage:
 
 @dataclass
 class AnthropicClient(_ThreadLocalUsage):
-    """Cliente de la API de Anthropic. Default: Claude Opus 5.5. Requiere ANTHROPIC_API_KEY (la clave ya
-    pertenece a un workspace: no hace falta el workspace_id).
+    """Cliente de la API de Anthropic. Default: Claude Opus 5.5. Requiere ANTHROPIC_API_KEY y, si la clave
+    no está asociada a un workspace, ANTHROPIC_WORKSPACE_ID (la API responde 400 sin el encabezado
+    `anthropic-workspace-id`; corrida 89).
 
     - Streaming: con max_tokens grande, un request sin streaming puede pasar el timeout HTTP.
     - Pensamiento adaptativo (en Opus 5.5 no se puede apagar); la profundidad se controla con `effort`,
@@ -182,12 +183,19 @@ class AnthropicClient(_ThreadLocalUsage):
     effort: str | None = "high"  # low | medium | high | xhigh | max
     fallbacks: str | None = "default"
     api_key: str | None = None
+    workspace_id: str | None = None  # default: ANTHROPIC_WORKSPACE_ID
     usage: TokenUsage = field(default_factory=TokenUsage)  # acumulado; last_usage: la última llamada de este hilo
 
     def __post_init__(self) -> None:
         import anthropic  # import perezoso: el resto del framework no depende del SDK
 
-        self._client = anthropic.Anthropic(api_key=self.api_key) if self.api_key else anthropic.Anthropic()
+        kwargs: dict = {}
+        if self.api_key:
+            kwargs["api_key"] = self.api_key
+        workspace = self.workspace_id or os.environ.get("ANTHROPIC_WORKSPACE_ID")
+        if workspace:
+            kwargs["default_headers"] = {"anthropic-workspace-id": workspace}
+        self._client = anthropic.Anthropic(**kwargs)
 
     def complete(self, system: str, user: str) -> str:
         kwargs: dict = dict(model=self.model, max_tokens=self.max_tokens, system=system,

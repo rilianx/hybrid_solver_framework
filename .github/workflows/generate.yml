@@ -132,6 +132,7 @@ jobs:
           PROVIDER: ${{ inputs.provider }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_WORKSPACE_ID: ${{ secrets.ANTHROPIC_WORKSPACE_ID || vars.ANTHROPIC_WORKSPACE_ID }}
         working-directory: ${{ env.ROOT }}
         run: |
           if [ "$PROVIDER" = "openai" ] && [ -z "$OPENAI_API_KEY" ]; then
@@ -160,6 +161,7 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_WORKSPACE_ID: ${{ secrets.ANTHROPIC_WORKSPACE_ID || vars.ANTHROPIC_WORKSPACE_ID }}
           SLOTS: ${{ inputs.slots }}
           OPT_SLOTS: ${{ inputs.opt_slots }}
           N: ${{ inputs.n }}

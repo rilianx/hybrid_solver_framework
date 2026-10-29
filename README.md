@@ -368,7 +368,8 @@ gasta llamadas de API, así que nunca se disparan por push ni por schedule.
 `OPENAI_API_KEY` (o `ANTHROPIC_API_KEY`). Con `provider: anthropic` el modelo
 por defecto es Claude Opus 5.5 (`claude-opus-5-5`: pensamiento adaptativo con
 `effort` alto, streaming y respaldo del lado del servidor si el modelo declina;
-la clave ya pertenece a un workspace, no hace falta su id); el input `provider`
+si la clave no está asociada a un workspace, agrega también `ANTHROPIC_WORKSPACE_ID`
+(secreto o variable)); el input `provider`
 vale para todas las etapas del ciclo. Si el PR automático debe poder
 crearse, habilita *Settings → Actions → General → Allow GitHub Actions to
 create and approve pull requests*.
