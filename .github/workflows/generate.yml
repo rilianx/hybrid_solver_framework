@@ -38,7 +38,7 @@ on:
         type: choice
         options: [openai, anthropic]
       model:
-        description: "Modelo (vacío = default del proveedor)"
+        description: "Modelo (vacío = default del proveedor: gpt-5.4-mini en openai, claude-opus-5-5 en anthropic)"
         default: ""
         type: string
       price_in:
@@ -175,6 +175,8 @@ jobs:
           if [ -n "$VARIANT" ]; then
             STAGE=model; [ "$TARGET" = "components" ] && STAGE=components; [ "$TARGET" = "optimize" ] && STAGE=optimize
             CARGS="--problem $PROBLEM --variant $VARIANT --workspace $WS"
+            # model y optimize llaman al LLM directo; components lo pasa a llm.cli en REST
+            [ "$STAGE" != "components" ] && CARGS="$CARGS --provider $PROVIDER"
             [ "$REFERENCE" = "true" ] && CARGS="$CARGS --reference"
             if [ "$STAGE" = "optimize" ]; then
               [ -n "$MODEL" ] && CARGS="$CARGS --model $MODEL"

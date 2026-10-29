@@ -29,7 +29,7 @@ from pathlib import Path
 from core.problem_pack import ProblemPack
 
 from .catalog import build_registry
-from .client import OpenAIClient, TokenUsage, TranscriptClient
+from .client import TokenUsage, TranscriptClient, make_client
 from .generator import generate_slot
 from .planner import generate_slot_planned
 
@@ -53,12 +53,7 @@ def main(pack: ProblemPack, argv: list[str] | None = None) -> None:
     ap.add_argument("--replans", type=int, default=1, help="replaneos máximos si faltan componentes (con --planner)")
     args = ap.parse_args(argv)
 
-    if args.provider == "openai":
-        inner = OpenAIClient(model=args.model or "gpt-5.4-mini")
-    else:
-        from .client import AnthropicClient
-
-        inner = AnthropicClient(model=args.model or "claude-sonnet-4-5")
+    inner = make_client(args.provider, args.model)
     client = TranscriptClient(inner, Path(args.workspace) / "transcript")
 
     spec, contexts = pack.make_spec(), pack.make_contexts(reference_free=args.from_scratch, combination=True)

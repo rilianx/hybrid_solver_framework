@@ -208,7 +208,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   `lru_cache(maxsize=None)` de módulo agotó los runners en la run 34).
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 225 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 226 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -229,7 +229,7 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 225 passed (~200 s)
+python -m pytest -q                 # 226 passed (~200 s)
 
 # segundo problema: CVRP con flota libre (mismos CLI, otro pack)
 python -m examples.cvrp.tune --catalog handwritten --size 30 --trials 30 --ref-time 60
@@ -365,7 +365,11 @@ Los dos últimos son `workflow_dispatch` a propósito: cada corrida de generaci�
 gasta llamadas de API, así que nunca se disparan por push ni por schedule.
 
 **Configuración**: en *Settings → Secrets and variables → Actions* agrega
-`OPENAI_API_KEY` (o `ANTHROPIC_API_KEY`). Si el PR automático debe poder
+`OPENAI_API_KEY` (o `ANTHROPIC_API_KEY`). Con `provider: anthropic` el modelo
+por defecto es Claude Opus 5.5 (`claude-opus-5-5`: pensamiento adaptativo con
+`effort` alto, streaming y respaldo del lado del servidor si el modelo declina;
+la clave ya pertenece a un workspace, no hace falta su id); el input `provider`
+vale para todas las etapas del ciclo. Si el PR automático debe poder
 crearse, habilita *Settings → Actions → General → Allow GitHub Actions to
 create and approve pull requests*.
 
