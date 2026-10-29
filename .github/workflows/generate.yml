@@ -38,7 +38,11 @@ on:
         type: choice
         options: [openai, anthropic]
       model:
-        description: "Modelo (vacío = default del proveedor)"
+        description: "Modelo (vacío = default del proveedor: gpt-5.4-mini en openai, claude-opus-5-5 en anthropic)"
+        default: ""
+        type: string
+      effort:
+        description: "Con provider=anthropic: profundidad del pensamiento (low | medium | high | xhigh | max; vacío = high)"
         default: ""
         type: string
       price_in:
@@ -132,6 +136,7 @@ jobs:
           PROVIDER: ${{ inputs.provider }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_WORKSPACE_ID: ${{ secrets.ANTHROPIC_WORKSPACE_ID || vars.ANTHROPIC_WORKSPACE_ID }}
         working-directory: ${{ env.ROOT }}
         run: |
           if [ "$PROVIDER" = "openai" ] && [ -z "$OPENAI_API_KEY" ]; then
@@ -160,6 +165,7 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_WORKSPACE_ID: ${{ secrets.ANTHROPIC_WORKSPACE_ID || vars.ANTHROPIC_WORKSPACE_ID }}
           SLOTS: ${{ inputs.slots }}
           OPT_SLOTS: ${{ inputs.opt_slots }}
           N: ${{ inputs.n }}
@@ -167,6 +173,7 @@ jobs:
           PROVIDER: ${{ inputs.provider }}
           MODEL: ${{ inputs.model }}
           PROBLEM: ${{ inputs.problem }}
+          LLM_EFFORT: ${{ inputs.effort }}
           LLM_PRICE_IN: ${{ inputs.price_in || vars.LLM_PRICE_IN }}
           LLM_PRICE_OUT: ${{ inputs.price_out || vars.LLM_PRICE_OUT }}
         working-directory: ${{ env.ROOT }}
@@ -175,6 +182,8 @@ jobs:
           if [ -n "$VARIANT" ]; then
             STAGE=model; [ "$TARGET" = "components" ] && STAGE=components; [ "$TARGET" = "optimize" ] && STAGE=optimize
             CARGS="--problem $PROBLEM --variant $VARIANT --workspace $WS"
+            # model y optimize llaman al LLM directo; components lo pasa a llm.cli en REST
+            [ "$STAGE" != "components" ] && CARGS="$CARGS --provider $PROVIDER"
             [ "$REFERENCE" = "true" ] && CARGS="$CARGS --reference"
             if [ "$STAGE" = "optimize" ]; then
               [ -n "$MODEL" ] && CARGS="$CARGS --model $MODEL"

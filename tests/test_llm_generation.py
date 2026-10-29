@@ -741,3 +741,55 @@ def test_combination_check_judges_perturbations_by_escaping_the_local_optimum(tm
     assert results[0].passed and keep == ["ILS"] and max(gains.values()) > 0, results[0].message
     results, keep, gains = out["stand_still"]
     assert not results[0].passed and keep == [] and "óptimo local" in results[0].message
+
+
+def test_the_anthropic_client_sends_an_opus_5_5_request(monkeypatch):
+    """Claude Opus 5.5: sin temperature (400), pensamiento adaptativo con effort explícito (su default es
+    medium), streaming con max_tokens grande y respaldo del lado del servidor ante una negativa."""
+    import types
+
+    import pytest
+
+    pytest.importorskip("anthropic")
+    from llm.client import AnthropicClient, make_client
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    sent = {}
+
+    def message(stop="end_turn"):
+        return types.SimpleNamespace(
+            stop_reason=stop, stop_details=None,
+            content=[types.SimpleNamespace(type="thinking", thinking=""), types.SimpleNamespace(type="text", text="```python\nx = 1\n```")],
+            usage=types.SimpleNamespace(input_tokens=120, output_tokens=40, cache_read_input_tokens=0))
+
+    class Stream:
+        def __init__(self, msg):
+            self.msg = msg
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def get_final_message(self):
+            return self.msg
+
+    def stream(**kwargs):
+        sent.update(kwargs)
+        return Stream(message())
+
+    client = make_client("anthropic")
+    assert isinstance(client, AnthropicClient) and client.model == "claude-opus-5-5"
+    client._client = types.SimpleNamespace(beta=types.SimpleNamespace(messages=types.SimpleNamespace(stream=stream)))
+    assert client.complete("sistema", "usuario") == "```python\nx = 1\n```"
+    assert "temperature" not in sent and "thinking" not in sent
+    assert sent["model"] == "claude-opus-5-5" and sent["max_tokens"] == 64000
+    assert sent["output_config"] == {"effort": "high"}
+    assert sent["fallbacks"] == "default" and sent["betas"] == ["server-side-fallback-2026-07-01"]
+    assert sent["system"] == "sistema" and sent["messages"] == [{"role": "user", "content": "usuario"}]
+    assert client.last_usage.input_tokens == 120 and client.usage.output_tokens == 40
+    assert client.usage.cost_usd("claude-opus-5-5") == pytest.approx((120 * 4 + 40 * 20) / 1e6)
+    # corrida 89: una clave sin workspace exige el encabezado anthropic-workspace-id
+    monkeypatch.setenv("ANTHROPIC_WORKSPACE_ID", "wrkspc_prueba")
+    assert make_client("anthropic")._client.default_headers.get("anthropic-workspace-id") == "wrkspc_prueba"

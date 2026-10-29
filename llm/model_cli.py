@@ -14,7 +14,7 @@ from pathlib import Path
 
 from core.problem_pack import ProblemPack
 
-from .client import OpenAIClient, TranscriptClient
+from .client import TranscriptClient, make_client
 from .model_generator import cross_check, generate_problem_model, validate_model_module
 
 
@@ -31,12 +31,7 @@ def main(pack: ProblemPack, argv: list[str] | None = None) -> None:
                     help="el modelo en un solo módulo (corrida 19), en vez de por piezas validadas con casos de prueba")
     args = ap.parse_args(argv)
 
-    if args.provider == "openai":
-        inner = OpenAIClient(model=args.model or "gpt-5.4-mini")
-    else:
-        from .client import AnthropicClient
-
-        inner = AnthropicClient(model=args.model or "claude-sonnet-4-5")
+    inner = make_client(args.provider, args.model)
     client = TranscriptClient(inner, Path(args.workspace) / "transcript")
     spec = pack.make_model_spec()
     if not args.monolithic and pack.load_cases is not None:

@@ -279,9 +279,9 @@ def run_model_stage(problem: str, variant: str, workspace: str | Path, client, r
 
 
 def _stage_model(args) -> None:
-    from .client import OpenAIClient, TranscriptClient
+    from .client import TranscriptClient, make_client
 
-    inner = OpenAIClient(model=args.model or "gpt-5.4-mini")
+    inner = make_client(args.provider, args.model)
     client = TranscriptClient(inner, Path(args.workspace) / "transcript")
     stats = run_model_stage(args.problem, args.variant, args.workspace, client, args.rounds, inner.model,
                             construction_only=args.construction_only)
@@ -291,10 +291,10 @@ def _stage_model(args) -> None:
 
 
 def _stage_optimize(args) -> None:
-    from .client import OpenAIClient, TokenUsage, TranscriptClient
+    from .client import TokenUsage, TranscriptClient, make_client
     from .optimizer import optimize_components, optimize_model
 
-    inner = OpenAIClient(model=args.model or "gpt-5.4-mini")
+    inner = make_client(args.provider, args.model)
     client = TranscriptClient(inner, Path(args.workspace) / "transcript_opt")
     tokens = TokenUsage()
     pack = load_variant(args.problem, args.variant, args.workspace, reference=False)
@@ -342,6 +342,8 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--construction-only", action="store_true",
                     help="model: solo la vista constructiva, sobre el modelo ya aceptado del workspace")
     ap.add_argument("--rounds", type=int, default=6)
+    ap.add_argument("--provider", choices=["openai", "anthropic"], default="openai",
+                    help="model/optimize: proveedor del LLM (anthropic: Claude Opus 5.5 por defecto)")
     ap.add_argument("--model", default=None)
     ap.add_argument("--slots", nargs="*", default=["neighborhood", "greedy_score"],
                     help="optimize: slots cuyos componentes se aceleran (vacío: solo el modelo)")

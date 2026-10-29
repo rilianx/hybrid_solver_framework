@@ -40,6 +40,7 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run38/`](tune_run38/) | 27 sep | ciclo CVRP rutas: modelo de la corrida 51, SA por tiempo, carrera | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | todos los arreglos juntos |
 | [`tune_run39/`](tune_run39/) | 27 sep | CLSP escrito a mano | SA, ILS, VNS, LNS_MIP | 10+10, 10×15 | 5 s | 40 × 3 réplicas | referencia para el ciclo del CLSP |
 | [`tune_run40/`](tune_run40/) | 28 sep | ciclo CLSP setups: modelo 52 (+54 constructiva, 57 memoria), componentes 55 | SA, ILS, VNS, LNS_MIP | 10+10, 10×15 | 5 s | 40 × 3 réplicas | ciclo completo en el segundo problema |
+| [`tune_run41/`](tune_run41/) | 29 oct | ciclo CVRP rutas: componentes de Claude Opus 5.5 (corrida 91) sobre el modelo de la corrida 51 | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | otro LLM para los componentes |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -436,6 +437,28 @@ que avanza, no empieza componentes después de `--max-minutes` (35) y el log sal
   manda, y ahí pesan la destrucción y el constructor inicial, no la velocidad del modelo (el LP por
   evaluación lo pagan los dos).
 - El afinado no le gana al mejor no afinado del catálogo generado (−0,11 [−0,51, +0,27]).
+
+### Componentes generados con Claude Opus 5.5: rutas pasa de 5,3 puntos detrás a ganarle a lo escrito a mano
+
+Corrida 91: los componentes del ciclo de rutas con Claude Opus 5.5 (`effort: medium`, mismos prompts,
+mismo modelo por piezas que las generaciones con GPT-5.4-mini). **12 de 12 aceptados en 5 llamadas**
+(una corrección), 60 mil tokens, 0,70 USD (salida 0,58, entrada 0,13). Las generaciones con
+GPT-5.4-mini en el mismo workspace: 9 a 12 de 12, 7 a 15 llamadas. Run 41: el mismo tuning que la
+run 38 (modelo de la corrida 51, SA por tiempo, carrera), cambiando solo los componentes:
+
+| Comparación (mismo mejor conocido por par) | Gap afinado | Diferencia por instancia |
+|---|---|---|
+| Componentes de Opus (41) contra los de GPT (38) | 0,74 contra 6,55 % | −5,81 [−6,78, −4,94] |
+| **Componentes de Opus (41) contra escrito a mano (30)** | **0,77 contra 1,30 %** | **−0,53 [−0,88, −0,18]** |
+
+- Las tres réplicas eligen ILS con `two_opt_intra_and_star` (2-opt dentro de cada ruta y entre
+  rutas en un mismo vecindario) y `ruin_recreate_radial_blink` (ruina y recreación radial).
+  Lo que le faltaba al catálogo de rutas era eso: con GPT su mejor vecindario era un intercambio
+  de clientes entre rutas.
+- Con esto el ciclo completo le gana a lo escrito a mano en las dos representaciones del CVRP
+  (gran tour −0,76, run 37; rutas −0,53, run 41) y queda a 0,34 puntos en el CLSP (run 40).
+- El costo de una generación es sobre todo de salida (83 %): reordenar los prompts para la caché
+  ahorraría ~0,06 USD por corrida; el nivel de `effort` pesa más.
 
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 

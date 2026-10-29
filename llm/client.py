@@ -3,7 +3,9 @@
 `LLMClient` es lo único que el generador conoce: `complete(system, user) -> str`.
 Además, quien pueda, expone `last_usage` / `usage` (`TokenUsage`) para contar
 tokens gastados: el generador los suma si están y los ignora si no.
-- `AnthropicClient`: usa la API de Anthropic (requiere ANTHROPIC_API_KEY).
+- `AnthropicClient`: usa la API de Anthropic (requiere ANTHROPIC_API_KEY); Claude Opus 5.5 por defecto.
+- `OpenAIClient`: Responses API de OpenAI (requiere OPENAI_API_KEY).
+- `make_client(proveedor, modelo)`: el cliente de uno u otro.
 - `ScriptedClient`: devuelve respuestas predefinidas en orden; sirve para
   tests determinísticos del ciclo generar → validar → corregir, y para
   reproducir sesiones grabadas (`TranscriptClient`).
@@ -15,6 +17,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import threading
 import time
 from dataclasses import dataclass, field
@@ -110,16 +113,20 @@ class _ThreadLocalUsage:
             self.usage.add(used)
 
 
+# USD por millón de tokens (entrada, salida), tarifas de la API de Anthropic; LLM_PRICE_IN/OUT mandan
+KNOWN_PRICES = {"claude-opus-5-5": (4.0, 20.0), "claude-sonnet-5-5": (2.0, 10.0), "claude-haiku-5-5": (0.10, 0.50)}
+
+
 def price_per_mtok(model: str | None = None) -> tuple[float, float] | None:
-    """(precio entrada, precio salida) en USD por millón de tokens, desde el entorno."""
+    """(precio entrada, precio salida) en USD por millón de tokens: del entorno o, si no, de la tabla."""
     try:
         p_in = os.environ.get("LLM_PRICE_IN")
         p_out = os.environ.get("LLM_PRICE_OUT")
-        if p_in is None or p_out is None:
-            return None
-        return float(p_in), float(p_out)
+        if p_in and p_out:
+            return float(p_in), float(p_out)
     except ValueError:
-        return None
+        pass
+    return KNOWN_PRICES.get(model or "")
 
 
 def _int(obj, *names) -> int:
@@ -159,26 +166,53 @@ def usage_from_anthropic(resp) -> TokenUsage:
 
 @dataclass
 class AnthropicClient(_ThreadLocalUsage):
-    model: str = "claude-sonnet-4-5"
-    max_tokens: int = 8000
-    temperature: float = 0.7
+    """Cliente de la API de Anthropic. Default: Claude Opus 5.5. Requiere ANTHROPIC_API_KEY y, si la clave
+    no está asociada a un workspace, ANTHROPIC_WORKSPACE_ID (la API responde 400 sin el encabezado
+    `anthropic-workspace-id`; corrida 89).
+
+    - Streaming: con max_tokens grande, un request sin streaming puede pasar el timeout HTTP.
+    - Pensamiento adaptativo (en Opus 5.5 no se puede apagar); la profundidad se controla con `effort`,
+      que en Opus 5.5 vale `medium` por defecto: aquí `high` (o LLM_EFFORT), porque se le pide código validado.
+    - Sin temperature: Opus 5.5 la rechaza (400).
+    - Respaldo del lado del servidor (`fallbacks: "default"`): si un clasificador de seguridad declina
+      el pedido, la API lo reintenta en otro modelo dentro de la misma llamada. `fallbacks=None` lo apaga.
+    """
+
+    model: str = "claude-opus-5-5"
+    max_tokens: int = 64000
+    effort: str | None = field(default_factory=lambda: os.environ.get("LLM_EFFORT") or "high")  # low | medium | high | xhigh | max
+    fallbacks: str | None = "default"
     api_key: str | None = None
+    workspace_id: str | None = None  # default: ANTHROPIC_WORKSPACE_ID
     usage: TokenUsage = field(default_factory=TokenUsage)  # acumulado; last_usage: la última llamada de este hilo
 
     def __post_init__(self) -> None:
         import anthropic  # import perezoso: el resto del framework no depende del SDK
 
-        self._client = anthropic.Anthropic(api_key=self.api_key or os.environ.get("ANTHROPIC_API_KEY"))
+        kwargs: dict = {}
+        if self.api_key:
+            kwargs["api_key"] = self.api_key
+        workspace = self.workspace_id or os.environ.get("ANTHROPIC_WORKSPACE_ID")
+        if workspace:
+            kwargs["default_headers"] = {"anthropic-workspace-id": workspace}
+        self._client = anthropic.Anthropic(**kwargs)
 
     def complete(self, system: str, user: str) -> str:
-        resp = self._client.messages.create(
-            model=self.model,
-            max_tokens=self.max_tokens,
-            temperature=self.temperature,
-            system=system,
-            messages=[{"role": "user", "content": user}],
-        )
+        kwargs: dict = dict(model=self.model, max_tokens=self.max_tokens, system=system,
+                            messages=[{"role": "user", "content": user}])
+        if self.effort is not None:
+            kwargs["output_config"] = {"effort": self.effort}
+        if self.fallbacks is not None:
+            kwargs.update(betas=["server-side-fallback-2026-07-01"], fallbacks=self.fallbacks)
+        with self._client.beta.messages.stream(**kwargs) as stream:
+            resp = stream.get_final_message()
         self._record(usage_from_anthropic(resp))
+        if resp.stop_reason == "refusal":
+            details = getattr(resp, "stop_details", None)
+            print(f"[anthropic] el modelo declinó el pedido ({getattr(details, 'category', None)}): "
+                  f"{getattr(details, 'explanation', '')}", file=sys.stderr, flush=True)
+        if resp.stop_reason == "max_tokens":
+            print(f"[anthropic] respuesta cortada en max_tokens={self.max_tokens}", file=sys.stderr, flush=True)
         return "".join(block.text for block in resp.content if getattr(block, "type", "") == "text")
 
 
@@ -269,3 +303,16 @@ class TranscriptClient:
             json.dumps(record, ensure_ascii=False, indent=2)
         )
         return text
+
+
+DEFAULT_MODELS = {"openai": "gpt-5.4-mini", "anthropic": "claude-opus-5-5"}
+
+
+def make_client(provider: str = "openai", model: str | None = None):
+    """El cliente del proveedor, con su modelo por defecto si no se da uno."""
+    if provider == "anthropic":
+        return AnthropicClient(model=model or DEFAULT_MODELS["anthropic"])
+    if provider == "openai":
+        return OpenAIClient(model=model or DEFAULT_MODELS["openai"])
+    raise ValueError(f"proveedor desconocido: {provider!r} (openai | anthropic)")
+
