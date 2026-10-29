@@ -41,6 +41,7 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run39/`](tune_run39/) | 27 sep | CLSP escrito a mano | SA, ILS, VNS, LNS_MIP | 10+10, 10×15 | 5 s | 40 × 3 réplicas | referencia para el ciclo del CLSP |
 | [`tune_run40/`](tune_run40/) | 28 sep | ciclo CLSP setups: modelo 52 (+54 constructiva, 57 memoria), componentes 55 | SA, ILS, VNS, LNS_MIP | 10+10, 10×15 | 5 s | 40 × 3 réplicas | ciclo completo en el segundo problema |
 | [`tune_run41/`](tune_run41/) | 29 oct | ciclo CVRP rutas: componentes de Claude Opus 5.5 (corrida 91) sobre el modelo de la corrida 51 | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | otro LLM para los componentes |
+| [`tune_run42/`](tune_run42/) | 29 oct | ciclo CVRP gran tour: componentes de Claude Opus 5.5 (corrida 92) sobre el modelo de la corrida 50 | SA, ILS, VNS, LNS_MIP | 10+10, 30 clientes | 5 s | 40 × 3 réplicas | otro LLM para los componentes |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -455,6 +456,10 @@ run 38 (modelo de la corrida 51, SA por tiempo, carrera), cambiando solo los com
   rutas en un mismo vecindario) y `ruin_recreate_radial_blink` (ruina y recreación radial).
   Lo que le faltaba al catálogo de rutas era eso: con GPT su mejor vecindario era un intercambio
   de clientes entre rutas.
+- **Gran tour** (corrida 92: 11 de 12, 9 llamadas, 0,80 USD; run 42, mismo tuning que la run 37):
+  0,43 contra 0,58 % con los de GPT (−0,15 [−0,25, −0,04]) y **0,41 contra 1,32 % de lo escrito a
+  mano (−0,90 [−1,23, −0,57])**. Las tres réplicas eligen VNS con 2-opt sobre el tour; aquí GPT ya
+  tenía un buen vecindario y la mejora es menor que en rutas.
 - Con esto el ciclo completo le gana a lo escrito a mano en las dos representaciones del CVRP
   (gran tour −0,76, run 37; rutas −0,53, run 41) y queda a 0,34 puntos en el CLSP (run 40).
 - El costo de una generación es sobre todo de salida (83 %): reordenar los prompts para la caché

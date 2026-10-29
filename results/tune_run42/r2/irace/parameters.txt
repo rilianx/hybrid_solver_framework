@@ -1,0 +1,46 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("SA", "ILS", "VNS", "LNS_MIP")
+constructor "--constructor=" c ("trivial", "random", "greedy_far_seed_best_fit_fill", "greedy_nearest_neighbor_return_aware", "greedy_polar_sweep_angle_gap") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP")
+greedy_far_seed_best_fit_fill.rule "--greedy_far_seed_best_fit_fill.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_far_seed_best_fit_fill"
+greedy_far_seed_best_fit_fill.alpha "--greedy_far_seed_best_fit_fill.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_far_seed_best_fit_fill"
+greedy_far_seed_best_fit_fill.fill_weight "--greedy_far_seed_best_fit_fill.fill_weight=" r (0.0, 3.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_far_seed_best_fit_fill"
+greedy_far_seed_best_fit_fill.seed_rule "--greedy_far_seed_best_fit_fill.seed_rule=" c ("farthest", "largest_demand") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_far_seed_best_fit_fill"
+greedy_nearest_neighbor_return_aware.rule "--greedy_nearest_neighbor_return_aware.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_nearest_neighbor_return_aware"
+greedy_nearest_neighbor_return_aware.alpha "--greedy_nearest_neighbor_return_aware.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_nearest_neighbor_return_aware"
+greedy_polar_sweep_angle_gap.rule "--greedy_polar_sweep_angle_gap.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_polar_sweep_angle_gap"
+greedy_polar_sweep_angle_gap.alpha "--greedy_polar_sweep_angle_gap.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_polar_sweep_angle_gap"
+greedy_polar_sweep_angle_gap.dist_weight "--greedy_polar_sweep_angle_gap.dist_weight=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "LNS_MIP") & constructor == "greedy_polar_sweep_angle_gap"
+neighborhood "--neighborhood=" c ("decoded_routes_2opt_star_tail_exchange", "giant_tour_2opt_reversal", "giant_tour_or_opt_segment_shift") | skeleton %in% c("SA", "ILS", "VNS")
+giant_tour_2opt_reversal.max_span "--giant_tour_2opt_reversal.max_span=" i (2, 200) | skeleton %in% c("SA", "ILS", "VNS") & neighborhood == "giant_tour_2opt_reversal"
+giant_tour_or_opt_segment_shift.max_seg_len "--giant_tour_or_opt_segment_shift.max_seg_len=" i (1, 5) | skeleton %in% c("SA", "ILS", "VNS") & neighborhood == "giant_tour_or_opt_segment_shift"
+giant_tour_or_opt_segment_shift.allow_reverse "--giant_tour_or_opt_segment_shift.allow_reverse=" c ("TRUE", "FALSE") | skeleton %in% c("SA", "ILS", "VNS") & neighborhood == "giant_tour_or_opt_segment_shift"
+perturbation "--perturbation=" c ("multi_double_bridge_tour", "route_cross_exchange_shuffle", "spatial_ruin_cheapest_recreate") | skeleton %in% c("ILS")
+multi_double_bridge_tour.bridges_per_strength "--multi_double_bridge_tour.bridges_per_strength=" i (1, 3) | skeleton %in% c("ILS") & perturbation == "multi_double_bridge_tour"
+route_cross_exchange_shuffle.max_seg_len "--route_cross_exchange_shuffle.max_seg_len=" i (1, 6) | skeleton %in% c("ILS") & perturbation == "route_cross_exchange_shuffle"
+route_cross_exchange_shuffle.shuffle_routes "--route_cross_exchange_shuffle.shuffle_routes=" c ("TRUE", "FALSE") | skeleton %in% c("ILS") & perturbation == "route_cross_exchange_shuffle"
+spatial_ruin_cheapest_recreate.ruin_per_strength "--spatial_ruin_cheapest_recreate.ruin_per_strength=" i (1, 5) | skeleton %in% c("ILS") & perturbation == "spatial_ruin_cheapest_recreate"
+spatial_ruin_cheapest_recreate.noise "--spatial_ruin_cheapest_recreate.noise=" r (0.0, 0.5) | skeleton %in% c("ILS") & perturbation == "spatial_ruin_cheapest_recreate"
+destruction "--destruction=" c ("neighbor_routes_subproblem_destruction", "shaw_relatedness_arc_destruction", "worst_detour_arc_destruction") | skeleton %in% c("LNS_MIP")
+neighbor_routes_subproblem_destruction.ratio "--neighbor_routes_subproblem_destruction.ratio=" r (0.05, 0.6) | skeleton %in% c("LNS_MIP") & destruction == "neighbor_routes_subproblem_destruction"
+neighbor_routes_subproblem_destruction.min_routes "--neighbor_routes_subproblem_destruction.min_routes=" i (1, 4) | skeleton %in% c("LNS_MIP") & destruction == "neighbor_routes_subproblem_destruction"
+shaw_relatedness_arc_destruction.ratio "--shaw_relatedness_arc_destruction.ratio=" r (0.05, 0.6) | skeleton %in% c("LNS_MIP") & destruction == "shaw_relatedness_arc_destruction"
+shaw_relatedness_arc_destruction.demand_weight "--shaw_relatedness_arc_destruction.demand_weight=" r (0.0, 1.0) | skeleton %in% c("LNS_MIP") & destruction == "shaw_relatedness_arc_destruction"
+shaw_relatedness_arc_destruction.route_weight "--shaw_relatedness_arc_destruction.route_weight=" r (0.0, 1.0) | skeleton %in% c("LNS_MIP") & destruction == "shaw_relatedness_arc_destruction"
+shaw_relatedness_arc_destruction.determinism "--shaw_relatedness_arc_destruction.determinism=" r (1.0, 10.0) | skeleton %in% c("LNS_MIP") & destruction == "shaw_relatedness_arc_destruction"
+worst_detour_arc_destruction.ratio "--worst_detour_arc_destruction.ratio=" r (0.05, 0.6) | skeleton %in% c("LNS_MIP") & destruction == "worst_detour_arc_destruction"
+worst_detour_arc_destruction.determinism "--worst_detour_arc_destruction.determinism=" r (1.0, 10.0) | skeleton %in% c("LNS_MIP") & destruction == "worst_detour_arc_destruction"
+SA.T0 "--SA.T0=" r (1.0, 1000.0) | skeleton == "SA"  # log-scale
+SA.cooling "--SA.cooling=" c ("time", "iterations") | skeleton == "SA"
+SA.T_end "--SA.T_end=" r (1e-05, 0.1) | skeleton == "SA"  # log-scale
+SA.alpha "--SA.alpha=" r (0.8, 0.999) | skeleton == "SA"
+SA.iters_per_T "--SA.iters_per_T=" i (1, 50) | skeleton == "SA"
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+ILS.ls_sample "--ILS.ls_sample=" i (4, 256) | skeleton == "ILS"  # log-scale
+VNS.shake_strength "--VNS.shake_strength=" i (1, 4) | skeleton == "VNS"
+VNS.ls_time_share "--VNS.ls_time_share=" r (0.02, 0.3) | skeleton == "VNS"
+VNS.ls_sample "--VNS.ls_sample=" i (4, 256) | skeleton == "VNS"  # log-scale
+LNS_MIP.destroy_ratio "--LNS_MIP.destroy_ratio=" r (0.05, 0.6) | skeleton == "LNS_MIP"
+LNS_MIP.mip_time_share "--LNS_MIP.mip_time_share=" r (0.04, 1.0) | skeleton == "LNS_MIP"  # log-scale
