@@ -88,6 +88,7 @@ def tune_with_irace(assembler, scenario: Path, train, budget: float, max_experim
     from tuning.irace_scenario import parse_irace_params
 
     space = assembler.config_space()
+    scenario = Path(scenario).resolve()  # irace corre desde el directorio del escenario
     t0 = time.monotonic()
     cmd = [irace_executable(), "--scenario", str(scenario), "--seed", str(seed), "--max-experiments", str(max_experiments)]
     proc = subprocess.run(cmd, cwd=scenario.parent, capture_output=True, text=True, timeout=timeout)

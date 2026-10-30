@@ -34,10 +34,13 @@ def _has_irace() -> bool:
 
 @pytest.mark.skipif(not _has_irace(), reason="sin R/irace o sin g++")
 def test_irace_tunes_natively_and_the_choice_is_evaluated_in_test(tmp_path):
+    import os
+
     from examples.jobshop.tune import main
 
+    out = os.path.relpath(tmp_path)  # --out relativo a la raíz del repo, como en CI (corrida 51)
     main(["--tuner", "irace", "--native", "--catalog", "handwritten", "--size", "6x4", "--trials", "60", "--budget", "0.02",
-          "--train", "5", "--test", "1", "--seeds", "1", "--skeletons", "SA", "ILS", "--out", str(tmp_path)])
+          "--train", "5", "--test", "1", "--seeds", "1", "--skeletons", "SA", "ILS", "--out", out])
     out = json.loads((tmp_path / "handwritten.json").read_text())
     assert out["settings"]["tuner"] == "irace" and out["tuning"]["tuner"] == "irace"
     assert out["tuning"]["n_trials"] >= 300 and out["test"]["tuned"]["summary"].split("[")[0] in ("SA", "ILS")
