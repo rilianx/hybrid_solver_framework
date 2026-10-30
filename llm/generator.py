@@ -104,6 +104,14 @@ def validate_generated_module(
     report.add(static_cache_check(module, "componente"))
     if not report.passed:
         return report, module, component
+    return validate_factory(component, factory, contexts, peers, report), module, component
+
+
+def validate_factory(component: dict, factory, contexts: list[ValidationContext], peers: list[tuple[str, Any]] | None = None,
+                     report: ValidationReport | None = None) -> ValidationReport:
+    """Las capas sobre `factory(problem)` en cada micro-contexto, la sonda, la diversidad contra `peers` y la
+    combinación: lo que se exige a un componente después de cargarlo (un módulo Python o uno C++ envuelto)."""
+    report = report or ValidationReport(subject=f"componente '{component.get('name', '?')}'")
 
     # Todas las propiedades deben cumplirse en TODOS los micro-contextos, salvo
     # `neighborhood.improves_from_start`, que basta con que se cumpla en UNO: la
@@ -118,12 +126,12 @@ def validate_generated_module(
             impl = factory(ctx.problem)
         except Exception as exc:  # noqa: BLE001
             report.add(fail("syntactic", "factory_runs", f"build_component(problem) lanzó {type(exc).__name__}: {exc} (micro-instancia {k})"))
-            return report, module, component
+            return report
         reports.append(validate_component(component, impl, ctx))
         hard_fail = [r for r in reports[-1].failures() if r.name not in AGGREGATE_ANY]
         if hard_fail:
             report.extend(reports[-1].results)
-            return report, module, component
+            return report
     report.add(ok("syntactic", "factory_runs"))
 
     probe = contexts[0].diversity_probe if contexts else None
@@ -138,7 +146,7 @@ def validate_generated_module(
         rescued = _improves_on_probe(factory, probe, slot_name)
         if rescued is None:
             report.extend(reports[0].results)  # trae el hint con movimientos que sí mejoran
-            return report, module, component
+            return report
         report.add(rescued)
 
     # Diversidad: sobre la sonda (instancia grande) y con el componente reconstruido allí.
@@ -156,7 +164,7 @@ def validate_generated_module(
         except Exception as exc:  # noqa: BLE001 — la sonda no debe tumbar la validación
             report.add(ok("quality", "probe_skipped", f"{type(exc).__name__}: {exc}"))
         if not report.passed:
-            return report, module, component
+            return report
 
     # Combinación: el componente dentro de cada esqueleto que declara, desde varias partidas.
     # Poda `compatible_skeletons` a donde es útil; rechaza si no es útil en ninguno.
@@ -170,17 +178,17 @@ def validate_generated_module(
             except Exception as exc:  # noqa: BLE001 — una excepción del componente es un rechazo
                 report.add(fail("quality", f"{slot_name}.useful_in_some_skeleton",
                                 f"el componente lanzó {type(exc).__name__} dentro de un esqueleto: {exc}"))
-                return report, module, component
+                return report
             report.extend(results)
             if not report.passed:
-                return report, module, component
+                return report
             component["compatible_skeletons"] = keep
             component["combination_gains"] = gains
 
     if reports:
         # aprobado: se reporta el último contexto, sin los fallos agregables que quedaron compensados
         report.extend([r for r in reports[-1].results if r.name not in AGGREGATE_ANY or r.passed])
-    return report, module, component
+    return report
 
 
 def _improves_on_probe(factory, probe, slot_name: str):

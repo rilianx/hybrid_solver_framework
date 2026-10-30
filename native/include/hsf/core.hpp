@@ -212,6 +212,26 @@ struct Catalog {
     }
 };
 
+// Las partidas de referencia de todo catálogo (como `llm.cycle._handwritten`): la solución trivial y una al
+// azar del modelo (`M::trivial()`, `M::random(rng)`).
+template <class M>
+struct TrivialConstructor : Constructor<M> {
+    const M& model;
+    explicit TrivialConstructor(const M& m) : model(m) {}
+    typename M::Solution build(Rng&) override { return model.trivial(); }
+};
+template <class M>
+struct RandomConstructor : Constructor<M> {
+    const M& model;
+    explicit RandomConstructor(const M& m) : model(m) {}
+    typename M::Solution build(Rng& rng) override { return model.random(rng); }
+};
+template <class M>
+void add_base_constructors(Catalog<M>& c) {
+    c.constructors["trivial"] = [](const M& m, const Config&) { return std::make_unique<TrivialConstructor<M>>(m); };
+    c.constructors["random"] = [](const M& m, const Config&) { return std::make_unique<RandomConstructor<M>>(m); };
+}
+
 // ------------------------------------------------------------------ esqueletos
 template <class M>
 struct Result {
