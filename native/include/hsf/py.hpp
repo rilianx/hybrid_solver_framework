@@ -69,7 +69,9 @@ void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy 
             return l;
         })
         .def("apply", [=](NbhHandle<M>& h, py::handle s, py::handle m) { return to_py(h.impl->apply(from_py(s), move_from(m))); })
-        .def("delta", [=](NbhHandle<M>& h, py::handle s, py::handle m) { return h.impl->delta(from_py(s), move_from(m)); });
+        .def("delta", [=](NbhHandle<M>& h, py::handle s, py::handle m) { return h.impl->delta(from_py(s), move_from(m)); })
+        .def("has_estimate", [](NbhHandle<M>& h) { return h.impl->has_estimate(); })
+        .def("estimate", [=](NbhHandle<M>& h, py::handle s, py::handle m) { return h.impl->estimate(from_py(s), move_from(m)); });
     py::class_<PertHandle<M>>(mod, "Perturbation")
         .def("perturb", [=](PertHandle<M>& h, py::handle s, double strength, uint64_t seed) {
             Rng rng(seed);

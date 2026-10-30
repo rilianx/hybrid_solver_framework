@@ -19,6 +19,8 @@ class NativeConstructor:
 class NativeNeighborhood:
     def __init__(self, problem, name, **params):
         self.h = native.make_neighborhood(model(problem.inst), name, params)
+        if self.h.has_estimate():  # solo si el componente C++ la define (la usa TS)
+            self.estimate = self.h.estimate
 
     def moves(self, sol):
         return self.h.moves(sol)

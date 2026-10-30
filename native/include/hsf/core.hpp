@@ -102,6 +102,9 @@ struct Neighborhood {
     // lo que TS prohíbe tras aplicar `m`: el movimiento que lo deshace (como `inverse` en Python); por
     // defecto el mismo movimiento (correcto para los auto-inversos, p.ej. un flip)
     virtual Move tabu_key(const Move& m) { return m; }
+    // aproximación barata de `delta` (opcional, la usa TS para filtrar candidatos); sin ella, el delta exacto
+    virtual bool has_estimate() const { return false; }
+    virtual double estimate(const Sol& s, const Move& m) { return delta(s, m); }
     // hasta k movimientos distintos al azar; con k o menos, todos en orden sin gastar azar (como en Python)
     virtual void sample(const Sol& s, int k, Rng& rng, std::vector<Move>& out) {
         out.clear();
@@ -351,28 +354,60 @@ Result<M> solve(const Catalog<M>& cat, const M& model, const Config& cfg, const 
         return trajectory(model, start, budget, gen, better, none);
     }
     if (sk == "TS") {
+        // como `skeletons/ts.py`: filtrado por estimación (`estimate_top`) y saltos atrás a la élite (`elite_size`, `stall`)
         auto nbh = cat.neighborhood(cfg.text("neighborhood"), model, cfg);
         size_t tenure = (size_t)cfg.get("TS.tenure");
         int size = (int)cfg.get("TS.candidate_size");
+        int top = nbh->has_estimate() ? (int)cfg.get("TS.estimate_top", 0) : 0;
+        size_t elite_size = (size_t)cfg.get("TS.elite_size", 0);
+        long stall = (long)cfg.get("TS.stall", 500), iter = 0, last_event = 0;
+        double track_best = std::numeric_limits<double>::infinity();
+        std::vector<typename M::Solution> elites;
         std::map<Move, int> tabu;
         std::vector<Move> queue;
         size_t head = 0;
+        std::vector<std::pair<double, size_t>> order;
         auto gen = [&](const auto& s, double f, double f_best, double, auto& cand) {
-            nbh->sample(s, size, rng, buf);
-            const Move* best = nullptr;
-            double best_d = std::numeric_limits<double>::infinity();
-            for (const Move& m : buf) {
-                double d = nbh->delta(s, m);
-                if (tabu.count(m) && !(f + d < f_best)) continue;
-                if (d < best_d) best = &m, best_d = d;
+            ++iter;
+            if (elite_size > 0) {
+                if (f < track_best) {
+                    track_best = f, last_event = iter;
+                    elites.push_back(s);
+                    if (elites.size() > elite_size) elites.erase(elites.begin());
+                } else if (iter - last_event >= stall && !elites.empty()) {
+                    last_event = iter;
+                    tabu.clear(), queue.clear(), head = 0;
+                    cand = elites.back();
+                    elites.pop_back();
+                    return true;
+                }
             }
+            nbh->sample(s, size, rng, buf);
+            order.clear();
+            for (size_t i = 0; i < buf.size(); ++i) order.push_back({top > 0 ? nbh->estimate(s, buf[i]) : 0.0, i});
+            if (top > 0) std::stable_sort(order.begin(), order.end(), [](auto& a, auto& b) { return a.first < b.first; });
+            const Move* best = nullptr;
+            const Move* best_tabu = nullptr;  // si todos son tabú, el mejor de ellos (Nowicki y Smutnicki)
+            double best_d = std::numeric_limits<double>::infinity(), tabu_d = best_d;
+            int exact = 0;
+            for (auto& [e, i] : order) {
+                const Move& m = buf[i];
+                double d = nbh->delta(s, m);
+                if (tabu.count(m) && !(f + d < f_best)) {
+                    if (d < tabu_d) best_tabu = &m, tabu_d = d;
+                    continue;
+                }
+                if (d < best_d) best = &m, best_d = d;
+                if (top > 0 && ++exact >= top) break;
+            }
+            if (!best) best = best_tabu;
             if (!best) return false;
             Move key = nbh->tabu_key(*best);
             queue.push_back(key);
             ++tabu[key];
             while (queue.size() - head > tenure) {
                 auto it = tabu.find(queue[head++]);
-                if (--it->second <= 0) tabu.erase(it);
+                if (it != tabu.end() && --it->second <= 0) tabu.erase(it);
             }
             cand = nbh->apply(s, *best);
             return true;

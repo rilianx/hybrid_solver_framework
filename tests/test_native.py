@@ -44,6 +44,22 @@ def test_native_and_python_agree_on_cost_and_violations(nat):
             assert nat.cost_terms(inst, sol) == py.cost_terms(inst, sol)
 
 
+def test_the_native_swap_estimate_matches_python(nat):
+    from core.model_parts import PartsModel
+    from examples.jobshop import model_parts
+    from examples.jobshop.components import CriticalSwap
+    from examples.jobshop.instance import JSSPInstance
+
+    inst = JSSPInstance.random(7, 5, Random(2))
+    py = CriticalSwap(PartsModel(model_parts, inst))
+    cpp = nat.native.make_neighborhood(nat.model(inst), "critical_swap", {})
+    assert cpp.has_estimate()
+    for t in range(4):
+        sol = model_parts.random_solution(inst, Random(t))
+        for m in py.moves(sol):
+            assert cpp.estimate(sol, m) == pytest.approx(py.estimate(sol, m))
+
+
 def test_the_native_components_pass_the_component_validator(nat):
     from core.validation import validate_component
     from examples.jobshop.native_catalog import native_handwritten
@@ -59,7 +75,7 @@ def test_the_native_components_pass_the_component_validator(nat):
             assert report.passed, (comp["name"], report.feedback())
 
 
-@pytest.mark.parametrize("skeleton", ["SA", "ILS", "VNS", "TS"])
+@pytest.mark.parametrize("skeleton", ["SA", "ILS", "VNS", "TS", "TS+"])
 def test_a_tuner_configuration_runs_entirely_in_cpp(nat, skeleton):
     from core.native_runner import NativeRunner
     from examples.jobshop.pack import PACK
@@ -67,8 +83,10 @@ def test_a_tuner_configuration_runs_entirely_in_cpp(nat, skeleton):
 
     A, _ = make_assembler(PACK, "handwritten")
     runner = NativeRunner(A, nat.native, nat.model)
-    cfg = A.default_config(skeleton)
+    cfg = A.default_config(skeleton.rstrip("+"))
     cfg["constructor"] = "greedy_most_work_remaining"
+    if skeleton == "TS+":  # filtrado por estimación y saltos atrás
+        cfg.update({"neighborhood": "critical_swap", "TS.estimate_top": 3, "TS.elite_size": 4, "TS.stall": 50})
     inst = PACK.make_instances(1, 3, PACK.parse_size("8x5"))[0]
     P = PACK.problem_factory(inst)
     start = P.objective(PACK.baseline_constructor().build(inst, Random(0)))

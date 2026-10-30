@@ -320,10 +320,68 @@ inline Sol swap_jobs(const Sol& s, int mm, int a, int b) {
     return t;
 }
 
+// Cabezas (inicio más temprano) y colas (camino más largo desde el fin de la operación hasta el final) del
+// plan semiactivo, y los vecinos de cada operación en su máquina: lo que usan las estimaciones de movimientos.
+struct HeadsTails {
+    M::Solution sol;
+    std::vector<int> r, q, mprev, mnext;
+    int makespan = 0;
+    bool valid = false;
+
+    void compute(const M& js, const M::Solution& s) {
+        if (valid && s == sol) return;
+        sol = s;
+        js.schedule(s, r, makespan);
+        mprev.assign(js.n_ops, -1), mnext.assign(js.n_ops, -1);
+        for (int mm = 0; mm < js.m && mm < (int)s.size(); ++mm)
+            for (size_t i = 0; i + 1 < s[mm].size(); ++i) {
+                int a = s[mm][i], b = s[mm][i + 1];
+                if (a < 0 || a >= js.n || b < 0 || b >= js.n || js.opk[a][mm] < 0 || js.opk[b][mm] < 0) continue;
+                int oa = js.off[a] + js.opk[a][mm], ob = js.off[b] + js.opk[b][mm];
+                mnext[oa] = ob, mprev[ob] = oa;
+            }
+        // colas: en orden de inicio decreciente (un orden topológico inverso, porque todo tiempo es >= 1)
+        std::vector<int> ops(js.n_ops);
+        for (int i = 0; i < js.n_ops; ++i) ops[i] = i;
+        std::sort(ops.begin(), ops.end(), [&](int a, int b) { return r[a] > r[b]; });
+        q.assign(js.n_ops, 0);
+        for (int op : ops) {
+            int j = js.job_of[op], k = op - js.off[j], t = 0;
+            if (k + 1 < (int)js.routes[j].size()) t = std::max(t, q[op + 1] + js.routes[j][k + 1].second);
+            if (mnext[op] >= 0) t = std::max(t, q[mnext[op]] + p(js, mnext[op]));
+            q[op] = t;
+        }
+        valid = true;
+    }
+    static int p(const M& js, int op) { int j = js.job_of[op]; return js.routes[j][op - js.off[j]].second; }
+    int end(const M& js, int op) const { return op < 0 ? 0 : r[op] + p(js, op); }
+    int qp(const M& js, int op) const { return op < 0 ? 0 : q[op] + p(js, op); }
+    int jprev(const M& js, int op) const { return op > js.off[js.job_of[op]] ? op - 1 : -1; }
+    int jnext(const M& js, int op) const { return op + 1 < js.off[js.job_of[op] + 1] ? op + 1 : -1; }
+
+    // makespan estimado tras intercambiar u y v, consecutivas en su máquina (u antes que v): Taillard (1994)
+    double swap_estimate(const M& js, int u, int v) const {
+        int rv = std::max(end(js, jprev(js, v)), end(js, mprev[u]));
+        int ru = std::max(end(js, jprev(js, u)), rv + p(js, v));
+        int qu = std::max(qp(js, jnext(js, u)), qp(js, mnext[v]));
+        int qv = std::max(qp(js, jnext(js, v)), qu + p(js, u));
+        return std::max(rv + p(js, v) + qv, ru + p(js, u) + qu);
+    }
+};
+
 // N5: intercambiar las dos primeras o las dos últimas operaciones de cada bloque crítico. Movimiento (m, a, b).
+// Estimación: el makespan de los caminos que pasan por las dos operaciones intercambiadas (cabezas y colas).
 struct CriticalSwap : hsf::Neighborhood<M> {
     const M& js;
+    HeadsTails ht;
     explicit CriticalSwap(const M& m) : js(m) {}
+    bool has_estimate() const override { return true; }
+    double estimate(const Sol& s, const Move& mv) override {
+        ht.compute(js, s);
+        int mm = mv[0], u = js.off[mv[1]] + js.opk[mv[1]][mm], v = js.off[mv[2]] + js.opk[mv[2]][mm];
+        if (ht.mnext[u] != v) return delta(s, mv);  // no consecutivas: sin fórmula, el exacto
+        return ht.swap_estimate(js, u, v) - ht.makespan;
+    }
     void moves(const Sol& s, std::vector<Move>& out) override {
         std::set<Move> seen;
         for (auto& [mm, b] : js.critical_blocks(s)) {

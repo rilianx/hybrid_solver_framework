@@ -110,6 +110,11 @@ class Neighborhood(Protocol):
     esqueleto deshace movimientos. Era la mayor fuente de rechazos de los vecindarios generados
     (corridas 36, 37 y 39) sin que se usara en ningún lado; si un componente lo define, se verifica
     ``undo(apply(sol, m), m) == sol``.
+
+    Opcionales que usa TS: `inverse(m)` (lo que se prohíbe tras aplicar m: el movimiento que lo
+    deshace, o un atributo como el arco invertido) y `estimate(sol, m)` (una aproximación barata de
+    `delta`, p.ej. una cota con cabezas y colas en el job shop; el validador exige que ordene los
+    movimientos parecido a `delta`, no que coincida).
     """
 
     def moves(self, sol: Solution) -> Iterable[Move]: ...
