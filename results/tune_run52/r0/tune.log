@@ -1,0 +1,18 @@
+
+=== catálogo `handwritten`: 22 parámetros, 0 opciones generadas por LLM ===
+  irace: 700 experimentos en 3556s; élite: SA[constructor=greedy_most_work_remaining, neighborhood=critical_swap]; SA[constructor=greedy_most_work_remaining, neighborhood=critical_swap]; SA[constructor=greedy_most_work_remaining, neighborhood=critical_swap]; SA[constructor=greedy_most_work_remaining, neighborhood=critical_swap]; SA[constructor=greedy_most_work_remaining, neighborhood=critical_swap]; SA[constructor=greedy_most_work_remaining, neighborhood=critical_swap]
+  mejor en train: 0.2077  SA[constructor=greedy_most_work_remaining, neighborhood=critical_swap]
+
+Referencia: MIP completo, 60 s por instancia de test
+  902.0, 820.0, 993.0, 932.0, 925.0, 834.0, 908.0, 925.0, 895.0, 850.0
+
+=== TEST `handwritten` (partida trivial sin búsqueda = 3976.6; gap vs mejor conocido por instancia) ===
+    tuned                                            gap   0.08%          833.4 ±     40.3   (+79.0% vs partida)   SA[constructor=greedy_most_work_remaining, neighborhood=critical_swap]
+    default:SA                                       gap   0.70%          838.4 ±     40.1   (+78.9% vs partida)   SA[constructor=job_order, neighborhood=critical_swap]
+    default:ILS                                      gap   8.53%          904.7 ±     72.8   (+77.2% vs partida)   ILS[constructor=job_order, neighborhood=critical_swap, perturbation=critical_kick]
+    default:VNS                                      gap  13.37%          943.1 ±     59.7   (+76.3% vs partida)   VNS[constructor=job_order, neighborhood=critical_swap]
+    default:TS                                       gap  19.55%          997.6 ±    143.1   (+74.9% vs partida)   TS[constructor=job_order, neighborhood=critical_swap]
+  ganancia del afinado vs mejor default: +0.60%; gana en 8/10 instancias
+  afinado vs default:SA: gap +0.62% a favor del afinado, IC95 [+0.24%, +1.02%]
+
+Escenario irace escrito en tuning_out/irace/scenario.txt (correr: irace --scenario tuning_out/irace/scenario.txt)
