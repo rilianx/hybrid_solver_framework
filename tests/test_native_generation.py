@@ -115,3 +115,29 @@ def test_the_optimization_stage_accepts_a_faster_equivalent_version_and_rejects_
     assert "SA: elige un movimiento al azar" in prompt  # el prompt dice cómo usan los esqueletos el vecindario
     entry = json.loads((tmp_path / "catalog.json").read_text())[0]
     assert entry["path"].endswith("adjacent_swap_r2.hpp") and entry["path"] == row["file"]
+
+
+def test_chained_passes_reoptimize_what_improved_and_show_the_profile(pack, tmp_path):
+    from llm import ScriptedClient
+    from llm.native_generator import generate_native_slot, write_catalog
+    from llm.native_optimizer import _siblings, optimize_native
+    from native.generated import parse_component
+
+    accepted, _ = generate_native_slot(ScriptedClient(responses=[SWAP]), pack, "neighborhood", 1, tmp_path, verbose=False)
+    write_catalog(tmp_path, accepted)
+    fast = SWAP.replace(
+        "double delta(const JobShop::Solution& s, const Move& m) override { return js.objective(apply(s, m)) - js.objective(s); }",
+        "double delta(const JobShop::Solution& s, const Move& m) override {\n"
+        "        if (!has || !(s == last)) { last = s; base = js.objective(s); has = true; }\n"
+        "        return js.objective(apply(s, m)) - base;\n    }\n    JobShop::Solution last; double base = 0; bool has = false;")
+    client = ScriptedClient(responses=[fast, fast])  # la segunda pasada no gana nada: se rechaza por velocidad
+    out = optimize_native(client, pack, tmp_path, rounds=1, passes=3, verbose=False)
+    first, second = out["neighborhood/adjacent_swap#1"], out["neighborhood/adjacent_swap#2"]
+    assert first["accepted"] and not second["accepted"] and second["min_speedup"] == 1.2
+    assert "neighborhood/adjacent_swap#3" not in out  # lo que no mejoró ya no se vuelve a intentar
+    assert "perfil por método" in client.calls[0][1] and "delta:" in client.calls[0][1]
+    # un componente del mismo slot ya optimizado se muestra como referencia
+    other = parse_component(SWAP.replace('"adjacent_swap"', '"other_swap"'))
+    other.path = tmp_path / "neighborhood" / "other_swap_r2.hpp"
+    comp = accepted[0]
+    assert [c.name for c in _siblings([comp, other], comp)] == ["other_swap"]

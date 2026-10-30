@@ -82,6 +82,19 @@ METRICS = {"delta": "delta exacto por segundo (búsqueda local, SA)",
            "perturbation": "perturbaciones por segundo", "greedy_score": "construcciones greedy completas por segundo"}
 
 
+def profile(native, model_of, slot: str, name: str, inst, sols, seconds: float = 0.5) -> str:
+    """Dónde se va el tiempo de un vecindario, como texto para el prompt (vacío en otros slots)."""
+    if slot != "neighborhood":
+        return ""
+    p = native.profile_neighborhood(model_of(inst), name, {}, sols, seconds)
+    parts = [f"{p['moves_per_solution']:.0f} movimientos por solución", f"moves(s): {p['moves_us_per_solution']:.2f} µs por solución",
+             f"delta: {p['delta_us']:.3f} µs por movimiento"]
+    if "estimate_us" in p:
+        parts.append(f"estimate: {p['estimate_us']:.3f} µs por movimiento")
+    parts.append(f"apply: {p['apply_us']:.3f} µs")
+    return "; ".join(parts)
+
+
 def speeds(native, model_of, slot: str, name: str, inst, sols, seconds: float = 1.0) -> dict[str, float]:
     """Las operaciones que repiten los esqueletos, medidas en C++."""
     m = model_of(inst)
@@ -142,9 +155,11 @@ def optimize_check(request: dict) -> None:
         ratios = {m: after[m] / max(before[m], 1e-9) for m in before}
         if max(ratios.values()) < k or min(ratios.values()) < 0.9:
             detail = "; ".join(f"{METRICS[m]}: {before[m]:,.0f} → {after[m]:,.0f} ({ratios[m]:.2f}×)" for m in before)
+            prof = profile(new, parts.model, slot, name, inst, sols)
             out.update(passed=False, failed_layer="speed",
                        feedback=f"mismas salidas, pero no alcanza: {detail}. Se pide que alguna medida mejore al menos "
-                                f"{k:g} veces y que ninguna empeore más de un 10 %.")
+                                f"{k:g} veces y que ninguna empeore más de un 10 %."
+                                + (f"\nPerfil de tu versión: {prof}." if prof else ""))
     print(json.dumps(out))
 
 
