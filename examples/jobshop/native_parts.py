@@ -89,3 +89,18 @@ def to_solution(inst, partial):
 
 def complete_partial(inst, partial, rng):
     return native.complete_partial(model(inst), partial, _seed(rng))
+
+
+# Para generar componentes C++ con el LLM (`native/generated.py`, `llm/native_generator.py`): lo que se compila
+# con cada componente y lo que ve el LLM (el modelo, sin el catálogo escrito a mano).
+GENERATION = {
+    "dir": Path(__file__).with_name("native"),
+    "model_header": "model.hpp",
+    "bindings_header": "bindings.hpp",
+    "namespace": "jobshop",
+    "model_type": "jobshop::JobShop",
+    "sol_to_py": "jobshop_py::sol_to_py",
+    "sol_from_py": "jobshop_py::sol_from_py",
+    "bind_problem": "jobshop_py::bind_problem",
+    "mip_parts": "examples.jobshop.model_parts",
+}

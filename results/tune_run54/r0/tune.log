@@ -1,0 +1,18 @@
+
+=== catálogo `generated`: 43 parámetros, 0 opciones generadas por LLM ===
+  irace: 728 experimentos en 3665s; élite: SA[constructor=trivial, neighborhood=critical_path_adjacent_swap]; SA[constructor=trivial, neighborhood=critical_path_adjacent_swap]; SA[constructor=greedy_lookahead_lower_bound, neighborhood=critical_path_adjacent_swap]; SA[constructor=random, neighborhood=critical_path_adjacent_swap]; SA[constructor=random, neighborhood=critical_path_adjacent_swap]; SA[constructor=random, neighborhood=critical_path_adjacent_swap]; SA[constructor=trivial, neighborhood=critical_path_adjacent_swap]
+  mejor en train: 0.2075  SA[constructor=trivial, neighborhood=critical_path_adjacent_swap]
+
+Referencia: MIP completo, 60 s por instancia de test
+  899.0, 820.0, 993.0, 932.0, 925.0, 834.0, 908.0, 925.0, 895.0, 850.0
+
+=== TEST `generated` (partida trivial sin búsqueda = 3976.6; gap vs mejor conocido por instancia) ===
+    tuned                                            gap   0.17%          834.0 ±     40.0   (+79.0% vs partida)   SA[constructor=trivial, neighborhood=critical_path_adjacent_swap]
+    default:TS                                       gap   0.30%          835.1 ±     41.5   (+79.0% vs partida)   TS[constructor=trivial, neighborhood=critical_path_adjacent_swap]
+    default:SA                                       gap   0.35%          835.4 ±     37.8   (+79.0% vs partida)   SA[constructor=trivial, neighborhood=critical_path_adjacent_swap]
+    default:ILS                                      gap   3.65%          863.4 ±     57.8   (+78.3% vs partida)   ILS[constructor=trivial, neighborhood=critical_path_adjacent_swap, perturbation=critical_arc_swap_kick]
+    default:VNS                                      gap  10.79%          922.3 ±     64.2   (+76.8% vs partida)   VNS[constructor=trivial, neighborhood=critical_path_adjacent_swap]
+  ganancia del afinado vs mejor default: +0.13%; gana en 4/10 instancias
+  afinado vs default:TS: gap +0.12% a favor del afinado, IC95 [-0.13%, +0.39%] (no se distingue del ruido)
+
+Escenario irace escrito en tuning_out/irace/scenario.txt (correr: irace --scenario tuning_out/irace/scenario.txt)

@@ -43,14 +43,29 @@ def make_assembler(pack: ProblemPack, catalog: str, generated_dir: str | None = 
                    skeletons: list[str] | None = None, native: bool = False) -> tuple[Assembler, list[str]]:
     """Con `native=True` las configuraciones corren en C++ (`core.native_runner`): el catálogo se reduce a
     los componentes que existen en C++ y el espacio a los esqueletos nativos."""
-    mod = None
+    mod = model_of = None
     if native:
         from core.native_runner import NATIVE_SKELETONS, native_pack
 
-        if catalog != "handwritten":
-            raise SystemExit("--native: por ahora solo el catálogo escrito a mano tiene versión en C++")
-        pack, mod = native_pack(pack)
         skeletons = [s for s in (skeletons or NATIVE_SKELETONS) if s in NATIVE_SKELETONS]
+        if catalog == "handwritten":
+            pack, mod = native_pack(pack)
+            model_of = mod.model
+            mod = mod.native
+        elif catalog == "generated":  # componentes C++ del LLM (`llm.native_generator`) + las partidas de referencia
+            from dataclasses import replace
+
+            from llm.native_generator import load_native_catalog
+            from native.check import NATIVE_SKELETONS_FOR_SLOT
+            from native.generated import factory
+
+            mod, model_of, entries = load_native_catalog(pack, generated_dir)
+            base = [({"name": n, "slot": "constructor", "compatible_skeletons": NATIVE_SKELETONS_FOR_SLOT["constructor"],
+                      "params": {}}, factory(mod, model_of, "constructor", n)) for n in ("trivial", "random")]
+            pack = replace(pack, handwritten=base + entries)
+            catalog = "handwritten"  # el registro se arma con esa lista; no se cargan generados de Python
+        else:
+            raise SystemExit("--native: catálogo handwritten (a mano, en C++) o generated (C++ del LLM)")
     generated = load_generated(pack, generated_dir, verbose=verbose) if catalog in ("all", "generated") else []
     registry = build_registry(pack, generated, handwritten=catalog != "generated")
     sks = {k: SKELETONS[k] for k in skeletons} if skeletons else dict(SKELETONS)
@@ -58,7 +73,7 @@ def make_assembler(pack: ProblemPack, catalog: str, generated_dir: str | None = 
         from core.native_runner import NativeAssembler
 
         assembler = NativeAssembler(problem_factory=pack.problem_factory, registry=registry, skeletons=sks,
-                                    native=mod.native, model_of=mod.model)
+                                    native=mod, model_of=model_of)
     else:
         assembler = Assembler(problem_factory=pack.problem_factory, registry=registry, skeletons=sks)
     return assembler, [c.name for c in generated]

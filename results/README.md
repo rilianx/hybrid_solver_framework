@@ -52,6 +52,7 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run50/`](tune_run50/) | 30 oct | job shop, catálogo a mano, **afinado y corrido en C++** (`--native`), Optuna | SA, ILS, VNS, TS | 10+10, 10×10 | 5 s | 40 × 3 réplicas | backend nativo |
 | [`tune_run52/`](tune_run52/) | 30 oct | lo mismo con **irace** (`--tuner irace`, 700 experimentos) | SA, ILS, VNS, TS | 10+10, 10×10 | 5 s | 700 exp. × 3 réplicas | irace contra Optuna (la 51 falló por una ruta) |
 | [`tune_run53/`](tune_run53/) | 30 oct | lo mismo con el TS genérico extendido (estimación, saltos atrás, mejor tabú si todos lo son) | SA, ILS, VNS, TS | 10+10, 10×10 | 5 s | 700 exp. × 3 réplicas | TS entra al espacio en serio |
+| [`tune_run54/`](tune_run54/) | 30 oct | job shop, **componentes C++ generados por Opus 5.5** (corrida 104), irace en C++ | SA, ILS, VNS, TS | 10+10, 10×10 | 5 s | 700 exp. × 3 réplicas | paso 2: el LLM escribe C++ |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -615,6 +616,27 @@ publicada en JSPLIB:
   muy cerca en estas instancias), y el TS genérico queda detrás de SA: le falta lo que hace fuerte a
   TSAB (N5 con evaluación exacta incremental en vez de rehacer el plan, y la vuelta atrás con los
   movimientos no explorados). Las cotas de JSPLIB para ta11–20 pueden estar desactualizadas.
+
+### Paso 2: Opus 5.5 escribe los componentes en C++ y empata con lo escrito a mano
+
+Corrida 104 (`llm/native_generator.py`): el LLM ve la descripción, el header del modelo C++ (sin el
+catálogo a mano ni sus helpers), el contrato del slot y reglas genéricas; ninguna pista de qué
+vecindario usar ni cómo evaluarlo (un test lo verifica). 9 de 9 aceptados (una perturbación en la
+ronda 2), 0,65 USD, 6,5 min. Llegó solo a lo clásico: intercambio adyacente en el camino crítico con
+un parámetro `block_ends_only` (N1 o N5, a elección del tuner), inserción en los extremos de los
+bloques con `tabu_key`, reconstrucción Giffler–Thompson con ruido como perturbación. No escribió
+evaluación incremental ni `estimate`: delta exacto rehaciendo el plan, con el objetivo de la solución
+actual en caché (la misma velocidad que el catálogo a mano: ~100 000–140 000 iteraciones/s de SA).
+
+| | 10×10 (run 54 contra 52, mejor conocido común) | Taillard 15×15 (mejor réplica / mejor de 3 por instancia) | Taillard 20×15 |
+|---|---|---|---|
+| Componentes C++ de Opus (54) | 0,30 % | 0,95 % / 0,68 % | 3,00 % / 2,80 % |
+| Escritos a mano en C++ (52) | 0,26 % | 0,85 % / 0,78 % | 1,98 % / 1,82 % |
+
+- En 10×10 la diferencia es −0,04 [−0,22, +0,14] (ruido) y en 15×15 están a la par. En 20×15 el
+  catálogo generado queda detrás (una semilla por instancia; la TS de la réplica 2 llega a 7,6 %). No es
+  velocidad (iteraciones/s iguales): las configuraciones se afinaron en 10×10 con 5 s y transferirlas a
+  instancias más grandes funciona peor con estos componentes; habría que afinar en 15×15 para separarlo.
 
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 

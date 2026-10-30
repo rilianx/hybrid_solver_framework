@@ -39,24 +39,27 @@ def _includes() -> list[str]:
     return [str(INCLUDE), pybind11.get_include(), sysconfig.get_paths()["include"]]
 
 
-def _digest(source: Path, flags: list[str]) -> str:
+def _digest(source: Path, flags: list[str], include_dirs: list[Path]) -> str:
     h = hashlib.sha256(" ".join(flags).encode())
-    for p in sorted([source, *source.parent.glob("*.hpp"), *INCLUDE.rglob("*.hpp")]):
+    headers = [*source.parent.glob("*.hpp"), *INCLUDE.rglob("*.hpp")] + [p for d in include_dirs for p in d.glob("*.hpp")]
+    for p in sorted(set([source, *headers])):
         h.update(p.name.encode())
         h.update(p.read_bytes())
     return h.hexdigest()[:16]
 
 
 def build(name: str, source: str | Path, sanitize: bool = False, extra_flags: list[str] | None = None,
-          timeout: float = 300.0) -> Path:
+          timeout: float = 300.0, include_dirs: list[str | Path] | None = None) -> Path:
     source = Path(source).resolve()
+    incs = [Path(d).resolve() for d in include_dirs or []]
     flags = FLAGS + (SANITIZE if sanitize else []) + list(extra_flags or [])
     suffix = sysconfig.get_config_var("EXT_SUFFIX") or ".so"
-    out = BUILD / f"{name}-{_digest(source, flags)}{'-asan' if sanitize else ''}" / f"{name}{suffix}"
+    out = BUILD / f"{name}-{_digest(source, flags, incs)}{'-asan' if sanitize else ''}" / f"{name}{suffix}"
     if out.exists():
         return out
     out.parent.mkdir(parents=True, exist_ok=True)
-    cmd = ["g++", *flags, *(f"-I{d}" for d in _includes()), f"-I{source.parent}", str(source), "-o", str(out)]
+    cmd = ["g++", *flags, *(f"-I{d}" for d in _includes()), *(f"-I{d}" for d in incs), f"-I{source.parent}", str(source),
+           "-o", str(out)]
     proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     if proc.returncode != 0:
         raise NativeBuildError(f"no compila {source.name}:\n{proc.stderr[-6000:]}")
@@ -67,13 +70,20 @@ def load_module(name: str, source: str | Path, **kw):
     """Compila (si hace falta) e importa el módulo `name`."""
     if name in sys.modules:
         return sys.modules[name]
-    path = build(name, source, **kw)
-    loader = importlib.machinery.ExtensionFileLoader(name, str(path))
-    spec = importlib.util.spec_from_file_location(name, str(path), loader=loader)
+    return import_path(name, build(name, source, **kw))
+
+
+def import_path(name: str, path: str | Path):
+    """Importa un módulo de extensión ya compilado."""
+    if name in sys.modules:
+        return sys.modules[name]
+    path = str(path)
+    loader = importlib.machinery.ExtensionFileLoader(name, path)
+    spec = importlib.util.spec_from_file_location(name, path, loader=loader)
     mod = importlib.util.module_from_spec(spec)
     loader.exec_module(mod)
     sys.modules[name] = mod
     return mod
 
 
-__all__ = ["NativeBuildError", "build", "load_module"]
+__all__ = ["NativeBuildError", "build", "import_path", "load_module"]

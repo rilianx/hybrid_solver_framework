@@ -47,6 +47,11 @@ struct PertHandle {
     std::unique_ptr<Perturbation<M>> impl;
 };
 template <class M>
+struct ScoreHandle {
+    std::shared_ptr<M> model;
+    std::unique_ptr<GreedyScore<M>> impl;
+};
+template <class M>
 struct CtorHandle {
     std::shared_ptr<M> model;
     std::unique_ptr<Constructor<M>> impl;
@@ -56,11 +61,11 @@ struct CtorHandle {
 template <class M, class ToPy, class FromPy>
 void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy from_py) {
     using Model = std::shared_ptr<M>;
-    py::class_<M, std::shared_ptr<M>>(mod, "Model")
+    py::class_<M, std::shared_ptr<M>>(mod, "Model", py::module_local())
         .def("objective", [=](const M& m, py::handle s) { return m.objective(from_py(s)); })
         .def("feasible", [=](const M& m, py::handle s) { return m.feasible(from_py(s)); });
 
-    py::class_<NbhHandle<M>>(mod, "Neighborhood")
+    py::class_<NbhHandle<M>>(mod, "Neighborhood", py::module_local())
         .def("moves", [=](NbhHandle<M>& h, py::handle s) {
             std::vector<Move> out;
             h.impl->moves(from_py(s), out);
@@ -72,17 +77,26 @@ void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy 
         .def("delta", [=](NbhHandle<M>& h, py::handle s, py::handle m) { return h.impl->delta(from_py(s), move_from(m)); })
         .def("has_estimate", [](NbhHandle<M>& h) { return h.impl->has_estimate(); })
         .def("estimate", [=](NbhHandle<M>& h, py::handle s, py::handle m) { return h.impl->estimate(from_py(s), move_from(m)); });
-    py::class_<PertHandle<M>>(mod, "Perturbation")
+    py::class_<PertHandle<M>>(mod, "Perturbation", py::module_local())
         .def("perturb", [=](PertHandle<M>& h, py::handle s, double strength, uint64_t seed) {
             Rng rng(seed);
             return to_py(h.impl->perturb(from_py(s), strength, rng));
         });
-    py::class_<CtorHandle<M>>(mod, "Constructor")
+    py::class_<CtorHandle<M>>(mod, "Constructor", py::module_local())
         .def("build", [=](CtorHandle<M>& h, uint64_t seed) {
             Rng rng(seed);
             return to_py(h.impl->build(rng));
         });
 
+    py::class_<ScoreHandle<M>>(mod, "GreedyScore", py::module_local())
+        .def("score", [](ScoreHandle<M>& h, const typename M::Partial& p, const typename M::Action& a) {
+            return h.impl->score(p, a);
+        });
+    mod.def("make_score", [catalog](Model m, const std::string& name, py::dict params) {
+        auto it = catalog->scores.find(name);
+        if (it == catalog->scores.end()) throw std::invalid_argument("puntaje desconocido: " + name);
+        return ScoreHandle<M>{m, it->second(*m, config_from(params))};
+    });
     mod.def("names", [catalog]() {
         py::dict d;
         auto keys = [](const auto& m) { py::list l; for (auto& [k, _] : m) l.append(k); return l; };
