@@ -153,7 +153,9 @@ jobs:
         working-directory: ${{ env.ROOT }}
         run: |
           # en el ciclo, la etapa de componentes conserva el modelo que generó la etapa anterior
-          if [ -n "$VARIANT" ] && { [ "$TARGET" = "optimize" ] || [ "$CONSTRUCTION_ONLY" = "true" ]; }; then
+          if [ "$TARGET" = "native_optimize" ]; then
+            echo "native_optimize trabaja sobre los componentes C++ aceptados del workspace: no se limpia"
+          elif [ -n "$VARIANT" ] && { [ "$TARGET" = "optimize" ] || [ "$CONSTRUCTION_ONLY" = "true" ]; }; then
             echo "optimize y --construction-only trabajan sobre el workspace existente: no se limpia"
           elif [ -n "$VARIANT" ] && [ "$TARGET" = "components" ] && [ -d "$WS" ]; then
             find "$WS" -mindepth 1 -maxdepth 1 ! -name model ! -name model_stats.json -exec rm -rf {} +
