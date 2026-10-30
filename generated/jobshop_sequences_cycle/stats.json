@@ -1,0 +1,191 @@
+{
+  "greedy_score": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 1,
+    "llm_seconds": 32.9,
+    "rejections_by_layer": {},
+    "rounds_per_accepted": {
+      "earliest_completion_idle_penalty": 1,
+      "most_work_remaining_tail_bound": 1,
+      "bottleneck_machine_load_priority": 1
+    },
+    "abandoned": [],
+    "patches": 0,
+    "accepted_files": [
+      "generated/jobshop_sequences_cycle/greedy_score/earliest_completion_idle_penalty_r1.py",
+      "generated/jobshop_sequences_cycle/greedy_score/most_work_remaining_tail_bound_r1.py",
+      "generated/jobshop_sequences_cycle/greedy_score/bottleneck_machine_load_priority_r1.py"
+    ],
+    "tokens": {
+      "calls": 1,
+      "input_tokens": 9266,
+      "output_tokens": 3722,
+      "total_tokens": 12988,
+      "cost_usd": 0.1115
+    }
+  },
+  "neighborhood": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 1,
+    "llm_seconds": 70.5,
+    "rejections_by_layer": {},
+    "rounds_per_accepted": {
+      "critical_path_adjacent_swap": 1,
+      "critical_operation_reinsertion": 1,
+      "job_priority_shift_all_machines": 1
+    },
+    "abandoned": [],
+    "patches": 0,
+    "accepted_files": [
+      "generated/jobshop_sequences_cycle/neighborhood/critical_path_adjacent_swap_r1.py",
+      "generated/jobshop_sequences_cycle/neighborhood/critical_operation_reinsertion_r1.py",
+      "generated/jobshop_sequences_cycle/neighborhood/job_priority_shift_all_machines_r1.py"
+    ],
+    "tokens": {
+      "calls": 1,
+      "input_tokens": 8704,
+      "output_tokens": 8440,
+      "total_tokens": 17144,
+      "cost_usd": 0.2036
+    },
+    "combinations": {
+      "critical_path_adjacent_swap": {
+        "compatible_skeletons": [
+          "SA",
+          "ILS",
+          "TS",
+          "VNS",
+          "GRASP",
+          "MIP_PERTURB"
+        ],
+        "gains": {
+          "SA/trivial": 0.7626,
+          "SA/random": 0.4268,
+          "VNS/trivial": 0.7853,
+          "VNS/random": 0.4249,
+          "TS/trivial": 0.811,
+          "TS/random": 0.4217,
+          "GRASP/trivial": 0.6122,
+          "GRASP/random": 0.1161
+        }
+      },
+      "critical_operation_reinsertion": {
+        "compatible_skeletons": [
+          "SA",
+          "ILS",
+          "TS",
+          "VNS",
+          "GRASP",
+          "MIP_PERTURB"
+        ],
+        "gains": {
+          "SA/trivial": 0.7356,
+          "SA/random": 0.3662,
+          "VNS/trivial": 0.5339,
+          "VNS/random": 0.4378,
+          "TS/trivial": 0.7531,
+          "TS/random": 0.4513,
+          "GRASP/trivial": 0.5101,
+          "GRASP/random": 0.1186
+        }
+      },
+      "job_priority_shift_all_machines": {
+        "compatible_skeletons": [
+          "SA",
+          "ILS",
+          "TS",
+          "VNS",
+          "GRASP",
+          "MIP_PERTURB"
+        ],
+        "gains": {
+          "SA/trivial": 0.2928,
+          "SA/random": 0.1399,
+          "VNS/trivial": 0.3556,
+          "VNS/random": 0.0928,
+          "TS/trivial": 0.3446,
+          "TS/random": 0.1425,
+          "GRASP/trivial": 0.3556,
+          "GRASP/random": -0.0522
+        }
+      }
+    }
+  },
+  "perturbation": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 3,
+    "llm_seconds": 94.8,
+    "rejections_by_layer": {
+      "quality": 2
+    },
+    "rounds_per_accepted": {
+      "critical_block_adjacent_swaps": 1,
+      "noisy_start_key_redispatch": 1,
+      "acyclic_random_insertions": 3
+    },
+    "abandoned": [],
+    "patches": 2,
+    "accepted_files": [
+      "generated/jobshop_sequences_cycle/perturbation/critical_block_adjacent_swaps_r1.py",
+      "generated/jobshop_sequences_cycle/perturbation/noisy_start_key_redispatch_r1.py",
+      "generated/jobshop_sequences_cycle/perturbation/acyclic_random_insertions_r3.py"
+    ],
+    "tokens": {
+      "calls": 3,
+      "input_tokens": 14113,
+      "output_tokens": 10542,
+      "total_tokens": 24655,
+      "cost_usd": 0.2673
+    }
+  },
+  "destruction": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 1,
+    "llm_seconds": 75.4,
+    "rejections_by_layer": {},
+    "rounds_per_accepted": {
+      "critical_block_window_destruction": 1,
+      "time_slice_destruction": 1,
+      "related_jobs_slot_destruction": 1
+    },
+    "abandoned": [],
+    "patches": 0,
+    "accepted_files": [
+      "generated/jobshop_sequences_cycle/destruction/critical_block_window_destruction_r1.py",
+      "generated/jobshop_sequences_cycle/destruction/time_slice_destruction_r1.py",
+      "generated/jobshop_sequences_cycle/destruction/related_jobs_slot_destruction_r1.py"
+    ],
+    "tokens": {
+      "calls": 1,
+      "input_tokens": 8337,
+      "output_tokens": 8625,
+      "total_tokens": 16962,
+      "cost_usd": 0.2058
+    }
+  },
+  "_run": {
+    "problem": "jobshop_sequences",
+    "model": "claude-opus-5-5",
+    "provider": "anthropic",
+    "from_scratch": true,
+    "catalog_diversity": "annotate",
+    "planner": false,
+    "wall_seconds": 306.6,
+    "tokens": {
+      "calls": 6,
+      "input_tokens": 40420,
+      "output_tokens": 31329,
+      "total_tokens": 71749,
+      "cost_usd": 0.7883
+    },
+    "note": "costo estimado con LLM_PRICE_IN/LLM_PRICE_OUT (USD por millón de tokens)"
+  }
+}

@@ -10,7 +10,7 @@ on:
         description: "Problema"
         default: clsp
         type: choice
-        options: [clsp, cvrp]
+        options: [clsp, cvrp, jobshop]
       trials:
         description: "Trials de Optuna por catálogo (los 8 defaults van incluidos)"
         default: "40"
@@ -57,7 +57,7 @@ on:
         default: "0"
         type: string
       variant:
-        description: "Ciclo completo (llm.cycle): representación (cvrp: routes | tour; clsp: setups); generated_dir es el workspace del ciclo"
+        description: "Ciclo completo (llm.cycle): representación (cvrp: routes | tour; clsp: setups; jobshop: sequences | operations); generated_dir es el workspace del ciclo"
         default: ""
         type: string
       reference:
@@ -131,7 +131,7 @@ jobs:
           CATALOG: ${{ inputs.catalog }}
           SKELETONS: ${{ inputs.skeletons }}
           SIZE: ${{ inputs.size }}
-          PKG: ${{ inputs.problem == 'cvrp' && 'cvrp' || 'lotsizing' }}
+          PKG: ${{ inputs.problem == 'cvrp' && 'cvrp' || inputs.problem == 'jobshop' && 'jobshop' || 'lotsizing' }}
           REF_TIME: ${{ inputs.ref_time }}
           GEN_DIR: ${{ inputs.generated_dir }}
           REEVAL: ${{ inputs.reeval_top }}

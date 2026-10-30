@@ -210,7 +210,8 @@ def parts_pack(base: ProblemPack, parts, parts_import: str, model_spec, name: st
 
 
 def base_pack(problem: str) -> ProblemPack:
-    module = {"clsp": "examples.lotsizing.pack", "cvrp": "examples.cvrp.pack"}[problem]
+    module = {"clsp": "examples.lotsizing.pack", "cvrp": "examples.cvrp.pack",
+              "jobshop": "examples.jobshop.pack"}[problem]
     return importlib.import_module(module).PACK
 
 
@@ -335,7 +336,7 @@ def main(argv: list[str] | None = None) -> None:
         argv, rest = argv[:k], argv[k + 1:]
     ap = argparse.ArgumentParser(prog="python -m llm.cycle")
     ap.add_argument("stage", choices=["model", "components", "optimize", "tune"])
-    ap.add_argument("--problem", choices=["clsp", "cvrp"], required=True)
+    ap.add_argument("--problem", choices=["clsp", "cvrp", "jobshop"], required=True)
     ap.add_argument("--variant", required=True)
     ap.add_argument("--workspace", required=True)
     ap.add_argument("--reference", action="store_true", help="usar las piezas de referencia de la variante")

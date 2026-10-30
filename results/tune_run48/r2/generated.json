@@ -1,0 +1,2388 @@
+{
+  "catalog": "generated",
+  "generated_components": [
+    "critical_block_window_destruction",
+    "related_jobs_slot_destruction",
+    "time_slice_destruction",
+    "bottleneck_machine_load_priority",
+    "earliest_completion_idle_penalty",
+    "most_work_remaining_tail_bound",
+    "critical_operation_reinsertion",
+    "critical_path_adjacent_swap",
+    "job_priority_shift_all_machines",
+    "acyclic_random_insertions",
+    "critical_block_adjacent_swaps",
+    "noisy_start_key_redispatch"
+  ],
+  "settings": {
+    "trials": 40,
+    "budget": 5.0,
+    "train": 10,
+    "test": 10,
+    "problem": "jobshop_sequences",
+    "size": "10x10",
+    "seed": 0,
+    "tuner_seed": 2,
+    "seeds_test": 3,
+    "objective": "ratio",
+    "skeletons": [
+      "SA",
+      "ILS",
+      "VNS",
+      "LNS_MIP"
+    ],
+    "ref_time": 60.0,
+    "reeval_top": 5,
+    "reeval_seeds": 2,
+    "race_seeds": 6,
+    "screen": -1,
+    "defaults_margin": 0.005
+  },
+  "tuning": {
+    "best_config": {
+      "skeleton": "VNS",
+      "constructor": "greedy_most_work_remaining_tail_bound",
+      "greedy_most_work_remaining_tail_bound.rule": "greedy",
+      "greedy_most_work_remaining_tail_bound.alpha": 0.5,
+      "greedy_most_work_remaining_tail_bound.start_weight": 2.25,
+      "greedy_most_work_remaining_tail_bound.tail_weight": 1.0,
+      "neighborhood": "critical_path_adjacent_swap",
+      "VNS.shake_strength": 2,
+      "VNS.ls_time_share": 0.16,
+      "VNS.ls_sample": 32
+    },
+    "best_cost": 0.2122345796831535,
+    "best_summary": "VNS[constructor=greedy_most_work_remaining_tail_bound, neighborhood=critical_path_adjacent_swap]",
+    "best_default_cost": 0.22830096908294378,
+    "best_default_summary": "VNS[constructor=trivial, neighborhood=critical_operation_reinsertion]",
+    "n_trials": 40,
+    "n_failed": 0,
+    "seconds": 3085.4,
+    "skeleton_usage": {
+      "VNS": 19,
+      "SA": 7,
+      "ILS": 7,
+      "LNS_MIP": 7
+    },
+    "best_trial_number": 25,
+    "reevaluated": [
+      {
+        "number": 25,
+        "enqueued": false,
+        "twin": false,
+        "summary": "VNS[constructor=greedy_most_work_remaining_tail_bound, neighborhood=critical_path_adjacent_swap]",
+        "costs": [
+          0.21292707978407002,
+          0.21483225524105104,
+          0.21557585346551544
+        ],
+        "mean": 0.21444506283021217,
+        "seeds": 3,
+        "eliminated_after": 2
+      },
+      {
+        "number": 37,
+        "enqueued": false,
+        "twin": false,
+        "summary": "VNS[constructor=random, neighborhood=critical_path_adjacent_swap]",
+        "costs": [
+          0.21757043773177634,
+          0.21817353104249215,
+          0.2182305879498861
+        ],
+        "mean": 0.21799151890805155,
+        "seeds": 3,
+        "eliminated_after": 2
+      },
+      {
+        "number": 10,
+        "enqueued": false,
+        "twin": false,
+        "summary": "VNS[constructor=trivial, neighborhood=critical_path_adjacent_swap]",
+        "costs": [
+          0.21826344706117676,
+          0.22698254811442808,
+          0.22219933380390736
+        ],
+        "mean": 0.22248177632650404,
+        "seeds": 3,
+        "eliminated_after": 2
+      },
+      {
+        "number": 9,
+        "enqueued": false,
+        "twin": false,
+        "summary": "ILS[constructor=trivial, neighborhood=critical_path_adjacent_swap, perturbation=acyclic_random_insertions]",
+        "costs": [
+          0.21869005592303417,
+          0.22187831220707022,
+          0.21745791968266506
+        ],
+        "mean": 0.2193420959375898,
+        "seeds": 3,
+        "eliminated_after": 2
+      },
+      {
+        "number": 18,
+        "enqueued": false,
+        "twin": false,
+        "summary": "ILS[constructor=greedy_most_work_remaining_tail_bound, neighborhood=critical_path_adjacent_swap, perturbation=noisy_start_key_redispatch]",
+        "costs": [
+          0.21889890763869743,
+          0.22002444504900484,
+          0.21783142295248742
+        ],
+        "mean": 0.2189182585467299,
+        "seeds": 3,
+        "eliminated_after": 2
+      },
+      {
+        "number": 25,
+        "enqueued": false,
+        "twin": true,
+        "summary": "VNS[constructor=greedy_most_work_remaining_tail_bound, neighborhood=critical_path_adjacent_swap]",
+        "costs": [
+          0.2119206177623258,
+          0.21277915178575174,
+          0.21200396950138298
+        ],
+        "mean": 0.2122345796831535,
+        "seeds": 3
+      },
+      {
+        "number": 37,
+        "enqueued": false,
+        "twin": true,
+        "summary": "VNS[constructor=random, neighborhood=critical_path_adjacent_swap]",
+        "costs": [
+          0.21968789217144127,
+          0.22040175629013098,
+          0.21874193607407574
+        ],
+        "mean": 0.21961052817854934,
+        "seeds": 3,
+        "eliminated_after": 2
+      },
+      {
+        "number": 18,
+        "enqueued": false,
+        "twin": true,
+        "summary": "ILS[constructor=greedy_most_work_remaining_tail_bound, neighborhood=critical_path_adjacent_swap, perturbation=noisy_start_key_redispatch]",
+        "costs": [
+          0.2210440694804377,
+          0.22376312379223062,
+          0.22154420495694432
+        ],
+        "mean": 0.22211713274320422,
+        "seeds": 3,
+        "eliminated_after": 2
+      },
+      {
+        "number": 2,
+        "enqueued": true,
+        "twin": false,
+        "summary": "VNS[constructor=trivial, neighborhood=critical_operation_reinsertion]",
+        "costs": [
+          0.22830096908294378,
+          0.22930818978666742,
+          0.23466129517905446
+        ],
+        "mean": 0.23075681801622192,
+        "seeds": 3,
+        "eliminated_after": 2
+      }
+    ],
+    "best_is_twin": true,
+    "incumbent_curve": [
+      0.2609086144102788,
+      0.229725144281658,
+      0.22830096908294378,
+      0.22830096908294378,
+      0.22830096908294378,
+      0.22442024171323385,
+      0.2239390517428163,
+      0.2239390517428163,
+      0.2239390517428163,
+      0.21869005592303417,
+      0.21826344706117676,
+      0.21826344706117676,
+      0.21826344706117676,
+      0.21826344706117676,
+      0.21826344706117676,
+      0.21826344706117676,
+      0.21826344706117676,
+      0.21826344706117676,
+      0.21826344706117676,
+      0.21826344706117676,
+      0.21826344706117676,
+      0.21800655026404278,
+      0.2165960081005879,
+      0.2165960081005879,
+      0.2165960081005879,
+      0.21292707978407002,
+      0.21292707978407002,
+      0.21292707978407002,
+      0.21292707978407002,
+      0.21292707978407002,
+      0.21292707978407002,
+      0.21292707978407002,
+      0.21292707978407002,
+      0.21292707978407002,
+      0.21292707978407002,
+      0.21292707978407002,
+      0.21292707978407002,
+      0.21292707978407002,
+      0.21292707978407002,
+      0.21292707978407002
+    ],
+    "trials": [
+      {
+        "number": 0,
+        "cost": 0.2609086144102788,
+        "seconds": 50.01,
+        "enqueued": true,
+        "summary": "SA[constructor=trivial, neighborhood=critical_operation_reinsertion]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "trivial",
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 1,
+        "cost": 0.229725144281658,
+        "seconds": 50.29,
+        "enqueued": true,
+        "summary": "ILS[constructor=trivial, neighborhood=critical_operation_reinsertion, perturbation=acyclic_random_insertions]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "trivial",
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "perturbation": "acyclic_random_insertions",
+          "acyclic_random_insertions.max_tries": 52,
+          "acyclic_random_insertions.max_shift": 26,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 2,
+        "cost": 0.22830096908294378,
+        "seconds": 50.25,
+        "enqueued": true,
+        "summary": "VNS[constructor=trivial, neighborhood=critical_operation_reinsertion]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "trivial",
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 3,
+        "cost": 0.9851452072545458,
+        "seconds": 52.92,
+        "enqueued": true,
+        "summary": "LNS_MIP[constructor=trivial, destruction=critical_block_window_destruction]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "trivial",
+          "destruction": "critical_block_window_destruction",
+          "critical_block_window_destruction.ratio": 0.325,
+          "critical_block_window_destruction.expand": 2,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        }
+      },
+      {
+        "number": 4,
+        "cost": 0.2376625341519119,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "SA[constructor=random, neighborhood=critical_operation_reinsertion]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "random",
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 5,
+        "cost": 0.22442024171323385,
+        "seconds": 50.3,
+        "enqueued": false,
+        "summary": "ILS[constructor=random, neighborhood=critical_operation_reinsertion, perturbation=acyclic_random_insertions]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "random",
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "perturbation": "acyclic_random_insertions",
+          "acyclic_random_insertions.max_tries": 52,
+          "acyclic_random_insertions.max_shift": 26,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 6,
+        "cost": 0.2239390517428163,
+        "seconds": 50.13,
+        "enqueued": false,
+        "summary": "VNS[constructor=random, neighborhood=critical_operation_reinsertion]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "random",
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 7,
+        "cost": 0.38429228939571425,
+        "seconds": 54.27,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=random, destruction=critical_block_window_destruction]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "random",
+          "destruction": "critical_block_window_destruction",
+          "critical_block_window_destruction.ratio": 0.325,
+          "critical_block_window_destruction.expand": 2,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        }
+      },
+      {
+        "number": 8,
+        "cost": 0.2474778811938302,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "SA[constructor=trivial, neighborhood=critical_path_adjacent_swap]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "trivial",
+          "neighborhood": "critical_path_adjacent_swap",
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 9,
+        "cost": 0.21869005592303417,
+        "seconds": 50.14,
+        "enqueued": false,
+        "summary": "ILS[constructor=trivial, neighborhood=critical_path_adjacent_swap, perturbation=acyclic_random_insertions]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "trivial",
+          "neighborhood": "critical_path_adjacent_swap",
+          "perturbation": "acyclic_random_insertions",
+          "acyclic_random_insertions.max_tries": 52,
+          "acyclic_random_insertions.max_shift": 26,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 10,
+        "cost": 0.21826344706117676,
+        "seconds": 50.14,
+        "enqueued": false,
+        "summary": "VNS[constructor=trivial, neighborhood=critical_path_adjacent_swap]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "trivial",
+          "neighborhood": "critical_path_adjacent_swap",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 11,
+        "cost": 0.9255991160092879,
+        "seconds": 55.25,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=trivial, destruction=related_jobs_slot_destruction]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "trivial",
+          "destruction": "related_jobs_slot_destruction",
+          "related_jobs_slot_destruction.ratio": 0.325,
+          "related_jobs_slot_destruction.relatedness": 0.5,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        }
+      },
+      {
+        "number": 12,
+        "cost": 0.23662496766603763,
+        "seconds": 50.04,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_bottleneck_machine_load_priority, neighborhood=critical_operation_reinsertion]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_bottleneck_machine_load_priority",
+          "greedy_bottleneck_machine_load_priority.rule": "greedy",
+          "greedy_bottleneck_machine_load_priority.alpha": 0.5,
+          "greedy_bottleneck_machine_load_priority.load_weight": 1.0,
+          "greedy_bottleneck_machine_load_priority.succ_weight": 0.5,
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 13,
+        "cost": 0.22106996976186424,
+        "seconds": 50.1,
+        "enqueued": false,
+        "summary": "ILS[constructor=trivial, neighborhood=critical_operation_reinsertion, perturbation=critical_block_adjacent_swaps]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "trivial",
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "perturbation": "critical_block_adjacent_swaps",
+          "critical_block_adjacent_swaps.max_strength": 26,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 14,
+        "cost": 0.22480360233187002,
+        "seconds": 50.18,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_bottleneck_machine_load_priority, neighborhood=critical_operation_reinsertion]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_bottleneck_machine_load_priority",
+          "greedy_bottleneck_machine_load_priority.rule": "greedy",
+          "greedy_bottleneck_machine_load_priority.alpha": 0.5,
+          "greedy_bottleneck_machine_load_priority.load_weight": 1.0,
+          "greedy_bottleneck_machine_load_priority.succ_weight": 0.5,
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 15,
+        "cost": 0.3338175769701685,
+        "seconds": 54.34,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_bottleneck_machine_load_priority, destruction=critical_block_window_destruction]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_bottleneck_machine_load_priority",
+          "greedy_bottleneck_machine_load_priority.rule": "greedy",
+          "greedy_bottleneck_machine_load_priority.alpha": 0.5,
+          "greedy_bottleneck_machine_load_priority.load_weight": 1.0,
+          "greedy_bottleneck_machine_load_priority.succ_weight": 0.5,
+          "destruction": "critical_block_window_destruction",
+          "critical_block_window_destruction.ratio": 0.325,
+          "critical_block_window_destruction.expand": 2,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        }
+      },
+      {
+        "number": 16,
+        "cost": 0.759713096661991,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "SA[constructor=trivial, neighborhood=job_priority_shift_all_machines]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "trivial",
+          "neighborhood": "job_priority_shift_all_machines",
+          "job_priority_shift_all_machines.max_shift": 3,
+          "job_priority_shift_all_machines.only_critical_jobs": true,
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 17,
+        "cost": 0.22018360709203488,
+        "seconds": 50.05,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_earliest_completion_idle_penalty, neighborhood=critical_path_adjacent_swap]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_earliest_completion_idle_penalty",
+          "greedy_earliest_completion_idle_penalty.rule": "rcl",
+          "greedy_earliest_completion_idle_penalty.alpha": 0.7341713695403465,
+          "greedy_earliest_completion_idle_penalty.idle_weight": 1.9682893643579842,
+          "greedy_earliest_completion_idle_penalty.mk_weight": 1.155983661070913,
+          "neighborhood": "critical_path_adjacent_swap",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.025684107620888463,
+          "VNS.ls_sample": 4
+        }
+      },
+      {
+        "number": 18,
+        "cost": 0.21889890763869743,
+        "seconds": 50.08,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_most_work_remaining_tail_bound, neighborhood=critical_path_adjacent_swap, perturbation=noisy_start_key_redispatch]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_most_work_remaining_tail_bound",
+          "greedy_most_work_remaining_tail_bound.rule": "greedy",
+          "greedy_most_work_remaining_tail_bound.alpha": 0.3203801154266813,
+          "greedy_most_work_remaining_tail_bound.start_weight": 3.025300013480313,
+          "greedy_most_work_remaining_tail_bound.tail_weight": 0.3796362819635959,
+          "neighborhood": "critical_path_adjacent_swap",
+          "perturbation": "noisy_start_key_redispatch",
+          "noisy_start_key_redispatch.noise_scale": 1.1072850337091515,
+          "noisy_start_key_redispatch.job_fraction": 0.7004426301126369,
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.04005458880696121,
+          "ILS.ls_sample": 4
+        }
+      },
+      {
+        "number": 19,
+        "cost": 0.2294100594514946,
+        "seconds": 50.12,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_earliest_completion_idle_penalty, neighborhood=critical_path_adjacent_swap, perturbation=acyclic_random_insertions]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_earliest_completion_idle_penalty",
+          "greedy_earliest_completion_idle_penalty.rule": "roulette",
+          "greedy_earliest_completion_idle_penalty.alpha": 0.0631768605511161,
+          "greedy_earliest_completion_idle_penalty.idle_weight": 0.06099320765152916,
+          "greedy_earliest_completion_idle_penalty.mk_weight": 2.753250818411135,
+          "neighborhood": "critical_path_adjacent_swap",
+          "perturbation": "acyclic_random_insertions",
+          "acyclic_random_insertions.max_tries": 14,
+          "acyclic_random_insertions.max_shift": 1,
+          "ILS.strength": 6,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.2595222939175856,
+          "ILS.ls_sample": 191
+        }
+      },
+      {
+        "number": 20,
+        "cost": 0.21882947127153166,
+        "seconds": 50.93,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_most_work_remaining_tail_bound, neighborhood=critical_path_adjacent_swap]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_most_work_remaining_tail_bound",
+          "greedy_most_work_remaining_tail_bound.rule": "rcl",
+          "greedy_most_work_remaining_tail_bound.alpha": 0.9325507242517488,
+          "greedy_most_work_remaining_tail_bound.start_weight": 0.5658953006513787,
+          "greedy_most_work_remaining_tail_bound.tail_weight": 1.971608773647707,
+          "neighborhood": "critical_path_adjacent_swap",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.2929945056832979,
+          "VNS.ls_sample": 248
+        }
+      },
+      {
+        "number": 21,
+        "cost": 0.21800655026404278,
+        "seconds": 51.23,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_most_work_remaining_tail_bound, neighborhood=critical_path_adjacent_swap]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_most_work_remaining_tail_bound",
+          "greedy_most_work_remaining_tail_bound.rule": "rcl",
+          "greedy_most_work_remaining_tail_bound.alpha": 0.8810485716636042,
+          "greedy_most_work_remaining_tail_bound.start_weight": 0.7913646945038004,
+          "greedy_most_work_remaining_tail_bound.tail_weight": 1.9981965043886638,
+          "neighborhood": "critical_path_adjacent_swap",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.28054697132272266,
+          "VNS.ls_sample": 237
+        }
+      },
+      {
+        "number": 22,
+        "cost": 0.2165960081005879,
+        "seconds": 50.69,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_most_work_remaining_tail_bound, neighborhood=critical_path_adjacent_swap]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_most_work_remaining_tail_bound",
+          "greedy_most_work_remaining_tail_bound.rule": "rcl",
+          "greedy_most_work_remaining_tail_bound.alpha": 0.9111079807892822,
+          "greedy_most_work_remaining_tail_bound.start_weight": 0.5683022579337107,
+          "greedy_most_work_remaining_tail_bound.tail_weight": 1.9962293600687282,
+          "neighborhood": "critical_path_adjacent_swap",
+          "VNS.shake_strength": 1,
+          "VNS.ls_time_share": 0.2884008894772553,
+          "VNS.ls_sample": 252
+        }
+      },
+      {
+        "number": 23,
+        "cost": 0.22153960885601628,
+        "seconds": 51.05,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_most_work_remaining_tail_bound, neighborhood=critical_path_adjacent_swap]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_most_work_remaining_tail_bound",
+          "greedy_most_work_remaining_tail_bound.rule": "rcl",
+          "greedy_most_work_remaining_tail_bound.alpha": 0.9470510720118521,
+          "greedy_most_work_remaining_tail_bound.start_weight": 0.5273149255267982,
+          "greedy_most_work_remaining_tail_bound.tail_weight": 1.9917506664739166,
+          "neighborhood": "critical_path_adjacent_swap",
+          "VNS.shake_strength": 1,
+          "VNS.ls_time_share": 0.299465378877955,
+          "VNS.ls_sample": 245
+        }
+      },
+      {
+        "number": 24,
+        "cost": 0.2614483701867871,
+        "seconds": 50.03,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_most_work_remaining_tail_bound, neighborhood=job_priority_shift_all_machines]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_most_work_remaining_tail_bound",
+          "greedy_most_work_remaining_tail_bound.rule": "roulette",
+          "greedy_most_work_remaining_tail_bound.alpha": 0.7472881967193323,
+          "greedy_most_work_remaining_tail_bound.start_weight": 1.2902396694028166,
+          "greedy_most_work_remaining_tail_bound.tail_weight": 1.9643546373015959,
+          "neighborhood": "job_priority_shift_all_machines",
+          "job_priority_shift_all_machines.max_shift": 5,
+          "job_priority_shift_all_machines.only_critical_jobs": false,
+          "SA.T0": 650.9999317270095,
+          "SA.cooling": "iterations",
+          "SA.T_end": 1.5819628478703286e-05,
+          "SA.alpha": 0.8010905221400181,
+          "SA.iters_per_T": 1
+        }
+      },
+      {
+        "number": 25,
+        "cost": 0.21292707978407002,
+        "seconds": 50.82,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_most_work_remaining_tail_bound, neighborhood=critical_path_adjacent_swap]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_most_work_remaining_tail_bound",
+          "greedy_most_work_remaining_tail_bound.rule": "rcl",
+          "greedy_most_work_remaining_tail_bound.alpha": 0.6425436494115075,
+          "greedy_most_work_remaining_tail_bound.start_weight": 1.7319856022434479,
+          "greedy_most_work_remaining_tail_bound.tail_weight": 1.3633623791907836,
+          "neighborhood": "critical_path_adjacent_swap",
+          "VNS.shake_strength": 1,
+          "VNS.ls_time_share": 0.23875496297068102,
+          "VNS.ls_sample": 104
+        }
+      },
+      {
+        "number": 26,
+        "cost": 0.21731665343788392,
+        "seconds": 50.29,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_most_work_remaining_tail_bound, neighborhood=critical_path_adjacent_swap]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_most_work_remaining_tail_bound",
+          "greedy_most_work_remaining_tail_bound.rule": "rcl",
+          "greedy_most_work_remaining_tail_bound.alpha": 0.6337945618396458,
+          "greedy_most_work_remaining_tail_bound.start_weight": 1.9362371568909682,
+          "greedy_most_work_remaining_tail_bound.tail_weight": 1.183403304003237,
+          "neighborhood": "critical_path_adjacent_swap",
+          "VNS.shake_strength": 1,
+          "VNS.ls_time_share": 0.24294677182680013,
+          "VNS.ls_sample": 118
+        }
+      },
+      {
+        "number": 27,
+        "cost": 0.2594058975267547,
+        "seconds": 50.61,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_most_work_remaining_tail_bound, destruction=time_slice_destruction]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_most_work_remaining_tail_bound",
+          "greedy_most_work_remaining_tail_bound.rule": "rcl",
+          "greedy_most_work_remaining_tail_bound.alpha": 0.5689419178331983,
+          "greedy_most_work_remaining_tail_bound.start_weight": 2.049438040331197,
+          "greedy_most_work_remaining_tail_bound.tail_weight": 1.1627205832465028,
+          "destruction": "time_slice_destruction",
+          "time_slice_destruction.ratio": 0.5458043727131519,
+          "LNS_MIP.destroy_ratio": 0.057606623082613384,
+          "LNS_MIP.mip_time_share": 0.9478892798716113
+        }
+      },
+      {
+        "number": 28,
+        "cost": 0.21479818095984698,
+        "seconds": 50.42,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_most_work_remaining_tail_bound, neighborhood=critical_path_adjacent_swap]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_most_work_remaining_tail_bound",
+          "greedy_most_work_remaining_tail_bound.rule": "rcl",
+          "greedy_most_work_remaining_tail_bound.alpha": 0.570236034986114,
+          "greedy_most_work_remaining_tail_bound.start_weight": 1.9893196267046511,
+          "greedy_most_work_remaining_tail_bound.tail_weight": 1.199449808946207,
+          "neighborhood": "critical_path_adjacent_swap",
+          "VNS.shake_strength": 1,
+          "VNS.ls_time_share": 0.23443759816774767,
+          "VNS.ls_sample": 96
+        }
+      },
+      {
+        "number": 29,
+        "cost": 0.2643492454387396,
+        "seconds": 51.69,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_earliest_completion_idle_penalty, destruction=related_jobs_slot_destruction]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_earliest_completion_idle_penalty",
+          "greedy_earliest_completion_idle_penalty.rule": "greedy",
+          "greedy_earliest_completion_idle_penalty.alpha": 0.931069347543684,
+          "greedy_earliest_completion_idle_penalty.idle_weight": 2.90655498450287,
+          "greedy_earliest_completion_idle_penalty.mk_weight": 0.007444120727818193,
+          "destruction": "related_jobs_slot_destruction",
+          "related_jobs_slot_destruction.ratio": 0.5888638691524347,
+          "related_jobs_slot_destruction.relatedness": 0.9871384508062202,
+          "LNS_MIP.destroy_ratio": 0.5980633827274324,
+          "LNS_MIP.mip_time_share": 0.04293593762592376
+        }
+      },
+      {
+        "number": 30,
+        "cost": 0.27966338100253857,
+        "seconds": 50.03,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_earliest_completion_idle_penalty, neighborhood=job_priority_shift_all_machines]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_earliest_completion_idle_penalty",
+          "greedy_earliest_completion_idle_penalty.rule": "greedy",
+          "greedy_earliest_completion_idle_penalty.alpha": 0.021602301672734914,
+          "greedy_earliest_completion_idle_penalty.idle_weight": 0.2835901009317987,
+          "greedy_earliest_completion_idle_penalty.mk_weight": 2.964004493193377,
+          "neighborhood": "job_priority_shift_all_machines",
+          "job_priority_shift_all_machines.max_shift": 1,
+          "job_priority_shift_all_machines.only_critical_jobs": false,
+          "SA.T0": 1.360959407527976,
+          "SA.cooling": "iterations",
+          "SA.T_end": 0.06734723574913029,
+          "SA.alpha": 0.970038084360053,
+          "SA.iters_per_T": 43
+        }
+      },
+      {
+        "number": 31,
+        "cost": 0.21584679058045872,
+        "seconds": 50.95,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_most_work_remaining_tail_bound, neighborhood=critical_path_adjacent_swap]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_most_work_remaining_tail_bound",
+          "greedy_most_work_remaining_tail_bound.rule": "rcl",
+          "greedy_most_work_remaining_tail_bound.alpha": 0.5591373678108328,
+          "greedy_most_work_remaining_tail_bound.start_weight": 1.9678501109329682,
+          "greedy_most_work_remaining_tail_bound.tail_weight": 1.1325019070268545,
+          "neighborhood": "critical_path_adjacent_swap",
+          "VNS.shake_strength": 1,
+          "VNS.ls_time_share": 0.23333439149291813,
+          "VNS.ls_sample": 91
+        }
+      },
+      {
+        "number": 32,
+        "cost": 0.21464773277194968,
+        "seconds": 50.31,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_most_work_remaining_tail_bound, neighborhood=critical_path_adjacent_swap]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_most_work_remaining_tail_bound",
+          "greedy_most_work_remaining_tail_bound.rule": "rcl",
+          "greedy_most_work_remaining_tail_bound.alpha": 0.47541670106057965,
+          "greedy_most_work_remaining_tail_bound.start_weight": 2.0977152731411493,
+          "greedy_most_work_remaining_tail_bound.tail_weight": 1.1811169078345982,
+          "neighborhood": "critical_path_adjacent_swap",
+          "VNS.shake_strength": 1,
+          "VNS.ls_time_share": 0.22752375587134374,
+          "VNS.ls_sample": 82
+        }
+      },
+      {
+        "number": 33,
+        "cost": 0.21329821094179505,
+        "seconds": 50.46,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_most_work_remaining_tail_bound, neighborhood=critical_path_adjacent_swap]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_most_work_remaining_tail_bound",
+          "greedy_most_work_remaining_tail_bound.rule": "rcl",
+          "greedy_most_work_remaining_tail_bound.alpha": 0.4472687680377116,
+          "greedy_most_work_remaining_tail_bound.start_weight": 2.1011782650222504,
+          "greedy_most_work_remaining_tail_bound.tail_weight": 1.1967059104185385,
+          "neighborhood": "critical_path_adjacent_swap",
+          "VNS.shake_strength": 1,
+          "VNS.ls_time_share": 0.22144299635342626,
+          "VNS.ls_sample": 80
+        }
+      },
+      {
+        "number": 34,
+        "cost": 0.21537066290781412,
+        "seconds": 50.28,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_most_work_remaining_tail_bound, neighborhood=critical_path_adjacent_swap]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_most_work_remaining_tail_bound",
+          "greedy_most_work_remaining_tail_bound.rule": "rcl",
+          "greedy_most_work_remaining_tail_bound.alpha": 0.3562272175531448,
+          "greedy_most_work_remaining_tail_bound.start_weight": 2.4616986478230634,
+          "greedy_most_work_remaining_tail_bound.tail_weight": 1.310047389000731,
+          "neighborhood": "critical_path_adjacent_swap",
+          "VNS.shake_strength": 1,
+          "VNS.ls_time_share": 0.2244107896117608,
+          "VNS.ls_sample": 80
+        }
+      },
+      {
+        "number": 35,
+        "cost": 0.21428425396553918,
+        "seconds": 50.39,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_most_work_remaining_tail_bound, neighborhood=critical_path_adjacent_swap]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_most_work_remaining_tail_bound",
+          "greedy_most_work_remaining_tail_bound.rule": "roulette",
+          "greedy_most_work_remaining_tail_bound.alpha": 0.4357922885708899,
+          "greedy_most_work_remaining_tail_bound.start_weight": 1.5428340166003789,
+          "greedy_most_work_remaining_tail_bound.tail_weight": 1.4295985403328206,
+          "neighborhood": "critical_path_adjacent_swap",
+          "VNS.shake_strength": 1,
+          "VNS.ls_time_share": 0.20621705933471976,
+          "VNS.ls_sample": 65
+        }
+      },
+      {
+        "number": 36,
+        "cost": 0.21923938487406822,
+        "seconds": 50.07,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_bottleneck_machine_load_priority, neighborhood=critical_path_adjacent_swap, perturbation=noisy_start_key_redispatch]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_bottleneck_machine_load_priority",
+          "greedy_bottleneck_machine_load_priority.rule": "roulette",
+          "greedy_bottleneck_machine_load_priority.alpha": 0.03190126855360981,
+          "greedy_bottleneck_machine_load_priority.load_weight": 0.020042472001641443,
+          "greedy_bottleneck_machine_load_priority.succ_weight": 0.05767118431732948,
+          "neighborhood": "critical_path_adjacent_swap",
+          "perturbation": "noisy_start_key_redispatch",
+          "noisy_start_key_redispatch.noise_scale": 2.9932641715084207,
+          "noisy_start_key_redispatch.job_fraction": 0.12765454602425685,
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.027852965279194203,
+          "ILS.ls_sample": 4
+        }
+      },
+      {
+        "number": 37,
+        "cost": 0.21757043773177634,
+        "seconds": 50.2,
+        "enqueued": false,
+        "summary": "VNS[constructor=random, neighborhood=critical_path_adjacent_swap]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "random",
+          "neighborhood": "critical_path_adjacent_swap",
+          "VNS.shake_strength": 1,
+          "VNS.ls_time_share": 0.2053998152136248,
+          "VNS.ls_sample": 59
+        }
+      },
+      {
+        "number": 38,
+        "cost": 0.2539212159753744,
+        "seconds": 51.09,
+        "enqueued": false,
+        "summary": "LNS_MIP[constructor=greedy_most_work_remaining_tail_bound, destruction=time_slice_destruction]",
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_most_work_remaining_tail_bound",
+          "greedy_most_work_remaining_tail_bound.rule": "roulette",
+          "greedy_most_work_remaining_tail_bound.alpha": 0.4115689860306197,
+          "greedy_most_work_remaining_tail_bound.start_weight": 1.4649145586990189,
+          "greedy_most_work_remaining_tail_bound.tail_weight": 1.5042834347747602,
+          "destruction": "time_slice_destruction",
+          "time_slice_destruction.ratio": 0.06665354625007847,
+          "LNS_MIP.destroy_ratio": 0.5848981861187652,
+          "LNS_MIP.mip_time_share": 0.041985417420601266
+        }
+      },
+      {
+        "number": 39,
+        "cost": 0.2700269081039465,
+        "seconds": 50.12,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_bottleneck_machine_load_priority, neighborhood=job_priority_shift_all_machines]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_bottleneck_machine_load_priority",
+          "greedy_bottleneck_machine_load_priority.rule": "rcl",
+          "greedy_bottleneck_machine_load_priority.alpha": 0.9757624588908071,
+          "greedy_bottleneck_machine_load_priority.load_weight": 1.8004320113365844,
+          "greedy_bottleneck_machine_load_priority.succ_weight": 0.9272899570908263,
+          "neighborhood": "job_priority_shift_all_machines",
+          "job_priority_shift_all_machines.max_shift": 1,
+          "job_priority_shift_all_machines.only_critical_jobs": true,
+          "VNS.shake_strength": 1,
+          "VNS.ls_time_share": 0.19323831214691392,
+          "VNS.ls_sample": 53
+        }
+      }
+    ]
+  },
+  "test": {
+    "tuned": {
+      "label": "tuned",
+      "summary": "VNS[constructor=greedy_most_work_remaining_tail_bound, neighborhood=critical_path_adjacent_swap]",
+      "mean": 858.3,
+      "std": 44.26145802689589,
+      "per_instance": [
+        869.3333333333334,
+        760.0,
+        909.3333333333334,
+        863.3333333333334,
+        902.0,
+        850.3333333333334,
+        896.0,
+        855.0,
+        861.0,
+        816.6666666666666
+      ],
+      "config": {
+        "skeleton": "VNS",
+        "constructor": "greedy_most_work_remaining_tail_bound",
+        "greedy_most_work_remaining_tail_bound.rule": "greedy",
+        "greedy_most_work_remaining_tail_bound.alpha": 0.5,
+        "greedy_most_work_remaining_tail_bound.start_weight": 2.25,
+        "greedy_most_work_remaining_tail_bound.tail_weight": 1.0,
+        "neighborhood": "critical_path_adjacent_swap",
+        "VNS.shake_strength": 2,
+        "VNS.ls_time_share": 0.16,
+        "VNS.ls_sample": 32
+      },
+      "gap_per_instance": [
+        0.06275468622656892,
+        0.007957559681697613,
+        0.02633559066967649,
+        0.05028386050283865,
+        0.016910935738444193,
+        0.012301587301587346,
+        0.021664766248574687,
+        0.02028639618138425,
+        0.002328288707799767,
+        0.009476720230737489
+      ],
+      "mean_gap": 0.02303003914893094
+    },
+    "baselines": [
+      {
+        "label": "VNS:constructor=greedy_earliest_completion_idle_penalty",
+        "summary": "VNS[constructor=greedy_earliest_completion_idle_penalty, neighborhood=critical_operation_reinsertion]",
+        "mean": 879.8,
+        "std": 52.63990881451069,
+        "per_instance": [
+          827.0,
+          786.3333333333334,
+          926.6666666666666,
+          852.0,
+          918.6666666666666,
+          906.3333333333334,
+          955.0,
+          892.0,
+          908.0,
+          826.0
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_earliest_completion_idle_penalty",
+          "greedy_earliest_completion_idle_penalty.rule": "greedy",
+          "greedy_earliest_completion_idle_penalty.alpha": 0.5,
+          "greedy_earliest_completion_idle_penalty.idle_weight": 1.5,
+          "greedy_earliest_completion_idle_penalty.mk_weight": 1.5,
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.011002444987775062,
+          0.042882404951370516,
+          0.04589917231000748,
+          0.0364963503649635,
+          0.03570086433671548,
+          0.078968253968254,
+          0.08893956670467502,
+          0.06443914081145585,
+          0.0570430733410943,
+          0.021013597033374538
+        ],
+        "mean_gap": 0.04823848688096857
+      },
+      {
+        "label": "VNS:constructor=greedy_most_work_remaining_tail_bound",
+        "summary": "VNS[constructor=greedy_most_work_remaining_tail_bound, neighborhood=critical_operation_reinsertion]",
+        "mean": 886.1333333333333,
+        "std": 52.687590780203855,
+        "per_instance": [
+          898.6666666666666,
+          775.3333333333334,
+          948.0,
+          922.3333333333334,
+          914.3333333333334,
+          847.0,
+          913.0,
+          891.0,
+          918.0,
+          833.6666666666666
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_most_work_remaining_tail_bound",
+          "greedy_most_work_remaining_tail_bound.rule": "greedy",
+          "greedy_most_work_remaining_tail_bound.alpha": 0.5,
+          "greedy_most_work_remaining_tail_bound.start_weight": 2.25,
+          "greedy_most_work_remaining_tail_bound.tail_weight": 1.0,
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.09861450692746532,
+          0.028293545534924896,
+          0.06997742663656885,
+          0.12206001622060021,
+          0.03081548290116502,
+          0.008333333333333333,
+          0.04104903078677309,
+          0.06324582338902147,
+          0.06868451688009314,
+          0.030490317264112027
+        ],
+        "mean_gap": 0.056156399987405736
+      },
+      {
+        "label": "ILS:constructor=greedy_earliest_completion_idle_penalty",
+        "summary": "ILS[constructor=greedy_earliest_completion_idle_penalty, neighborhood=critical_operation_reinsertion, perturbation=acyclic_random_insertions]",
+        "mean": 887.4333333333333,
+        "std": 55.02404524892327,
+        "per_instance": [
+          844.0,
+          790.6666666666666,
+          930.0,
+          858.0,
+          918.0,
+          923.3333333333334,
+          975.0,
+          883.6666666666666,
+          915.0,
+          836.6666666666666
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_earliest_completion_idle_penalty",
+          "greedy_earliest_completion_idle_penalty.rule": "greedy",
+          "greedy_earliest_completion_idle_penalty.alpha": 0.5,
+          "greedy_earliest_completion_idle_penalty.idle_weight": 1.5,
+          "greedy_earliest_completion_idle_penalty.mk_weight": 1.5,
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "perturbation": "acyclic_random_insertions",
+          "acyclic_random_insertions.max_tries": 52,
+          "acyclic_random_insertions.max_shift": 26,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.03178484107579462,
+          0.04862953138815203,
+          0.04966139954853273,
+          0.043795620437956206,
+          0.03494926719278467,
+          0.09920634920634926,
+          0.11174458380843785,
+          0.05449482895783607,
+          0.06519208381839348,
+          0.03419859909353106
+        ],
+        "mean_gap": 0.057365710452776796
+      },
+      {
+        "label": "ILS:constructor=greedy_most_work_remaining_tail_bound",
+        "summary": "ILS[constructor=greedy_most_work_remaining_tail_bound, neighborhood=critical_operation_reinsertion, perturbation=acyclic_random_insertions]",
+        "mean": 890.4666666666667,
+        "std": 51.90679681463262,
+        "per_instance": [
+          887.6666666666666,
+          780.6666666666666,
+          942.0,
+          915.3333333333334,
+          944.0,
+          859.6666666666666,
+          919.3333333333334,
+          927.6666666666666,
+          900.6666666666666,
+          827.6666666666666
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_most_work_remaining_tail_bound",
+          "greedy_most_work_remaining_tail_bound.rule": "greedy",
+          "greedy_most_work_remaining_tail_bound.alpha": 0.5,
+          "greedy_most_work_remaining_tail_bound.start_weight": 2.25,
+          "greedy_most_work_remaining_tail_bound.tail_weight": 1.0,
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "perturbation": "acyclic_random_insertions",
+          "acyclic_random_insertions.max_tries": 52,
+          "acyclic_random_insertions.max_shift": 26,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.08516707416462913,
+          0.03536693191865601,
+          0.06320541760722348,
+          0.11354420113544206,
+          0.06426155580608793,
+          0.023412698412698368,
+          0.04827061953629803,
+          0.10700079554494825,
+          0.04850601474582844,
+          0.023073753605273955
+        ],
+        "mean_gap": 0.06118090624770856
+      },
+      {
+        "label": "ILS:neighborhood=critical_path_adjacent_swap",
+        "summary": "ILS[constructor=trivial, neighborhood=critical_path_adjacent_swap, perturbation=acyclic_random_insertions]",
+        "mean": 892.0,
+        "std": 60.90101258052557,
+        "per_instance": [
+          834.3333333333334,
+          767.3333333333334,
+          959.0,
+          887.3333333333334,
+          928.0,
+          899.3333333333334,
+          938.3333333333334,
+          909.0,
+          959.3333333333334,
+          838.0
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "trivial",
+          "neighborhood": "critical_path_adjacent_swap",
+          "perturbation": "acyclic_random_insertions",
+          "acyclic_random_insertions.max_tries": 52,
+          "acyclic_random_insertions.max_shift": 26,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.019967400162999232,
+          0.017683465959328078,
+          0.08239277652370203,
+          0.07948094079480945,
+          0.046223224351747465,
+          0.07063492063492068,
+          0.06993538578487271,
+          0.08472553699284009,
+          0.11680248350795502,
+          0.03584672435105068
+        ],
+        "mean_gap": 0.062369285906422545
+      },
+      {
+        "label": "SA:constructor=greedy_earliest_completion_idle_penalty",
+        "summary": "SA[constructor=greedy_earliest_completion_idle_penalty, neighborhood=critical_operation_reinsertion]",
+        "mean": 892.6666666666666,
+        "std": 58.239925213627195,
+        "per_instance": [
+          874.6666666666666,
+          778.0,
+          932.3333333333334,
+          855.3333333333334,
+          947.0,
+          936.3333333333334,
+          942.6666666666666,
+          892.6666666666666,
+          939.3333333333334,
+          828.3333333333334
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_earliest_completion_idle_penalty",
+          "greedy_earliest_completion_idle_penalty.rule": "greedy",
+          "greedy_earliest_completion_idle_penalty.alpha": 0.5,
+          "greedy_earliest_completion_idle_penalty.idle_weight": 1.5,
+          "greedy_earliest_completion_idle_penalty.mk_weight": 1.5,
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.06927465362673182,
+          0.03183023872679045,
+          0.05229495861550042,
+          0.04055150040551505,
+          0.06764374295377677,
+          0.11468253968253973,
+          0.07487647282402124,
+          0.06523468575974538,
+          0.09351959642995736,
+          0.023897816234033833
+        ],
+        "mean_gap": 0.0633806205258612
+      },
+      {
+        "label": "VNS:constructor=greedy_bottleneck_machine_load_priority",
+        "summary": "VNS[constructor=greedy_bottleneck_machine_load_priority, neighborhood=critical_operation_reinsertion]",
+        "mean": 894.8666666666667,
+        "std": 63.266491042959615,
+        "per_instance": [
+          866.3333333333334,
+          771.6666666666666,
+          982.3333333333334,
+          887.3333333333334,
+          988.3333333333334,
+          933.6666666666666,
+          888.0,
+          877.6666666666666,
+          904.0,
+          849.3333333333334
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_bottleneck_machine_load_priority",
+          "greedy_bottleneck_machine_load_priority.rule": "greedy",
+          "greedy_bottleneck_machine_load_priority.alpha": 0.5,
+          "greedy_bottleneck_machine_load_priority.load_weight": 1.0,
+          "greedy_bottleneck_machine_load_priority.succ_weight": 0.5,
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.05908720456397722,
+          0.023430592396109586,
+          0.10872836719337853,
+          0.07948094079480945,
+          0.1142427658774897,
+          0.11150793650793646,
+          0.012542759407069556,
+          0.04733492442322987,
+          0.05238649592549476,
+          0.04985578903996708
+        ],
+        "mean_gap": 0.06585977761294622
+      },
+      {
+        "label": "ILS:constructor=greedy_bottleneck_machine_load_priority",
+        "summary": "ILS[constructor=greedy_bottleneck_machine_load_priority, neighborhood=critical_operation_reinsertion, perturbation=acyclic_random_insertions]",
+        "mean": 899.1333333333333,
+        "std": 68.38261637450137,
+        "per_instance": [
+          840.3333333333334,
+          770.6666666666666,
+          973.0,
+          913.0,
+          1004.0,
+          905.3333333333334,
+          902.0,
+          910.6666666666666,
+          946.0,
+          826.3333333333334
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_bottleneck_machine_load_priority",
+          "greedy_bottleneck_machine_load_priority.rule": "greedy",
+          "greedy_bottleneck_machine_load_priority.alpha": 0.5,
+          "greedy_bottleneck_machine_load_priority.load_weight": 1.0,
+          "greedy_bottleneck_machine_load_priority.succ_weight": 0.5,
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "perturbation": "acyclic_random_insertions",
+          "acyclic_random_insertions.max_tries": 52,
+          "acyclic_random_insertions.max_shift": 26,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.027302363488182605,
+          0.022104332449159984,
+          0.0981941309255079,
+          0.11070559610705596,
+          0.1319052987598647,
+          0.07777777777777782,
+          0.028506271379703536,
+          0.086714399363564,
+          0.10128055878928988,
+          0.021425628347754477
+        ],
+        "mean_gap": 0.07059163573878609
+      },
+      {
+        "label": "VNS:constructor=random",
+        "summary": "VNS[constructor=random, neighborhood=critical_operation_reinsertion]",
+        "mean": 900.6666666666666,
+        "std": 60.220336173828265,
+        "per_instance": [
+          911.3333333333334,
+          789.3333333333334,
+          953.0,
+          866.3333333333334,
+          954.0,
+          904.6666666666666,
+          957.0,
+          909.6666666666666,
+          925.3333333333334,
+          836.0
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "random",
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.11409942950285253,
+          0.046861184792219325,
+          0.07562076749435666,
+          0.053933495539335,
+          0.07553551296505073,
+          0.07698412698412693,
+          0.09122006841505131,
+          0.08552108194112963,
+          0.07722157547535899,
+          0.03337453646477132
+        ],
+        "mean_gap": 0.07303717795742524
+      },
+      {
+        "label": "VNS:neighborhood=critical_path_adjacent_swap",
+        "summary": "VNS[constructor=trivial, neighborhood=critical_path_adjacent_swap]",
+        "mean": 900.0333333333333,
+        "std": 52.75066087000448,
+        "per_instance": [
+          908.3333333333334,
+          849.3333333333334,
+          931.0,
+          930.3333333333334,
+          927.3333333333334,
+          849.3333333333334,
+          957.0,
+          892.3333333333334,
+          907.3333333333334,
+          848.0
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "trivial",
+          "neighborhood": "critical_path_adjacent_swap",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.11043194784026085,
+          0.12643678160919544,
+          0.050790067720090294,
+          0.13179237631792382,
+          0.04547162720781665,
+          0.011111111111111157,
+          0.09122006841505131,
+          0.06483691328560068,
+          0.056266977105161084,
+          0.048207663782447466
+        ],
+        "mean_gap": 0.07365655343946588
+      },
+      {
+        "label": "SA:constructor=greedy_most_work_remaining_tail_bound",
+        "summary": "SA[constructor=greedy_most_work_remaining_tail_bound, neighborhood=critical_operation_reinsertion]",
+        "mean": 903.3,
+        "std": 50.33034207447167,
+        "per_instance": [
+          934.0,
+          817.3333333333334,
+          966.6666666666666,
+          906.3333333333334,
+          954.0,
+          870.0,
+          909.6666666666666,
+          896.3333333333334,
+          937.3333333333334,
+          841.3333333333334
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_most_work_remaining_tail_bound",
+          "greedy_most_work_remaining_tail_bound.rule": "greedy",
+          "greedy_most_work_remaining_tail_bound.alpha": 0.5,
+          "greedy_most_work_remaining_tail_bound.start_weight": 2.25,
+          "greedy_most_work_remaining_tail_bound.tail_weight": 1.0,
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.14180929095354522,
+          0.08399646330680818,
+          0.09104589917230997,
+          0.102595296025953,
+          0.07553551296505073,
+          0.03571428571428571,
+          0.037248194602812576,
+          0.06961018297533815,
+          0.0911913077221576,
+          0.03996703749484966
+        ],
+        "mean_gap": 0.07687134709331109
+      },
+      {
+        "label": "ILS:perturbation=critical_block_adjacent_swaps",
+        "summary": "ILS[constructor=trivial, neighborhood=critical_operation_reinsertion, perturbation=critical_block_adjacent_swaps]",
+        "mean": 906.2666666666667,
+        "std": 58.19446327233851,
+        "per_instance": [
+          865.0,
+          811.0,
+          976.3333333333334,
+          912.6666666666666,
+          963.0,
+          869.3333333333334,
+          958.3333333333334,
+          912.6666666666666,
+          950.0,
+          844.3333333333334
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "trivial",
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "perturbation": "critical_block_adjacent_swaps",
+          "critical_block_adjacent_swaps.max_strength": 26,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.05745721271393643,
+          0.07559681697612732,
+          0.10195635816403315,
+          0.11030008110300077,
+          0.08568207440811725,
+          0.03492063492063496,
+          0.09274040288863554,
+          0.08910103420843273,
+          0.10593713620488941,
+          0.04367531932426869
+        ],
+        "mean_gap": 0.07973670709120763
+      },
+      {
+        "label": "ILS:constructor=random",
+        "summary": "ILS[constructor=random, neighborhood=critical_operation_reinsertion, perturbation=acyclic_random_insertions]",
+        "mean": 913.0,
+        "std": 65.81337250133896,
+        "per_instance": [
+          959.0,
+          802.6666666666666,
+          964.3333333333334,
+          901.3333333333334,
+          981.3333333333334,
+          883.3333333333334,
+          969.3333333333334,
+          904.0,
+          911.3333333333334,
+          853.3333333333334
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "random",
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "perturbation": "acyclic_random_insertions",
+          "acyclic_random_insertions.max_tries": 52,
+          "acyclic_random_insertions.max_shift": 26,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.17237163814180928,
+          0.06454465075154725,
+          0.08841234010534241,
+          0.09651257096512575,
+          0.10635099586621576,
+          0.05158730158730163,
+          0.1052831622957051,
+          0.07875894988066826,
+          0.06092355452076062,
+          0.0548001648125258
+        ],
+        "mean_gap": 0.08795453289270018
+      },
+      {
+        "label": "SA:constructor=greedy_bottleneck_machine_load_priority",
+        "summary": "SA[constructor=greedy_bottleneck_machine_load_priority, neighborhood=critical_operation_reinsertion]",
+        "mean": 914.0,
+        "std": 72.67324129278947,
+        "per_instance": [
+          867.0,
+          769.0,
+          1016.0,
+          923.6666666666666,
+          1007.6666666666666,
+          932.3333333333334,
+          915.6666666666666,
+          925.3333333333334,
+          935.3333333333334,
+          848.0
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_bottleneck_machine_load_priority",
+          "greedy_bottleneck_machine_load_priority.rule": "greedy",
+          "greedy_bottleneck_machine_load_priority.alpha": 0.5,
+          "greedy_bottleneck_machine_load_priority.load_weight": 1.0,
+          "greedy_bottleneck_machine_load_priority.succ_weight": 0.5,
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.05990220048899755,
+          0.01989389920424403,
+          0.14672686230248308,
+          0.12368207623682072,
+          0.13603908305148435,
+          0.10992063492063496,
+          0.044089699733941425,
+          0.1042163882259348,
+          0.08886301901435782,
+          0.048207663782447466
+        ],
+        "mean_gap": 0.08815415269613462
+      },
+      {
+        "label": "default:ILS",
+        "summary": "ILS[constructor=trivial, neighborhood=critical_operation_reinsertion, perturbation=acyclic_random_insertions]",
+        "mean": 929.4666666666667,
+        "std": 60.455897607723564,
+        "per_instance": [
+          870.0,
+          827.6666666666666,
+          976.6666666666666,
+          911.0,
+          986.3333333333334,
+          904.6666666666666,
+          998.0,
+          923.3333333333334,
+          972.3333333333334,
+          924.6666666666666
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "trivial",
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "perturbation": "acyclic_random_insertions",
+          "acyclic_random_insertions.max_tries": 52,
+          "acyclic_random_insertions.max_shift": 26,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.06356968215158924,
+          0.0977011494252873,
+          0.10233258088788559,
+          0.10827250608272507,
+          0.11198797444569715,
+          0.07698412698412693,
+          0.1379703534777651,
+          0.10182975338106608,
+          0.1319363601086535,
+          0.14297486608982277
+        ],
+        "mean_gap": 0.10755593530346187
+      },
+      {
+        "label": "default:VNS",
+        "summary": "VNS[constructor=trivial, neighborhood=critical_operation_reinsertion]",
+        "mean": 938.1,
+        "std": 60.11896539362599,
+        "per_instance": [
+          963.0,
+          848.6666666666666,
+          998.0,
+          903.0,
+          998.3333333333334,
+          904.6666666666666,
+          975.6666666666666,
+          940.0,
+          994.6666666666666,
+          855.0
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "trivial",
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.17726161369193155,
+          0.12555260831122894,
+          0.12641083521444696,
+          0.09854014598540146,
+          0.1255167230364525,
+          0.07698412698412693,
+          0.1125047510452299,
+          0.12171837708830549,
+          0.1579355840124175,
+          0.05686032138442522
+        ],
+        "mean_gap": 0.11792850867539664
+      },
+      {
+        "label": "SA:constructor=random",
+        "summary": "SA[constructor=random, neighborhood=critical_operation_reinsertion]",
+        "mean": 940.4,
+        "std": 81.58986865209839,
+        "per_instance": [
+          986.0,
+          811.0,
+          953.0,
+          895.6666666666666,
+          1067.3333333333333,
+          949.6666666666666,
+          990.6666666666666,
+          918.6666666666666,
+          949.3333333333334,
+          882.6666666666666
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "random",
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.20537897310513448,
+          0.07559681697612732,
+          0.07562076749435666,
+          0.08961881589618811,
+          0.20330702743329568,
+          0.1305555555555555,
+          0.12960851387305203,
+          0.09626093874303894,
+          0.10516103996895619,
+          0.09105892047795627
+        ],
+        "mean_gap": 0.12021673695236612
+      },
+      {
+        "label": "LNS_MIP:constructor=greedy_earliest_completion_idle_penalty",
+        "summary": "LNS_MIP[constructor=greedy_earliest_completion_idle_penalty, destruction=critical_block_window_destruction]",
+        "mean": 963.9,
+        "std": 76.01199466750845,
+        "per_instance": [
+          921.0,
+          825.3333333333334,
+          1053.3333333333333,
+          941.3333333333334,
+          1011.0,
+          978.3333333333334,
+          1070.0,
+          1005.3333333333334,
+          974.0,
+          859.3333333333334
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_earliest_completion_idle_penalty",
+          "greedy_earliest_completion_idle_penalty.rule": "greedy",
+          "greedy_earliest_completion_idle_penalty.alpha": 0.5,
+          "greedy_earliest_completion_idle_penalty.idle_weight": 1.5,
+          "greedy_earliest_completion_idle_penalty.mk_weight": 1.5,
+          "destruction": "critical_block_window_destruction",
+          "critical_block_window_destruction.ratio": 0.325,
+          "critical_block_window_destruction.expand": 2,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.12591687041564792,
+          0.094606542882405,
+          0.1888638073739653,
+          0.14517437145174375,
+          0.13979706877113868,
+          0.16468253968253974,
+          0.22006841505131128,
+          0.1996817820206842,
+          0.13387660069848661,
+          0.06221672847136387
+        ],
+        "mean_gap": 0.14748847268192863
+      },
+      {
+        "label": "ILS:perturbation=noisy_start_key_redispatch",
+        "summary": "ILS[constructor=trivial, neighborhood=critical_operation_reinsertion, perturbation=noisy_start_key_redispatch]",
+        "mean": 977.1,
+        "std": 62.81207421082882,
+        "per_instance": [
+          961.6666666666666,
+          897.6666666666666,
+          1007.0,
+          962.3333333333334,
+          1038.3333333333333,
+          957.6666666666666,
+          1054.0,
+          966.6666666666666,
+          1042.3333333333333,
+          883.3333333333334
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "trivial",
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "perturbation": "noisy_start_key_redispatch",
+          "noisy_start_key_redispatch.noise_scale": 1.55,
+          "noisy_start_key_redispatch.job_fraction": 0.55,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.17563162184189074,
+          0.19053934571175946,
+          0.136568848758465,
+          0.17072181670721823,
+          0.17061255167230355,
+          0.14007936507936503,
+          0.20182440136830102,
+          0.1535401750198886,
+          0.21342646488164524,
+          0.09188298310671615
+        ],
+        "mean_gap": 0.1644827574147553
+      },
+      {
+        "label": "LNS_MIP:constructor=greedy_most_work_remaining_tail_bound",
+        "summary": "LNS_MIP[constructor=greedy_most_work_remaining_tail_bound, destruction=critical_block_window_destruction]",
+        "mean": 980.6,
+        "std": 44.79553549183222,
+        "per_instance": [
+          969.0,
+          923.0,
+          1059.0,
+          996.0,
+          1056.0,
+          974.0,
+          945.0,
+          930.0,
+          995.0,
+          959.0
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_most_work_remaining_tail_bound",
+          "greedy_most_work_remaining_tail_bound.rule": "greedy",
+          "greedy_most_work_remaining_tail_bound.alpha": 0.5,
+          "greedy_most_work_remaining_tail_bound.start_weight": 2.25,
+          "greedy_most_work_remaining_tail_bound.tail_weight": 1.0,
+          "destruction": "critical_block_window_destruction",
+          "critical_block_window_destruction.ratio": 0.325,
+          "critical_block_window_destruction.expand": 2,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.1845965770171149,
+          0.22413793103448276,
+          0.19525959367945825,
+          0.2116788321167883,
+          0.19052987598647125,
+          0.1595238095238095,
+          0.07753705815279362,
+          0.10978520286396182,
+          0.15832363213038417,
+          0.18541409147095178
+        ],
+        "mean_gap": 0.16967866039762164
+      },
+      {
+        "label": "SA:neighborhood=critical_path_adjacent_swap",
+        "summary": "SA[constructor=trivial, neighborhood=critical_path_adjacent_swap]",
+        "mean": 990.5,
+        "std": 86.71629989031281,
+        "per_instance": [
+          909.0,
+          887.3333333333334,
+          1020.6666666666666,
+          959.6666666666666,
+          1138.3333333333333,
+          919.6666666666666,
+          1081.3333333333333,
+          1024.0,
+          982.3333333333334,
+          982.6666666666666
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "trivial",
+          "neighborhood": "critical_path_adjacent_swap",
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.11124694376528117,
+          0.17683465959328035,
+          0.15199398043641832,
+          0.1674776966747769,
+          0.28335212326193154,
+          0.0948412698412698,
+          0.2329912580767768,
+          0.22195704057279236,
+          0.14357780364765235,
+          0.21466831479192414
+        ],
+        "mean_gap": 0.17989410906621037
+      },
+      {
+        "label": "default:SA",
+        "summary": "SA[constructor=trivial, neighborhood=critical_operation_reinsertion]",
+        "mean": 1090.7333333333333,
+        "std": 118.65831431280134,
+        "per_instance": [
+          1054.3333333333333,
+          905.0,
+          1086.0,
+          1050.0,
+          1115.3333333333333,
+          1103.3333333333333,
+          1244.3333333333333,
+          1067.0,
+          1220.3333333333333,
+          1061.6666666666667
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "trivial",
+          "neighborhood": "critical_operation_reinsertion",
+          "critical_operation_reinsertion.max_shift": 50,
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.2889160554197228,
+          0.2002652519893899,
+          0.22573363431151242,
+          0.2773722627737226,
+          0.25742202179631707,
+          0.3134920634920634,
+          0.41885214747244387,
+          0.2732696897374702,
+          0.42064415987582454,
+          0.3123197362999589
+        ],
+        "mean_gap": 0.29882870231684255
+      },
+      {
+        "label": "LNS_MIP:constructor=greedy_bottleneck_machine_load_priority",
+        "summary": "LNS_MIP[constructor=greedy_bottleneck_machine_load_priority, destruction=critical_block_window_destruction]",
+        "mean": 1206.9666666666667,
+        "std": 170.68088807934987,
+        "per_instance": [
+          1079.0,
+          917.3333333333334,
+          1368.3333333333333,
+          1555.3333333333333,
+          1196.0,
+          1113.3333333333333,
+          1138.0,
+          1226.0,
+          1154.0,
+          1322.3333333333333
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "greedy_bottleneck_machine_load_priority",
+          "greedy_bottleneck_machine_load_priority.rule": "greedy",
+          "greedy_bottleneck_machine_load_priority.alpha": 0.5,
+          "greedy_bottleneck_machine_load_priority.load_weight": 1.0,
+          "greedy_bottleneck_machine_load_priority.succ_weight": 0.5,
+          "destruction": "critical_block_window_destruction",
+          "critical_block_window_destruction.ratio": 0.325,
+          "critical_block_window_destruction.expand": 2,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.31907090464547677,
+          0.2166224580017684,
+          0.5443942814145973,
+          0.89213300892133,
+          0.3483652762119504,
+          0.3253968253968253,
+          0.2976054732041049,
+          0.4630071599045346,
+          0.34342258440046564,
+          0.634528224145035
+        ],
+        "mean_gap": 0.43845461962460885
+      },
+      {
+        "label": "LNS_MIP:constructor=random",
+        "summary": "LNS_MIP[constructor=random, destruction=critical_block_window_destruction]",
+        "mean": 1688.7,
+        "std": 213.56781124504695,
+        "per_instance": [
+          1755.3333333333333,
+          1639.6666666666667,
+          1745.0,
+          1567.6666666666667,
+          1715.3333333333333,
+          1580.3333333333333,
+          1734.6666666666667,
+          1697.3333333333333,
+          1825.0,
+          1626.6666666666667
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "random",
+          "destruction": "critical_block_window_destruction",
+          "critical_block_window_destruction.ratio": 0.325,
+          "critical_block_window_destruction.expand": 2,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          1.145884270578647,
+          1.1746242263483644,
+          0.9695259593679458,
+          0.9071370640713707,
+          0.9338594513340849,
+          0.8813492063492062,
+          0.9779551501330294,
+          1.0254574383452664,
+          1.1245634458672875,
+          1.0107128141738773
+        ],
+        "mean_gap": 1.015106902656908
+      },
+      {
+        "label": "ILS:neighborhood=job_priority_shift_all_machines",
+        "summary": "ILS[constructor=trivial, neighborhood=job_priority_shift_all_machines, perturbation=acyclic_random_insertions]",
+        "mean": 1701.3333333333333,
+        "std": 156.56102821441726,
+        "per_instance": [
+          1578.6666666666667,
+          1477.6666666666667,
+          1750.3333333333333,
+          1689.3333333333333,
+          1858.0,
+          1689.6666666666667,
+          1834.3333333333333,
+          1650.3333333333333,
+          1755.0,
+          1730.0
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "trivial",
+          "neighborhood": "job_priority_shift_all_machines",
+          "job_priority_shift_all_machines.max_shift": 3,
+          "job_priority_shift_all_machines.only_critical_jobs": true,
+          "perturbation": "acyclic_random_insertions",
+          "acyclic_random_insertions.max_tries": 52,
+          "acyclic_random_insertions.max_shift": 26,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.9299103504482479,
+          0.9597701149425288,
+          0.9755455229495861,
+          1.0551500405515004,
+          1.0947012401352876,
+          1.0115079365079367,
+          1.0916001520334473,
+          0.9693715194908511,
+          1.0430733410942956,
+          1.138442521631644
+        ],
+        "mean_gap": 1.0269072739785325
+      },
+      {
+        "label": "VNS:neighborhood=job_priority_shift_all_machines",
+        "summary": "VNS[constructor=trivial, neighborhood=job_priority_shift_all_machines]",
+        "mean": 1794.8333333333333,
+        "std": 220.39042376856779,
+        "per_instance": [
+          1634.3333333333333,
+          1763.0,
+          1556.6666666666667,
+          1679.3333333333333,
+          1891.6666666666667,
+          1885.6666666666667,
+          2005.6666666666667,
+          1807.3333333333333,
+          1894.0,
+          1830.6666666666667
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "trivial",
+          "neighborhood": "job_priority_shift_all_machines",
+          "job_priority_shift_all_machines.max_shift": 3,
+          "job_priority_shift_all_machines.only_critical_jobs": true,
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.997962510187449,
+          1.3381962864721486,
+          0.7569601203912717,
+          1.0429845904298458,
+          1.1326568959037957,
+          1.2448412698412699,
+          1.2869631318890156,
+          1.1567223548130467,
+          1.2048894062863795,
+          1.2628759785743717
+        ],
+        "mean_gap": 1.1425052544788594
+      },
+      {
+        "label": "LNS_MIP:destruction=time_slice_destruction",
+        "summary": "LNS_MIP[constructor=trivial, destruction=time_slice_destruction]",
+        "mean": 2139.4333333333334,
+        "std": 382.92668430857043,
+        "per_instance": [
+          1877.0,
+          2254.3333333333335,
+          2368.6666666666665,
+          1970.3333333333333,
+          2657.3333333333335,
+          1999.6666666666667,
+          2371.6666666666665,
+          1727.3333333333333,
+          2150.6666666666665,
+          2017.3333333333333
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "trivial",
+          "destruction": "time_slice_destruction",
+          "time_slice_destruction.ratio": 0.325,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          1.2946210268948655,
+          1.9898320070733866,
+          1.6734386756960118,
+          1.3969991889699918,
+          1.9958662157083804,
+          1.3805555555555555,
+          1.7042949448878753,
+          1.0612569610182974,
+          1.5036864571206827,
+          1.4936135146271117
+        ],
+        "mean_gap": 1.5494164547552158
+      },
+      {
+        "label": "SA:neighborhood=job_priority_shift_all_machines",
+        "summary": "SA[constructor=trivial, neighborhood=job_priority_shift_all_machines]",
+        "mean": 3197.4333333333334,
+        "std": 268.0102837993763,
+        "per_instance": [
+          2719.6666666666665,
+          3071.6666666666665,
+          3089.3333333333335,
+          3220.3333333333335,
+          3643.6666666666665,
+          3257.0,
+          3598.6666666666665,
+          2974.6666666666665,
+          3233.3333333333335,
+          3166.0
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "trivial",
+          "neighborhood": "job_priority_shift_all_machines",
+          "job_priority_shift_all_machines.max_shift": 3,
+          "job_priority_shift_all_machines.only_critical_jobs": true,
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          2.3247758761206194,
+          3.073828470380194,
+          2.486832204665162,
+          2.917680454176805,
+          3.107854190154077,
+          2.8773809523809524,
+          3.1033827442037247,
+          2.5497215592680984,
+          2.7640667442762905,
+          2.9134734239802227
+        ],
+        "mean_gap": 2.8118996619606147
+      },
+      {
+        "label": "LNS_MIP:destruction=related_jobs_slot_destruction",
+        "summary": "LNS_MIP[constructor=trivial, destruction=related_jobs_slot_destruction]",
+        "mean": 3807.733333333333,
+        "std": 441.719061043203,
+        "per_instance": [
+          3338.6666666666665,
+          3553.0,
+          4225.0,
+          3842.6666666666665,
+          4735.0,
+          3618.0,
+          4072.6666666666665,
+          3408.3333333333335,
+          3798.6666666666665,
+          3485.3333333333335
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "trivial",
+          "destruction": "related_jobs_slot_destruction",
+          "related_jobs_slot_destruction.ratio": 0.325,
+          "related_jobs_slot_destruction.relatedness": 0.5,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          3.081499592502037,
+          3.712201591511936,
+          3.7686230248306996,
+          3.6747769667477694,
+          4.3382187147688835,
+          3.307142857142857,
+          3.6438616495629037,
+          3.0672235481304697,
+          3.422196352347691,
+          3.30819942315616
+        ],
+        "mean_gap": 3.532394372070141
+      },
+      {
+        "label": "default:LNS_MIP",
+        "summary": "LNS_MIP[constructor=trivial, destruction=critical_block_window_destruction]",
+        "mean": 3920.9,
+        "std": 507.30597933265744,
+        "per_instance": [
+          3428.0,
+          3553.0,
+          4027.3333333333335,
+          3886.0,
+          4932.0,
+          3922.0,
+          4637.0,
+          3358.3333333333335,
+          3770.3333333333335,
+          3695.0
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "trivial",
+          "destruction": "critical_block_window_destruction",
+          "critical_block_window_destruction.ratio": 0.325,
+          "critical_block_window_destruction.expand": 2,
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          3.1907090464547676,
+          3.712201591511936,
+          3.545522949586155,
+          3.727493917274939,
+          4.560315670800451,
+          3.669047619047619,
+          4.287343215507412,
+          3.007557677008751,
+          3.389212262320528,
+          3.5673671199011125
+        ],
+        "mean_gap": 3.665677106941367
+      }
+    ],
+    "best_baseline": "VNS:constructor=greedy_earliest_completion_idle_penalty",
+    "gain_vs_best_baseline": 0.024437372130029552,
+    "wins_per_instance": "8/10",
+    "reference": 3976.6,
+    "best_known": [
+      818.0,
+      754.0,
+      886.0,
+      822.0,
+      887.0,
+      840.0,
+      877.0,
+      838.0,
+      859.0,
+      809.0
+    ],
+    "best_baseline_by_gap": "VNS:constructor=greedy_earliest_completion_idle_penalty",
+    "tuned_vs_best_baseline": {
+      "a": "tuned",
+      "b": "VNS:constructor=greedy_earliest_completion_idle_penalty",
+      "mean_diff": 0.025208447732037634,
+      "ci95": [
+        0.0016332368301285784,
+        0.04568634427496029
+      ],
+      "wins_a": 8,
+      "n": 10,
+      "significant": true
+    },
+    "mip_reference": [
+      null,
+      null,
+      null,
+      null,
+      2891.0,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  }
+}
