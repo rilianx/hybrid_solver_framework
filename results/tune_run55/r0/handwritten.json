@@ -1,0 +1,394 @@
+{
+  "catalog": "handwritten",
+  "generated_components": [],
+  "settings": {
+    "trials": 70,
+    "budget": 10.0,
+    "train": 10,
+    "test": 10,
+    "problem": "jobshop",
+    "size": "15x15",
+    "seed": 0,
+    "tuner_seed": 0,
+    "seeds_test": 3,
+    "objective": "ratio",
+    "skeletons": "all",
+    "ref_time": 0.0,
+    "reeval_top": 0,
+    "reeval_seeds": 2,
+    "race_seeds": 6,
+    "screen": -1,
+    "defaults_margin": 0.005,
+    "native": true,
+    "tuner": "irace"
+  },
+  "tuning": {
+    "tuner": "irace",
+    "best_config": {
+      "skeleton": "SA",
+      "constructor": "job_order",
+      "neighborhood": "critical_swap",
+      "SA.T0": 70.7257,
+      "SA.cooling": "time",
+      "SA.T_end": 0.0899,
+      "SA.alpha": 0.8037,
+      "SA.iters_per_T": 50
+    },
+    "best_cost": 0.13945833360797566,
+    "best_summary": "SA[constructor=job_order, neighborhood=critical_swap]",
+    "n_trials": 700,
+    "n_failed": 0,
+    "seconds": 6987.9,
+    "skeleton_usage": {
+      "SA": 6
+    },
+    "elites": [
+      "SA[constructor=job_order, neighborhood=critical_swap]",
+      "SA[constructor=job_order, neighborhood=critical_swap]",
+      "SA[constructor=greedy_most_work_remaining, neighborhood=critical_swap]",
+      "SA[constructor=greedy_most_work_remaining, neighborhood=critical_swap]",
+      "SA[constructor=greedy_most_work_remaining, neighborhood=critical_swap]",
+      "SA[constructor=greedy_most_work_remaining, neighborhood=critical_swap]"
+    ],
+    "elite_configs": [
+      {
+        "skeleton": "SA",
+        "constructor": "job_order",
+        "neighborhood": "critical_swap",
+        "SA.T0": 70.7257,
+        "SA.cooling": "time",
+        "SA.T_end": 0.0899,
+        "SA.alpha": 0.8037,
+        "SA.iters_per_T": 50
+      },
+      {
+        "skeleton": "SA",
+        "constructor": "job_order",
+        "neighborhood": "critical_swap",
+        "SA.T0": 80.4022,
+        "SA.cooling": "time",
+        "SA.T_end": 0.0356,
+        "SA.alpha": 0.8003,
+        "SA.iters_per_T": 49
+      },
+      {
+        "skeleton": "SA",
+        "constructor": "greedy_most_work_remaining",
+        "greedy_most_work_remaining.rule": "rcl",
+        "greedy_most_work_remaining.alpha": 0.1091,
+        "neighborhood": "critical_swap",
+        "SA.T0": 156.0751,
+        "SA.cooling": "time",
+        "SA.T_end": 0.0573,
+        "SA.alpha": 0.9253,
+        "SA.iters_per_T": 22
+      },
+      {
+        "skeleton": "SA",
+        "constructor": "greedy_most_work_remaining",
+        "greedy_most_work_remaining.rule": "rcl",
+        "greedy_most_work_remaining.alpha": 0.767,
+        "neighborhood": "critical_swap",
+        "SA.T0": 180.6072,
+        "SA.cooling": "time",
+        "SA.T_end": 0.089,
+        "SA.alpha": 0.9093,
+        "SA.iters_per_T": 24
+      },
+      {
+        "skeleton": "SA",
+        "constructor": "greedy_most_work_remaining",
+        "greedy_most_work_remaining.rule": "rcl",
+        "greedy_most_work_remaining.alpha": 0.0521,
+        "neighborhood": "critical_swap",
+        "SA.T0": 73.3882,
+        "SA.cooling": "time",
+        "SA.T_end": 0.0538,
+        "SA.alpha": 0.8209,
+        "SA.iters_per_T": 41
+      },
+      {
+        "skeleton": "SA",
+        "constructor": "greedy_most_work_remaining",
+        "greedy_most_work_remaining.rule": "roulette",
+        "greedy_most_work_remaining.alpha": 0.1767,
+        "neighborhood": "critical_swap",
+        "SA.T0": 124.7259,
+        "SA.cooling": "time",
+        "SA.T_end": 0.0984,
+        "SA.alpha": 0.8439,
+        "SA.iters_per_T": 22
+      }
+    ],
+    "reevaluated": [],
+    "log_tail": [
+      "# You may either increase the budget or set 'minNbSurvival' to a lower value",
+      "# Iteration: 8",
+      "# nbIterations: 8",
+      "# experimentsUsedSoFar: 690",
+      "# timeUsed: 0",
+      "# remainingBudget: 10",
+      "# currentBudget: 10",
+      "# number of elites: 6",
+      "# nbConfigurations: 6",
+      "# Total CPU user time: 6976.809, CPU sys time: 10.273, Wall-clock time: 6987.522",
+      "# Best configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):",
+      "   skeleton                constructor  neighborhood perturbation    SA.T0 SA.cooling SA.T_end SA.alpha SA.iters_per_T ILS.strength ILS.ls_strategy ILS.ls_time_share ILS.ls_sample VNS.shake_strength VNS.ls_time_share VNS.ls_sample TS.tenure TS.candidate_size TS.estimate_top TS.elite_size TS.stall greedy_earliest_end.rule greedy_earliest_end.alpha greedy_most_work_remaining.rule greedy_most_work_remaining.alpha",
+      "98       SA                  job_order critical_swap         <NA>  70.7257       time   0.0899   0.8037             50           NA            <NA>                NA            NA                 NA                NA            NA        NA                NA              NA            NA       NA                     <NA>                        NA                            <NA>                               NA",
+      "63       SA                  job_order critical_swap         <NA>  80.4022       time   0.0356   0.8003             49           NA            <NA>                NA            NA                 NA                NA            NA        NA                NA              NA            NA       NA                     <NA>                        NA                            <NA>                               NA",
+      "50       SA greedy_most_work_remaining critical_swap         <NA> 156.0751       time   0.0573   0.9253             22           NA            <NA>                NA            NA                 NA                NA            NA        NA                NA              NA            NA       NA                     <NA>                        NA                             rcl                           0.1091",
+      "79       SA greedy_most_work_remaining critical_swap         <NA> 180.6072       time   0.0890   0.9093             24           NA            <NA>                NA            NA                 NA                NA            NA        NA                NA              NA            NA       NA                     <NA>                        NA                             rcl                           0.7670",
+      "5        SA greedy_most_work_remaining critical_swap         <NA>  73.3882       time   0.0538   0.8209             41           NA            <NA>                NA            NA                 NA                NA            NA        NA                NA              NA            NA       NA                     <NA>                        NA                             rcl                           0.0521",
+      "78       SA greedy_most_work_remaining critical_swap         <NA> 124.7259       time   0.0984   0.8439             22           NA            <NA>                NA            NA                 NA                NA            NA        NA                NA              NA            NA       NA                     <NA>                        NA                        roulette                           0.1767",
+      "# Best configurations as commandlines (first number is the configuration ID; same order as above):",
+      "98  --skeleton=SA --constructor=job_order --neighborhood=critical_swap --SA.T0=70.7257 --SA.cooling=time --SA.T_end=0.0899 --SA.alpha=0.8037 --SA.iters_per_T=50",
+      "63  --skeleton=SA --constructor=job_order --neighborhood=critical_swap --SA.T0=80.4022 --SA.cooling=time --SA.T_end=0.0356 --SA.alpha=0.8003 --SA.iters_per_T=49",
+      "50  --skeleton=SA --constructor=greedy_most_work_remaining --greedy_most_work_remaining.rule=rcl --greedy_most_work_remaining.alpha=0.1091 --neighborhood=critical_swap --SA.T0=156.0751 --SA.cooling=time --SA.T_end=0.0573 --SA.alpha=0.9253 --SA.iters_per_T=22",
+      "79  --skeleton=SA --constructor=greedy_most_work_remaining --greedy_most_work_remaining.rule=rcl --greedy_most_work_remaining.alpha=0.767 --neighborhood=critical_swap --SA.T0=180.6072 --SA.cooling=time --SA.T_end=0.089 --SA.alpha=0.9093 --SA.iters_per_T=24",
+      "5   --skeleton=SA --constructor=greedy_most_work_remaining --greedy_most_work_remaining.rule=rcl --greedy_most_work_remaining.alpha=0.0521 --neighborhood=critical_swap --SA.T0=73.3882 --SA.cooling=time --SA.T_end=0.0538 --SA.alpha=0.8209 --SA.iters_per_T=41",
+      "78  --skeleton=SA --constructor=greedy_most_work_remaining --greedy_most_work_remaining.rule=roulette --greedy_most_work_remaining.alpha=0.1767 --neighborhood=critical_swap --SA.T0=124.7259 --SA.cooling=time --SA.T_end=0.0984 --SA.alpha=0.8439 --SA.iters_per_T=22",
+      "",
+      "",
+      "# Testing of elite configurations: 1 ",
+      "# Testing iteration configurations: FALSE ",
+      "# 2026-10-30 16:34:03 UTC: No test instances, skip testing"
+    ]
+  },
+  "test": {
+    "tuned": {
+      "label": "tuned",
+      "summary": "SA[constructor=job_order, neighborhood=critical_swap]",
+      "mean": 1212.5666666666666,
+      "std": 64.97213932824506,
+      "per_instance": [
+        1219.0,
+        1178.0,
+        1261.6666666666667,
+        1170.0,
+        1280.6666666666667,
+        1332.3333333333333,
+        1237.0,
+        1105.6666666666667,
+        1202.3333333333333,
+        1139.0
+      ],
+      "config": {
+        "skeleton": "SA",
+        "constructor": "job_order",
+        "neighborhood": "critical_swap",
+        "SA.T0": 70.7257,
+        "SA.cooling": "time",
+        "SA.T_end": 0.0899,
+        "SA.alpha": 0.8037,
+        "SA.iters_per_T": 50
+      },
+      "gap_per_instance": [
+        0.00494641384995878,
+        0.002553191489361702,
+        0.007720979765708261,
+        0.005154639175257732,
+        0.006022518984027292,
+        0.0017543859649122237,
+        0.0008090614886731392,
+        0.004238570996064253,
+        0.009515813042261342,
+        0.0008787346221441124
+      ],
+      "mean_gap": 0.004359430937836884
+    },
+    "baselines": [
+      {
+        "label": "default:TS",
+        "summary": "TS[constructor=job_order, neighborhood=critical_swap]",
+        "mean": 1219.9,
+        "std": 65.92184766828066,
+        "per_instance": [
+          1222.0,
+          1187.0,
+          1264.0,
+          1173.0,
+          1291.0,
+          1338.0,
+          1257.0,
+          1113.0,
+          1214.0,
+          1140.0
+        ],
+        "config": {
+          "skeleton": "TS",
+          "constructor": "job_order",
+          "neighborhood": "critical_swap",
+          "TS.tenure": 16,
+          "TS.candidate_size": 52,
+          "TS.estimate_top": 0,
+          "TS.elite_size": 0,
+          "TS.stall": 500
+        },
+        "gap_per_instance": [
+          0.00741962077493817,
+          0.010212765957446808,
+          0.009584664536741214,
+          0.007731958762886598,
+          0.014139827179890024,
+          0.006015037593984963,
+          0.01699029126213592,
+          0.010899182561307902,
+          0.019311502938706968,
+          0.0017574692442882249
+        ],
+        "mean_gap": 0.01040623208123268
+      },
+      {
+        "label": "default:SA",
+        "summary": "SA[constructor=job_order, neighborhood=critical_swap]",
+        "mean": 1228.0333333333333,
+        "std": 63.69064993300735,
+        "per_instance": [
+          1226.0,
+          1180.0,
+          1262.6666666666667,
+          1184.6666666666667,
+          1290.6666666666667,
+          1348.0,
+          1273.3333333333333,
+          1139.3333333333333,
+          1219.6666666666667,
+          1156.0
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "job_order",
+          "neighborhood": "critical_swap",
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.010717230008244023,
+          0.00425531914893617,
+          0.008519701810436695,
+          0.017754868270332253,
+          0.013877978528410639,
+          0.013533834586466165,
+          0.030204962243797134,
+          0.03481683318195573,
+          0.024069409459837734,
+          0.015817223198594025
+        ],
+        "mean_gap": 0.017356736043701058
+      },
+      {
+        "label": "default:ILS",
+        "summary": "ILS[constructor=job_order, neighborhood=critical_swap, perturbation=critical_kick]",
+        "mean": 1499.0333333333333,
+        "std": 149.4024728339156,
+        "per_instance": [
+          1489.0,
+          1686.3333333333333,
+          1549.3333333333333,
+          1456.3333333333333,
+          1452.3333333333333,
+          1562.6666666666667,
+          1701.6666666666667,
+          1309.0,
+          1429.0,
+          1354.6666666666667
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "job_order",
+          "neighborhood": "critical_swap",
+          "perturbation": "critical_kick",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.22753503709810388,
+          0.43517730496453894,
+          0.23748668796592112,
+          0.25114547537227944,
+          0.1408745744959413,
+          0.17493734335839606,
+          0.37675296655879187,
+          0.18891916439600362,
+          0.1998320738874895,
+          0.19039250146455777
+        ],
+        "mean_gap": 0.24230531295620233
+      },
+      {
+        "label": "default:VNS",
+        "summary": "VNS[constructor=job_order, neighborhood=critical_swap]",
+        "mean": 1598.1,
+        "std": 179.59609312751397,
+        "per_instance": [
+          1569.3333333333333,
+          1840.3333333333333,
+          1723.0,
+          1556.0,
+          1758.3333333333333,
+          1645.6666666666667,
+          1685.3333333333333,
+          1331.0,
+          1520.6666666666667,
+          1351.3333333333333
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "job_order",
+          "neighborhood": "critical_swap",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.293762022533663,
+          0.566241134751773,
+          0.3761980830670926,
+          0.33676975945017185,
+          0.3812516365540717,
+          0.23734335839599002,
+          0.36353829557713047,
+          0.2089009990917348,
+          0.27679820878813327,
+          0.18746338605741059
+        ],
+        "mean_gap": 0.32282668842671713
+      }
+    ],
+    "best_baseline": "default:TS",
+    "gain_vs_best_baseline": 0.006011421701232466,
+    "wins_per_instance": "10/10",
+    "reference": 8975.2,
+    "best_known": [
+      1213.0,
+      1175.0,
+      1252.0,
+      1164.0,
+      1273.0,
+      1330.0,
+      1236.0,
+      1101.0,
+      1191.0,
+      1138.0
+    ],
+    "best_baseline_by_gap": "default:TS",
+    "tuned_vs_best_baseline": {
+      "a": "tuned",
+      "b": "default:TS",
+      "mean_diff": 0.006046801143395795,
+      "ci95": [
+        0.003430138445908351,
+        0.008914615815239639
+      ],
+      "wins_a": 10,
+      "n": 10,
+      "significant": true
+    },
+    "mip_reference": null
+  }
+}

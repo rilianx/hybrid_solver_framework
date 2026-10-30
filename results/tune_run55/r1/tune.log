@@ -1,0 +1,15 @@
+
+=== catálogo `handwritten`: 25 parámetros, 0 opciones generadas por LLM ===
+  irace: 700 experimentos en 6998s; élite: TS[constructor=job_order, neighborhood=critical_swap]; TS[constructor=job_order, neighborhood=critical_swap]; TS[constructor=job_order, neighborhood=critical_swap]; TS[constructor=job_order, neighborhood=critical_swap]; TS[constructor=job_order, neighborhood=critical_swap]; TS[constructor=job_order, neighborhood=critical_swap]
+  mejor en train: 0.1392  TS[constructor=job_order, neighborhood=critical_swap]
+
+=== TEST `handwritten` (partida trivial sin búsqueda = 8975.2; gap vs mejor conocido por instancia) ===
+    tuned                                            gap   0.15%         1211.3 ±     67.0   (+86.5% vs partida)   TS[constructor=job_order, neighborhood=critical_swap]
+    default:TS                                       gap   0.79%         1218.9 ±     65.4   (+86.4% vs partida)   TS[constructor=job_order, neighborhood=critical_swap]
+    default:SA                                       gap   1.12%         1222.8 ±     63.9   (+86.4% vs partida)   SA[constructor=job_order, neighborhood=critical_swap]
+    default:ILS                                      gap  23.51%         1492.7 ±    153.8   (+83.4% vs partida)   ILS[constructor=job_order, neighborhood=critical_swap, perturbation=critical_kick]
+    default:VNS                                      gap  32.08%         1598.1 ±    179.6   (+82.2% vs partida)   VNS[constructor=job_order, neighborhood=critical_swap]
+  ganancia del afinado vs mejor default: +0.62%; gana en 9/10 instancias
+  afinado vs default:TS: gap +0.64% a favor del afinado, IC95 [+0.20%, +1.06%]
+
+Escenario irace escrito en tuning_out/irace/scenario.txt (correr: irace --scenario tuning_out/irace/scenario.txt)
