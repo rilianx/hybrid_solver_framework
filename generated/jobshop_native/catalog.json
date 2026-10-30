@@ -1,0 +1,258 @@
+[
+ {
+  "name": "ect_mwkr_dispatch",
+  "slot": "greedy_score",
+  "path": "generated/jobshop_native/greedy_score/ect_mwkr_dispatch_r1.hpp",
+  "component": {
+   "name": "ect_mwkr_dispatch",
+   "slot": "greedy_score",
+   "params": {
+    "w_end": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "mwkr": {
+     "type": "float",
+     "range": [
+      0.0,
+      2.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS"
+   ]
+  }
+ },
+ {
+  "name": "lookahead_lower_bound",
+  "slot": "greedy_score",
+  "path": "generated/jobshop_native/greedy_score/lookahead_lower_bound_r1.hpp",
+  "component": {
+   "name": "lookahead_lower_bound",
+   "slot": "greedy_score",
+   "params": {
+    "idle_w": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "tie": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.5
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS"
+   ]
+  }
+ },
+ {
+  "name": "bottleneck_weighted_work",
+  "slot": "greedy_score",
+  "path": "generated/jobshop_native/greedy_score/bottleneck_weighted_work_r1.hpp",
+  "component": {
+   "name": "bottleneck_weighted_work",
+   "slot": "greedy_score",
+   "params": {
+    "gamma": {
+     "type": "float",
+     "range": [
+      0.0,
+      4.0
+     ]
+    },
+    "beta": {
+     "type": "float",
+     "range": [
+      0.0,
+      2.0
+     ]
+    },
+    "idle_w": {
+     "type": "float",
+     "range": [
+      0.0,
+      2.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS"
+   ]
+  }
+ },
+ {
+  "name": "critical_path_adjacent_swap",
+  "slot": "neighborhood",
+  "path": "generated/jobshop_native/neighborhood/critical_path_adjacent_swap_r1.hpp",
+  "component": {
+   "name": "critical_path_adjacent_swap",
+   "slot": "neighborhood",
+   "params": {
+    "block_ends_only": {
+     "type": "int",
+     "range": [
+      0,
+      1
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS"
+   ]
+  }
+ },
+ {
+  "name": "critical_block_end_insertion",
+  "slot": "neighborhood",
+  "path": "generated/jobshop_native/neighborhood/critical_block_end_insertion_r1.hpp",
+  "component": {
+   "name": "critical_block_end_insertion",
+   "slot": "neighborhood",
+   "params": {
+    "max_shift": {
+     "type": "int",
+     "range": [
+      2,
+      60
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS"
+   ]
+  }
+ },
+ {
+  "name": "job_pair_priority_swap_all_machines",
+  "slot": "neighborhood",
+  "path": "generated/jobshop_native/neighborhood/job_pair_priority_swap_all_machines_r1.hpp",
+  "component": {
+   "name": "job_pair_priority_swap_all_machines",
+   "slot": "neighborhood",
+   "params": {
+    "restrict": {
+     "type": "cat",
+     "values": [
+      "critical",
+      "all"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS"
+   ]
+  }
+ },
+ {
+  "name": "critical_arc_swap_kick",
+  "slot": "perturbation",
+  "path": "generated/jobshop_native/perturbation/critical_arc_swap_kick_r1.hpp",
+  "component": {
+   "name": "critical_arc_swap_kick",
+   "slot": "perturbation",
+   "params": {
+    "swaps_per_strength": {
+     "type": "float",
+     "range": [
+      0.5,
+      4.0
+     ]
+    },
+    "random_swap_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.5
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS"
+   ]
+  }
+ },
+ {
+  "name": "noisy_giffler_thompson_rebuild",
+  "slot": "perturbation",
+  "path": "generated/jobshop_native/perturbation/noisy_giffler_thompson_rebuild_r1.hpp",
+  "component": {
+   "name": "noisy_giffler_thompson_rebuild",
+   "slot": "perturbation",
+   "params": {
+    "noise": {
+     "type": "float",
+     "range": [
+      0.05,
+      3.0
+     ]
+    },
+    "random_pick_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.3
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS"
+   ]
+  }
+ },
+ {
+  "name": "topological_window_reshuffle",
+  "slot": "perturbation",
+  "path": "generated/jobshop_native/perturbation/topological_window_reshuffle_r2.hpp",
+  "component": {
+   "name": "topological_window_reshuffle",
+   "slot": "perturbation",
+   "params": {
+    "window": {
+     "type": "int",
+     "range": [
+      3,
+      40
+     ]
+    },
+    "windows_per_strength": {
+     "type": "float",
+     "range": [
+      0.3,
+      3.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS"
+   ]
+  }
+ }
+]
