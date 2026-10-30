@@ -138,3 +138,17 @@ def test_tabu_search_with_estimates_and_back_jumps_runs(pack):
     res = A.assemble(cfg)(inst, Random(0), 0.5)
     assert P.is_feasible(res.best_solution)
     assert res.best_objective < P.objective(pack.baseline_constructor().build(inst, Random(0)))
+
+
+def test_the_taillard_instances_load_and_have_a_published_best_known():
+    from scripts.taillard_eval import TAILLARD, best_known
+
+    bk = best_known()
+    for i in range(1, 21):
+        inst = JSSPInstance.load(str(TAILLARD / f"ta{i:02d}.txt"))
+        assert (inst.n_jobs, inst.n_machines) == ((15, 15) if i <= 10 else (20, 15))
+        assert all(sorted(m for m, _ in r) == list(range(inst.n_machines)) for r in inst.routes)
+        # el mejor conocido es alcanzable: no menor que la cota trivial (la máquina o el trabajo más cargado)
+        lb = max(max(sum(p for _, p in r) for r in inst.routes),
+                 max(sum(p for r in inst.routes for m, p in r if m == mm) for mm in inst.machines))
+        assert bk[f"ta{i:02d}"] >= lb
