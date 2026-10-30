@@ -53,6 +53,8 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run52/`](tune_run52/) | 30 oct | lo mismo con **irace** (`--tuner irace`, 700 experimentos) | SA, ILS, VNS, TS | 10+10, 10×10 | 5 s | 700 exp. × 3 réplicas | irace contra Optuna (la 51 falló por una ruta) |
 | [`tune_run53/`](tune_run53/) | 30 oct | lo mismo con el TS genérico extendido (estimación, saltos atrás, mejor tabú si todos lo son) | SA, ILS, VNS, TS | 10+10, 10×10 | 5 s | 700 exp. × 3 réplicas | TS entra al espacio en serio |
 | [`tune_run54/`](tune_run54/) | 30 oct | job shop, **componentes C++ generados por Opus 5.5** (corrida 104), irace en C++ | SA, ILS, VNS, TS | 10+10, 10×10 | 5 s | 700 exp. × 3 réplicas | paso 2: el LLM escribe C++ |
+| [`tune_run55/`](tune_run55/) | 30 oct | job shop, catálogo a mano en C++, irace afinando en **15×15 con 10 s** | SA, ILS, VNS, TS | 10+10, 15×15 | 10 s | 700 exp. × 3 réplicas | afinar en el tamaño de Taillard |
+| [`tune_run56/`](tune_run56/) | 30 oct | lo mismo con los componentes C++ de Opus (corrida 104) | SA, ILS, VNS, TS | 10+10, 15×15 | 10 s | 700 exp. × 3 réplicas | ídem |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -637,6 +639,23 @@ actual en caché (la misma velocidad que el catálogo a mano: ~100 000–140 000
   catálogo generado queda detrás (una semilla por instancia; la TS de la réplica 2 llega a 7,6 %). No es
   velocidad (iteraciones/s iguales): las configuraciones se afinaron en 10×10 con 5 s y transferirlas a
   instancias más grandes funciona peor con estos componentes; habría que afinar en 15×15 para separarlo.
+
+Afinando en 15×15 con 10 s (runs 55 y 56) la desventaja en 20×15 desaparece: venía de transferir lo
+afinado en 10×10. En el tuning, generado 0,73 % contra a mano 0,91 % (+0,18 [−0,06, +0,42], ruido); las
+tres réplicas del generado eligen TS con su intercambio crítico desde una solución al azar. En Taillard
+(`taillard_run55.json`, `taillard_run56.json`; 3 semillas, 30 s; diferencia a mano − generado por
+instancia, IC95 por bootstrap sobre las 10 instancias de cada grupo):
+
+| | generado (56) | a mano (55) | diferencia |
+|---|---|---|---|
+| 15×15, media de las 3 configuraciones y semillas | 1,07 % | 1,32 % | +0,25 [−0,32, +1,06] |
+| 20×15, ídem | 1,97 % | 2,19 % | +0,22 [+0,02, +0,42] |
+| 15×15, mejor de las 9 corridas por instancia | 0,47 % | 0,62 % | +0,15 [−0,04, +0,46] |
+| 20×15, ídem | 1,25 % | 1,51 % | +0,27 [+0,02, +0,50] |
+
+Con todo el ciclo hecho por el LLM en C++ (componentes) y el tuner (irace), el resultado iguala o supera
+levemente al catálogo escrito a mano, también en Taillard. La distancia al estado del arte sigue ahí
+(~1 % en 15×15 con 30 s): ninguno de los dos catálogos tiene evaluación incremental de N5.
 
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 
