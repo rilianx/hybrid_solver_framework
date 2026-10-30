@@ -1,0 +1,1182 @@
+{
+  "catalog": "handwritten",
+  "generated_components": [],
+  "settings": {
+    "trials": 40,
+    "budget": 5.0,
+    "train": 10,
+    "test": 10,
+    "problem": "jobshop",
+    "size": "10x10",
+    "seed": 0,
+    "tuner_seed": 0,
+    "seeds_test": 3,
+    "objective": "ratio",
+    "skeletons": "all",
+    "ref_time": 60.0,
+    "reeval_top": 5,
+    "reeval_seeds": 2,
+    "race_seeds": 6,
+    "screen": -1,
+    "defaults_margin": 0.005,
+    "native": true
+  },
+  "tuning": {
+    "best_config": {
+      "skeleton": "SA",
+      "constructor": "greedy_earliest_end",
+      "greedy_earliest_end.rule": "greedy",
+      "greedy_earliest_end.alpha": 0.5,
+      "neighborhood": "critical_swap",
+      "SA.T0": 31.622776601683793,
+      "SA.cooling": "time",
+      "SA.T_end": 0.001,
+      "SA.alpha": 0.8995,
+      "SA.iters_per_T": 26
+    },
+    "best_cost": 0.2079845855868378,
+    "best_summary": "SA[constructor=greedy_earliest_end, neighborhood=critical_swap]",
+    "best_default_cost": 0.20811597538188456,
+    "best_default_summary": "SA[constructor=job_order, neighborhood=critical_swap]",
+    "n_trials": 40,
+    "n_failed": 0,
+    "seconds": 3950.7,
+    "skeleton_usage": {
+      "SA": 20,
+      "ILS": 7,
+      "VNS": 7,
+      "TS": 6
+    },
+    "best_trial_number": 36,
+    "reevaluated": [
+      {
+        "number": 36,
+        "enqueued": false,
+        "twin": false,
+        "summary": "SA[constructor=greedy_earliest_end, neighborhood=critical_swap]",
+        "costs": [
+          0.20760746254626797,
+          0.20813469320865036,
+          0.2078789599376117,
+          0.2079522447895689,
+          0.20811465482576827,
+          0.2079229208052445,
+          0.20808791539485805
+        ],
+        "mean": 0.20795697878685285,
+        "seeds": 7
+      },
+      {
+        "number": 12,
+        "enqueued": false,
+        "twin": false,
+        "summary": "SA[constructor=greedy_most_work_remaining, neighborhood=critical_swap]",
+        "costs": [
+          0.20788831459645482,
+          0.20820094085503632,
+          0.20820331123501692,
+          0.20820331123501692,
+          0.20807856073601488,
+          0.20820094085503632,
+          0.2077674407488776
+        ],
+        "mean": 0.20807754575163626,
+        "seeds": 7
+      },
+      {
+        "number": 35,
+        "enqueued": false,
+        "twin": false,
+        "summary": "SA[constructor=job_order, neighborhood=critical_swap]",
+        "costs": [
+          0.20811505243692047,
+          0.2081220674336771,
+          0.2077966258664604,
+          0.2081958169211129,
+          0.20772614945158324,
+          0.20802992453371205,
+          0.20805970268800705
+        ],
+        "mean": 0.2080064770473533,
+        "seeds": 7
+      },
+      {
+        "number": 13,
+        "enqueued": false,
+        "twin": false,
+        "summary": "ILS[constructor=greedy_most_work_remaining, neighborhood=critical_swap, perturbation=critical_kick]",
+        "costs": [
+          0.21341797943878568,
+          0.2137540162818447,
+          0.2140081131961719
+        ],
+        "mean": 0.21372670297226745,
+        "seeds": 3,
+        "eliminated_after": 2
+      },
+      {
+        "number": 26,
+        "enqueued": false,
+        "twin": false,
+        "summary": "ILS[constructor=greedy_most_work_remaining, neighborhood=critical_insert, perturbation=critical_kick]",
+        "costs": [
+          0.2142345480693741,
+          0.2157095297886095,
+          0.21463962853136392
+        ],
+        "mean": 0.21486123546311583,
+        "seeds": 3,
+        "eliminated_after": 2
+      },
+      {
+        "number": 36,
+        "enqueued": false,
+        "twin": true,
+        "summary": "SA[constructor=greedy_earliest_end, neighborhood=critical_swap]",
+        "costs": [
+          0.2082446025323113,
+          0.20772129293898284,
+          0.20826567598068696,
+          0.20773144628107137,
+          0.20811661788436447,
+          0.20758032550420555,
+          0.20823213798624204
+        ],
+        "mean": 0.2079845855868378,
+        "seeds": 7,
+        "preferred_defaults": true
+      },
+      {
+        "number": 35,
+        "enqueued": false,
+        "twin": true,
+        "summary": "SA[constructor=job_order, neighborhood=critical_swap]",
+        "costs": [
+          0.2079202512349061,
+          0.20803161424287478,
+          0.208267862922949,
+          0.20794738827696851,
+          0.20811674214608317,
+          0.20811674214608317,
+          0.20808791539485805
+        ],
+        "mean": 0.20806978805210324,
+        "seeds": 7
+      },
+      {
+        "number": 26,
+        "enqueued": false,
+        "twin": true,
+        "summary": "ILS[constructor=greedy_most_work_remaining, neighborhood=critical_insert, perturbation=critical_kick]",
+        "costs": [
+          0.21640021237078083,
+          0.21789355912717764,
+          0.2179057135119921
+        ],
+        "mean": 0.2173998283366502,
+        "seeds": 3,
+        "eliminated_after": 2
+      }
+    ],
+    "best_is_twin": true,
+    "incumbent_curve": [
+      0.20811597538188456,
+      0.20811597538188456,
+      0.20811597538188456,
+      0.20811597538188456,
+      0.20801694174688157,
+      0.20801694174688157,
+      0.20801694174688157,
+      0.20801694174688157,
+      0.20801694174688157,
+      0.20801694174688157,
+      0.20801694174688157,
+      0.20801694174688157,
+      0.20788831459645482,
+      0.20788831459645482,
+      0.20788831459645482,
+      0.20788831459645482,
+      0.20788831459645482,
+      0.20785244439036732,
+      0.20785244439036732,
+      0.20785244439036732,
+      0.20785244439036732,
+      0.20785244439036732,
+      0.20785244439036732,
+      0.20785244439036732,
+      0.20773144628107137,
+      0.20773144628107137,
+      0.20773144628107137,
+      0.20773144628107137,
+      0.20773144628107137,
+      0.20773144628107137,
+      0.20773144628107137,
+      0.20773144628107137,
+      0.20773144628107137,
+      0.20773144628107137,
+      0.20773144628107137,
+      0.20773144628107137,
+      0.20760746254626797,
+      0.20760746254626797,
+      0.20760746254626797,
+      0.20760746254626797
+    ],
+    "trials": [
+      {
+        "number": 0,
+        "cost": 0.20811597538188456,
+        "seconds": 50.01,
+        "enqueued": true,
+        "summary": "SA[constructor=job_order, neighborhood=critical_swap]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "job_order",
+          "neighborhood": "critical_swap",
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 1,
+        "cost": 0.21990427817518557,
+        "seconds": 50.01,
+        "enqueued": true,
+        "summary": "ILS[constructor=job_order, neighborhood=critical_swap, perturbation=critical_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "job_order",
+          "neighborhood": "critical_swap",
+          "perturbation": "critical_kick",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 2,
+        "cost": 0.2486128150403764,
+        "seconds": 50.01,
+        "enqueued": true,
+        "summary": "VNS[constructor=job_order, neighborhood=critical_swap]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "job_order",
+          "neighborhood": "critical_swap",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 3,
+        "cost": 0.2498167340805327,
+        "seconds": 50.01,
+        "enqueued": true,
+        "summary": "TS[constructor=job_order, neighborhood=critical_swap]",
+        "config": {
+          "skeleton": "TS",
+          "constructor": "job_order",
+          "neighborhood": "critical_swap",
+          "TS.tenure": 16,
+          "TS.candidate_size": 52
+        }
+      },
+      {
+        "number": 4,
+        "cost": 0.20801694174688157,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_earliest_end, neighborhood=critical_swap]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_earliest_end",
+          "greedy_earliest_end.rule": "greedy",
+          "greedy_earliest_end.alpha": 0.5,
+          "neighborhood": "critical_swap",
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 5,
+        "cost": 0.22188230276818457,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_earliest_end, neighborhood=critical_swap, perturbation=critical_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_earliest_end",
+          "greedy_earliest_end.rule": "greedy",
+          "greedy_earliest_end.alpha": 0.5,
+          "neighborhood": "critical_swap",
+          "perturbation": "critical_kick",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 6,
+        "cost": 0.23125718114844945,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_earliest_end, neighborhood=critical_swap]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_earliest_end",
+          "greedy_earliest_end.rule": "greedy",
+          "greedy_earliest_end.alpha": 0.5,
+          "neighborhood": "critical_swap",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 7,
+        "cost": 0.23020763860824162,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "TS[constructor=greedy_earliest_end, neighborhood=critical_swap]",
+        "config": {
+          "skeleton": "TS",
+          "constructor": "greedy_earliest_end",
+          "greedy_earliest_end.rule": "greedy",
+          "greedy_earliest_end.alpha": 0.5,
+          "neighborhood": "critical_swap",
+          "TS.tenure": 16,
+          "TS.candidate_size": 52
+        }
+      },
+      {
+        "number": 8,
+        "cost": 1.0,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "SA[constructor=job_order, neighborhood=critical_insert]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "job_order",
+          "neighborhood": "critical_insert",
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 9,
+        "cost": 0.2297961894329154,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "ILS[constructor=job_order, neighborhood=critical_insert, perturbation=critical_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "job_order",
+          "neighborhood": "critical_insert",
+          "perturbation": "critical_kick",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 10,
+        "cost": 0.2601310860601499,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "VNS[constructor=job_order, neighborhood=critical_insert]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "job_order",
+          "neighborhood": "critical_insert",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 11,
+        "cost": 1.0,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "TS[constructor=job_order, neighborhood=critical_insert]",
+        "config": {
+          "skeleton": "TS",
+          "constructor": "job_order",
+          "neighborhood": "critical_insert",
+          "TS.tenure": 16,
+          "TS.candidate_size": 52
+        }
+      },
+      {
+        "number": 12,
+        "cost": 0.20788831459645482,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_most_work_remaining, neighborhood=critical_swap]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_most_work_remaining",
+          "greedy_most_work_remaining.rule": "greedy",
+          "greedy_most_work_remaining.alpha": 0.5,
+          "neighborhood": "critical_swap",
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        }
+      },
+      {
+        "number": 13,
+        "cost": 0.21341797943878568,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_most_work_remaining, neighborhood=critical_swap, perturbation=critical_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_most_work_remaining",
+          "greedy_most_work_remaining.rule": "greedy",
+          "greedy_most_work_remaining.alpha": 0.5,
+          "neighborhood": "critical_swap",
+          "perturbation": "critical_kick",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        }
+      },
+      {
+        "number": 14,
+        "cost": 0.21637921145980807,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_most_work_remaining, neighborhood=critical_swap]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_most_work_remaining",
+          "greedy_most_work_remaining.rule": "greedy",
+          "greedy_most_work_remaining.alpha": 0.5,
+          "neighborhood": "critical_swap",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        }
+      },
+      {
+        "number": 15,
+        "cost": 0.22050443487238827,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "TS[constructor=greedy_most_work_remaining, neighborhood=critical_swap]",
+        "config": {
+          "skeleton": "TS",
+          "constructor": "greedy_most_work_remaining",
+          "greedy_most_work_remaining.rule": "greedy",
+          "greedy_most_work_remaining.alpha": 0.5,
+          "neighborhood": "critical_swap",
+          "TS.tenure": 16,
+          "TS.candidate_size": 52
+        }
+      },
+      {
+        "number": 16,
+        "cost": 0.22503300686914743,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_most_work_remaining, neighborhood=critical_swap]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_most_work_remaining",
+          "greedy_most_work_remaining.rule": "roulette",
+          "greedy_most_work_remaining.alpha": 0.020045843174444633,
+          "neighborhood": "critical_swap",
+          "SA.T0": 14.667179240470118,
+          "SA.cooling": "iterations",
+          "SA.T_end": 5.137365634282388e-05,
+          "SA.alpha": 0.8578716812871949,
+          "SA.iters_per_T": 31
+        }
+      },
+      {
+        "number": 17,
+        "cost": 0.20785244439036732,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_earliest_end, neighborhood=critical_swap]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_earliest_end",
+          "greedy_earliest_end.rule": "rcl",
+          "greedy_earliest_end.alpha": 0.9992148619452625,
+          "neighborhood": "critical_swap",
+          "SA.T0": 860.9272984475452,
+          "SA.cooling": "time",
+          "SA.T_end": 0.0397846135818913,
+          "SA.alpha": 0.993813580286154,
+          "SA.iters_per_T": 1
+        }
+      },
+      {
+        "number": 18,
+        "cost": 0.2900456965030148,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_most_work_remaining, neighborhood=critical_insert]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_most_work_remaining",
+          "greedy_most_work_remaining.rule": "rcl",
+          "greedy_most_work_remaining.alpha": 0.9667779463359969,
+          "neighborhood": "critical_insert",
+          "SA.T0": 873.9983391083374,
+          "SA.cooling": "time",
+          "SA.T_end": 0.06137892359865288,
+          "SA.alpha": 0.9915141063511312,
+          "SA.iters_per_T": 1
+        }
+      },
+      {
+        "number": 19,
+        "cost": 0.2907124225202357,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "TS[constructor=greedy_earliest_end, neighborhood=critical_insert]",
+        "config": {
+          "skeleton": "TS",
+          "constructor": "greedy_earliest_end",
+          "greedy_earliest_end.rule": "rcl",
+          "greedy_earliest_end.alpha": 0.9628050943829876,
+          "neighborhood": "critical_insert",
+          "TS.tenure": 30,
+          "TS.candidate_size": 5
+        }
+      },
+      {
+        "number": 20,
+        "cost": 0.2751644121532152,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_earliest_end, neighborhood=critical_insert]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_earliest_end",
+          "greedy_earliest_end.rule": "roulette",
+          "greedy_earliest_end.alpha": 0.08967596273953388,
+          "neighborhood": "critical_insert",
+          "SA.T0": 921.5082688708412,
+          "SA.cooling": "time",
+          "SA.T_end": 0.03541802597722269,
+          "SA.alpha": 0.9986103665665506,
+          "SA.iters_per_T": 2
+        }
+      },
+      {
+        "number": 21,
+        "cost": 0.26307463420587324,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_earliest_end, neighborhood=critical_swap]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_earliest_end",
+          "greedy_earliest_end.rule": "rcl",
+          "greedy_earliest_end.alpha": 0.9770294712525402,
+          "neighborhood": "critical_swap",
+          "SA.T0": 1.0420840214081515,
+          "SA.cooling": "time",
+          "SA.T_end": 0.0017662079411266758,
+          "SA.alpha": 0.9322897315996181,
+          "SA.iters_per_T": 47
+        }
+      },
+      {
+        "number": 22,
+        "cost": 0.20798094727907532,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_earliest_end, neighborhood=critical_swap]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_earliest_end",
+          "greedy_earliest_end.rule": "rcl",
+          "greedy_earliest_end.alpha": 0.7238623174682722,
+          "neighborhood": "critical_swap",
+          "SA.T0": 117.52604096330266,
+          "SA.cooling": "time",
+          "SA.T_end": 0.0065128083217598975,
+          "SA.alpha": 0.8038232354182853,
+          "SA.iters_per_T": 17
+        }
+      },
+      {
+        "number": 23,
+        "cost": 0.24055342768182827,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_most_work_remaining, neighborhood=critical_swap]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_most_work_remaining",
+          "greedy_most_work_remaining.rule": "rcl",
+          "greedy_most_work_remaining.alpha": 0.9324303375699838,
+          "neighborhood": "critical_swap",
+          "SA.T0": 206.96260060293145,
+          "SA.cooling": "iterations",
+          "SA.T_end": 0.011172434884345168,
+          "SA.alpha": 0.8019964888944626,
+          "SA.iters_per_T": 13
+        }
+      },
+      {
+        "number": 24,
+        "cost": 0.20773144628107137,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_earliest_end, neighborhood=critical_swap]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_earliest_end",
+          "greedy_earliest_end.rule": "rcl",
+          "greedy_earliest_end.alpha": 0.7555698442943674,
+          "neighborhood": "critical_swap",
+          "SA.T0": 139.8713792817692,
+          "SA.cooling": "time",
+          "SA.T_end": 0.007680775081110749,
+          "SA.alpha": 0.8003936223726678,
+          "SA.iters_per_T": 15
+        }
+      },
+      {
+        "number": 25,
+        "cost": 0.2424035290106897,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_earliest_end, neighborhood=critical_insert, perturbation=critical_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_earliest_end",
+          "greedy_earliest_end.rule": "rcl",
+          "greedy_earliest_end.alpha": 0.8064242723358979,
+          "neighborhood": "critical_insert",
+          "perturbation": "critical_kick",
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.2882944687421407,
+          "ILS.ls_sample": 4
+        }
+      },
+      {
+        "number": 26,
+        "cost": 0.2142345480693741,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_most_work_remaining, neighborhood=critical_insert, perturbation=critical_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_most_work_remaining",
+          "greedy_most_work_remaining.rule": "roulette",
+          "greedy_most_work_remaining.alpha": 0.03291119980256352,
+          "neighborhood": "critical_insert",
+          "perturbation": "critical_kick",
+          "ILS.strength": 6,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.0322439391639989,
+          "ILS.ls_sample": 202
+        }
+      },
+      {
+        "number": 27,
+        "cost": 0.2082867494290626,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_earliest_end, neighborhood=critical_swap]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_earliest_end",
+          "greedy_earliest_end.rule": "rcl",
+          "greedy_earliest_end.alpha": 0.761779438543464,
+          "neighborhood": "critical_swap",
+          "SA.T0": 188.24241029907324,
+          "SA.cooling": "time",
+          "SA.T_end": 0.00015821732748967301,
+          "SA.alpha": 0.9547431508998457,
+          "SA.iters_per_T": 12
+        }
+      },
+      {
+        "number": 28,
+        "cost": 0.22103925835429913,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_most_work_remaining, neighborhood=critical_swap]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_most_work_remaining",
+          "greedy_most_work_remaining.rule": "greedy",
+          "greedy_most_work_remaining.alpha": 0.3043891442080666,
+          "neighborhood": "critical_swap",
+          "SA.T0": 6.758951351396855,
+          "SA.cooling": "time",
+          "SA.T_end": 0.009630195813743936,
+          "SA.alpha": 0.8491973687902641,
+          "SA.iters_per_T": 36
+        }
+      },
+      {
+        "number": 29,
+        "cost": 0.3444925474538028,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "SA[constructor=job_order, neighborhood=critical_swap]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "job_order",
+          "neighborhood": "critical_swap",
+          "SA.T0": 336.0263064845873,
+          "SA.cooling": "iterations",
+          "SA.T_end": 0.02476601317977198,
+          "SA.alpha": 0.8429121678140209,
+          "SA.iters_per_T": 8
+        }
+      },
+      {
+        "number": 30,
+        "cost": 0.21975659700327999,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_earliest_end, neighborhood=critical_insert]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_earliest_end",
+          "greedy_earliest_end.rule": "rcl",
+          "greedy_earliest_end.alpha": 0.8362497675195739,
+          "neighborhood": "critical_insert",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.037474714753806176,
+          "VNS.ls_sample": 195
+        }
+      },
+      {
+        "number": 31,
+        "cost": 0.20792137636546237,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_earliest_end, neighborhood=critical_swap]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_earliest_end",
+          "greedy_earliest_end.rule": "rcl",
+          "greedy_earliest_end.alpha": 0.6578951177778799,
+          "neighborhood": "critical_swap",
+          "SA.T0": 110.57783244773537,
+          "SA.cooling": "time",
+          "SA.T_end": 0.0037853580317465884,
+          "SA.alpha": 0.8087453478304472,
+          "SA.iters_per_T": 19
+        }
+      },
+      {
+        "number": 32,
+        "cost": 0.20820331123501692,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_earliest_end, neighborhood=critical_swap]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_earliest_end",
+          "greedy_earliest_end.rule": "rcl",
+          "greedy_earliest_end.alpha": 0.6364145853039855,
+          "neighborhood": "critical_swap",
+          "SA.T0": 106.44209523332601,
+          "SA.cooling": "time",
+          "SA.T_end": 0.004128080380184592,
+          "SA.alpha": 0.8261784867349514,
+          "SA.iters_per_T": 20
+        }
+      },
+      {
+        "number": 33,
+        "cost": 0.20811505243692047,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_earliest_end, neighborhood=critical_swap]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_earliest_end",
+          "greedy_earliest_end.rule": "roulette",
+          "greedy_earliest_end.alpha": 0.6342748856542317,
+          "neighborhood": "critical_swap",
+          "SA.T0": 70.23911651253971,
+          "SA.cooling": "time",
+          "SA.T_end": 0.0002492459546967556,
+          "SA.alpha": 0.876023548279945,
+          "SA.iters_per_T": 20
+        }
+      },
+      {
+        "number": 34,
+        "cost": 0.2164711228328,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_most_work_remaining, neighborhood=critical_insert]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_most_work_remaining",
+          "greedy_most_work_remaining.rule": "greedy",
+          "greedy_most_work_remaining.alpha": 0.753848196146339,
+          "neighborhood": "critical_insert",
+          "VNS.shake_strength": 4,
+          "VNS.ls_time_share": 0.2946884474865429,
+          "VNS.ls_sample": 5
+        }
+      },
+      {
+        "number": 35,
+        "cost": 0.20811505243692047,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "SA[constructor=job_order, neighborhood=critical_swap]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "job_order",
+          "neighborhood": "critical_swap",
+          "SA.T0": 433.5753645483942,
+          "SA.cooling": "time",
+          "SA.T_end": 0.09100535012240808,
+          "SA.alpha": 0.9604230209149163,
+          "SA.iters_per_T": 7
+        }
+      },
+      {
+        "number": 36,
+        "cost": 0.20760746254626797,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "SA[constructor=greedy_earliest_end, neighborhood=critical_swap]",
+        "config": {
+          "skeleton": "SA",
+          "constructor": "greedy_earliest_end",
+          "greedy_earliest_end.rule": "rcl",
+          "greedy_earliest_end.alpha": 0.23456877195663606,
+          "neighborhood": "critical_swap",
+          "SA.T0": 64.55954801796553,
+          "SA.cooling": "time",
+          "SA.T_end": 0.0029415704684052713,
+          "SA.alpha": 0.824461572429844,
+          "SA.iters_per_T": 36
+        }
+      },
+      {
+        "number": 37,
+        "cost": 0.2468147099114038,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "ILS[constructor=greedy_earliest_end, neighborhood=critical_swap, perturbation=critical_kick]",
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "greedy_earliest_end",
+          "greedy_earliest_end.rule": "rcl",
+          "greedy_earliest_end.alpha": 0.03957955416258696,
+          "neighborhood": "critical_swap",
+          "perturbation": "critical_kick",
+          "ILS.strength": 1,
+          "ILS.ls_strategy": "best",
+          "ILS.ls_time_share": 0.033952834830077244,
+          "ILS.ls_sample": 7
+        }
+      },
+      {
+        "number": 38,
+        "cost": 0.22749923579725376,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "VNS[constructor=greedy_earliest_end, neighborhood=critical_swap]",
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "greedy_earliest_end",
+          "greedy_earliest_end.rule": "rcl",
+          "greedy_earliest_end.alpha": 0.19325766902787114,
+          "neighborhood": "critical_swap",
+          "VNS.shake_strength": 1,
+          "VNS.ls_time_share": 0.021072207598967302,
+          "VNS.ls_sample": 4
+        }
+      },
+      {
+        "number": 39,
+        "cost": 0.24410316292915818,
+        "seconds": 50.01,
+        "enqueued": false,
+        "summary": "TS[constructor=greedy_most_work_remaining, neighborhood=critical_insert]",
+        "config": {
+          "skeleton": "TS",
+          "constructor": "greedy_most_work_remaining",
+          "greedy_most_work_remaining.rule": "rcl",
+          "greedy_most_work_remaining.alpha": 0.27792724803275537,
+          "neighborhood": "critical_insert",
+          "TS.tenure": 4,
+          "TS.candidate_size": 9
+        }
+      }
+    ]
+  },
+  "test": {
+    "tuned": {
+      "label": "tuned",
+      "summary": "SA[constructor=greedy_earliest_end, neighborhood=critical_swap]",
+      "mean": 836.6333333333333,
+      "std": 41.246804590039325,
+      "per_instance": [
+        812.3333333333334,
+        747.0,
+        893.0,
+        827.0,
+        887.0,
+        834.0,
+        874.3333333333334,
+        838.0,
+        846.3333333333334,
+        807.3333333333334
+      ],
+      "config": {
+        "skeleton": "SA",
+        "constructor": "greedy_earliest_end",
+        "greedy_earliest_end.rule": "greedy",
+        "greedy_earliest_end.alpha": 0.5,
+        "neighborhood": "critical_swap",
+        "SA.T0": 31.622776601683793,
+        "SA.cooling": "time",
+        "SA.T_end": 0.001,
+        "SA.alpha": 0.8995,
+        "SA.iters_per_T": 26
+      },
+      "gap_per_instance": [
+        0.001644060830250766,
+        0.008097165991902834,
+        0.014772727272727272,
+        0.006082725060827251,
+        0.0,
+        0.0,
+        0.0061373225930188395,
+        0.0011947431302270011,
+        0.00039401103230894945,
+        0.004145936981757924
+      ],
+      "mean_gap": 0.0042468692893020835
+    },
+    "baselines": [
+      {
+        "label": "default:SA",
+        "summary": "SA[constructor=job_order, neighborhood=critical_swap]",
+        "mean": 838.1666666666666,
+        "std": 46.6933852084235,
+        "per_instance": [
+          811.0,
+          744.0,
+          914.6666666666666,
+          822.0,
+          887.3333333333334,
+          836.6666666666666,
+          877.0,
+          837.3333333333334,
+          846.0,
+          805.6666666666666
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "job_order",
+          "neighborhood": "critical_swap",
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.0,
+          0.004048582995951417,
+          0.03939393939393935,
+          0.0,
+          0.00037579857196546923,
+          0.003197442046362864,
+          0.009205983889528193,
+          0.0003982477100757123,
+          0.0,
+          0.0020729684908788915
+        ],
+        "mean_gap": 0.00586929630987019
+      },
+      {
+        "label": "default:ILS",
+        "summary": "ILS[constructor=job_order, neighborhood=critical_swap, perturbation=critical_kick]",
+        "mean": 904.7,
+        "std": 72.79567294832846,
+        "per_instance": [
+          820.6666666666666,
+          763.3333333333334,
+          976.6666666666666,
+          933.6666666666666,
+          944.0,
+          876.3333333333334,
+          969.3333333333334,
+          948.0,
+          970.6666666666666,
+          844.3333333333334
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "job_order",
+          "neighborhood": "critical_swap",
+          "perturbation": "critical_kick",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.011919441019317668,
+          0.030139451192082823,
+          0.1098484848484848,
+          0.13584752635847522,
+          0.06426155580608793,
+          0.05075939248601124,
+          0.11545838128116613,
+          0.13261648745519714,
+          0.1473601260835303,
+          0.050165837479270364
+        ],
+        "mean_gap": 0.08483766840096237
+      },
+      {
+        "label": "default:VNS",
+        "summary": "VNS[constructor=job_order, neighborhood=critical_swap]",
+        "mean": 943.0666666666667,
+        "std": 59.65675895394325,
+        "per_instance": [
+          991.6666666666666,
+          886.6666666666666,
+          956.0,
+          910.6666666666666,
+          975.3333333333334,
+          903.3333333333334,
+          1006.3333333333334,
+          930.3333333333334,
+          988.6666666666666,
+          881.6666666666666
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "job_order",
+          "neighborhood": "critical_swap",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.22277024249897243,
+          0.19658119658119652,
+          0.08636363636363636,
+          0.10786699107866987,
+          0.09958662157083807,
+          0.0831334932054357,
+          0.15803605677023402,
+          0.11150935882118683,
+          0.16863672182821116,
+          0.09660033167495849
+        ],
+        "mean_gap": 0.13310846503933393
+      },
+      {
+        "label": "default:TS",
+        "summary": "TS[constructor=job_order, neighborhood=critical_swap]",
+        "mean": 997.6,
+        "std": 143.06026702058122,
+        "per_instance": [
+          892.0,
+          824.0,
+          1276.0,
+          989.0,
+          919.0,
+          858.0,
+          1137.0,
+          957.0,
+          1186.0,
+          938.0
+        ],
+        "config": {
+          "skeleton": "TS",
+          "constructor": "job_order",
+          "neighborhood": "critical_swap",
+          "TS.tenure": 16,
+          "TS.candidate_size": 52
+        },
+        "gap_per_instance": [
+          0.0998766954377312,
+          0.11201079622132254,
+          0.45,
+          0.20316301703163017,
+          0.036076662908680945,
+          0.02877697841726619,
+          0.3084004602991945,
+          0.14336917562724014,
+          0.40189125295508277,
+          0.16666666666666666
+        ],
+        "mean_gap": 0.19502317055648152
+      }
+    ],
+    "best_baseline": "default:SA",
+    "gain_vs_best_baseline": 0.0018293895406641118,
+    "wins_per_instance": "4/10",
+    "reference": 3976.6,
+    "best_known": [
+      811.0,
+      741.0,
+      880.0,
+      822.0,
+      887.0,
+      834.0,
+      869.0,
+      837.0,
+      846.0,
+      804.0
+    ],
+    "best_baseline_by_gap": "default:SA",
+    "tuned_vs_best_baseline": {
+      "a": "tuned",
+      "b": "default:SA",
+      "mean_diff": 0.001622427020568106,
+      "ci95": [
+        -0.0022859101676887183,
+        0.007455481229746838
+      ],
+      "wins_a": 4,
+      "n": 10,
+      "significant": false
+    },
+    "mip_reference": [
+      899.0,
+      812.0,
+      993.0,
+      932.0,
+      925.0,
+      834.0,
+      908.0,
+      925.0,
+      895.0,
+      850.0
+    ]
+  }
+}
