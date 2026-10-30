@@ -60,6 +60,7 @@ struct CtorHandle {
 // `catalog` debe vivir lo que vive el módulo (una variable estática del pack).
 template <class M, class ToPy, class FromPy>
 void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy from_py) {
+    using Move = hsf::Move;
     using Model = std::shared_ptr<M>;
     py::class_<M, std::shared_ptr<M>>(mod, "Model", py::module_local())
         .def("objective", [=](const M& m, py::handle s) { return m.objective(from_py(s)); })
@@ -126,6 +127,53 @@ void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy 
         return CtorHandle<M>{m, catalog->constructor(name, *m, scoped)};
     });
     // corre la configuración entera en C++ (sin el GIL): (mejor solución, objetivo, iteraciones, segundos)
+    // la operación que el esqueleto repite, medida en C++ (desde Python la conversión de la solución en cada
+    // llamada taparía la diferencia): delta de cada movimiento de cada solución (una vez por movimiento, para no
+    // medir una caché por movimiento), perturbaciones o construcciones greedy completas, por segundo
+    mod.def("bench", [catalog, from_py](Model m, const std::string& slot, const std::string& name, py::dict params,
+                                         py::list sols_py, double seconds) {
+        std::vector<typename M::Solution> sols;
+        for (auto s : sols_py) sols.push_back(from_py(s));
+        Config c = config_from(params), scoped;
+        for (auto& [k, v] : c.num) scoped.num[name + "." + k] = v;
+        for (auto& [k, v] : c.str) scoped.str[name + "." + k] = v;
+        Clock clock;
+        long n = 0;
+        Rng rng(0);
+        if (slot == "neighborhood") {
+            auto nbh = catalog->neighborhood(name, *m, scoped);
+            std::vector<Move> mv;
+            volatile double sink = 0;
+            while (clock.elapsed() < seconds)
+                for (auto& s : sols) {
+                    mv.clear();
+                    nbh->moves(s, mv);
+                    for (auto& x : mv) sink = sink + nbh->delta(s, x), ++n;
+                    if (clock.elapsed() >= seconds) break;
+                }
+        } else if (slot == "perturbation") {
+            auto pert = catalog->perturbation(name, *m, scoped);
+            while (clock.elapsed() < seconds)
+                for (auto& s : sols) { pert->perturb(s, 1.0, rng); ++n; }
+        } else if (slot == "greedy_score" || slot == "constructor") {
+            auto ctor = catalog->constructor(slot == "greedy_score" ? "greedy_" + name : name, *m, scoped);
+            while (clock.elapsed() < seconds) { ctor->build(rng); ++n; }
+        } else {
+            throw std::invalid_argument("bench: slot sin medición: " + slot);
+        }
+        return n / std::max(clock.elapsed(), 1e-9);
+    });
+    // el objetivo completo por segundo, como referencia del costo de una evaluación
+    mod.def("bench_objective", [from_py](Model m, py::list sols_py, double seconds) {
+        std::vector<typename M::Solution> sols;
+        for (auto s : sols_py) sols.push_back(from_py(s));
+        Clock clock;
+        long n = 0;
+        volatile double sink = 0;
+        while (clock.elapsed() < seconds)
+            for (auto& s : sols) sink = sink + m->objective(s), ++n;
+        return n / std::max(clock.elapsed(), 1e-9);
+    });
     mod.def("solve", [catalog, to_py](Model m, py::dict config, std::vector<std::string> shake, uint64_t seed, double budget) {
         Config c = config_from(config);
         Result<M> r = [&] {

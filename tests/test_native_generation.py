@@ -89,3 +89,27 @@ def test_the_tuner_runs_the_generated_cpp_catalog(pack, tmp_path):
           "--train", "1", "--test", "1", "--seeds", "1", "--skeletons", "SA", "TS", "--out", str(tmp_path / "out")])
     out = json.loads((tmp_path / "out" / "generated.json").read_text())
     assert "adjacent_swap" in out["test"]["tuned"]["summary"]
+
+
+def test_the_optimization_stage_accepts_a_faster_equivalent_version_and_rejects_a_different_one(pack, tmp_path):
+    import json
+
+    from llm import ScriptedClient
+    from llm.native_generator import generate_native_slot, write_catalog
+    from llm.native_optimizer import optimize_native
+
+    accepted, _ = generate_native_slot(ScriptedClient(responses=[SWAP]), pack, "neighborhood", 1, tmp_path, verbose=False)
+    write_catalog(tmp_path, accepted)
+    fast = SWAP.replace(
+        "double delta(const JobShop::Solution& s, const Move& m) override { return js.objective(apply(s, m)) - js.objective(s); }",
+        "double delta(const JobShop::Solution& s, const Move& m) override {\n"
+        "        if (!has || !(s == last)) { last = s; base = js.objective(s); has = true; }\n"
+        "        return js.objective(apply(s, m)) - base;\n    }\n    JobShop::Solution last; double base = 0; bool has = false;")
+    wrong = fast.replace("- base;", "- base + 1.0;")
+    client = ScriptedClient(responses=[wrong, fast])
+    out = optimize_native(client, pack, tmp_path, rounds=2, verbose=False)
+    row = out["neighborhood/adjacent_swap"]
+    assert row["accepted"] and row["rounds"] == 2 and row["after"] >= 1.5 * row["before"]
+    assert "delta" in row["rejections"][0] and "evaluaciones de delta por segundo" in client.calls[0][1]
+    entry = json.loads((tmp_path / "catalog.json").read_text())[0]
+    assert entry["path"].endswith("adjacent_swap_r2.hpp") and entry["path"] == row["file"]
