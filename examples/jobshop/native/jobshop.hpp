@@ -333,6 +333,7 @@ struct CriticalSwap : hsf::Neighborhood<M> {
     }
     Sol apply(const Sol& s, const Move& mv) override { return swap_jobs(s, mv[0], mv[1], mv[2]); }
     double delta(const Sol& s, const Move& mv) override { return js.objective(apply(s, mv)) - js.objective(s); }
+    Move tabu_key(const Move& mv) override { return {mv[0], mv[2], mv[1], 0, 0, 0}; }  // el que lo deshace
 };
 
 // Mover un trabajo de un bloque crítico al principio o al final del bloque. Movimiento (m, trabajo, desde, hasta).
@@ -356,6 +357,7 @@ struct CriticalInsert : hsf::Neighborhood<M> {
     }
     Sol apply(const Sol& s, const Move& mv) override { return move_to(s, mv[0], mv[1], mv[3]); }
     double delta(const Sol& s, const Move& mv) override { return js.objective(apply(s, mv)) - js.objective(s); }
+    Move tabu_key(const Move& mv) override { return {mv[0], mv[1], mv[3], mv[2], 0, 0}; }
 };
 
 struct CriticalKick : hsf::Perturbation<M> {

@@ -37,15 +37,33 @@ from .optuna_tuner import tune_with_optuna
 
 
 def make_assembler(pack: ProblemPack, catalog: str, generated_dir: str | None = None, verbose: bool = False,
-                   skeletons: list[str] | None = None) -> tuple[Assembler, list[str]]:
+                   skeletons: list[str] | None = None, native: bool = False) -> tuple[Assembler, list[str]]:
+    """Con `native=True` las configuraciones corren en C++ (`core.native_runner`): el catálogo se reduce a
+    los componentes que existen en C++ y el espacio a los esqueletos nativos."""
+    mod = None
+    if native:
+        from core.native_runner import NATIVE_SKELETONS, native_pack
+
+        if catalog != "handwritten":
+            raise SystemExit("--native: por ahora solo el catálogo escrito a mano tiene versión en C++")
+        pack, mod = native_pack(pack)
+        skeletons = [s for s in (skeletons or NATIVE_SKELETONS) if s in NATIVE_SKELETONS]
     generated = load_generated(pack, generated_dir, verbose=verbose) if catalog in ("all", "generated") else []
     registry = build_registry(pack, generated, handwritten=catalog != "generated")
     sks = {k: SKELETONS[k] for k in skeletons} if skeletons else dict(SKELETONS)
-    return Assembler(problem_factory=pack.problem_factory, registry=registry, skeletons=sks), [c.name for c in generated]
+    if mod is not None:
+        from core.native_runner import NativeAssembler
+
+        assembler = NativeAssembler(problem_factory=pack.problem_factory, registry=registry, skeletons=sks,
+                                    native=mod.native, model_of=mod.model)
+    else:
+        assembler = Assembler(problem_factory=pack.problem_factory, registry=registry, skeletons=sks)
+    return assembler, [c.name for c in generated]
 
 
 def run_experiment(pack: ProblemPack, catalog: str, args, train, test, out_dir: Path):
-    assembler, gen_names = make_assembler(pack, catalog, args.generated, verbose=True, skeletons=args.skeletons)
+    assembler, gen_names = make_assembler(pack, catalog, args.generated, verbose=True, skeletons=args.skeletons,
+                                          native=args.native)
     space = assembler.config_space()
     n_gen_in_space = sum(1 for n in space.nodes if n.type == "cat" for v in n.values if v in gen_names)
     print(f"\n=== catálogo `{catalog}`: {len(space.nodes)} parámetros, {n_gen_in_space} opciones generadas por LLM ===")
@@ -76,7 +94,8 @@ def run_experiment(pack: ProblemPack, catalog: str, args, train, test, out_dir: 
         "settings": {"trials": args.trials, "budget": args.budget, "train": len(train), "test": len(test),
                      "problem": pack.name, "size": args.size, "seed": args.seed, "tuner_seed": args.tuner_seed, "seeds_test": args.seeds,
                      "objective": args.objective, "skeletons": args.skeletons or "all", "ref_time": args.ref_time,
-                     "reeval_top": args.reeval_top, "reeval_seeds": args.reeval_seeds, "race_seeds": args.race_seeds, "screen": args.screen, "defaults_margin": args.defaults_margin},
+                     "reeval_top": args.reeval_top, "reeval_seeds": args.reeval_seeds, "race_seeds": args.race_seeds, "screen": args.screen, "defaults_margin": args.defaults_margin,
+                     "native": args.native},
         "tuning": result.to_dict(),
     }
     return payload, report, assembler.penalty_cost
@@ -126,6 +145,8 @@ def main(pack: ProblemPack, argv: list[str] | None = None) -> None:
                     help="variantes de un solo componente encoladas tras los defaults (-1 = un tercio de los trials; 0 = no)")
     ap.add_argument("--generated", default=pack.default_workspace)
     ap.add_argument("--out", default="tuning_out")
+    ap.add_argument("--native", action="store_true",
+                    help="correr las configuraciones en C++ (backend nativo del problema; solo SA, ILS, VNS y TS)")
     ap.add_argument("--irace", default=None, help="directorio donde escribir un escenario irace (opcional)")
     args = ap.parse_args(argv)
     if args.tuner_seed is None:

@@ -68,6 +68,10 @@ class CriticalSwap:
     def undo(self, sol, mv):
         return _swap(sol, *mv)
 
+    def inverse(self, mv):  # para la memoria tabú: el intercambio que lo deshace
+        m, a, b = mv
+        return (m, b, a)
+
     def delta(self, sol, mv):
         return self.problem.objective(self.apply(sol, mv)) - self.problem.objective(sol)
 
@@ -102,6 +106,10 @@ class CriticalInsert:
     def undo(self, sol, mv):
         m, job, frm, _ = mv
         return _move(sol, m, job, frm)
+
+    def inverse(self, mv):
+        m, job, frm, to = mv
+        return (m, job, to, frm)
 
     def delta(self, sol, mv):
         return self.problem.objective(self.apply(sol, mv)) - self.problem.objective(sol)

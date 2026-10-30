@@ -99,7 +99,8 @@ struct Neighborhood {
     virtual void moves(const Sol& s, std::vector<Move>& out) = 0;  // agrega a `out` (vacío al llamar)
     virtual Sol apply(const Sol& s, const Move& m) = 0;
     virtual double delta(const Sol& s, const Move& m) = 0;  // objective(apply(s, m)) - objective(s)
-    // la clave tabú del movimiento aplicado: por defecto el mismo movimiento (auto-inversos)
+    // lo que TS prohíbe tras aplicar `m`: el movimiento que lo deshace (como `inverse` en Python); por
+    // defecto el mismo movimiento (correcto para los auto-inversos, p.ej. un flip)
     virtual Move tabu_key(const Move& m) { return m; }
     // hasta k movimientos distintos al azar; con k o menos, todos en orden sin gastar azar (como en Python)
     virtual void sample(const Sol& s, int k, Rng& rng, std::vector<Move>& out) {

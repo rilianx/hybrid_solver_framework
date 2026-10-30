@@ -14,6 +14,7 @@ from __future__ import annotations
 from random import Random
 from typing import Any, Callable
 
+from core.assembler import Assembler
 from core.skeleton import RunResult
 
 NATIVE_SKELETONS = ("SA", "ILS", "VNS", "TS")
@@ -53,4 +54,36 @@ class NativeRunner:
         return run
 
 
-__all__ = ["NATIVE_SKELETONS", "NativeRunner"]
+class NativeAssembler(Assembler):
+    """Un `Assembler` cuyas configuraciones corren en C++: mismo espacio, mismos defaults y misma
+    evaluación (`evaluate`, `config_space`, ...); solo cambia `assemble`. La factibilidad del resultado la
+    sigue revisando el `problem_factory` de Python (un control cruzado más)."""
+
+    def __init__(self, *args, native, model_of, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.native, self.model_of = native, model_of
+
+    def assemble(self, config: dict[str, Any]):
+        return NativeRunner(self, self.native, self.model_of).assemble(config)
+
+
+def native_pack(pack):
+    """El pack con solo los componentes que existen en C++ (en los slots que corre C++) y los
+    esqueletos nativos; `(pack, módulo nativo)`."""
+    import importlib
+    from dataclasses import replace
+
+    if not pack.native_module:
+        raise SystemExit(f"el problema {pack.name} no tiene backend nativo (ProblemPack.native_module)")
+    mod = importlib.import_module(pack.native_module)
+    names = mod.native.names()
+    keep = []
+    for comp, factory in pack.handwritten:
+        slot = comp["slot"]
+        if slot in names and comp["name"] not in names[slot]:
+            continue
+        keep.append((comp, factory))
+    return replace(pack, handwritten=keep), mod
+
+
+__all__ = ["NATIVE_SKELETONS", "NativeAssembler", "NativeRunner", "native_pack"]

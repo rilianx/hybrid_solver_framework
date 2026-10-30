@@ -184,6 +184,11 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   `sequences` (una secuencia por máquina, plan semiactivo; un ciclo con las
   rutas es la familia `orden`) y `operations` (permutación con repetición de
   Bierwirth, con decodificador).
+- **Backend nativo** (`native/`, `core/native_runner.py`) — la mitad "ejecución" en C++: contratos de
+  los slots, constructor greedy y los esqueletos SA, ILS, VNS y TS con la semántica y los parámetros
+  de Python (una configuración afinada corre igual en los dos lados), bindings pybind11 y compilación
+  con caché. Un modelo nativo se valida con los mismos casos y capas que las piezas de Python (los
+  casos son texto); el tuner lo usa con `--native`. Primer pack: `examples/jobshop/native/`.
 - **Ciclo completo** (`llm/cycle.py`; diagrama de estados en
   [`docs/ciclo_completo.md`](docs/ciclo_completo.md)) — de la descripción y los casos a un
   solver afinado, por representación: `model` genera el ProblemModel por
@@ -214,7 +219,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   `lru_cache(maxsize=None)` de módulo agotó los runners en la run 34).
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 236 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 245 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -235,7 +240,7 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 236 passed (~160 s)
+python -m pytest -q                 # 245 passed (~170 s)
 
 # segundo problema: CVRP con flota libre (mismos CLI, otro pack)
 python -m examples.cvrp.tune --catalog handwritten --size 30 --trials 30 --ref-time 60
@@ -243,6 +248,9 @@ python -m examples.cvrp.tune --catalog handwritten --size 30 --trials 30 --ref-t
 python -m examples.jobshop.cases    # regenera cases.json (óptimos por fuerza bruta)
 python -m examples.jobshop.tune --catalog handwritten --size 10x10 --trials 30 --ref-time 60
 python -m llm.cycle model --problem jobshop --variant sequences --workspace generated/jobshop_sequences_cycle --provider anthropic
+# backend nativo (C++, necesita g++ y pybind11): las configuraciones corren enteras en C++
+python -m examples.jobshop.tune --native --catalog handwritten --size 10x10 --trials 40
+python -m scripts.native_benchmark results/tune_run47 --budgets 1 5 --native examples.jobshop.native_parts
 
 export OPENAI_API_KEY=...
 python -m examples.lotsizing.generate --slots neighborhood destruction --n 3   # generación real

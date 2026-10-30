@@ -58,5 +58,6 @@ PACK = parts_pack(_BASE, model_parts, "examples.jobshop.model_parts", make_model
 PACK.module = "examples.jobshop"
 PACK.handwritten = HANDWRITTEN
 PACK.baseline_constructor = JobOrder
+PACK.native_module = "examples.jobshop.native_parts"
 PACK.variants = {"sequences": (make_model_spec, "examples.jobshop.model_parts"),
                  "operations": (make_ops_model_spec, "examples.jobshop.ops_parts")}

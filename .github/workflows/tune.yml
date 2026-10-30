@@ -76,6 +76,10 @@ on:
         description: "Semilla del tuner (las instancias no cambian con ella si se fija instance_seed)"
         default: "0"
         type: string
+      native:
+        description: "Correr las configuraciones en C++ (backend nativo; job shop, catálogo handwritten; SA, ILS, VNS, TS)"
+        default: false
+        type: boolean
 
 permissions:
   contents: write  # para commitear los resultados en la rama tuning/runN
@@ -138,6 +142,7 @@ jobs:
           SEED: ${{ inputs.seed }}
           REPLICA: ${{ matrix.replica }}
           SCREEN: ${{ inputs.screen }}
+          NATIVE: ${{ inputs.native && 'true' || 'false' }}
           VARIANT: ${{ inputs.variant }}
           REFERENCE: ${{ inputs.reference && 'true' || 'false' }}
           PROBLEM: ${{ inputs.problem }}
@@ -147,6 +152,7 @@ jobs:
           if [ -n "$SKELETONS" ]; then read -ra SK <<< "$SKELETONS"; SK_ARGS=(--skeletons "${SK[@]}"); fi
           SIZE_ARGS=(); if [ -n "$SIZE" ]; then SIZE_ARGS=(--size "$SIZE"); fi
           GEN_ARGS=(); if [ -n "$GEN_DIR" ]; then GEN_ARGS=(--generated "$GEN_DIR"); fi
+          [ "$NATIVE" = "true" ] && SK_ARGS+=(--native)
           CMD=(-m "examples.$PKG.tune")
           if [ -n "$VARIANT" ]; then
             CARGS=(--problem "$PROBLEM" --variant "$VARIANT" --workspace "$GEN_DIR")

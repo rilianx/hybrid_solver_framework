@@ -45,6 +45,8 @@ class ProblemPack:
     # representaciones del problema para el ciclo completo (`llm.cycle`): {nombre: (make_model_spec, piezas de
     # referencia importables)}. Cada una es un problema distinto con las mismas instancias y casos.
     variants: dict[str, tuple[Callable[[], Any], str]] = field(default_factory=dict)
+    # backend nativo (C++), opcional: módulo con `native` (bindings) y `model(inst)` (ver `core.native_runner`)
+    native_module: str = ""
     # esqueletos que puede usar un constructor (los greedy_<puntaje> se registran con estos)
     constructor_skeletons: list[str] = field(
         default_factory=lambda: ["SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH", "MIP_PERTURB"])
