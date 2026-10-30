@@ -51,6 +51,7 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run49/`](tune_run49/) | 29 oct | ciclo completo con Opus 5.5 en job shop, permutación con repetición: modelo (101) y componentes (103) | SA, ILS, VNS, LNS_MIP | 10+10, 10×10 | 5 s | 40 × 3 réplicas | otra representación del tercer problema |
 | [`tune_run50/`](tune_run50/) | 30 oct | job shop, catálogo a mano, **afinado y corrido en C++** (`--native`), Optuna | SA, ILS, VNS, TS | 10+10, 10×10 | 5 s | 40 × 3 réplicas | backend nativo |
 | [`tune_run52/`](tune_run52/) | 30 oct | lo mismo con **irace** (`--tuner irace`, 700 experimentos) | SA, ILS, VNS, TS | 10+10, 10×10 | 5 s | 700 exp. × 3 réplicas | irace contra Optuna (la 51 falló por una ruta) |
+| [`tune_run53/`](tune_run53/) | 30 oct | lo mismo con el TS genérico extendido (estimación, saltos atrás, mejor tabú si todos lo son) | SA, ILS, VNS, TS | 10+10, 10×10 | 5 s | 700 exp. × 3 réplicas | TS entra al espacio en serio |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -584,6 +585,13 @@ la velocidad de Python. Afinando en C++ (gaps contra el mejor conocido común de
   y el greedy con RCL.
 - Las tres diferencias se separan del ruido, las primeras del proyecto. El gap es contra el mejor
   conocido propio; falta medir contra las instancias de Taillard.
+
+Run 53, con el TS genérico extendido (filtrado por estimación, saltos atrás a la élite y, si todos los
+candidatos son tabú, el mejor de ellos; sin esto último TS quedaba quieto con N5 y daba 7 %): irace elige
+TS en 2 de 3 réplicas (tenencia 14–23, estimación de Taillard para preseleccionar 6–9 candidatos, una con
+saltos atrás) y SA en la otra. Gap 0,28 % contra 0,20 % de la run 52 (−0,08 [−0,34, +0,13], ruido).
+En 10×10 con 5 s las configuraciones buenas ya quedan a 0,1–0,4 % del mejor conocido propio: para
+separarlas hacen falta instancias más difíciles (15×15, 20×15, Taillard).
 
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 
