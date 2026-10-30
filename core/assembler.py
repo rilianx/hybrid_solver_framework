@@ -92,6 +92,10 @@ SKELETONS: dict[str, SkeletonDef] = {
         params={
             "tenure": {"type": "int", "range": [3, 30]},
             "candidate_size": {"type": "int", "range": [5, 100], "log": True},
+            # filtrado por estimación (si el vecindario tiene `estimate`; 0 = todos exactos) y saltos atrás
+            "estimate_top": {"type": "int", "range": [0, 10], "default": 0},
+            "elite_size": {"type": "int", "range": [0, 8], "default": 0},
+            "stall": {"type": "int", "range": [20, 5000], "log": True, "default": 500},
         },
     ),
     "VNS": SkeletonDef(
@@ -252,7 +256,8 @@ class Assembler:
                 return run_fix_and_optimize(sk, inst, rng)
             if skeleton == "TS":
                 nbh = self._component(config, "neighborhood", skeleton, P)
-                sk = build_ts(P, constructor, nbh, MaxTimeStop(budget), tenure=sp("tenure"), candidate_size=sp("candidate_size"))
+                sk = build_ts(P, constructor, nbh, MaxTimeStop(budget), tenure=sp("tenure"), candidate_size=sp("candidate_size"),
+                              estimate_top=sp("estimate_top"), elite_size=sp("elite_size"), stall=sp("stall"))
                 return sk.run(inst, rng)
             if skeleton == "VNS":
                 ls_nbh = self._component(config, "neighborhood", skeleton, P)

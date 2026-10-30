@@ -103,3 +103,38 @@ def test_the_cycle_loads_both_job_shop_variants():
         inst = pack.make_instances(1, 1, pack.parse_size(pack.default_size))[0]
         P = pack.problem_factory(inst)
         assert P.is_feasible(pack.baseline_constructor().build(inst, Random(0)))
+
+
+def test_the_swap_estimate_is_a_lower_bound_that_the_validator_accepts_and_a_bad_one_is_rejected(pack):
+    from core.validation.contractual import check_neighborhood
+
+    inst = JSSPInstance.random(8, 6, Random(4))
+    P = PartsModel(model_parts, inst)
+    nbh = CriticalSwap(P)
+    for t in range(3):
+        sol = model_parts.random_solution(inst, Random(t))
+        for m in nbh.moves(sol):
+            assert nbh.estimate(sol, m) <= nbh.delta(sol, m) + 1e-9
+    ctx = pack.make_contexts()[0]
+    good = CriticalSwap(ctx.problem)
+    assert all(r.passed for r in check_neighborhood(good, ctx) if r.name == "neighborhood.estimate")
+
+    class Backwards(CriticalSwap):  # ordena al revés
+        def estimate(self, sol, m):
+            return -self.delta(sol, m)
+
+    bad = [r for r in check_neighborhood(Backwards(ctx.problem), ctx) if r.name == "neighborhood.estimate"]
+    assert bad and not all(r.passed for r in bad)
+
+
+def test_tabu_search_with_estimates_and_back_jumps_runs(pack):
+    from tuning.cli import make_assembler
+
+    A, _ = make_assembler(pack, "handwritten")
+    inst = pack.make_instances(1, 9, pack.parse_size("8x5"))[0]
+    P = pack.problem_factory(inst)
+    cfg = A.default_config("TS")
+    cfg.update({"neighborhood": "critical_swap", "TS.estimate_top": 3, "TS.elite_size": 4, "TS.stall": 20})
+    res = A.assemble(cfg)(inst, Random(0), 0.5)
+    assert P.is_feasible(res.best_solution)
+    assert res.best_objective < P.objective(pack.baseline_constructor().build(inst, Random(0)))

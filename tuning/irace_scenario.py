@@ -67,6 +67,10 @@ def write_irace_scenario(
     target_runner_module: str = "scripts.irace_target_runner",
     generated_dir: str | None = None,
     problem_module: str = "examples.lotsizing",
+    catalog: str | None = None,
+    skeletons: list[str] | None = None,
+    native: bool = False,
+    objective: str = "raw",
 ) -> Path:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -81,7 +85,11 @@ def write_irace_scenario(
     (out / "instances.txt").write_text("\n".join(lines) + "\n")
     runner = out / "target-runner"
     env = (f"export HSF_BUDGET={budget}\nexport HSF_PROBLEM={shlex.quote(problem_module)}\n"
-           + (f"export HSF_GENERATED={shlex.quote(generated_dir)}\n" if generated_dir else ""))
+           + (f"export HSF_GENERATED={shlex.quote(generated_dir)}\n" if generated_dir else "")
+           + (f"export HSF_CATALOG={shlex.quote(catalog)}\n" if catalog else "")
+           + (f"export HSF_SKELETONS={shlex.quote(' '.join(skeletons))}\n" if skeletons else "")
+           + ("export HSF_NATIVE=1\n" if native else "")
+           + (f"export HSF_OBJECTIVE={objective}\n" if objective != "raw" else ""))
     root = Path(os.path.relpath(Path.cwd().resolve(), out.resolve())).as_posix()
     runner.write_text(
         "#!/usr/bin/env bash\n"

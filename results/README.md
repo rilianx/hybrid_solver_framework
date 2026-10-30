@@ -49,6 +49,9 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run47/`](tune_run47/) | 29 oct | job shop (makespan): catálogo escrito a mano (secuencias, camino crítico) | SA, ILS, VNS, LNS_MIP | 10+10, 10×10 | 5 s | 40 × 3 réplicas | referencia del tercer problema |
 | [`tune_run48/`](tune_run48/) | 29 oct | ciclo completo con Opus 5.5 en job shop, secuencias por máquina: modelo (100) y componentes (102) | SA, ILS, VNS, LNS_MIP | 10+10, 10×10 | 5 s | 40 × 3 réplicas | tercer problema, sin nada a mano salvo instancias y casos |
 | [`tune_run49/`](tune_run49/) | 29 oct | ciclo completo con Opus 5.5 en job shop, permutación con repetición: modelo (101) y componentes (103) | SA, ILS, VNS, LNS_MIP | 10+10, 10×10 | 5 s | 40 × 3 réplicas | otra representación del tercer problema |
+| [`tune_run50/`](tune_run50/) | 30 oct | job shop, catálogo a mano, **afinado y corrido en C++** (`--native`), Optuna | SA, ILS, VNS, TS | 10+10, 10×10 | 5 s | 40 × 3 réplicas | backend nativo |
+| [`tune_run52/`](tune_run52/) | 30 oct | lo mismo con **irace** (`--tuner irace`, 700 experimentos) | SA, ILS, VNS, TS | 10+10, 10×10 | 5 s | 700 exp. × 3 réplicas | irace contra Optuna (la 51 falló por una ruta) |
+| [`tune_run53/`](tune_run53/) | 30 oct | lo mismo con el TS genérico extendido (estimación, saltos atrás, mejor tabú si todos lo son) | SA, ILS, VNS, TS | 10+10, 10×10 | 5 s | 700 exp. × 3 réplicas | TS entra al espacio en serio |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -555,6 +558,40 @@ Tuning 10×10 (gaps contra el mejor conocido común de cada par; diferencia por 
   desde el greedy con cota inferior del makespan o desde una al azar. Toda permutación es factible,
   y SA se mueve sin chocar con ciclos.
 - Costo del tercer problema completo: 1,1–1,3 USD por representación (modelo + componentes).
+
+### Backend nativo (C++) e irace: el gap del job shop baja de 3,96 % a 0,20 %
+
+El modelo del job shop y su catálogo a mano, portados a C++ (`examples/jobshop/native/`), pasan el
+mismo validador y los mismos casos que las piezas de Python y coinciden con ellas en costo y
+violaciones. Los esqueletos SA, ILS, VNS y TS en C++ tienen la semántica y los parámetros de Python.
+
+Primero, las configuraciones que eligió la run 47 (afinadas en Python) corridas en C++
+(`scripts/native_benchmark.py`, mismas 10 instancias): ~11 000 iteraciones/s contra ~220 en Python
+(50–70×); gap 2,07 % con 1, 5 y 25 s, contra 3,39 % en Python con 5 s. La velocidad ayuda, pero esas
+configuraciones (VNS/ILS con aceptación estricta) se estancan en menos de 1 s: estaban elegidas para
+la velocidad de Python. Afinando en C++ (gaps contra el mejor conocido común de cada par):
+
+| Comparación | Gaps | Diferencia |
+|---|---|---|
+| Optuna en C++ (50) contra Optuna en Python (47), catálogo a mano | 0,57 contra 3,96 % | **−3,40 [−5,69, −1,43]** |
+| Optuna en C++ (50) contra catálogo generado en Python (49) | 0,64 contra 2,25 % | **−1,61 [−2,30, −0,96]** |
+| **irace en C++ (52) contra Optuna en C++ (50)** | **0,20 contra 0,58 %** | **−0,38 [−0,70, −0,15]** |
+
+- Las seis réplicas eligen SA con intercambio crítico (N5) desde un greedy; en Python SA no salía
+  porque no alcanzaba a enfriar.
+- irace le gana a Optuna con el mismo presupuesto aproximado: Optuna se queda en 2 de 3 réplicas con
+  los numéricos por defecto de SA (T0 = 31,6, T_end = 0,001; su selección final prefiere los defaults
+  si no se separan del ruido) y irace encuentra temperaturas más altas (T0 = 53–104, T_end = 0,05–0,09)
+  y el greedy con RCL.
+- Las tres diferencias se separan del ruido, las primeras del proyecto. El gap es contra el mejor
+  conocido propio; falta medir contra las instancias de Taillard.
+
+Run 53, con el TS genérico extendido (filtrado por estimación, saltos atrás a la élite y, si todos los
+candidatos son tabú, el mejor de ellos; sin esto último TS quedaba quieto con N5 y daba 7 %): irace elige
+TS en 2 de 3 réplicas (tenencia 14–23, estimación de Taillard para preseleccionar 6–9 candidatos, una con
+saltos atrás) y SA en la otra. Gap 0,28 % contra 0,20 % de la run 52 (−0,08 [−0,34, +0,13], ruido).
+En 10×10 con 5 s las configuraciones buenas ya quedan a 0,1–0,4 % del mejor conocido propio: para
+separarlas hacen falta instancias más difíciles (15×15, 20×15, Taillard).
 
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 

@@ -1,0 +1,18 @@
+
+=== catálogo `handwritten`: 25 parámetros, 0 opciones generadas por LLM ===
+  irace: 700 experimentos en 3529s; élite: SA[constructor=greedy_earliest_end, neighborhood=critical_swap]; SA[constructor=greedy_earliest_end, neighborhood=critical_swap]; SA[constructor=greedy_earliest_end, neighborhood=critical_swap]; SA[constructor=greedy_earliest_end, neighborhood=critical_swap]; SA[constructor=greedy_earliest_end, neighborhood=critical_swap]; SA[constructor=greedy_earliest_end, neighborhood=critical_swap]
+  mejor en train: 0.2080  SA[constructor=greedy_earliest_end, neighborhood=critical_swap]
+
+Referencia: MIP completo, 60 s por instancia de test
+  899.0, 812.0, 993.0, 927.0, 922.0, 834.0, 908.0, 925.0, 895.0, 850.0
+
+=== TEST `handwritten` (partida trivial sin búsqueda = 3976.6; gap vs mejor conocido por instancia) ===
+    tuned                                            gap   0.25%          834.6 ±     42.5   (+79.0% vs partida)   SA[constructor=greedy_earliest_end, neighborhood=critical_swap]
+    default:TS                                       gap   0.09%          833.2 ±     40.8   (+79.0% vs partida)   TS[constructor=job_order, neighborhood=critical_swap]
+    default:SA                                       gap   1.00%          841.0 ±     46.4   (+78.9% vs partida)   SA[constructor=job_order, neighborhood=critical_swap]
+    default:ILS                                      gap   8.56%          904.7 ±     72.8   (+77.2% vs partida)   ILS[constructor=job_order, neighborhood=critical_swap, perturbation=critical_kick]
+    default:VNS                                      gap  13.40%          943.1 ±     59.7   (+76.3% vs partida)   VNS[constructor=job_order, neighborhood=critical_swap]
+  ganancia del afinado vs mejor default: -0.17%; gana en 2/10 instancias
+  afinado vs default:TS: gap -0.16% a favor del afinado, IC95 [-0.45%, +0.10%] (no se distingue del ruido)
+
+Escenario irace escrito en tuning_out/irace/scenario.txt (correr: irace --scenario tuning_out/irace/scenario.txt)

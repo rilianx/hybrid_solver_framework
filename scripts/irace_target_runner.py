@@ -6,8 +6,11 @@ irace lo invoca así (ver `tuning/irace_scenario.py`):
 
 y espera en stdout un único número: el costo. Variables de entorno:
 `HSF_BUDGET` (segundos por corrida, default 5), `HSF_PROBLEM` (paquete del problema, con
-su `pack.PACK`; default `examples.lotsizing`) y `HSF_GENERATED` (directorio de componentes
-LLM a incluir en el catálogo; vacío = solo componentes a mano).
+su `pack.PACK`; default `examples.lotsizing`), `HSF_GENERATED` (directorio de componentes
+LLM a incluir en el catálogo; vacío = solo componentes a mano), `HSF_CATALOG` (como
+`tuning.cli --catalog`; vacío = a mano + generados si hay), `HSF_SKELETONS` (separados por
+espacio), `HSF_NATIVE=1` (correr en C++) y `HSF_OBJECTIVE=ratio` (costo / partida trivial, como
+el objetivo de Optuna).
 """
 
 from __future__ import annotations
@@ -26,18 +29,20 @@ def main(argv: list[str]) -> int:
 
     import importlib
 
-    from core.assembler import Assembler
-    from llm.catalog import build_registry, load_generated
+    from tuning.cli import make_assembler
     from tuning.irace_scenario import parse_irace_params
 
     pack = importlib.import_module(os.environ.get("HSF_PROBLEM", "examples.lotsizing") + ".pack").PACK
     generated_dir = os.environ.get("HSF_GENERATED", "")
-    generated = load_generated(pack, generated_dir, verbose=False) if generated_dir else []
-    assembler = Assembler(problem_factory=pack.problem_factory, registry=build_registry(pack, generated))
+    catalog = os.environ.get("HSF_CATALOG") or ("all" if generated_dir else "handwritten")
+    skeletons = os.environ.get("HSF_SKELETONS", "").split() or None
+    assembler, _ = make_assembler(pack, catalog, generated_dir or None, skeletons=skeletons,
+                                  native=os.environ.get("HSF_NATIVE") == "1")
     config = parse_irace_params(assembler.config_space(), params)
     inst = pack.load_instance(instance_path)
     budget = float(os.environ.get("HSF_BUDGET", "5"))
-    cost = assembler.evaluate(config, [inst], budget, seed=int(float(seed)) % (2**31))
+    norm = [pack.baseline_cost(inst)] if os.environ.get("HSF_OBJECTIVE") == "ratio" else None
+    cost = assembler.evaluate(config, [inst], budget, seed=int(float(seed)) % (2**31), normalizers=norm)
     print(f"{cost:.6f}")
     return 0
 

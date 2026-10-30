@@ -43,6 +43,30 @@ class MostWorkRemaining:
         return action.start - self.rest[action.job][action.op] / self.scale
 
 
+def heads_tails(inst, sol):
+    """Cabezas, colas y vecinos en máquina de cada operación (j, k) del plan semiactivo, para estimar
+    movimientos sin rehacer el plan."""
+    start, mk, _ = schedule(inst, sol)
+    ops = [(j, k) for j in inst.jobs for k in range(len(inst.routes[j]))]
+    p = {o: inst.proc(*o) for o in ops}
+    r = {o: start[o[0]][o[1]] for o in ops}
+    mprev, mnext = {}, {}
+    for m, seq in enumerate(sol):
+        for a, b in zip(seq, seq[1:]):
+            oa, ob = (a, inst.op_index(a, m)), (b, inst.op_index(b, m))
+            mnext[oa], mprev[ob] = ob, oa
+    jprev = lambda o: (o[0], o[1] - 1) if o[1] > 0 else None  # noqa: E731
+    jnext = lambda o: (o[0], o[1] + 1) if o[1] + 1 < len(inst.routes[o[0]]) else None  # noqa: E731
+    q = {}
+    for o in sorted(ops, key=lambda o: -r[o]):  # orden topológico inverso (todo tiempo es >= 1)
+        t = 0
+        for nx in (jnext(o), mnext.get(o)):
+            if nx is not None:
+                t = max(t, q[nx] + p[nx])
+        q[o] = t
+    return r, q, mprev, mnext, mk, p, jprev, jnext
+
+
 def _swap(sol, m, a, b):
     seqs = [list(s) for s in sol]
     i, j = seqs[m].index(a), seqs[m].index(b)
@@ -53,6 +77,7 @@ def _swap(sol, m, a, b):
 class CriticalSwap:
     def __init__(self, problem):
         self.problem, self.inst = problem, problem.inst
+        self._ht = None
 
     def moves(self, sol):
         seen = set()
@@ -67,6 +92,28 @@ class CriticalSwap:
 
     def undo(self, sol, mv):
         return _swap(sol, *mv)
+
+    def inverse(self, mv):  # para la memoria tabú: el intercambio que lo deshace
+        m, a, b = mv
+        return (m, b, a)
+
+    def estimate(self, sol, mv):
+        """Makespan de los caminos que pasan por las dos operaciones intercambiadas (Taillard, 1994), con
+        las cabezas y colas del plan actual, menos el makespan actual: O(1) por movimiento."""
+        if self._ht is None or self._ht[0] != sol:
+            self._ht = (sol, heads_tails(self.inst, sol))
+        r, q, mprev, mnext, mk, p, jprev, jnext = self._ht[1]
+        m, a, b = mv
+        u, v = (a, self.inst.op_index(a, m)), (b, self.inst.op_index(b, m))
+        if mnext.get(u) != v:
+            return self.delta(sol, mv)
+        end = lambda o: 0 if o is None else r[o] + p[o]  # noqa: E731
+        qp = lambda o: 0 if o is None else q[o] + p[o]  # noqa: E731
+        rv = max(end(jprev(v)), end(mprev.get(u)))
+        ru = max(end(jprev(u)), rv + p[v])
+        qu = max(qp(jnext(u)), qp(mnext.get(v)))
+        qv = max(qp(jnext(v)), qu + p[u])
+        return max(rv + p[v] + qv, ru + p[u] + qu) - mk
 
     def delta(self, sol, mv):
         return self.problem.objective(self.apply(sol, mv)) - self.problem.objective(sol)
@@ -102,6 +149,10 @@ class CriticalInsert:
     def undo(self, sol, mv):
         m, job, frm, _ = mv
         return _move(sol, m, job, frm)
+
+    def inverse(self, mv):
+        m, job, frm, to = mv
+        return (m, job, to, frm)
 
     def delta(self, sol, mv):
         return self.problem.objective(self.apply(sol, mv)) - self.problem.objective(sol)

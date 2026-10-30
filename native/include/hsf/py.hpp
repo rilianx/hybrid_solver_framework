@@ -1,0 +1,125 @@
+// Bindings genéricos (pybind11) de un modelo C++ y su catálogo: lo que necesita el validador de Python
+// para probar los componentes nativos con las mismas capas que los de Python, y `solve` para correr una
+// configuración entera en C++.
+//
+// Del lado de Python, una solución es la misma que en las piezas (p.ej. una tupla de tuplas); `to_py` y
+// `from_py` (del pack) la convierten. Un movimiento es una tupla de 6 enteros.
+#pragma once
+
+#include <hsf/core.hpp>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+
+namespace hsf {
+namespace py = pybind11;
+
+inline Config config_from(const py::dict& d) {
+    Config c;
+    for (auto [k, v] : d) {
+        std::string key = py::str(k);
+        if (py::isinstance<py::str>(v)) c.str[key] = v.cast<std::string>();
+        else if (v.is_none()) continue;
+        else c.num[key] = v.cast<double>();
+    }
+    return c;
+}
+
+inline py::tuple move_to_py(const Move& m) { return py::make_tuple(m[0], m[1], m[2], m[3], m[4], m[5]); }
+
+inline Move move_from(const py::handle& h) {
+    Move m{0, 0, 0, 0, 0, 0};
+    size_t i = 0;
+    for (auto x : h) {
+        if (i >= m.size()) throw std::invalid_argument("un movimiento tiene a lo sumo 6 enteros");
+        m[i++] = x.cast<int>();
+    }
+    return m;
+}
+
+template <class M>
+struct NbhHandle {
+    std::shared_ptr<M> model;
+    std::unique_ptr<Neighborhood<M>> impl;
+};
+template <class M>
+struct PertHandle {
+    std::shared_ptr<M> model;
+    std::unique_ptr<Perturbation<M>> impl;
+};
+template <class M>
+struct CtorHandle {
+    std::shared_ptr<M> model;
+    std::unique_ptr<Constructor<M>> impl;
+};
+
+// `catalog` debe vivir lo que vive el módulo (una variable estática del pack).
+template <class M, class ToPy, class FromPy>
+void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy from_py) {
+    using Model = std::shared_ptr<M>;
+    py::class_<M, std::shared_ptr<M>>(mod, "Model")
+        .def("objective", [=](const M& m, py::handle s) { return m.objective(from_py(s)); })
+        .def("feasible", [=](const M& m, py::handle s) { return m.feasible(from_py(s)); });
+
+    py::class_<NbhHandle<M>>(mod, "Neighborhood")
+        .def("moves", [=](NbhHandle<M>& h, py::handle s) {
+            std::vector<Move> out;
+            h.impl->moves(from_py(s), out);
+            py::list l;
+            for (auto& m : out) l.append(move_to_py(m));
+            return l;
+        })
+        .def("apply", [=](NbhHandle<M>& h, py::handle s, py::handle m) { return to_py(h.impl->apply(from_py(s), move_from(m))); })
+        .def("delta", [=](NbhHandle<M>& h, py::handle s, py::handle m) { return h.impl->delta(from_py(s), move_from(m)); })
+        .def("has_estimate", [](NbhHandle<M>& h) { return h.impl->has_estimate(); })
+        .def("estimate", [=](NbhHandle<M>& h, py::handle s, py::handle m) { return h.impl->estimate(from_py(s), move_from(m)); });
+    py::class_<PertHandle<M>>(mod, "Perturbation")
+        .def("perturb", [=](PertHandle<M>& h, py::handle s, double strength, uint64_t seed) {
+            Rng rng(seed);
+            return to_py(h.impl->perturb(from_py(s), strength, rng));
+        });
+    py::class_<CtorHandle<M>>(mod, "Constructor")
+        .def("build", [=](CtorHandle<M>& h, uint64_t seed) {
+            Rng rng(seed);
+            return to_py(h.impl->build(rng));
+        });
+
+    mod.def("names", [catalog]() {
+        py::dict d;
+        auto keys = [](const auto& m) { py::list l; for (auto& [k, _] : m) l.append(k); return l; };
+        d["constructor"] = keys(catalog->constructors);
+        d["greedy_score"] = keys(catalog->scores);
+        d["neighborhood"] = keys(catalog->neighborhoods);
+        d["perturbation"] = keys(catalog->perturbations);
+        return d;
+    });
+    mod.def("make_neighborhood", [catalog](Model m, const std::string& name, py::dict params) {
+        Config c = config_from(params);
+        Config scoped;
+        for (auto& [k, v] : c.num) scoped.num[name + "." + k] = v;
+        for (auto& [k, v] : c.str) scoped.str[name + "." + k] = v;
+        return NbhHandle<M>{m, catalog->neighborhood(name, *m, scoped)};
+    });
+    mod.def("make_perturbation", [catalog](Model m, const std::string& name, py::dict params) {
+        Config c = config_from(params), scoped;
+        for (auto& [k, v] : c.num) scoped.num[name + "." + k] = v;
+        for (auto& [k, v] : c.str) scoped.str[name + "." + k] = v;
+        return PertHandle<M>{m, catalog->perturbation(name, *m, scoped)};
+    });
+    mod.def("make_constructor", [catalog](Model m, const std::string& name, py::dict params) {
+        Config c = config_from(params), scoped;
+        for (auto& [k, v] : c.num) scoped.num[name + "." + k] = v;
+        for (auto& [k, v] : c.str) scoped.str[name + "." + k] = v;
+        return CtorHandle<M>{m, catalog->constructor(name, *m, scoped)};
+    });
+    // corre la configuración entera en C++ (sin el GIL): (mejor solución, objetivo, iteraciones, segundos)
+    mod.def("solve", [catalog, to_py](Model m, py::dict config, std::vector<std::string> shake, uint64_t seed, double budget) {
+        Config c = config_from(config);
+        Result<M> r = [&] {
+            py::gil_scoped_release nogil;
+            return solve(*catalog, *m, c, shake, seed, budget);
+        }();
+        return py::make_tuple(to_py(r.best), r.objective, r.iterations, r.elapsed);
+    });
+}
+
+}  // namespace hsf

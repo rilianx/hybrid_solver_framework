@@ -124,11 +124,48 @@ def check_neighborhood(impl, ctx: ValidationContext) -> list[CheckResult]:
             results += guard(LAYER, "neighborhood", _props)
             if callable(getattr(impl, "sample", None)):
                 results += guard(LAYER, "neighborhood.sample", lambda k=k, sol=sol: _check_sample(impl, sol, k))
+        if callable(getattr(impl, "estimate", None)):
+            results += guard(LAYER, "neighborhood.estimate", lambda k=k, sols=sols: _check_estimate(impl, sols, k, ctx))
         # vacío en UNA solución puede ser correcto (CVRP: 2-opt u or-opt sobre rutas de un cliente);
         # vacío en todas las de prueba de la instancia, no
         if len(empty) == len(sols):
             results.append(fail(LAYER, "neighborhood.nonempty", f"moves(sol) vacío en todas las soluciones de prueba de inst_{k}"))
     return _collapse(results)
+
+
+ESTIMATE_MIN_AGREEMENT = 0.7
+
+
+def _check_estimate(impl, sols, k: int, ctx: ValidationContext) -> CheckResult:
+    """`estimate(sol, m)` opcional: finita, y que ordene los movimientos de una misma solución como
+    `delta` en al menos el 70 % de los pares con deltas distintos (sumando las soluciones de prueba de la
+    instancia; con menos de 10 pares no se juzga el orden)."""
+    agree = total = 0
+    worst = None
+    for sol in sols:
+        moves = list(impl.moves(sol))
+        rng = Random(1)
+        sample = moves if len(moves) <= ctx.max_moves_checked else rng.sample(moves, ctx.max_moves_checked)
+        pairs = []
+        for m in sample:
+            e, d = impl.estimate(sol, m), impl.delta(sol, m)
+            if not math.isfinite(e):
+                return fail(LAYER, "neighborhood.estimate", f"estimate(sol, m={m!r}) = {e} no es finita en inst_{k}")
+            pairs.append((e, d))
+            if worst is None or abs(e - d) > abs(worst[0] - worst[1]):
+                worst = (e, d)
+        for i in range(len(pairs)):
+            for j in range(i + 1, len(pairs)):
+                (e1, d1), (e2, d2) = pairs[i], pairs[j]
+                if _close(d1, d2, ctx.tolerance):
+                    continue
+                total += 1
+                agree += (e1 - e2) * (d1 - d2) > 0
+    if total >= 10 and agree / total < ESTIMATE_MIN_AGREEMENT:
+        return fail(LAYER, "neighborhood.estimate",
+                    f"estimate ordena los movimientos como delta solo en {agree}/{total} pares (se pide "
+                    f"{ESTIMATE_MIN_AGREEMENT:.0%}) en inst_{k}; p.ej. estimate={worst[0]:.6g} y delta={worst[1]:.6g}")
+    return ok(LAYER, "neighborhood.estimate")
 
 
 def _check_sample(impl, sol, k: int) -> CheckResult:

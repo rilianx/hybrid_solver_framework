@@ -1,0 +1,44 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH", "MIP_PERTURB")
+constructor "--constructor=" c ("job_order", "greedy_earliest_end", "greedy_most_work_remaining") | skeleton %in% c("SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH", "MIP_PERTURB")
+greedy_earliest_end.rule "--greedy_earliest_end.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH", "MIP_PERTURB") & constructor == "greedy_earliest_end"
+greedy_earliest_end.alpha "--greedy_earliest_end.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH", "MIP_PERTURB") & constructor == "greedy_earliest_end"
+greedy_most_work_remaining.rule "--greedy_most_work_remaining.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH", "MIP_PERTURB") & constructor == "greedy_most_work_remaining"
+greedy_most_work_remaining.alpha "--greedy_most_work_remaining.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH", "MIP_PERTURB") & constructor == "greedy_most_work_remaining"
+neighborhood "--neighborhood=" c ("critical_swap", "critical_insert") | skeleton %in% c("SA", "ILS", "TS", "VNS", "GRASP", "MIP_PERTURB")
+perturbation "--perturbation=" c ("critical_kick") | skeleton %in% c("ILS")
+destruction "--destruction=" c ("time_window_removal", "machine_removal") | skeleton %in% c("LNS_MIP", "MIP_PERTURB")
+fixing_policy "--fixing_policy=" c ("sliding_window") | skeleton %in% c("FIX_OPT")
+sliding_window.window_size "--sliding_window.window_size=" i (1, 4) | skeleton %in% c("FIX_OPT") & fixing_policy == "sliding_window"
+sliding_window.overlap "--sliding_window.overlap=" i (0, 2) | skeleton %in% c("FIX_OPT") & fixing_policy == "sliding_window"
+SA.T0 "--SA.T0=" r (1.0, 1000.0) | skeleton == "SA"  # log-scale
+SA.cooling "--SA.cooling=" c ("time", "iterations") | skeleton == "SA"
+SA.T_end "--SA.T_end=" r (1e-05, 0.1) | skeleton == "SA"  # log-scale
+SA.alpha "--SA.alpha=" r (0.8, 0.999) | skeleton == "SA"
+SA.iters_per_T "--SA.iters_per_T=" i (1, 50) | skeleton == "SA"
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+ILS.ls_sample "--ILS.ls_sample=" i (4, 256) | skeleton == "ILS"  # log-scale
+LNS_MIP.destroy_ratio "--LNS_MIP.destroy_ratio=" r (0.05, 0.6) | skeleton == "LNS_MIP"
+LNS_MIP.mip_time_share "--LNS_MIP.mip_time_share=" r (0.04, 1.0) | skeleton == "LNS_MIP"  # log-scale
+FIX_OPT.block_size "--FIX_OPT.block_size=" i (1, 4) | skeleton == "FIX_OPT"
+FIX_OPT.mip_time_share "--FIX_OPT.mip_time_share=" r (0.04, 1.0) | skeleton == "FIX_OPT"  # log-scale
+FIX_OPT.order "--FIX_OPT.order=" c ("sequential", "random") | skeleton == "FIX_OPT"
+TS.tenure "--TS.tenure=" i (3, 30) | skeleton == "TS"
+TS.candidate_size "--TS.candidate_size=" i (5, 100) | skeleton == "TS"  # log-scale
+VNS.shake_strength "--VNS.shake_strength=" i (1, 4) | skeleton == "VNS"
+VNS.ls_time_share "--VNS.ls_time_share=" r (0.02, 0.3) | skeleton == "VNS"
+VNS.ls_sample "--VNS.ls_sample=" i (4, 256) | skeleton == "VNS"  # log-scale
+GRASP.ls_strategy "--GRASP.ls_strategy=" c ("first", "best") | skeleton == "GRASP"
+GRASP.ls_time_share "--GRASP.ls_time_share=" r (0.02, 0.3) | skeleton == "GRASP"
+GRASP.ls_sample "--GRASP.ls_sample=" i (4, 256) | skeleton == "GRASP"  # log-scale
+LOCAL_BRANCH.k "--LOCAL_BRANCH.k=" i (2, 20) | skeleton == "LOCAL_BRANCH"
+LOCAL_BRANCH.k_step "--LOCAL_BRANCH.k_step=" i (1, 10) | skeleton == "LOCAL_BRANCH"
+LOCAL_BRANCH.mip_time_share "--LOCAL_BRANCH.mip_time_share=" r (0.04, 1.0) | skeleton == "LOCAL_BRANCH"  # log-scale
+MIP_PERTURB.destroy_ratio "--MIP_PERTURB.destroy_ratio=" r (0.05, 0.6) | skeleton == "MIP_PERTURB"
+MIP_PERTURB.flips "--MIP_PERTURB.flips=" i (1, 3) | skeleton == "MIP_PERTURB"
+MIP_PERTURB.mip_time_share "--MIP_PERTURB.mip_time_share=" r (0.04, 1.0) | skeleton == "MIP_PERTURB"  # log-scale
+MIP_PERTURB.ls_time_share "--MIP_PERTURB.ls_time_share=" r (0.02, 0.3) | skeleton == "MIP_PERTURB"
+MIP_PERTURB.ls_sample "--MIP_PERTURB.ls_sample=" i (4, 256) | skeleton == "MIP_PERTURB"  # log-scale

@@ -8,6 +8,15 @@ El generador de candidatos elige el *mejor* movimiento no tabú (o tabú
 pero que cumple aspiración) entre una muestra de `candidate_size`
 movimientos; la aceptación es "siempre" (TS se mueve al mejor vecino
 aunque empeore), por eso el bucle genérico lo recibe con `AlwaysAccept`.
+
+Dos extensiones genéricas (de la tabú de Nowicki y Smutnicki, sin nada del job shop):
+- `estimate_top > 0` y un vecindario con `estimate(sol, m)`: los candidatos se ordenan por la
+  estimación y solo los `estimate_top` primeros admisibles se evalúan con `delta` exacto.
+- `elite_size > 0`: saltos atrás. Cada mejor solución nueva entra a una lista élite acotada; tras
+  `stall` iteraciones sin mejorar (ni saltar), la búsqueda vuelve a la última élite y vacía la memoria.
+
+Si todos los candidatos son tabú (pasa con vecindarios chicos, como N5 en el job shop), se toma el
+mejor de ellos en vez de quedarse quieto.
 """
 
 from __future__ import annotations
@@ -51,6 +60,10 @@ class TabuMemory:
             if self._tabu[old] <= 0:
                 del self._tabu[old]
 
+    def clear(self) -> None:
+        self._queue.clear()
+        self._tabu.clear()
+
     def is_tabu(self, m, state: SearchState) -> bool:
         return m in self._tabu
 
@@ -67,23 +80,48 @@ def build_ts(
     tenure: int = 7,
     candidate_size: int = 30,
     record_history: bool = False,
+    estimate_top: int = 0,
+    elite_size: int = 0,
+    stall: int = 500,
 ) -> TrajectorySkeleton:
     memory = memory or TabuMemory(tenure=tenure, neighborhood=neighborhood)
+    estimate = getattr(neighborhood, "estimate", None) if estimate_top > 0 else None
+    elites: deque = deque(maxlen=max(1, elite_size))
+    track = {"best": float("inf"), "last_event": 0}
 
     def candidate_generator(sol, state: SearchState, rng: Random):
+        f_sol = state.current_objective if state.current_objective is not None else problem.objective(sol)
+        if elite_size > 0:
+            if f_sol < track["best"]:  # mejor solución nueva: a la élite
+                track["best"], track["last_event"] = f_sol, state.iteration
+                elites.append(sol)
+            elif state.iteration - track["last_event"] >= stall and elites:
+                track["last_event"] = state.iteration
+                if hasattr(memory, "clear"):
+                    memory.clear()
+                return elites.pop()
         moves = sample_moves(neighborhood, sol, candidate_size, rng)
         if not moves:
             return None
-        f_sol = state.current_objective if state.current_objective is not None else problem.objective(sol)
         if hasattr(memory, "best_seen"):
             memory.best_seen = min(memory.best_seen, state.best_objective if state.best_objective is not None else f_sol)
-        best_m, best_d = None, float("inf")
+        if estimate is not None:
+            moves = sorted(moves, key=lambda m: estimate(sol, m))
+        best_m, best_d, exact = None, float("inf"), 0
+        tabu_m, tabu_d = None, float("inf")  # si todos son tabú, el mejor de ellos (Nowicki y Smutnicki)
         for m in moves:
             d = neighborhood.delta(sol, m)
             if memory.is_tabu(m, state) and not memory.aspiration(m, f_sol + d):
+                if d < tabu_d:
+                    tabu_m, tabu_d = m, d
                 continue
             if d < best_d:
                 best_m, best_d = m, d
+            exact += 1
+            if estimate is not None and exact >= estimate_top:
+                break
+        if best_m is None:
+            best_m = tabu_m
         if best_m is None:
             return None
         memory.forbid(best_m, state)

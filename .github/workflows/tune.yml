@@ -1,4 +1,4 @@
-name: tuning (Optuna) sobre el catálogo
+name: tuning (Optuna o irace) sobre el catálogo
 
 # Manual: cada corrida son minutos de CPU. Responde la pregunta de §10: ¿el catálogo
 # ampliado con componentes LLM ayuda o diluye? Afina con el catálogo a mano y con el
@@ -76,6 +76,15 @@ on:
         description: "Semilla del tuner (las instancias no cambian con ella si se fija instance_seed)"
         default: "0"
         type: string
+      tuner:
+        description: "Tuner: optuna (TPE + carrera final) o irace (R; mismo espacio, instancias y evaluación en test; experimentos = trials × train, o el mínimo que pida irace)"
+        default: optuna
+        type: choice
+        options: [optuna, irace]
+      native:
+        description: "Correr las configuraciones en C++ (backend nativo; job shop, catálogo handwritten; SA, ILS, VNS, TS)"
+        default: false
+        type: boolean
 
 permissions:
   contents: write  # para commitear los resultados en la rama tuning/runN
@@ -120,6 +129,11 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+      - name: Instalar irace (R)
+        if: inputs.tuner == 'irace'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends r-cran-irace
 
       - name: Afinar y evaluar en test
         working-directory: ${{ env.ROOT }}
@@ -138,6 +152,8 @@ jobs:
           SEED: ${{ inputs.seed }}
           REPLICA: ${{ matrix.replica }}
           SCREEN: ${{ inputs.screen }}
+          NATIVE: ${{ inputs.native && 'true' || 'false' }}
+          TUNER: ${{ inputs.tuner }}
           VARIANT: ${{ inputs.variant }}
           REFERENCE: ${{ inputs.reference && 'true' || 'false' }}
           PROBLEM: ${{ inputs.problem }}
@@ -147,6 +163,8 @@ jobs:
           if [ -n "$SKELETONS" ]; then read -ra SK <<< "$SKELETONS"; SK_ARGS=(--skeletons "${SK[@]}"); fi
           SIZE_ARGS=(); if [ -n "$SIZE" ]; then SIZE_ARGS=(--size "$SIZE"); fi
           GEN_ARGS=(); if [ -n "$GEN_DIR" ]; then GEN_ARGS=(--generated "$GEN_DIR"); fi
+          [ "$NATIVE" = "true" ] && SK_ARGS+=(--native)
+          SK_ARGS+=(--tuner "${TUNER:-optuna}")
           CMD=(-m "examples.$PKG.tune")
           if [ -n "$VARIANT" ]; then
             CARGS=(--problem "$PROBLEM" --variant "$VARIANT" --workspace "$GEN_DIR")
