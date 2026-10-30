@@ -1,0 +1,18 @@
+
+=== catálogo `generated`: 43 parámetros, 0 opciones generadas por LLM ===
+  irace: 728 experimentos en 3490s; élite: TS[constructor=greedy_bottleneck_weighted_work, neighborhood=critical_path_adjacent_swap]; TS[constructor=greedy_bottleneck_weighted_work, neighborhood=critical_path_adjacent_swap]; SA[constructor=greedy_lookahead_lower_bound, neighborhood=critical_path_adjacent_swap]; TS[constructor=random, neighborhood=critical_path_adjacent_swap]; TS[constructor=random, neighborhood=critical_path_adjacent_swap]; TS[constructor=random, neighborhood=critical_path_adjacent_swap]
+  mejor en train: 0.2072  TS[constructor=greedy_bottleneck_weighted_work, neighborhood=critical_path_adjacent_swap]
+
+Referencia: MIP completo, 60 s por instancia de test
+  896.0, 812.0, 993.0, 927.0, 922.0, 834.0, 899.0, 925.0, 895.0, 850.0
+
+=== TEST `generated` (partida trivial sin búsqueda = 3976.6; gap vs mejor conocido por instancia) ===
+    tuned                                            gap   0.24%          834.5 ±     37.8   (+79.0% vs partida)   TS[constructor=greedy_bottleneck_weighted_work, neighborhood=critical_path_adjacent_swap]
+    default:TS                                       gap   0.23%          834.7 ±     41.7   (+79.0% vs partida)   TS[constructor=trivial, neighborhood=critical_path_adjacent_swap]
+    default:SA                                       gap   0.28%          834.9 ±     38.8   (+79.0% vs partida)   SA[constructor=trivial, neighborhood=critical_path_adjacent_swap]
+    default:ILS                                      gap   3.54%          862.6 ±     57.5   (+78.3% vs partida)   ILS[constructor=trivial, neighborhood=critical_path_adjacent_swap, perturbation=critical_arc_swap_kick]
+    default:VNS                                      gap  10.77%          922.2 ±     64.2   (+76.8% vs partida)   VNS[constructor=trivial, neighborhood=critical_path_adjacent_swap]
+  ganancia del afinado vs mejor default: +0.02%; gana en 3/10 instancias
+  afinado vs default:TS: gap -0.00% a favor del afinado, IC95 [-0.43%, +0.36%] (no se distingue del ruido)
+
+Escenario irace escrito en tuning_out/irace/scenario.txt (correr: irace --scenario tuning_out/irace/scenario.txt)
