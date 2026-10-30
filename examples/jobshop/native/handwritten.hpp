@@ -165,7 +165,15 @@ struct CriticalSwap : hsf::Neighborhood<M> {
         }
     }
     Sol apply(const Sol& s, const Move& mv) override { return swap_jobs(s, mv[0], mv[1], mv[2]); }
-    double delta(const Sol& s, const Move& mv) override { return js.objective(apply(s, mv)) - js.objective(s); }
+    double delta(const Sol& s, const Move& mv) override { return js.objective(apply(s, mv)) - base(s); }
+    // el objetivo de la solución actual, una vez por solución (los esqueletos evalúan muchos movimientos de la misma)
+    Sol last_;
+    double last_obj_ = 0;
+    bool has_last_ = false;
+    double base(const Sol& s) {
+        if (!has_last_ || !(s == last_)) last_ = s, last_obj_ = js.objective(s), has_last_ = true;
+        return last_obj_;
+    }
     Move tabu_key(const Move& mv) override { return {mv[0], mv[2], mv[1], 0, 0, 0}; }  // el que lo deshace
 };
 
@@ -189,7 +197,15 @@ struct CriticalInsert : hsf::Neighborhood<M> {
         return t;
     }
     Sol apply(const Sol& s, const Move& mv) override { return move_to(s, mv[0], mv[1], mv[3]); }
-    double delta(const Sol& s, const Move& mv) override { return js.objective(apply(s, mv)) - js.objective(s); }
+    double delta(const Sol& s, const Move& mv) override { return js.objective(apply(s, mv)) - base(s); }
+    // el objetivo de la solución actual, una vez por solución (los esqueletos evalúan muchos movimientos de la misma)
+    Sol last_;
+    double last_obj_ = 0;
+    bool has_last_ = false;
+    double base(const Sol& s) {
+        if (!has_last_ || !(s == last_)) last_ = s, last_obj_ = js.objective(s), has_last_ = true;
+        return last_obj_;
+    }
     Move tabu_key(const Move& mv) override { return {mv[0], mv[1], mv[3], mv[2], 0, 0}; }
 };
 

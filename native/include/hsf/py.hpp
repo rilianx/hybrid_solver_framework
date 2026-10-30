@@ -151,6 +151,29 @@ void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy 
                     for (auto& x : mv) sink = sink + nbh->delta(s, x), ++n;
                     if (clock.elapsed() >= seconds) break;
                 }
+        } else if (slot == "neighborhood_ts") {
+            // un paso de TS: todos los candidatos con `estimate` (o `delta` si no la hay) y `delta` exacto de los 5
+            // mejores; cuenta candidatos revisados por segundo
+            auto nbh = catalog->neighborhood(name, *m, scoped);
+            std::vector<Move> mv;
+            std::vector<std::pair<double, size_t>> order;
+            volatile double sink = 0;
+            bool est = nbh->has_estimate();
+            while (clock.elapsed() < seconds)
+                for (auto& s : sols) {
+                    mv.clear();
+                    nbh->moves(s, mv);
+                    order.clear();
+                    for (size_t i = 0; i < mv.size(); ++i)
+                        order.push_back({est ? nbh->estimate(s, mv[i]) : nbh->delta(s, mv[i]), i});
+                    if (est) {
+                        size_t k = std::min<size_t>(5, order.size());
+                        std::partial_sort(order.begin(), order.begin() + k, order.end());
+                        for (size_t i = 0; i < k; ++i) sink = sink + nbh->delta(s, mv[order[i].second]);
+                    }
+                    n += (long)mv.size();
+                    if (clock.elapsed() >= seconds) break;
+                }
         } else if (slot == "perturbation") {
             auto pert = catalog->perturbation(name, *m, scoped);
             while (clock.elapsed() < seconds)

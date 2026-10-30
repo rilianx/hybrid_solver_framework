@@ -77,8 +77,18 @@ def bench_solutions(pack, n: int = 6, seed: int = 4242):
     return inst, [mip.random_solution(inst, Random(s)) for s in range(n)]
 
 
-def speed(native, model_of, slot: str, name: str, inst, sols, seconds: float = 1.0) -> float:
-    return native.bench(model_of(inst), slot, name, {}, sols, seconds)
+METRICS = {"delta": "delta exacto por segundo (búsqueda local, SA)",
+           "ts_step": "candidatos revisados por segundo en un paso de TS (estimate o delta de todos, delta de los 5 mejores)",
+           "perturbation": "perturbaciones por segundo", "greedy_score": "construcciones greedy completas por segundo"}
+
+
+def speeds(native, model_of, slot: str, name: str, inst, sols, seconds: float = 1.0) -> dict[str, float]:
+    """Las operaciones que repiten los esqueletos, medidas en C++."""
+    m = model_of(inst)
+    if slot == "neighborhood":
+        return {"delta": native.bench(m, "neighborhood", name, {}, sols, seconds),
+                "ts_step": native.bench(m, "neighborhood_ts", name, {}, sols, seconds)}
+    return {slot: native.bench(m, slot, name, {}, sols, seconds)}
 
 
 def optimize_check(request: dict) -> None:
@@ -124,13 +134,17 @@ def optimize_check(request: dict) -> None:
             if eq.passed:
                 eq.add(ok("equivalence", "same_constructions"))
         out.update(passed=eq.passed, failed_layer=eq.failed_layer, feedback=eq.feedback())
-    before = speed(old, old_of, slot, name, inst, sols)
-    after = speed(new, parts.model, slot, name, inst, sols) if out["passed"] else 0.0
+    k = request.get("min_speedup", 1.5)
+    before = speeds(old, old_of, slot, name, inst, sols)
+    after = speeds(new, parts.model, slot, name, inst, sols) if out["passed"] else {m: 0.0 for m in before}
     out.update(before=before, after=after)
-    if out["passed"] and after < request.get("min_speedup", 1.5) * before:
-        out.update(passed=False, failed_layer="speed",
-                   feedback=f"mismas salidas, pero {after:,.0f} contra {before:,.0f} por segundo: se pide al menos "
-                            f"{request.get('min_speedup', 1.5):g} veces más rápido")
+    if out["passed"]:
+        ratios = {m: after[m] / max(before[m], 1e-9) for m in before}
+        if max(ratios.values()) < k or min(ratios.values()) < 0.9:
+            detail = "; ".join(f"{METRICS[m]}: {before[m]:,.0f} → {after[m]:,.0f} ({ratios[m]:.2f}×)" for m in before)
+            out.update(passed=False, failed_layer="speed",
+                       feedback=f"mismas salidas, pero no alcanza: {detail}. Se pide que alguna medida mejore al menos "
+                                f"{k:g} veces y que ninguna empeore más de un 10 %.")
     print(json.dumps(out))
 
 

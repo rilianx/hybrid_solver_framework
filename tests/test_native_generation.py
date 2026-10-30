@@ -109,7 +109,9 @@ def test_the_optimization_stage_accepts_a_faster_equivalent_version_and_rejects_
     client = ScriptedClient(responses=[wrong, fast])
     out = optimize_native(client, pack, tmp_path, rounds=2, verbose=False)
     row = out["neighborhood/adjacent_swap"]
-    assert row["accepted"] and row["rounds"] == 2 and row["after"] >= 1.5 * row["before"]
-    assert "delta" in row["rejections"][0] and "evaluaciones de delta por segundo" in client.calls[0][1]
+    assert row["accepted"] and row["rounds"] == 2 and row["after"]["delta"] >= 1.5 * row["before"]["delta"]
+    prompt = client.calls[0][1]
+    assert "delta" in row["rejections"][0] and "delta exacto por segundo" in prompt and "paso de TS" in prompt
+    assert "SA: elige un movimiento al azar" in prompt  # el prompt dice cómo usan los esqueletos el vecindario
     entry = json.loads((tmp_path / "catalog.json").read_text())[0]
     assert entry["path"].endswith("adjacent_swap_r2.hpp") and entry["path"] == row["file"]

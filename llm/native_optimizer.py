@@ -20,43 +20,53 @@ import time
 from pathlib import Path
 
 from native.build import NativeBuildError
-from native.check import bench_solutions, run_check
+from native.check import bench_solutions, run_check, speeds
 from native.generated import ModelCache, NativeComponent, build_components, load, parse_component, parse_response
 
 from .client import TokenUsage
 from .native_generator import NATIVE_SYSTEM_PROMPT, _compile_feedback, contract_source
 
-UNITS = {"neighborhood": "evaluaciones de delta por segundo", "perturbation": "perturbaciones por segundo",
-         "greedy_score": "construcciones greedy completas por segundo"}
+USAGE = """Cómo usan los esqueletos (C++) un vecindario:
+- SA: elige un movimiento al azar de `moves(s)`. Según un parámetro que elige el tuner, o calcula `delta(s, m)`,
+  decide con Metropolis y solo si lo acepta llama a `apply` (sin evaluar el objetivo completo), o aplica el movimiento
+  y evalúa el objetivo completo del candidato. Con un `delta` incremental, la primera forma es la rápida.
+- Búsqueda local de ILS y VNS: `delta` de una muestra de movimientos de `moves(s)`; aplica el mejor (o el primero que
+  mejora).
+- TS: `moves(s)`; si el vecindario ofrece `estimate`, lo calcula para TODOS los candidatos, los ordena y calcula
+  `delta` exacto solo de los primeros (unos 5); sin `estimate`, calcula `delta` de todos.
+En todos, muchos movimientos seguidos son de la MISMA solución."""
 
-TECHNIQUES = """- Evita rehacer lo que no cambia: calcula `delta` de forma INCREMENTAL, con lo que el movimiento afecta, en vez de
-  evaluar la solución completa dos veces. Si eso necesita datos de la solución actual, calcúlalos una vez por solución
-  y guárdalos en el componente (los esqueletos evalúan muchos movimientos de la misma solución seguidos).
-- Precalcula en el constructor lo que solo depende de la instancia.
-- Reutiliza memoria de trabajo propia del componente en vez de crear vectores en cada llamada; evita copiar soluciones
-  salvo para devolver la nueva en `apply`/`perturb`.
-- Si además tienes una aproximación mucho más barata de delta que ordena los movimientos casi como el delta exacto,
-  puedes ofrecerla con `has_estimate()`/`estimate(s, m)`: la búsqueda tabú la usa para preseleccionar candidatos. No
-  reemplaza a `delta`, que tiene que seguir siendo exacto.
+TECHNIQUES = """- Evita rehacer lo que no cambia: calcula `delta` de forma incremental, con lo que el movimiento afecta, en vez de
+  evaluar la solución completa. Lo que dependa de la solución actual calcúlalo una vez por solución y guárdalo en el
+  componente.
+- Precalcula en el constructor lo que solo depende de la instancia; reutiliza memoria de trabajo propia en vez de
+  crear vectores en cada llamada; no copies soluciones salvo para devolver la nueva en `apply`/`perturb`.
+- `estimate(s, m)` (con `has_estimate()` en true) es una aproximación de delta que puede ser mucho más barata que el
+  delta exacto: en TS reemplaza al delta en la revisión de todos los candidatos. Se verifica que ordene los movimientos
+  como el delta exacto en la mayoría de los pares. `delta` sigue siendo exacto.
 - Mantén exactamente las mismas salidas: los mismos movimientos en el mismo orden, el mismo `apply`, el mismo `delta`
   (con tolerancia numérica), la misma perturbación con la misma semilla, los mismos puntajes. Se comparan uno por uno."""
 
 
-def optimize_prompt(pack, gen: dict, comp: NativeComponent, before: float, objective_rate: float) -> str:
+def optimize_prompt(pack, gen: dict, comp: NativeComponent, before: dict, objective_rate: float) -> str:
+    from native.check import METRICS
+
     spec = pack.make_model_spec()
     model = (Path(gen["dir"]) / gen["model_header"]).read_text()
-    ref = (f" Como referencia, evaluar el objetivo completo de una solución cuesta lo mismo que {objective_rate:,.0f} "
-           "evaluaciones por segundo." if comp.slot == "neighborhood" else "")
+    measures = "\n".join(f"- {METRICS[m]}: {v:,.0f}" for m, v in before.items())
+    if comp.slot == "neighborhood":
+        measures += f"\n- referencia: evaluar el objetivo completo de una solución, {objective_rate:,.0f} por segundo"
     return "\n".join([
-        f"# Tarea\nEste componente C++ (slot `{comp.slot}`) del problema **{spec.name}** ya está validado. En una instancia "
-        f"de tamaño realista hace {before:,.0f} {UNITS[comp.slot]}.{ref} Los esqueletos lo llaman cientos de miles de veces "
-        "por corrida. Reescríbelo para que sea bastante más rápido SIN cambiar ninguna salida.",
+        f"# Tarea\nEste componente C++ (slot `{comp.slot}`) del problema **{spec.name}** ya está validado. Reescríbelo para "
+        "que los esqueletos corran bastante más rápido con él, SIN cambiar ninguna salida.",
+        f"\n# Lo que mide hoy, en una instancia de tamaño realista (en C++)\n{measures}",
+        f"\n# {USAGE}" if comp.slot == "neighborhood" else "",
         f"\n# Componente actual\n```cpp\n{comp.source}\n```",
         f"\n# Contrato\n```cpp\n{contract_source(comp.slot)}\n```",
         f"\n# El modelo C++\n```cpp\n{model}\n```",
         f"\n# Técnicas\n{TECHNIQUES}",
         "\n# Lo que se verificará\n- Las mismas salidas que el componente actual, una por una, y las validaciones del slot.\n"
-        "- Al menos 1,5 veces más rápido, medido en C++.",
+        "- Que alguna de las medidas de arriba mejore al menos 1,5 veces y ninguna empeore más de un 10 %.",
         f"\nDevuelve UN bloque ```cpp``` con el componente COMPLETO (misma línea COMPONENT, mismo nombre `{comp.name}`, "
         "mismos parámetros).",
     ])
@@ -87,11 +97,12 @@ def optimize_native(client, pack, workspace: str | Path, slots=("neighborhood",)
         old_so, old_mod = build_components(gen, [comp], debug=True)
         old = load(old_so, old_mod)
         of = ModelCache(old)
-        before = old.bench(of(inst), comp.slot, comp.name, {}, sols, 1.0)
+        before = speeds(old, of, comp.slot, comp.name, inst, sols)
         rate = old.bench_objective(of(inst), sols, 0.5)
         k = int(comp.path.stem.rsplit("_r", 1)[1])
         prompt = optimize_prompt(pack, gen, comp, before, rate)
-        row = {"accepted": False, "rounds": 0, "before": round(before), "after": 0, "rejections": []}
+        row = {"accepted": False, "rounds": 0, "before": {m: round(v) for m, v in before.items()}, "after": {},
+               "rejections": []}
         for rnd in range(1, rounds + 1):
             row["rounds"] = rnd
             t0 = time.perf_counter()
@@ -117,9 +128,10 @@ def optimize_native(client, pack, workspace: str | Path, slots=("neighborhood",)
             if verbose:
                 print(f"[optimizar/{key}] ronda {rnd} ({time.perf_counter() - t0:.0f}s): "
                       + ("✔" if res["passed"] else f"✘ {res['failed_layer']}")
-                      + (f" {before:,.0f} → {res.get('after', 0):,.0f}/s" if res.get("after") else ""), flush=True)
+                      + "".join(f" {m} {before[m]:,.0f}→{res['after'].get(m, 0):,.0f}" for m in before if res.get("after")),
+                      flush=True)
             if res["passed"]:
-                row.update(accepted=True, after=round(res["after"]), file=str(cand.path),
+                row.update(accepted=True, after={m: round(v) for m, v in res["after"].items()}, file=str(cand.path),
                            estimate="has_estimate" in cand.source)
                 for j in range(1, rnd):  # las rondas rechazadas no quedan como la más alta
                     comp.path.with_name(f"{comp.name}_r{k + j}.hpp").unlink(missing_ok=True)

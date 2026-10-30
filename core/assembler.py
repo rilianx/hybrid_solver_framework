@@ -61,6 +61,8 @@ SKELETONS: dict[str, SkeletonDef] = {
             "T_end": {"type": "float", "range": [1e-5, 1e-1], "log": True},
             "alpha": {"type": "float", "range": [0.8, 0.999]},
             "iters_per_T": {"type": "int", "range": [1, 50]},
+            # solo en C++: evaluar el candidato completo o decidir con el delta del vecindario (ver native/include/hsf/core.hpp)
+            "eval": {"type": "cat", "values": ["objective", "delta"]},
         },
     ),
     "ILS": SkeletonDef(
