@@ -24,12 +24,12 @@ def best_known() -> dict[str, int]:
 
 
 def _run(args):
-    label, config, name, seed, budget, native = args
+    label, config, name, seed, budget, native, catalog, generated = args
     from examples.jobshop.instance import JSSPInstance
     from examples.jobshop.pack import PACK
     from tuning.cli import make_assembler
 
-    assembler, _ = make_assembler(PACK, "handwritten", native=native)
+    assembler, _ = make_assembler(PACK, catalog, generated, native=native)
     inst = JSSPInstance.load(str(TAILLARD / f"{name}.txt"))
     res = assembler.assemble(config)(inst, Random(seed), budget)
     P = PACK.problem_factory(inst)
@@ -45,6 +45,7 @@ def main() -> None:
     ap.add_argument("--budget", type=float, default=30.0)
     ap.add_argument("--seeds", type=int, default=1)
     ap.add_argument("--native", action="store_true")
+    ap.add_argument("--generated", default=None, help="workspace del catálogo generado (con --catalog generated)")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--out")
     args = ap.parse_args()
@@ -57,7 +58,7 @@ def main() -> None:
             payload = json.loads((path / f"{args.catalog}.json").read_text())
             configs[f"{Path(run).name}/{rep}"] = (payload["test"]["tuned"]["config"], payload["test"]["tuned"]["summary"])
     bk = best_known()
-    jobs = [(label, cfg, name, seed, args.budget, args.native) for label, (cfg, _) in configs.items()
+    jobs = [(label, cfg, name, seed, args.budget, args.native, args.catalog, args.generated) for label, (cfg, _) in configs.items()
             for name in args.instances for seed in range(args.seeds)]
     with ProcessPoolExecutor(args.workers) as pool:
         rows = list(pool.map(_run, jobs))
