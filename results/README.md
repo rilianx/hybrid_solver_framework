@@ -593,6 +593,29 @@ saltos atrás) y SA en la otra. Gap 0,28 % contra 0,20 % de la run 52 (−0,08 [
 En 10×10 con 5 s las configuraciones buenas ya quedan a 0,1–0,4 % del mejor conocido propio: para
 separarlas hacen falta instancias más difíciles (15×15, 20×15, Taillard).
 
+### Taillard: a 0,85 % del óptimo en 15×15 con 30 s
+
+Las seis configuraciones de las runs 52 y 53 (afinadas en 10×10 con 5 s), en las instancias de
+Taillard ta01–ta20 (`examples/jobshop/taillard/`, de JSPLIB), 30 s por corrida en C++, una semilla
+(`scripts/taillard_eval.py`, `taillard_run52_53.json`). Gap contra el óptimo o la mejor cota superior
+publicada en JSPLIB:
+
+| configuración | ta01–10 (15×15) | ta11–20 (20×15) |
+|---|---|---|
+| run 52 r0, SA | 1,17 % | 2,29 % |
+| run 52 r1, SA | 1,09 % | 2,45 % |
+| **run 52 r2, SA** | **0,85 %** | **1,98 %** |
+| run 53 r0, TS | 2,31 % | 2,84 % |
+| run 53 r1, SA | 0,85 % | 2,31 % |
+| run 53 r2, TS con saltos atrás | 1,21 % | 2,10 % |
+
+- Lo afinado en 10×10 se transfiere: el mejor de las seis en cada instancia queda a 0,08–1,33 % en
+  15×15 y a 0,82–2,42 % en 20×15. ta06 y ta07 a 2 y 1 unidades del óptimo.
+- Todavía no es el estado del arte (las tabúes de la familia TSAB y los solvers CP llegan al óptimo o
+  muy cerca en estas instancias), y el TS genérico queda detrás de SA: le falta lo que hace fuerte a
+  TSAB (N5 con evaluación exacta incremental en vez de rehacer el plan, y la vuelta atrás con los
+  movimientos no explorados). Las cotas de JSPLIB para ta11–20 pueden estar desactualizadas.
+
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 
 Desde la corrida 43, una corrección trae solo las funciones o métodos que cambian y
