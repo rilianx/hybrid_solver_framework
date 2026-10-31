@@ -1,0 +1,386 @@
+{
+  "catalog": "handwritten",
+  "generated_components": [],
+  "settings": {
+    "trials": 70,
+    "budget": 10.0,
+    "train": 10,
+    "test": 10,
+    "problem": "jobshop",
+    "size": "15x15",
+    "seed": 0,
+    "tuner_seed": 1,
+    "seeds_test": 3,
+    "objective": "ratio",
+    "skeletons": "all",
+    "ref_time": 0.0,
+    "reeval_top": 0,
+    "reeval_seeds": 2,
+    "race_seeds": 6,
+    "screen": -1,
+    "defaults_margin": 0.005,
+    "native": true,
+    "tuner": "irace"
+  },
+  "tuning": {
+    "tuner": "irace",
+    "best_config": {
+      "skeleton": "TS",
+      "constructor": "job_order",
+      "neighborhood": "critical_swap",
+      "TS.tenure": 9,
+      "TS.candidate_size": 82,
+      "TS.estimate_top": 7,
+      "TS.elite_size": 7,
+      "TS.stall": 2831
+    },
+    "best_cost": 0.13915944508420916,
+    "best_summary": "TS[constructor=job_order, neighborhood=critical_swap]",
+    "n_trials": 700,
+    "n_failed": 0,
+    "seconds": 6998.4,
+    "skeleton_usage": {
+      "TS": 6
+    },
+    "elites": [
+      "TS[constructor=job_order, neighborhood=critical_swap]",
+      "TS[constructor=job_order, neighborhood=critical_swap]",
+      "TS[constructor=job_order, neighborhood=critical_swap]",
+      "TS[constructor=job_order, neighborhood=critical_swap]",
+      "TS[constructor=job_order, neighborhood=critical_swap]",
+      "TS[constructor=job_order, neighborhood=critical_swap]"
+    ],
+    "elite_configs": [
+      {
+        "skeleton": "TS",
+        "constructor": "job_order",
+        "neighborhood": "critical_swap",
+        "TS.tenure": 9,
+        "TS.candidate_size": 82,
+        "TS.estimate_top": 7,
+        "TS.elite_size": 7,
+        "TS.stall": 2831
+      },
+      {
+        "skeleton": "TS",
+        "constructor": "job_order",
+        "neighborhood": "critical_swap",
+        "TS.tenure": 9,
+        "TS.candidate_size": 35,
+        "TS.estimate_top": 6,
+        "TS.elite_size": 2,
+        "TS.stall": 2612
+      },
+      {
+        "skeleton": "TS",
+        "constructor": "job_order",
+        "neighborhood": "critical_swap",
+        "TS.tenure": 10,
+        "TS.candidate_size": 81,
+        "TS.estimate_top": 6,
+        "TS.elite_size": 5,
+        "TS.stall": 691
+      },
+      {
+        "skeleton": "TS",
+        "constructor": "job_order",
+        "neighborhood": "critical_swap",
+        "TS.tenure": 9,
+        "TS.candidate_size": 16,
+        "TS.estimate_top": 10,
+        "TS.elite_size": 6,
+        "TS.stall": 894
+      },
+      {
+        "skeleton": "TS",
+        "constructor": "job_order",
+        "neighborhood": "critical_swap",
+        "TS.tenure": 14,
+        "TS.candidate_size": 47,
+        "TS.estimate_top": 1,
+        "TS.elite_size": 5,
+        "TS.stall": 2815
+      },
+      {
+        "skeleton": "TS",
+        "constructor": "job_order",
+        "neighborhood": "critical_swap",
+        "TS.tenure": 10,
+        "TS.candidate_size": 28,
+        "TS.estimate_top": 7,
+        "TS.elite_size": 4,
+        "TS.stall": 3352
+      }
+    ],
+    "reevaluated": [],
+    "log_tail": [
+      "# You may either increase the budget or set 'minNbSurvival' to a lower value",
+      "# Iteration: 9",
+      "# nbIterations: 9",
+      "# experimentsUsedSoFar: 692",
+      "# timeUsed: 0",
+      "# remainingBudget: 8",
+      "# currentBudget: 8",
+      "# number of elites: 6",
+      "# nbConfigurations: 6",
+      "# Total CPU user time: 6983.007, CPU sys time: 14.291, Wall-clock time: 6998.061",
+      "# Best configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):",
+      "    skeleton constructor  neighborhood perturbation SA.T0 SA.cooling SA.T_end SA.alpha SA.iters_per_T ILS.strength ILS.ls_strategy ILS.ls_time_share ILS.ls_sample VNS.shake_strength VNS.ls_time_share VNS.ls_sample TS.tenure TS.candidate_size TS.estimate_top TS.elite_size TS.stall greedy_earliest_end.rule greedy_earliest_end.alpha greedy_most_work_remaining.rule greedy_most_work_remaining.alpha",
+      "51        TS   job_order critical_swap         <NA>    NA       <NA>       NA       NA             NA           NA            <NA>                NA            NA                 NA                NA            NA         9                82               7             7     2831                     <NA>                        NA                            <NA>                               NA",
+      "103       TS   job_order critical_swap         <NA>    NA       <NA>       NA       NA             NA           NA            <NA>                NA            NA                 NA                NA            NA         9                35               6             2     2612                     <NA>                        NA                            <NA>                               NA",
+      "96        TS   job_order critical_swap         <NA>    NA       <NA>       NA       NA             NA           NA            <NA>                NA            NA                 NA                NA            NA        10                81               6             5      691                     <NA>                        NA                            <NA>                               NA",
+      "84        TS   job_order critical_swap         <NA>    NA       <NA>       NA       NA             NA           NA            <NA>                NA            NA                 NA                NA            NA         9                16              10             6      894                     <NA>                        NA                            <NA>                               NA",
+      "78        TS   job_order critical_swap         <NA>    NA       <NA>       NA       NA             NA           NA            <NA>                NA            NA                 NA                NA            NA        14                47               1             5     2815                     <NA>                        NA                            <NA>                               NA",
+      "54        TS   job_order critical_swap         <NA>    NA       <NA>       NA       NA             NA           NA            <NA>                NA            NA                 NA                NA            NA        10                28               7             4     3352                     <NA>                        NA                            <NA>                               NA",
+      "# Best configurations as commandlines (first number is the configuration ID; same order as above):",
+      "51   --skeleton=TS --constructor=job_order --neighborhood=critical_swap --TS.tenure=9 --TS.candidate_size=82 --TS.estimate_top=7 --TS.elite_size=7 --TS.stall=2831",
+      "103  --skeleton=TS --constructor=job_order --neighborhood=critical_swap --TS.tenure=9 --TS.candidate_size=35 --TS.estimate_top=6 --TS.elite_size=2 --TS.stall=2612",
+      "96   --skeleton=TS --constructor=job_order --neighborhood=critical_swap --TS.tenure=10 --TS.candidate_size=81 --TS.estimate_top=6 --TS.elite_size=5 --TS.stall=691",
+      "84   --skeleton=TS --constructor=job_order --neighborhood=critical_swap --TS.tenure=9 --TS.candidate_size=16 --TS.estimate_top=10 --TS.elite_size=6 --TS.stall=894",
+      "78   --skeleton=TS --constructor=job_order --neighborhood=critical_swap --TS.tenure=14 --TS.candidate_size=47 --TS.estimate_top=1 --TS.elite_size=5 --TS.stall=2815",
+      "54   --skeleton=TS --constructor=job_order --neighborhood=critical_swap --TS.tenure=10 --TS.candidate_size=28 --TS.estimate_top=7 --TS.elite_size=4 --TS.stall=3352",
+      "",
+      "",
+      "# Testing of elite configurations: 1 ",
+      "# Testing iteration configurations: FALSE ",
+      "# 2026-10-30 16:34:27 UTC: No test instances, skip testing"
+    ]
+  },
+  "test": {
+    "tuned": {
+      "label": "tuned",
+      "summary": "TS[constructor=job_order, neighborhood=critical_swap]",
+      "mean": 1211.3,
+      "std": 67.01649050793394,
+      "per_instance": [
+        1231.0,
+        1165.0,
+        1246.0,
+        1169.0,
+        1286.0,
+        1334.0,
+        1236.0,
+        1101.0,
+        1211.0,
+        1134.0
+      ],
+      "config": {
+        "skeleton": "TS",
+        "constructor": "job_order",
+        "neighborhood": "critical_swap",
+        "TS.tenure": 9,
+        "TS.candidate_size": 82,
+        "TS.estimate_top": 7,
+        "TS.elite_size": 7,
+        "TS.stall": 2831
+      },
+      "gap_per_instance": [
+        0.01400329489291598,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0007501875468867217,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mean_gap": 0.0014753482439802703
+    },
+    "baselines": [
+      {
+        "label": "default:TS",
+        "summary": "TS[constructor=job_order, neighborhood=critical_swap]",
+        "mean": 1218.9,
+        "std": 65.42545376227818,
+        "per_instance": [
+          1222.0,
+          1187.0,
+          1264.0,
+          1173.0,
+          1291.0,
+          1338.0,
+          1247.0,
+          1113.0,
+          1214.0,
+          1140.0
+        ],
+        "config": {
+          "skeleton": "TS",
+          "constructor": "job_order",
+          "neighborhood": "critical_swap",
+          "TS.tenure": 16,
+          "TS.candidate_size": 52,
+          "TS.estimate_top": 0,
+          "TS.elite_size": 0,
+          "TS.stall": 500
+        },
+        "gap_per_instance": [
+          0.006589785831960461,
+          0.01888412017167382,
+          0.014446227929373997,
+          0.003421727972626176,
+          0.0038880248833592537,
+          0.0037509377344336083,
+          0.00889967637540453,
+          0.010899182561307902,
+          0.002477291494632535,
+          0.005291005291005291
+        ],
+        "mean_gap": 0.007854798024577758
+      },
+      {
+        "label": "default:SA",
+        "summary": "SA[constructor=job_order, neighborhood=critical_swap]",
+        "mean": 1222.8333333333333,
+        "std": 63.91613428722221,
+        "per_instance": [
+          1220.0,
+          1180.3333333333333,
+          1271.3333333333333,
+          1179.6666666666667,
+          1289.3333333333333,
+          1347.0,
+          1244.3333333333333,
+          1139.0,
+          1218.3333333333333,
+          1139.0
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "job_order",
+          "neighborhood": "critical_swap",
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26
+        },
+        "gap_per_instance": [
+          0.004942339373970346,
+          0.013161659513590778,
+          0.020331728196896676,
+          0.009124607927003201,
+          0.00259201658890611,
+          0.010502625656414103,
+          0.006742179072276098,
+          0.03451407811080836,
+          0.006055601431323912,
+          0.004409171075837742
+        ],
+        "mean_gap": 0.011237600694702733
+      },
+      {
+        "label": "default:ILS",
+        "summary": "ILS[constructor=job_order, neighborhood=critical_swap, perturbation=critical_kick]",
+        "mean": 1492.7333333333333,
+        "std": 153.7736287173093,
+        "per_instance": [
+          1489.0,
+          1686.3333333333333,
+          1549.3333333333333,
+          1456.3333333333333,
+          1427.3333333333333,
+          1562.6666666666667,
+          1701.6666666666667,
+          1271.0,
+          1429.0,
+          1354.6666666666667
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "job_order",
+          "neighborhood": "critical_swap",
+          "perturbation": "critical_kick",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.22652388797364087,
+          0.4474964234620886,
+          0.24344569288389506,
+          0.24579412603364692,
+          0.10990150336962151,
+          0.17229307326831714,
+          0.37675296655879187,
+          0.15440508628519528,
+          0.18001651527663087,
+          0.1945914168136391
+        ],
+        "mean_gap": 0.23512206919254672
+      },
+      {
+        "label": "default:VNS",
+        "summary": "VNS[constructor=job_order, neighborhood=critical_swap]",
+        "mean": 1598.1,
+        "std": 179.59609312751397,
+        "per_instance": [
+          1569.3333333333333,
+          1840.3333333333333,
+          1723.0,
+          1556.0,
+          1758.3333333333333,
+          1645.6666666666667,
+          1685.3333333333333,
+          1331.0,
+          1520.6666666666667,
+          1351.3333333333333
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "job_order",
+          "neighborhood": "critical_swap",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.2926963207029104,
+          0.5796852646638053,
+          0.3828250401284109,
+          0.33105218135158254,
+          0.3672887506480041,
+          0.23455863965991502,
+          0.36353829557713047,
+          0.2089009990917348,
+          0.2557115331681806,
+          0.19165196942974713
+        ],
+        "mean_gap": 0.3207908994421421
+      }
+    ],
+    "best_baseline": "default:TS",
+    "gain_vs_best_baseline": 0.006235130035277821,
+    "wins_per_instance": "9/10",
+    "reference": 8975.2,
+    "best_known": [
+      1214.0,
+      1165.0,
+      1246.0,
+      1169.0,
+      1286.0,
+      1333.0,
+      1236.0,
+      1101.0,
+      1211.0,
+      1134.0
+    ],
+    "best_baseline_by_gap": "default:TS",
+    "tuned_vs_best_baseline": {
+      "a": "tuned",
+      "b": "default:TS",
+      "mean_diff": 0.006379449780597487,
+      "ci95": [
+        0.0020049983735825716,
+        0.01062205958951832
+      ],
+      "wins_a": 9,
+      "n": 10,
+      "significant": true
+    },
+    "mip_reference": null
+  }
+}

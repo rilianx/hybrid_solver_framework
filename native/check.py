@@ -44,11 +44,13 @@ def run_check(request: dict, timeout: float = 900.0) -> dict:
 
 
 def main(path: str) -> None:
+    request = json.loads(Path(path).read_text())
+    if request.get("mode") == "optimize":
+        return optimize_check(request)
     from llm.cycle import base_pack, parts_contexts
     from llm.generator import validate_factory
     from native.generated import factory, load, parts_for
 
-    request = json.loads(Path(path).read_text())
     pack = base_pack(request["problem"])
     gen = importlib.import_module(pack.native_module).GENERATION
     mod = load(request["so"], request["module"])
@@ -63,6 +65,102 @@ def main(path: str) -> None:
     report = validate_factory(comp, factory(mod, parts.model, comp["slot"], cand), contexts, peers)
     print(json.dumps({"passed": report.passed, "failed_layer": report.failed_layer, "feedback": report.feedback(),
                       "component": comp}))
+
+
+def bench_solutions(pack, n: int = 6, seed: int = 4242):
+    """Soluciones al azar de una instancia de tamaño realista, donde se mide la velocidad."""
+    from random import Random
+
+    gen = importlib.import_module(pack.native_module).GENERATION
+    mip = importlib.import_module(gen["mip_parts"])
+    inst = pack.make_instances(1, seed, pack.parse_size(pack.default_size))[0]
+    return inst, [mip.random_solution(inst, Random(s)) for s in range(n)]
+
+
+METRICS = {"delta": "delta exacto por segundo (búsqueda local, SA)",
+           "ts_step": "candidatos revisados por segundo en un paso de TS (estimate o delta de todos, delta de los 5 mejores)",
+           "perturbation": "perturbaciones por segundo", "greedy_score": "construcciones greedy completas por segundo"}
+
+
+def profile(native, model_of, slot: str, name: str, inst, sols, seconds: float = 0.5) -> str:
+    """Dónde se va el tiempo de un vecindario, como texto para el prompt (vacío en otros slots)."""
+    if slot != "neighborhood":
+        return ""
+    p = native.profile_neighborhood(model_of(inst), name, {}, sols, seconds)
+    parts = [f"{p['moves_per_solution']:.0f} movimientos por solución", f"moves(s): {p['moves_us_per_solution']:.2f} µs por solución",
+             f"delta: {p['delta_us']:.3f} µs por movimiento"]
+    if "estimate_us" in p:
+        parts.append(f"estimate: {p['estimate_us']:.3f} µs por movimiento")
+    parts.append(f"apply: {p['apply_us']:.3f} µs")
+    return "; ".join(parts)
+
+
+def speeds(native, model_of, slot: str, name: str, inst, sols, seconds: float = 1.0) -> dict[str, float]:
+    """Las operaciones que repiten los esqueletos, medidas en C++."""
+    m = model_of(inst)
+    if slot == "neighborhood":
+        return {"delta": native.bench(m, "neighborhood", name, {}, sols, seconds),
+                "ts_step": native.bench(m, "neighborhood_ts", name, {}, sols, seconds)}
+    return {slot: native.bench(m, slot, name, {}, sols, seconds)}
+
+
+def optimize_check(request: dict) -> None:
+    """La versión optimizada de un componente aceptado: pasa las capas, da las mismas salidas que la aceptada y es al
+    menos `min_speedup` veces más rápida (medido en C++)."""
+    from random import Random
+
+    from core.validation.equivalence import check_component_equivalent
+    from llm.cycle import base_pack, parts_contexts
+    from llm.generator import validate_factory
+    from native.generated import ModelCache, factory, load, parts_for
+
+    pack = base_pack(request["problem"])
+    gen = importlib.import_module(pack.native_module).GENERATION
+    mip = importlib.import_module(gen["mip_parts"])
+    old, new = load(request["old_so"], request["old_module"]), load(request["so"], request["module"])
+    old_of, parts = ModelCache(old), parts_for(new, mip)
+    name, slot = request["candidate"], request["component"]["slot"]
+    comp = dict(request["component"])
+    comp["compatible_skeletons"] = NATIVE_SKELETONS_FOR_SLOT[slot]
+    contexts = parts_contexts(pack, parts, strict=False, reference_free=True)
+    report = validate_factory(comp, factory(new, parts.model, slot, name), contexts)
+    out = {"passed": report.passed, "failed_layer": report.failed_layer, "feedback": report.feedback()}
+    inst, sols = bench_solutions(pack)
+    if report.passed:
+        if slot in ("neighborhood", "perturbation"):
+            P = pack.problem_factory(inst)
+            eq = check_component_equivalent(slot, factory(old, old_of, slot, name)(P), factory(new, parts.model, slot, name)(P),
+                                            P, [mip.trivial_solution(inst)] + sols)
+        else:  # mismos puntajes = mismas construcciones con cualquier regla y semilla
+            from core.validation.base import ValidationReport, fail, ok
+
+            eq = ValidationReport(subject=f"equivalencia ({slot})")
+            cname = f"greedy_{name}" if slot == "greedy_score" else name
+            for rule in ("greedy", "rcl", "roulette"):
+                for seed in range(3):
+                    a = old.make_constructor(old_of(inst), cname, {"rule": rule, "alpha": 0.3}).build(seed)
+                    b = new.make_constructor(parts.model(inst), cname, {"rule": rule, "alpha": 0.3}).build(seed)
+                    if a != b:
+                        eq.add(fail("equivalence", "same_constructions", f"con la regla {rule} y la semilla {seed} el "
+                                                                         f"constructor arma otra solución: los puntajes cambiaron"))
+                        break
+            if eq.passed:
+                eq.add(ok("equivalence", "same_constructions"))
+        out.update(passed=eq.passed, failed_layer=eq.failed_layer, feedback=eq.feedback())
+    k = request.get("min_speedup", 1.5)
+    before = speeds(old, old_of, slot, name, inst, sols)
+    after = speeds(new, parts.model, slot, name, inst, sols) if out["passed"] else {m: 0.0 for m in before}
+    out.update(before=before, after=after)
+    if out["passed"]:
+        ratios = {m: after[m] / max(before[m], 1e-9) for m in before}
+        if max(ratios.values()) < k or min(ratios.values()) < 0.9:
+            detail = "; ".join(f"{METRICS[m]}: {before[m]:,.0f} → {after[m]:,.0f} ({ratios[m]:.2f}×)" for m in before)
+            prof = profile(new, parts.model, slot, name, inst, sols)
+            out.update(passed=False, failed_layer="speed",
+                       feedback=f"mismas salidas, pero no alcanza: {detail}. Se pide que alguna medida mejore al menos "
+                                f"{k:g} veces y que ninguna empeore más de un 10 %."
+                                + (f"\nPerfil de tu versión: {prof}." if prof else ""))
+    print(json.dumps(out))
 
 
 if __name__ == "__main__":

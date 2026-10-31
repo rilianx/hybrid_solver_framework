@@ -60,6 +60,7 @@ struct CtorHandle {
 // `catalog` debe vivir lo que vive el módulo (una variable estática del pack).
 template <class M, class ToPy, class FromPy>
 void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy from_py) {
+    using Move = hsf::Move;
     using Model = std::shared_ptr<M>;
     py::class_<M, std::shared_ptr<M>>(mod, "Model", py::module_local())
         .def("objective", [=](const M& m, py::handle s) { return m.objective(from_py(s)); })
@@ -126,6 +127,121 @@ void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy 
         return CtorHandle<M>{m, catalog->constructor(name, *m, scoped)};
     });
     // corre la configuración entera en C++ (sin el GIL): (mejor solución, objetivo, iteraciones, segundos)
+    // la operación que el esqueleto repite, medida en C++ (desde Python la conversión de la solución en cada
+    // llamada taparía la diferencia): delta de cada movimiento de cada solución (una vez por movimiento, para no
+    // medir una caché por movimiento), perturbaciones o construcciones greedy completas, por segundo
+    mod.def("bench", [catalog, from_py](Model m, const std::string& slot, const std::string& name, py::dict params,
+                                         py::list sols_py, double seconds) {
+        std::vector<typename M::Solution> sols;
+        for (auto s : sols_py) sols.push_back(from_py(s));
+        Config c = config_from(params), scoped;
+        for (auto& [k, v] : c.num) scoped.num[name + "." + k] = v;
+        for (auto& [k, v] : c.str) scoped.str[name + "." + k] = v;
+        Clock clock;
+        long n = 0;
+        Rng rng(0);
+        if (slot == "neighborhood") {
+            auto nbh = catalog->neighborhood(name, *m, scoped);
+            std::vector<Move> mv;
+            volatile double sink = 0;
+            while (clock.elapsed() < seconds)
+                for (auto& s : sols) {
+                    mv.clear();
+                    nbh->moves(s, mv);
+                    for (auto& x : mv) sink = sink + nbh->delta(s, x), ++n;
+                    if (clock.elapsed() >= seconds) break;
+                }
+        } else if (slot == "neighborhood_ts") {
+            // un paso de TS: todos los candidatos con `estimate` (o `delta` si no la hay) y `delta` exacto de los 5
+            // mejores; cuenta candidatos revisados por segundo
+            auto nbh = catalog->neighborhood(name, *m, scoped);
+            std::vector<Move> mv;
+            std::vector<std::pair<double, size_t>> order;
+            volatile double sink = 0;
+            bool est = nbh->has_estimate();
+            while (clock.elapsed() < seconds)
+                for (auto& s : sols) {
+                    mv.clear();
+                    nbh->moves(s, mv);
+                    order.clear();
+                    for (size_t i = 0; i < mv.size(); ++i)
+                        order.push_back({est ? nbh->estimate(s, mv[i]) : nbh->delta(s, mv[i]), i});
+                    if (est) {
+                        size_t k = std::min<size_t>(5, order.size());
+                        std::partial_sort(order.begin(), order.begin() + k, order.end());
+                        for (size_t i = 0; i < k; ++i) sink = sink + nbh->delta(s, mv[order[i].second]);
+                    }
+                    n += (long)mv.size();
+                    if (clock.elapsed() >= seconds) break;
+                }
+        } else if (slot == "perturbation") {
+            auto pert = catalog->perturbation(name, *m, scoped);
+            while (clock.elapsed() < seconds)
+                for (auto& s : sols) { pert->perturb(s, 1.0, rng); ++n; }
+        } else if (slot == "greedy_score" || slot == "constructor") {
+            auto ctor = catalog->constructor(slot == "greedy_score" ? "greedy_" + name : name, *m, scoped);
+            while (clock.elapsed() < seconds) { ctor->build(rng); ++n; }
+        } else {
+            throw std::invalid_argument("bench: slot sin medición: " + slot);
+        }
+        return n / std::max(clock.elapsed(), 1e-9);
+    });
+    // cuánto cuesta cada método de un vecindario (microsegundos por llamada) y cuántos movimientos da por solución
+    mod.def("profile_neighborhood", [catalog, from_py](Model m, const std::string& name, py::dict params, py::list sols_py,
+                                                        double seconds) {
+        std::vector<typename M::Solution> sols;
+        for (auto s : sols_py) sols.push_back(from_py(s));
+        Config c = config_from(params), scoped;
+        for (auto& [k, v] : c.num) scoped.num[name + "." + k] = v;
+        for (auto& [k, v] : c.str) scoped.str[name + "." + k] = v;
+        auto nbh = catalog->neighborhood(name, *m, scoped);
+        bool est = nbh->has_estimate();
+        double t_moves = 0, t_delta = 0, t_est = 0, t_apply = 0;
+        long n_sol = 0, n_moves = 0, n_apply = 0;
+        std::vector<Move> mv;
+        volatile double sink = 0;
+        Clock total;
+        while (total.elapsed() < seconds)
+            for (auto& s : sols) {
+                // en una solución nueva (la primera llamada de cada método paga lo que el componente prepare por solución)
+                mv.clear();
+                Clock a;
+                nbh->moves(s, mv);
+                t_moves += a.elapsed();
+                Clock b;
+                for (auto& x : mv) sink = sink + nbh->delta(s, x);
+                t_delta += b.elapsed();
+                if (est) {
+                    Clock e;
+                    for (auto& x : mv) sink = sink + nbh->estimate(s, x);
+                    t_est += e.elapsed();
+                }
+                Clock d;
+                for (size_t i = 0; i < mv.size() && i < 5; ++i) { auto r = nbh->apply(s, mv[i]); sink = sink + r.size(); ++n_apply; }
+                t_apply += d.elapsed();
+                ++n_sol;
+                n_moves += (long)mv.size();
+                if (total.elapsed() >= seconds) break;
+            }
+        py::dict out;
+        out["moves_per_solution"] = n_sol ? (double)n_moves / n_sol : 0.0;
+        out["moves_us_per_solution"] = n_sol ? 1e6 * t_moves / n_sol : 0.0;
+        out["delta_us"] = n_moves ? 1e6 * t_delta / n_moves : 0.0;
+        if (est) out["estimate_us"] = n_moves ? 1e6 * t_est / n_moves : 0.0;
+        out["apply_us"] = n_apply ? 1e6 * t_apply / n_apply : 0.0;
+        return out;
+    });
+    // el objetivo completo por segundo, como referencia del costo de una evaluación
+    mod.def("bench_objective", [from_py](Model m, py::list sols_py, double seconds) {
+        std::vector<typename M::Solution> sols;
+        for (auto s : sols_py) sols.push_back(from_py(s));
+        Clock clock;
+        long n = 0;
+        volatile double sink = 0;
+        while (clock.elapsed() < seconds)
+            for (auto& s : sols) sink = sink + m->objective(s), ++n;
+        return n / std::max(clock.elapsed(), 1e-9);
+    });
     mod.def("solve", [catalog, to_py](Model m, py::dict config, std::vector<std::string> shake, uint64_t seed, double budget) {
         Config c = config_from(config);
         Result<M> r = [&] {

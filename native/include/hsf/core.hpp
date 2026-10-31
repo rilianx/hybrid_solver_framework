@@ -250,8 +250,10 @@ Result<M> trajectory(const M& model, typename M::Solution sol, double budget, Ge
     double elapsed = 0.0;
     typename M::Solution cand;
     while (elapsed < budget) {
-        if (gen(sol, f, res.objective, elapsed, cand)) {
-            double fc = model.objective(cand);
+        // el generador puede dar el objetivo del candidato (f + delta exacto) y ahorrar la evaluación completa
+        double fc = std::numeric_limits<double>::quiet_NaN();
+        if (gen(sol, f, res.objective, elapsed, cand, fc)) {
+            if (std::isnan(fc)) fc = model.objective(cand);
             if (accept(f, fc)) {
                 sol = cand;
                 f = fc;
@@ -318,15 +320,25 @@ Result<M> solve(const Catalog<M>& cat, const M& model, const Config& cfg, const 
         bool by_time = cfg.text("SA.cooling") == "time";
         double T_end = cfg.get("SA.T_end"), alpha = cfg.get("SA.alpha");
         int per_T = (int)cfg.get("SA.iters_per_T"), at_T = 0;
-        auto gen = [&](const auto& s, double, double, double, auto& cand) {
+        // `SA.eval`: "objective" aplica el movimiento y evalúa el candidato completo; "delta" decide Metropolis con el
+        // delta del vecindario (exacto por contrato) y solo aplica el aceptado. Conviene "delta" si es incremental.
+        bool by_delta = cfg.text("SA.eval", "objective") == "delta";
+        auto gen = [&](const auto& s, double f, double, double, auto& cand, double& fc) {
             Move m;
             if (!random_move(*nbh, s, rng, buf, m)) return false;
+            if (!by_delta) {
+                cand = nbh->apply(s, m);
+                return true;
+            }
+            double d = nbh->delta(s, m);
+            if (d > 0 && !(T > 0 && rng.uniform() < std::exp(-d / T))) return false;
             cand = nbh->apply(s, m);
+            fc = f + d;
             return true;
         };
         auto accept = [&](double fc, double fn) {
             double d = fn - fc;
-            if (d <= 0) return true;
+            if (by_delta || d <= 0) return true;  // con delta, Metropolis ya se decidió en el generador
             return T > 0 && rng.uniform() < std::exp(-d / T);
         };
         auto update = [&](double elapsed) {
@@ -342,7 +354,7 @@ Result<M> solve(const Catalog<M>& cat, const M& model, const Config& cfg, const 
         int sample = (int)cfg.get("ILS.ls_sample");
         double ls_s = budget * cfg.get("ILS.ls_time_share"), strength = cfg.get("ILS.strength");
         bool started = false;
-        auto gen = [&](const auto& s, double, double, double, auto& cand) {
+        auto gen = [&](const auto& s, double, double, double, auto& cand, double&) {
             if (!started) {
                 started = true;
                 cand = hill_climb(*nbh, s, first, sample, ls_s, rng);
@@ -360,7 +372,7 @@ Result<M> solve(const Catalog<M>& cat, const M& model, const Config& cfg, const 
         int strength = (int)cfg.get("VNS.shake_strength"), sample = (int)cfg.get("VNS.ls_sample");
         double ls_s = budget * cfg.get("VNS.ls_time_share");
         size_t k = 0;
-        auto gen = [&](const auto& s, double f, double, double, auto& cand) {
+        auto gen = [&](const auto& s, double f, double, double, auto& cand, double&) {
             auto cur = s;
             for (int i = 0; i < strength; ++i) {
                 Move m;
@@ -387,7 +399,7 @@ Result<M> solve(const Catalog<M>& cat, const M& model, const Config& cfg, const 
         std::vector<Move> queue;
         size_t head = 0;
         std::vector<std::pair<double, size_t>> order;
-        auto gen = [&](const auto& s, double f, double f_best, double, auto& cand) {
+        auto gen = [&](const auto& s, double f, double f_best, double, auto& cand, double& fc) {
             ++iter;
             if (elite_size > 0) {
                 if (f < track_best) {
@@ -420,7 +432,7 @@ Result<M> solve(const Catalog<M>& cat, const M& model, const Config& cfg, const 
                 if (d < best_d) best = &m, best_d = d;
                 if (top > 0 && ++exact >= top) break;
             }
-            if (!best) best = best_tabu;
+            if (!best) best = best_tabu, best_d = tabu_d;
             if (!best) return false;
             Move key = nbh->tabu_key(*best);
             queue.push_back(key);
@@ -430,6 +442,7 @@ Result<M> solve(const Catalog<M>& cat, const M& model, const Config& cfg, const 
                 if (it != tabu.end() && --it->second <= 0) tabu.erase(it);
             }
             cand = nbh->apply(s, *best);
+            fc = f + best_d;
             return true;
         };
         return trajectory(model, start, budget, gen, [](double, double) { return true; }, none);

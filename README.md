@@ -219,7 +219,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   `lru_cache(maxsize=None)` de módulo agotó los runners en la run 34).
 - **`examples/validation_demo.py`** — componentes correctos y rotos pasando
   por las capas, con el feedback que recibiría el LLM.
-- **`tests/`** — 256 tests (`pytest`): contratos, esqueleto genérico,
+- **`tests/`** — 260 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
   validación aceptando componentes correctos y rechazando rotos (delta mal
@@ -240,7 +240,7 @@ python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~
 python -m examples.lotsizing.demo --easy
 python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
-python -m pytest -q                 # 256 passed (~170 s)
+python -m pytest -q                 # 260 passed (~170 s)
 
 # segundo problema: CVRP con flota libre (mismos CLI, otro pack)
 python -m examples.cvrp.tune --catalog handwritten --size 30 --trials 30 --ref-time 60
@@ -254,6 +254,7 @@ python -m examples.jobshop.tune --tuner irace --native --catalog handwritten --t
 python -m scripts.native_benchmark results/tune_run47 --budgets 1 5 --native examples.jobshop.native_parts
 # componentes C++ generados por el LLM sobre el modelo nativo, y su tuning en C++
 python -m llm.native_generator --problem jobshop --workspace generated/jobshop_native --provider anthropic
+python -m llm.native_optimizer --problem jobshop --workspace generated/jobshop_native --provider anthropic  # más rápidos, mismas salidas
 python -m examples.jobshop.tune --native --catalog generated --generated generated/jobshop_native --tuner irace --trials 70
 
 export OPENAI_API_KEY=...
