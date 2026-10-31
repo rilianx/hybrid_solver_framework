@@ -55,6 +55,7 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run54/`](tune_run54/) | 30 oct | job shop, **componentes C++ generados por Opus 5.5** (corrida 104), irace en C++ | SA, ILS, VNS, TS | 10+10, 10×10 | 5 s | 700 exp. × 3 réplicas | paso 2: el LLM escribe C++ |
 | [`tune_run55/`](tune_run55/) | 30 oct | job shop, catálogo a mano en C++, irace afinando en **15×15 con 10 s** | SA, ILS, VNS, TS | 10+10, 15×15 | 10 s | 700 exp. × 3 réplicas | afinar en el tamaño de Taillard |
 | [`tune_run56/`](tune_run56/) | 30 oct | lo mismo con los componentes C++ de Opus (corrida 104) | SA, ILS, VNS, TS | 10+10, 15×15 | 10 s | 700 exp. × 3 réplicas | ídem |
+| [`tune_run58/`](tune_run58/) | 31 oct | lo mismo con los componentes C++ **optimizados por el LLM** (corridas 106–108) | SA, ILS, VNS, TS | 10+10, 15×15 | 10 s | 700 exp. × 3 réplicas | etapa de optimización C++ |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -656,6 +657,46 @@ instancia, IC95 por bootstrap sobre las 10 instancias de cada grupo):
 Con todo el ciclo hecho por el LLM en C++ (componentes) y el tuner (irace), el resultado iguala o supera
 levemente al catálogo escrito a mano, también en Taillard. La distancia al estado del arte sigue ahí
 (~1 % en 15×15 con 30 s): ninguno de los dos catálogos tiene evaluación incremental de N5.
+
+### Etapa de optimización C++: el LLM llega solo a la evaluación incremental y a la estimación de Taillard
+
+`llm/native_optimizer.py`: el componente aceptado es el oráculo; la versión nueva tiene que dar las mismas
+salidas (movimientos y su orden, apply, delta), pasar las capas y ser más rápida, medido en C++. Lo que hizo
+falta en el framework para que la optimización fuera útil, sin pistas del problema:
+
+- **Decir cómo se usa el componente y medir eso.** La primera versión del prompt ofrecía `estimate` como
+  opcional pero solo medía `delta`/s, y nunca decía que SA no llamaba a `delta` (evaluaba el objetivo
+  completo). Ahora el prompt describe el uso por esqueleto y se miden dos cosas: `delta` exacto/s y
+  candidatos revisados por segundo en un paso de TS (estimate de todos, delta de los 5 mejores). SA tiene
+  `SA.eval` (objective | delta), afinable.
+- **Perfil por método** (µs de moves por solución, delta, estimate y apply), **los componentes del mismo slot
+  ya optimizados** como referencia (su propio código) y **pasadas encadenadas** (lo que mejoró se vuelve a
+  optimizar con su versión nueva como oráculo, pidiendo 1,2× desde la segunda pasada).
+
+| Corrida | Qué cambió | Intercambio crítico (N5) | Inserción en bloques |
+|---|---|---|---|
+| 106 (1,40 USD) | primera versión | 199 k → 580 k delta/s (incremental exacto) | 237 k → 404 k |
+| 107 (1,56 USD) | uso por esqueleto, dos medidas | no pasa de 1,36× | **estimate con cabezas y colas**: paso de TS 432 k → 1,32 M |
+| 108 (3,90 USD) | perfil, hermanos, 3 pasadas | 502 k → 937 k → 1,88 M → **2,40 M delta/s**, y **estimate** en la pasada 3 | paso de TS 1,31 M → 2,14 M → 2,56 M → **4,03 M** |
+
+El tercer vecindario (intercambio de prioridad entre dos trabajos en todas las máquinas) no mejoró en
+ninguna corrida; un intento con `estimate` se rechazó porque ordenaba como delta solo 21 de 49 pares.
+
+Run 58 (irace en 15×15, 10 s, mismas condiciones que 55 y 56) con el catálogo optimizado: N5 en las tres
+réplicas, dos con TS (una preselecciona con `estimate`) y una con SA en `SA.eval = delta`. Tuning: 0,66 %
+contra 0,84 % sin optimizar (+0,18 [+0,04, +0,34]) y 0,58 % contra 0,94 % a mano (+0,36 [+0,04, +0,69]).
+Taillard (`taillard_run58.json`; 3 semillas, 30 s; diferencia por instancia, IC95 bootstrap):
+
+| | optimizado (58) | sin optimizar (56) | a mano (55) | 58 contra 56 | 58 contra 55 |
+|---|---|---|---|---|---|
+| 15×15, media de configuraciones y semillas | **0,75 %** | 1,07 % | 1,32 % | +0,33 [+0,13, +0,55] | +0,57 [+0,07, +1,39] |
+| 20×15, ídem | **1,66 %** | 1,97 % | 2,19 % | +0,30 [+0,18, +0,43] | +0,53 [+0,35, +0,69] |
+| 15×15, mejor de 9 por instancia | **0,34 %** | 0,47 % | 0,62 % | +0,13 [+0,02, +0,25] | +0,28 [+0,08, +0,56] |
+| 20×15, ídem | **0,99 %** | 1,25 % | 1,51 % | +0,26 [+0,02, +0,47] | +0,53 [+0,28, +0,81] |
+
+Todas las diferencias se separan del ruido. La mejor réplica (TS con N5 y saltos atrás) queda a 0,55 % del
+óptimo en 15×15 y 1,46 % en 20×15 con 30 s. Todo el ciclo fue del LLM y del framework: componentes
+(corrida 104), optimización (106–108) y tuning (irace).
 
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 
