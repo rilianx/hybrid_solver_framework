@@ -736,6 +736,20 @@ Las cifras de las corridas 106–108 de arriba también estaban infladas por la 
 era ~1,4 M), aunque la mejora es real (×3,3 en delta, ×4,4 en la trayectoria) y la confirman la run 58 y
 Taillard. El r6 no se incorpora: con la medida justa no gana.
 
+**Corrida 111 (5,96 USD, 16 llamadas, 475 k de entrada y 203 k de salida), ya con la medida justa.** Medido de
+nuevo localmente, con soluciones nuevas en cada pasada:
+
+| Vecindario | delta/s | paso de TS | walk (pasos/s) |
+|---|---|---|---|
+| inserción, r6 → **r8** (dos pasadas aceptadas) | 790 k → 3,14 M (×4,0) | 3,03 M → 4,58 M | 135 k → **230 k (×1,7)** |
+| intercambio de prioridad, r1 → r2 | 321 k → 420 k | 317 k → 409 k | 7,8 k → 7,4 k |
+| N5 (r5) | sin cambio: la trayectoria llegó a ×1,20 en 3 intentos | | |
+
+La inserción ahora calcula delta de forma incremental y es la primera mejora que se ve en la trayectoria. N5 no
+pasó: preparar una solución nueva (≈2,4 µs) sigue siendo la mayor parte del paso, y el LLM no llegó a actualizar
+cabezas y colas desde `apply`. El intercambio de prioridad pasó por 1,5× en delta/s en la máquina del workflow
+(localmente es 1,3×, sin cambio en la trayectoria). 15 de 16 respuestas de corrección fueron ediciones.
+
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 
 Desde la corrida 43, una corrección trae solo las funciones o métodos que cambian y
