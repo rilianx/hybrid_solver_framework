@@ -1,0 +1,16 @@
+
+=== catálogo `generated`: 56 parámetros, 0 opciones generadas por LLM ===
+  irace: 728 experimentos en 7376s; élite: PR[constructor=trivial, neighborhood=critical_path_adjacent_swap, relink=lis_insertion_relink]; PR[constructor=trivial, neighborhood=critical_path_adjacent_swap, relink=lis_insertion_relink]; PR[constructor=trivial, neighborhood=critical_path_adjacent_swap, relink=lis_insertion_relink]; PR[constructor=trivial, neighborhood=critical_path_adjacent_swap, relink=lis_insertion_relink]; PR[constructor=trivial, neighborhood=critical_path_adjacent_swap, relink=lis_insertion_relink]; PR[constructor=trivial, neighborhood=critical_path_adjacent_swap, relink=lis_insertion_relink]; PR[constructor=trivial, neighborhood=critical_path_adjacent_swap, relink=lis_insertion_relink]
+  mejor en train: 0.1385  PR[constructor=trivial, neighborhood=critical_path_adjacent_swap, relink=lis_insertion_relink]
+
+=== TEST `generated` (partida trivial sin búsqueda = 8975.2; gap vs mejor conocido por instancia) ===
+    tuned                                            gap   0.21%         1202.4 ±     65.0   (+86.6% vs partida)   PR[constructor=trivial, neighborhood=critical_path_adjacent_swap, relink=lis_insertion_relink]
+    default:PR                                       gap   0.62%         1207.4 ±     67.5   (+86.5% vs partida)   PR[constructor=trivial, neighborhood=critical_path_adjacent_swap, relink=kendall_adjacent_swap_relink]
+    default:TS                                       gap   1.23%         1214.7 ±     67.2   (+86.5% vs partida)   TS[constructor=trivial, neighborhood=critical_path_adjacent_swap]
+    default:SA                                       gap   2.00%         1224.1 ±     72.8   (+86.4% vs partida)   SA[constructor=trivial, neighborhood=critical_path_adjacent_swap]
+    default:ILS                                      gap  12.13%         1346.1 ±    136.1   (+85.0% vs partida)   ILS[constructor=trivial, neighborhood=critical_path_adjacent_swap, perturbation=critical_arc_swap_kick]
+    default:VNS                                      gap  27.52%         1529.6 ±    161.2   (+83.0% vs partida)   VNS[constructor=trivial, neighborhood=critical_path_adjacent_swap]
+  ganancia del afinado vs mejor default: +0.41%; gana en 8/10 instancias
+  afinado vs default:PR: gap +0.41% a favor del afinado, IC95 [+0.16%, +0.62%]
+
+Escenario irace escrito en tuning_out/irace/scenario.txt (correr: irace --scenario tuning_out/irace/scenario.txt)
