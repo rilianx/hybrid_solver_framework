@@ -765,6 +765,10 @@ sucesores y las colas de todos los predecesores, así que el techo realista est�
 pedido. Desde ahora la trayectoria pide el 40 % de la mejora de las demás medidas (1,2× en la primera pasada,
 1,08× en las siguientes). No se volvió a correr.
 
+Cuánto habría dado: un N5 1,2× más rápido equivale a 20 % más tiempo. Las tres configuraciones de la run 58 en
+ta01–ta10 (15×15, 3 semillas) con 30 s y con 36 s (1,20× iteraciones): 0,705 % contra 0,698 % de gap, diferencia
++0,006 puntos, IC95 [−0,06, +0,06]. Nada medible: a esta altura de la búsqueda el tiempo extra casi no mejora.
+
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 
 Desde la corrida 43, una corrección trae solo las funciones o métodos que cambian y
