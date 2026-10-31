@@ -34,7 +34,7 @@ from .client import TokenUsage
 
 NATIVE_SYSTEM_PROMPT = """Eres un experto en metaheurísticas que escribe componentes algorítmicos en C++17 para un framework de
 solvers híbridos. Escribes la pieza que se te pide, correcta y eficiente; el bucle del algoritmo (los esqueletos SA, ILS,
-VNS, TS) es del framework.
+VNS, TS, PR) es del framework.
 
 Reglas de todo componente:
 1. Un bloque ```cpp``` por componente. La PRIMERA línea es `// COMPONENT: {"name": "<snake_case único>", "slot": "<slot>",
@@ -75,6 +75,16 @@ SLOT_HINTS = {
         "verificará que el constructor que arma produce soluciones factibles y no mucho peores que la de referencia."
     ),
     "constructor": "Se verificará: `build(rng)` devuelve una solución FACTIBLE y es determinista dada la semilla.",
+    "relink": (
+        "Conectas dos soluciones para el esqueleto PR (path relinking): `distance(a, b)` dice cuántos pasos las separan y "
+        "`step(cur, guide, rng)` da una solución más cerca de `guide`. PR mantiene una población de soluciones buenas; "
+        "elige dos, recorre el camino de una a la otra (en cada paso llama varias veces a `step` y se queda con la de mejor "
+        "objetivo), mejora con búsqueda tabú la mejor solución del tramo central del camino y la pone en la población en "
+        "lugar de la peor. `distance` también se usa para no repetir soluciones en la población. Un paso puede dar una "
+        "solución infactible (el objetivo la penaliza). Se verificará: `distance(a, a) == 0`, simétrica y mayor que 0 entre "
+        "soluciones distintas; cada `step` baja la distancia a la guía estrictamente, y con distancia 0 la solución es la "
+        "guía."
+    ),
 }
 
 
@@ -277,6 +287,8 @@ def main(argv: list[str] | None = None) -> None:
                          "from_scratch": True, "wall_seconds": round(time.perf_counter() - t0, 1),
                          "tokens": total.as_dict(client.model)}
     out = Path(args.workspace) / "stats.json"
+    if out.exists():  # un slot nuevo sobre un catálogo existente: no se pisan las estadísticas de la corrida anterior
+        out = out.with_name(f"stats_{'_'.join(args.slots)}.json")
     out.write_text(json.dumps(all_stats, indent=2, ensure_ascii=False))
     print(f"{len(every)} componentes C++ aceptados; resumen en {out}")
 
@@ -299,7 +311,7 @@ def load_native_catalog(pack, workspace: str | Path):
     out = []
     for c in comps:
         comp = dict(c.component)
-        comp.setdefault("compatible_skeletons", NATIVE_SKELETONS_FOR_SLOT[c.slot])
+        comp["compatible_skeletons"] = NATIVE_SKELETONS_FOR_SLOT[c.slot]  # los esqueletos nativos de hoy (p.ej. PR)
         out.append((comp, factory(mod, model_of, c.slot, c.name)))
     return mod, model_of, out
 
