@@ -1024,3 +1024,28 @@ aceptado, casi todos por factibilidad; en la corrida 10 salió a la primera. Con
 constructor modular (`core/construction.py`) la factibilidad queda en la vista del problema
 y el LLM escribe solo un puntaje; en 360 construcciones de prueba ninguna fue infactible y en
 la run 6 los puntajes generados superaron a los constructores monolíticos generados.
+
+### Path relinking (PR): un esqueleto genérico que le gana a la TS afinada sin afinarse
+
+Esqueleto `PR` (`skeletons/pr.py`, `path_relinking` en `native/include/hsf/core.hpp`) y slot nuevo `relink`
+(`distance(a, b)`, `step(cur, guide, rng)`; el validador exige distancia 0 consigo misma, simetría y que cada paso
+la baje hasta llegar a la guía). Población de élite mejorada con tabú (el mismo paso de TS, `hsf::TabuStep`);
+caminos entre dos de la población al azar, la mejor solución del tramo central se mejora y reemplaza a la peor si
+no está repetida. Nada del problema: la idea de i-TSAB y TS/PR en el job shop y de GRASP con path relinking.
+
+Para el job shop, un relink escrito a mano (`machine_order`): distancia = pares de trabajos ordenados distinto en
+alguna máquina; un paso intercambia dos trabajos consecutivos que están al revés que en la guía. Prueba en
+ta01–ta10 (15×15), 30 s, 3 semillas, catálogo a mano (N5 con estimate), en este contenedor
+(`scripts/pr_vs_ts_taillard.py`, `taillard_pr_handwritten.json`). PR con los parámetros de tabú de la TS r1 de la
+run 55 y el resto por defecto (población 10, 2 candidatos por paso del camino, banda 0,25), sin afinar:
+
+| | gap medio | mejor de 3 por instancia | PR 10k mejor por (IC95) |
+|---|---|---|---|
+| TS afinada (run 55 r1) | 0,97 % | — | +0,50 [+0,16, +0,87], 8 de 10 instancias |
+| TS afinada (run 55 r2) | 0,92 % | — | +0,45 [+0,10, +0,88], 7 de 10 |
+| PR, 2000 iteraciones de tabú por mejora | 0,71 % | 0,54 % | +0,23 [+0,04, +0,44] |
+| **PR, 10000 iteraciones** | **0,47 %** | **0,33 %** | |
+
+Con el catálogo a mano, PR sin afinar queda por debajo de lo mejor del catálogo generado y optimizado con TS
+afinada (run 58: 0,75 % de media, 0,55 % la mejor réplica). Es la diferencia que más movió el gap desde el paso a
+C++. Pendiente: afinar PR con irace, probar con el catálogo generado y que el LLM escriba el relink.
