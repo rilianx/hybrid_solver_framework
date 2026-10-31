@@ -21,6 +21,7 @@ from pathlib import Path
 
 from native.build import NativeBuildError
 from native.check import bench_solutions, profile, run_check, speeds
+from native.edits import EDIT_INSTRUCTIONS, EditError, merge_reply
 from native.generated import ModelCache, NativeComponent, build_components, load, parse_component, parse_response
 
 from .client import TokenUsage
@@ -73,8 +74,8 @@ def optimize_prompt(pack, gen: dict, comp: NativeComponent, before: dict, object
         f"\n# Técnicas\n{TECHNIQUES}",
         "\n# Lo que se verificará\n- Las mismas salidas que el componente actual, una por una, y las validaciones del slot.\n"
         f"- Que alguna de las medidas de arriba mejore al menos {min_speedup:g} veces y ninguna empeore más de un 10 %.",
-        f"\nDevuelve UN bloque ```cpp``` con el componente COMPLETO (misma línea COMPONENT, mismo nombre `{comp.name}`, "
-        "mismos parámetros).",
+        f"\n# Formato de la respuesta\n{EDIT_INSTRUCTIONS}\nLa línea COMPONENT, el nombre `{comp.name}` y los parámetros no "
+        "cambian.",
     ])
 
 
@@ -108,6 +109,7 @@ def optimize_one(client, pack, gen: dict, ws: Path, comp: NativeComponent, comps
     prof = profile(old, of, comp.slot, comp.name, inst, sols)
     k = _round(comp.path)
     prompt = optimize_prompt(pack, gen, comp, before, rate, prof, _siblings(comps, comp), min_speedup)
+    base = comp.source  # sobre lo que se aplican las ediciones de la próxima respuesta
     key = f"{comp.slot}/{comp.name}"
     row = {"accepted": False, "rounds": 0, "before": {m: round(v) for m, v in before.items()}, "after": {},
            "min_speedup": min_speedup, "rejections": []}
@@ -118,11 +120,17 @@ def optimize_one(client, pack, gen: dict, ws: Path, comp: NativeComponent, comps
         used = getattr(client, "last_usage", None)
         if isinstance(used, TokenUsage):
             tokens.add(used)
-        new, errors = parse_response(text)
-        if not new:
-            row["rejections"].append("sin bloque ```cpp``` legible: " + "; ".join(errors))
+        # ediciones sobre el componente actual (primer intento) o sobre la versión rechazada (correcciones)
+        try:
+            merged = merge_reply(base, text)
+            cand = parse_component(merged.source)
+        except (EditError, ValueError) as exc:
+            row["rejections"].append(f"respuesta inaplicable: {exc}")
+            row["edit_failures"] = row.get("edit_failures", 0) + 1
+            prompt = (f"Tu respuesta no se pudo aplicar: {exc}.\n\n{EDIT_INSTRUCTIONS}\n\n# Código sobre el que se "
+                      f"aplican las ediciones\n```cpp\n{base}\n```")
             continue
-        cand = new[0]
+        row.setdefault("reply_modes", []).append(merged.mode)
         cand.name, cand.slot, cand.component = comp.name, comp.slot, dict(comp.component)
         cand.path = comp.path.with_name(f"{comp.name}_r{k + rnd}.hpp")
         cand.path.write_text(cand.source)
@@ -150,9 +158,11 @@ def optimize_one(client, pack, gen: dict, ws: Path, comp: NativeComponent, comps
             break
         row["rejections"].append(res["feedback"][-3000:])
         cand.path.unlink(missing_ok=True)
-        prompt = (f"La versión optimizada fue RECHAZADA. Corrígela y devuelve el componente COMPLETO.\n\n# Reporte\n"
-                  f"{res['feedback']}\n\n# Componente original (el oráculo: mismas salidas)\n```cpp\n{comp.source}\n```"
-                  f"\n\n# Tu versión rechazada\n```cpp\n{cand.source}\n```\n\n# Técnicas\n{TECHNIQUES}")
+        base = cand.source
+        prompt = (f"La versión optimizada fue RECHAZADA. Corrígela.\n\n# Reporte\n{res['feedback']}\n\n# Componente "
+                  f"original (el oráculo: mismas salidas)\n```cpp\n{comp.source}\n```\n\n# Tu versión rechazada (las "
+                  f"ediciones se aplican sobre ella)\n```cpp\n{cand.source}\n```\n\n# Técnicas\n{TECHNIQUES}\n\n"
+                  f"# Formato de la respuesta\n{EDIT_INSTRUCTIONS}")
     return row
 
 

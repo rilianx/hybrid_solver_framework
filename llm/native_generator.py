@@ -27,7 +27,8 @@ from pathlib import Path
 
 from native.build import INCLUDE, NativeBuildError
 from native.check import NATIVE_SKELETONS_FOR_SLOT, run_check
-from native.generated import SLOT_BASE, NativeComponent, build_components, parse_response
+from native.edits import EDIT_INSTRUCTIONS, EditError, merge_reply
+from native.generated import SLOT_BASE, NativeComponent, build_components, parse_component, parse_response
 
 from .client import TokenUsage
 
@@ -125,11 +126,12 @@ def generation_prompt(pack, gen: dict, slot: str, n: int, avoid: list[str]) -> s
 def correction_prompt(gen: dict, slot: str, comp: NativeComponent, feedback: str) -> str:
     return "\n".join([
         f"El siguiente componente C++ para el slot `{slot}` fue RECHAZADO. Corrígelo manteniendo la misma idea y el mismo "
-        f"nombre (`{comp.name}`), y devuelve el bloque ```cpp``` COMPLETO corregido (con la línea COMPONENT).",
+        f"nombre (`{comp.name}`).",
         "Arregla lo que el reporte señala sin romper lo que ya funcionaba.",
         f"\n# Reporte\n{feedback}",
         f"\n# Contrato\n```cpp\n{contract_source(slot)}\n```",
-        f"\n# Componente rechazado\n```cpp\n{comp.source}\n```",
+        f"\n# Componente rechazado (las ediciones se aplican sobre él)\n```cpp\n{comp.source}\n```",
+        f"\n# Formato de la respuesta\n{EDIT_INSTRUCTIONS}",
     ])
 
 
@@ -145,11 +147,12 @@ class NativeStats:
     rejections_by_layer: Counter = field(default_factory=Counter)
     rounds_per_accepted: dict = field(default_factory=dict)
     abandoned: list = field(default_factory=list)
+    edits: int = 0  # correcciones devueltas como ediciones (no el componente completo)
 
     def as_dict(self, model: str | None, accepted: list[NativeComponent]) -> dict:
         return {"requested": self.requested, "parsed": self.parsed, "accepted": self.accepted, "llm_calls": self.llm_calls,
                 "llm_seconds": round(self.llm_seconds, 1), "rejections_by_layer": dict(self.rejections_by_layer),
-                "rounds_per_accepted": self.rounds_per_accepted, "abandoned": self.abandoned, "patches": 0,
+                "rounds_per_accepted": self.rounds_per_accepted, "abandoned": self.abandoned, "patches": self.edits,
                 "accepted_files": [str(c.path) for c in accepted], "tokens": self.tokens.as_dict(model)}
 
 
@@ -210,11 +213,20 @@ def generate_native_slot(client, pack, slot: str, n: int, workspace: str | Path,
         if rnd >= max_rounds:
             stats.abandoned.append(comp.name)
             continue
-        fixed, _ = parse_response(ask(correction_prompt(gen, slot, comp, result["feedback"])))
-        if not fixed:
+        prompt = correction_prompt(gen, slot, comp, result["feedback"])
+        for _attempt in range(2):  # una edición que no aplica vuelve en el momento, con el motivo
+            try:
+                merged = merge_reply(comp.source, ask(prompt))
+                f = parse_component(merged.source)
+                break
+            except (EditError, ValueError) as exc:
+                stats.rejections_by_layer["edit"] += 1
+                prompt = (f"Tu respuesta no se pudo aplicar: {exc}.\n\n{EDIT_INSTRUCTIONS}\n\n# Código sobre el que se "
+                          f"aplican las ediciones\n```cpp\n{comp.source}\n```")
+        else:
             stats.abandoned.append(comp.name)
             continue
-        f = fixed[0]
+        stats.edits += merged.mode == "edits"
         f.name, f.slot = comp.name, slot  # misma idea y nombre
         f.component.update({"name": comp.name, "slot": slot})
         pending.append((f, rnd + 1))
