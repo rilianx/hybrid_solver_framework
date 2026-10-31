@@ -25,6 +25,7 @@ PROTOCOL_FOR_SLOT = {
     "acceptance": contracts.Acceptance,
     "memory": contracts.Memory,
     "perturbation": contracts.Perturbation,
+    "relink": contracts.Relink,
     "destruction": contracts.Destruction,
     "repair_heuristic": contracts.RepairHeuristic,
     "repair_mip": contracts.RepairMIP,

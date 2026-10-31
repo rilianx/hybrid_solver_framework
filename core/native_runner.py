@@ -17,7 +17,7 @@ from typing import Any, Callable
 from core.assembler import Assembler
 from core.skeleton import RunResult
 
-NATIVE_SKELETONS = ("SA", "ILS", "VNS", "TS")
+NATIVE_SKELETONS = ("SA", "ILS", "VNS", "TS", "PR")
 
 
 class NativeRunner:
@@ -34,7 +34,7 @@ class NativeRunner:
             full.setdefault(f"{sk}.{p}", A._skeleton_param(config, sk, p))
         if sk == "SA":  # configuraciones de antes del enfriamiento por tiempo (como en el Assembler)
             full["SA.cooling"] = config.get("SA.cooling", "iterations" if "SA.alpha" in config else full["SA.cooling"])
-        for slot in ("constructor", "neighborhood", "perturbation"):
+        for slot in ("constructor", "neighborhood", "perturbation", "relink"):
             name = config.get(slot)
             if name is not None:
                 for p, v in A.registry.get(slot, name).default_params().items():

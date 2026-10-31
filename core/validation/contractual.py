@@ -261,6 +261,51 @@ def check_perturbation(impl, ctx: ValidationContext) -> list[CheckResult]:
     return _collapse(results)
 
 
+def check_relink(impl, ctx: ValidationContext) -> list[CheckResult]:
+    """distance(a, a) == 0, simétrica y > 0 entre soluciones distintas; cada `step` la baja estrictamente y el
+    camino llega a la guía en a lo más distance(a, b) pasos."""
+    results: list[CheckResult] = []
+    for k in range(len(ctx.instances)):
+        def _props(k=k):
+            pool = _sample_solutions(ctx, k)
+            if callable(getattr(ctx.problem, "random_solution", None)):
+                pool += [ctx.problem.random_solution(Random(s)) for s in ctx.seeds]
+            sols = []
+            for x in pool:
+                if all(x != y for y in sols):
+                    sols.append(x)
+            sols = sols[:4]
+            for a in sols:
+                if impl.distance(a, a) != 0:
+                    return fail(LAYER, "relink.distance", f"distance(a, a) = {impl.distance(a, a)} (debe ser 0) en inst_{k}")
+            pairs = [(a, b) for i, a in enumerate(sols) for b in sols[i + 1:]]
+            for a, b in pairs:
+                dab, dba = impl.distance(a, b), impl.distance(b, a)
+                if dab != dba:
+                    return fail(LAYER, "relink.distance", f"distance no es simétrica: {dab} y {dba} en inst_{k}")
+                if dab <= 0:
+                    return fail(LAYER, "relink.distance", f"distance = {dab} entre dos soluciones distintas en inst_{k}")
+            if not pairs:
+                return ok(LAYER, "relink.path")
+            for s, (a, b) in zip(ctx.seeds, pairs[:3]):
+                rng, cur, d = Random(s), a, impl.distance(a, b)
+                for step in range(d):
+                    nxt = impl.step(cur, b, rng)
+                    dn = impl.distance(nxt, b)
+                    if dn >= d:
+                        return fail(LAYER, "relink.path", f"step no acercó la solución a la guía (distancia {d} → {dn}, "
+                                                          f"paso {step}) en inst_{k}")
+                    cur, d = nxt, dn
+                    if d == 0:
+                        break
+                if cur != b:
+                    return fail(LAYER, "relink.path", f"con distancia 0 la solución no es la guía en inst_{k}")
+            return ok(LAYER, "relink.path")
+
+        results += guard(LAYER, "relink.path", _props)
+    return _collapse(results)
+
+
 def check_destruction(impl, ctx: ValidationContext) -> list[CheckResult]:
     results: list[CheckResult] = []
     for k, inst in enumerate(ctx.instances):
@@ -421,6 +466,7 @@ CHECKERS = {
     "acceptance": check_acceptance,
     "perturbation": check_perturbation,
     "destruction": check_destruction,
+    "relink": check_relink,
     "repair_mip": check_repair_mip,
     "fixing_policy": check_fixing_policy,
     "stop": check_stop,

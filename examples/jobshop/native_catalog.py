@@ -40,7 +40,19 @@ class NativePerturbation:
         return self.h.perturb(sol, float(strength), rng.getrandbits(63))
 
 
-_WRAP = {"constructor": NativeConstructor, "neighborhood": NativeNeighborhood, "perturbation": NativePerturbation}
+class NativeRelink:
+    def __init__(self, problem, name, **params):
+        self.h = native.make_relink(model(problem.inst), name, params)
+
+    def distance(self, a, b) -> int:
+        return self.h.distance(a, b)
+
+    def step(self, cur, guide, rng: Random):
+        return self.h.step(cur, guide, rng.getrandbits(63))
+
+
+_WRAP = {"constructor": NativeConstructor, "neighborhood": NativeNeighborhood, "perturbation": NativePerturbation,
+         "relink": NativeRelink}
 
 
 def native_handwritten() -> list:

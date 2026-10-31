@@ -230,7 +230,7 @@ def _interleave(lists: list[list]) -> list:
     return out
 
 
-SLOT_KEYS = ("constructor", "neighborhood", "perturbation", "destruction", "repair_mip", "fixing_policy")
+SLOT_KEYS = ("constructor", "neighborhood", "perturbation", "destruction", "repair_mip", "fixing_policy", "relink")
 
 
 def defaults_twin(assembler: Assembler, t: Trial) -> Trial | None:

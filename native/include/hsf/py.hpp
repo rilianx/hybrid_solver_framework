@@ -52,6 +52,11 @@ struct ScoreHandle {
     std::unique_ptr<GreedyScore<M>> impl;
 };
 template <class M>
+struct RelinkHandle {
+    std::shared_ptr<M> model;
+    std::unique_ptr<Relink<M>> impl;
+};
+template <class M>
 struct CtorHandle {
     std::shared_ptr<M> model;
     std::unique_ptr<Constructor<M>> impl;
@@ -83,6 +88,12 @@ void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy 
             Rng rng(seed);
             return to_py(h.impl->perturb(from_py(s), strength, rng));
         });
+    py::class_<RelinkHandle<M>>(mod, "Relink", py::module_local())
+        .def("distance", [=](RelinkHandle<M>& h, py::handle a, py::handle b) { return h.impl->distance(from_py(a), from_py(b)); })
+        .def("step", [=](RelinkHandle<M>& h, py::handle cur, py::handle guide, uint64_t seed) {
+            Rng rng(seed);
+            return to_py(h.impl->step(from_py(cur), from_py(guide), rng));
+        });
     py::class_<CtorHandle<M>>(mod, "Constructor", py::module_local())
         .def("build", [=](CtorHandle<M>& h, uint64_t seed) {
             Rng rng(seed);
@@ -105,6 +116,7 @@ void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy 
         d["greedy_score"] = keys(catalog->scores);
         d["neighborhood"] = keys(catalog->neighborhoods);
         d["perturbation"] = keys(catalog->perturbations);
+        d["relink"] = keys(catalog->relinks);
         return d;
     });
     mod.def("make_neighborhood", [catalog](Model m, const std::string& name, py::dict params) {
@@ -119,6 +131,12 @@ void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy 
         for (auto& [k, v] : c.num) scoped.num[name + "." + k] = v;
         for (auto& [k, v] : c.str) scoped.str[name + "." + k] = v;
         return PertHandle<M>{m, catalog->perturbation(name, *m, scoped)};
+    });
+    mod.def("make_relink", [catalog](Model m, const std::string& name, py::dict params) {
+        Config c = config_from(params), scoped;
+        for (auto& [k, v] : c.num) scoped.num[name + "." + k] = v;
+        for (auto& [k, v] : c.str) scoped.str[name + "." + k] = v;
+        return RelinkHandle<M>{m, catalog->relink(name, *m, scoped)};
     });
     mod.def("make_constructor", [catalog](Model m, const std::string& name, py::dict params) {
         Config c = config_from(params), scoped;
