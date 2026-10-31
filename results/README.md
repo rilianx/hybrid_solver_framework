@@ -714,6 +714,28 @@ visible, pero el ahorro real está en el esfuerzo de razonamiento o en el númer
 Ningún vecindario mejoró: N5 llegó a 1,49× / 1,35× (pedía 1,5×), la inserción a 1,10×, y el tercero empeoró
 en los tres intentos. Tras tres pasadas el margen se agotó: el catálogo de la 108 queda como está.
 
+**Dónde se va el tiempo, y una medida que se dejaba engañar (corrida 110, 4,70 USD).** Un perfil (callgrind) de
+las configuraciones de la run 58 (TS y SA con N5) muestra que el modelo compartido (`schedule`, `objective`) casi
+no aparece: el tiempo está en el vecindario rehaciendo, para cada solución nueva, cabezas y colas. Se agregó una
+tercera medida, `walk` (50 pasos como en TS desde cada solución, aplicando uno de los 5 mejores: la solución
+siguiente es la que devolvió `apply`), la equivalencia recorre también una trayectoria, y el prompt sugiere dejar
+listo en `apply` lo que necesitará la solución siguiente.
+
+La corrida 110 aceptó un N5 con delta/s 3,3 M → 21,7 M y paso de TS 3,7 M → 13,9 M, pero `walk` 206 k → 204 k: el
+LLM agregó una tabla hash de hasta 256 soluciones con los delta memorizados, y la medida repetía las mismas 6
+soluciones en cada pasada. Arreglo: `bench` y `profile_neighborhood` generan soluciones nuevas en cada pasada
+(fuera del tiempo medido). Con la medida corregida, en la misma máquina:
+
+| N5 | delta/s | paso de TS | walk (pasos/s) |
+|---|---|---|---|
+| r1 (generado, corrida 104) | 442 k | 445 k | 51 k |
+| r5 (optimizado, 106–108) | 1,44 M | 1,58 M | 222 k |
+| r6 (corrida 110, no se usa) | 1,41 M | 1,65 M | 257 k |
+
+Las cifras de las corridas 106–108 de arriba también estaban infladas por la misma repetición (2,40 M delta/s
+era ~1,4 M), aunque la mejora es real (×3,3 en delta, ×4,4 en la trayectoria) y la confirman la run 58 y
+Taillard. El r6 no se incorpora: con la medida justa no gana.
+
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 
 Desde la corrida 43, una corrección trae solo las funciones o métodos que cambian y
