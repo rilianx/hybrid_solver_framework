@@ -174,6 +174,33 @@ void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy 
                     n += (long)mv.size();
                     if (clock.elapsed() >= seconds) break;
                 }
+        } else if (slot == "neighborhood_walk") {
+            // una trayectoria, como la recorren los esqueletos: desde cada solución, 50 pasos en que se revisan los
+            // candidatos como en TS y se aplica uno de los 5 mejores (al azar, con la misma semilla); la solución
+            // siguiente es la que devolvió `apply`. Cuenta pasos por segundo
+            auto nbh = catalog->neighborhood(name, *m, scoped);
+            std::vector<Move> mv;
+            std::vector<std::pair<double, size_t>> order;
+            bool est = nbh->has_estimate();
+            while (clock.elapsed() < seconds)
+                for (auto& s0 : sols) {
+                    auto s = s0;
+                    for (int step = 0; step < 50; ++step) {
+                        mv.clear();
+                        nbh->moves(s, mv);
+                        if (mv.empty()) break;
+                        order.clear();
+                        for (size_t i = 0; i < mv.size(); ++i)
+                            order.push_back({est ? nbh->estimate(s, mv[i]) : nbh->delta(s, mv[i]), i});
+                        size_t k = std::min<size_t>(5, order.size());
+                        std::partial_sort(order.begin(), order.begin() + k, order.end());
+                        if (est)
+                            for (size_t i = 0; i < k; ++i) order[i].first = nbh->delta(s, mv[order[i].second]);
+                        s = nbh->apply(s, mv[order[rng.below((int)k)].second]);
+                        ++n;
+                    }
+                    if (clock.elapsed() >= seconds) break;
+                }
         } else if (slot == "perturbation") {
             auto pert = catalog->perturbation(name, *m, scoped);
             while (clock.elapsed() < seconds)

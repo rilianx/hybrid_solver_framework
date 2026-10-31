@@ -174,6 +174,11 @@ def check_component_equivalent(slot: str, old, new, problem, sols: list, n_moves
                     if callable(getattr(old, "undo", None)) and callable(getattr(new, "undo", None)) and old.undo(ao, m) != new.undo(an, m):
                         report.add(fail(LAYER, "undo_equal", f"undo(…, {_short(m)}) cambió en {where}"))
                         return report
+                if k < 3:  # una trayectoria: la solución siguiente es la que devolvió apply (una caché entre pasos)
+                    bad = _walk(old, new, sol, Random(k))
+                    if bad:
+                        report.add(fail(LAYER, "walk_equal", f"en una trayectoria desde la {where}: {bad}"))
+                        return report
             elif slot == "perturbation":
                 for s in range(3):
                     if old.perturb(sol, 1.0, Random(s)) != new.perturb(sol, 1.0, Random(s)):
@@ -203,6 +208,25 @@ def check_component_equivalent(slot: str, old, new, problem, sols: list, n_moves
         return report
     report.add(ok(LAYER, "same_outputs", f"mismas salidas en {len(sols)} soluciones"))
     return report
+
+
+def _walk(old, new, sol, rng: Random, steps: int = 30, n_moves: int = 200) -> str | None:
+    so, sn = sol, sol
+    for step in range(steps):
+        mo = list(itertools.islice(old.moves(so), n_moves))
+        mn = list(itertools.islice(new.moves(sn), n_moves))
+        if repr(mo) != repr(mn):
+            return f"moves cambió en el paso {step}: antes {_short(mo)}, ahora {_short(mn)}"
+        if not mo:
+            return None
+        for m in mo[:50]:
+            if not _close(old.delta(so, m), new.delta(sn, m)):
+                return f"delta(sol, {_short(m)}) cambió en el paso {step}: antes {old.delta(so, m):.6g}, ahora {new.delta(sn, m):.6g}"
+        m = mo[rng.randrange(len(mo))]
+        so, sn = old.apply(so, m), new.apply(sn, m)
+        if so != sn:
+            return f"apply(sol, {_short(m)}) cambió en el paso {step}"
+    return None
 
 
 def component_speed(slot: str, make, problem_factory, inst, sol, seconds: float = 1.0) -> float:

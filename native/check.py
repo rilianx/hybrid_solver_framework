@@ -79,6 +79,8 @@ def bench_solutions(pack, n: int = 6, seed: int = 4242):
 
 METRICS = {"delta": "delta exacto por segundo (búsqueda local, SA)",
            "ts_step": "candidatos revisados por segundo en un paso de TS (estimate o delta de todos, delta de los 5 mejores)",
+           "walk": "pasos por segundo de una trayectoria (revisar los candidatos como en TS, aplicar uno y seguir desde la "
+                   "solución que devolvió apply)",
            "perturbation": "perturbaciones por segundo", "greedy_score": "construcciones greedy completas por segundo"}
 
 
@@ -100,7 +102,8 @@ def speeds(native, model_of, slot: str, name: str, inst, sols, seconds: float = 
     m = model_of(inst)
     if slot == "neighborhood":
         return {"delta": native.bench(m, "neighborhood", name, {}, sols, seconds),
-                "ts_step": native.bench(m, "neighborhood_ts", name, {}, sols, seconds)}
+                "ts_step": native.bench(m, "neighborhood_ts", name, {}, sols, seconds),
+                "walk": native.bench(m, "neighborhood_walk", name, {}, sols, seconds)}
     return {slot: native.bench(m, slot, name, {}, sols, seconds)}
 
 

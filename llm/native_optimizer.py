@@ -35,11 +35,15 @@ USAGE = """Cómo usan los esqueletos (C++) un vecindario:
   mejora).
 - TS: `moves(s)`; si el vecindario ofrece `estimate`, lo calcula para TODOS los candidatos, los ordena y calcula
   `delta` exacto solo de los primeros (unos 5); sin `estimate`, calcula `delta` de todos.
-En todos, muchos movimientos seguidos son de la MISMA solución."""
+En todos, muchos movimientos seguidos son de la MISMA solución, y la solución siguiente casi siempre es la que
+devolvió `apply` sobre la actual."""
 
 TECHNIQUES = """- Evita rehacer lo que no cambia: calcula `delta` de forma incremental, con lo que el movimiento afecta, en vez de
   evaluar la solución completa. Lo que dependa de la solución actual calcúlalo una vez por solución y guárdalo en el
   componente.
+- Si preparar una solución nueva es caro, `apply` puede dejar listo, actualizado de forma incremental, lo que la
+  solución que devuelve va a necesitar, y el método siguiente reconocerla (comparándola con la guardada) en vez de
+  rehacerlo todo.
 - Precalcula en el constructor lo que solo depende de la instancia; reutiliza memoria de trabajo propia en vez de
   crear vectores en cada llamada; no copies soluciones salvo para devolver la nueva en `apply`/`perturb`.
 - `estimate(s, m)` (con `has_estimate()` en true) es una aproximación de delta que puede ser mucho más barata que el
