@@ -698,6 +698,22 @@ Todas las diferencias se separan del ruido. La mejor réplica (TS con N5 y salto
 óptimo en 15×15 y 1,46 % en 20×15 con 30 s. Todo el ciclo fue del LLM y del framework: componentes
 (corrida 104), optimización (106–108) y tuning (irace).
 
+**Respuestas como ediciones (corrida 109, 3,56 USD).** Cuarta pasada sobre el catálogo de la 108, con el LLM
+devolviendo solo bloques buscar/reemplazar (`native/edits.py`). 8 de 9 respuestas llegaron como ediciones,
+todas aplicables (0 fallos de edición). Pero el costo casi no bajó:
+
+| Corrida | Llamadas | Entrada | Salida | Salida por llamada | Costo |
+|---|---|---|---|---|---|
+| 108 (componente completo) | 10 | 179 k | 159 k | 15,9 k | 3,90 USD |
+| 109 (ediciones) | 9 | 190 k | 140 k | 15,6 k | 3,56 USD |
+
+Los componentes miden 4–25 KB (≈1–7 k tokens); la salida por llamada (≈15 k) está dominada por el pensamiento
+adaptativo, que con `effort: medium` no depende de cuánto código se devuelva. Las ediciones acortan la parte
+visible, pero el ahorro real está en el esfuerzo de razonamiento o en el número de rondas, no en el formato.
+
+Ningún vecindario mejoró: N5 llegó a 1,49× / 1,35× (pedía 1,5×), la inserción a 1,10×, y el tercero empeoró
+en los tres intentos. Tras tres pasadas el margen se agotó: el catálogo de la 108 queda como está.
+
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 
 Desde la corrida 43, una corrección trae solo las funciones o métodos que cambian y
