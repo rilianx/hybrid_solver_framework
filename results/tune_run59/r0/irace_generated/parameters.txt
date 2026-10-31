@@ -1,0 +1,46 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("SA", "ILS", "VNS", "TS")
+constructor "--constructor=" c ("trivial", "random", "greedy_ect_mwkr_dispatch", "greedy_lookahead_lower_bound", "greedy_bottleneck_weighted_work") | skeleton %in% c("SA", "ILS", "VNS", "TS")
+greedy_ect_mwkr_dispatch.rule "--greedy_ect_mwkr_dispatch.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "TS") & constructor == "greedy_ect_mwkr_dispatch"
+greedy_ect_mwkr_dispatch.alpha "--greedy_ect_mwkr_dispatch.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "TS") & constructor == "greedy_ect_mwkr_dispatch"
+greedy_ect_mwkr_dispatch.w_end "--greedy_ect_mwkr_dispatch.w_end=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "TS") & constructor == "greedy_ect_mwkr_dispatch"
+greedy_ect_mwkr_dispatch.mwkr "--greedy_ect_mwkr_dispatch.mwkr=" r (0.0, 2.0) | skeleton %in% c("SA", "ILS", "VNS", "TS") & constructor == "greedy_ect_mwkr_dispatch"
+greedy_lookahead_lower_bound.rule "--greedy_lookahead_lower_bound.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "TS") & constructor == "greedy_lookahead_lower_bound"
+greedy_lookahead_lower_bound.alpha "--greedy_lookahead_lower_bound.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "TS") & constructor == "greedy_lookahead_lower_bound"
+greedy_lookahead_lower_bound.idle_w "--greedy_lookahead_lower_bound.idle_w=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "TS") & constructor == "greedy_lookahead_lower_bound"
+greedy_lookahead_lower_bound.tie "--greedy_lookahead_lower_bound.tie=" r (0.0, 0.5) | skeleton %in% c("SA", "ILS", "VNS", "TS") & constructor == "greedy_lookahead_lower_bound"
+greedy_bottleneck_weighted_work.rule "--greedy_bottleneck_weighted_work.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "TS") & constructor == "greedy_bottleneck_weighted_work"
+greedy_bottleneck_weighted_work.alpha "--greedy_bottleneck_weighted_work.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "TS") & constructor == "greedy_bottleneck_weighted_work"
+greedy_bottleneck_weighted_work.gamma "--greedy_bottleneck_weighted_work.gamma=" r (0.0, 4.0) | skeleton %in% c("SA", "ILS", "VNS", "TS") & constructor == "greedy_bottleneck_weighted_work"
+greedy_bottleneck_weighted_work.beta "--greedy_bottleneck_weighted_work.beta=" r (0.0, 2.0) | skeleton %in% c("SA", "ILS", "VNS", "TS") & constructor == "greedy_bottleneck_weighted_work"
+greedy_bottleneck_weighted_work.idle_w "--greedy_bottleneck_weighted_work.idle_w=" r (0.0, 2.0) | skeleton %in% c("SA", "ILS", "VNS", "TS") & constructor == "greedy_bottleneck_weighted_work"
+neighborhood "--neighborhood=" c ("critical_path_adjacent_swap", "critical_block_end_insertion", "job_pair_priority_swap_all_machines") | skeleton %in% c("SA", "ILS", "VNS", "TS")
+critical_path_adjacent_swap.block_ends_only "--critical_path_adjacent_swap.block_ends_only=" i (0, 1) | skeleton %in% c("SA", "ILS", "VNS", "TS") & neighborhood == "critical_path_adjacent_swap"
+critical_block_end_insertion.max_shift "--critical_block_end_insertion.max_shift=" i (2, 60) | skeleton %in% c("SA", "ILS", "VNS", "TS") & neighborhood == "critical_block_end_insertion"
+job_pair_priority_swap_all_machines.restrict "--job_pair_priority_swap_all_machines.restrict=" c ("critical", "all") | skeleton %in% c("SA", "ILS", "VNS", "TS") & neighborhood == "job_pair_priority_swap_all_machines"
+perturbation "--perturbation=" c ("critical_arc_swap_kick", "noisy_giffler_thompson_rebuild", "topological_window_reshuffle") | skeleton %in% c("ILS")
+critical_arc_swap_kick.swaps_per_strength "--critical_arc_swap_kick.swaps_per_strength=" r (0.5, 4.0) | skeleton %in% c("ILS") & perturbation == "critical_arc_swap_kick"
+critical_arc_swap_kick.random_swap_prob "--critical_arc_swap_kick.random_swap_prob=" r (0.0, 0.5) | skeleton %in% c("ILS") & perturbation == "critical_arc_swap_kick"
+noisy_giffler_thompson_rebuild.noise "--noisy_giffler_thompson_rebuild.noise=" r (0.05, 3.0) | skeleton %in% c("ILS") & perturbation == "noisy_giffler_thompson_rebuild"
+noisy_giffler_thompson_rebuild.random_pick_prob "--noisy_giffler_thompson_rebuild.random_pick_prob=" r (0.0, 0.3) | skeleton %in% c("ILS") & perturbation == "noisy_giffler_thompson_rebuild"
+topological_window_reshuffle.window "--topological_window_reshuffle.window=" i (3, 40) | skeleton %in% c("ILS") & perturbation == "topological_window_reshuffle"
+topological_window_reshuffle.windows_per_strength "--topological_window_reshuffle.windows_per_strength=" r (0.3, 3.0) | skeleton %in% c("ILS") & perturbation == "topological_window_reshuffle"
+SA.T0 "--SA.T0=" r (1.0, 1000.0) | skeleton == "SA"  # log-scale
+SA.cooling "--SA.cooling=" c ("time", "iterations") | skeleton == "SA"
+SA.T_end "--SA.T_end=" r (1e-05, 0.1) | skeleton == "SA"  # log-scale
+SA.alpha "--SA.alpha=" r (0.8, 0.999) | skeleton == "SA"
+SA.iters_per_T "--SA.iters_per_T=" i (1, 50) | skeleton == "SA"
+SA.eval "--SA.eval=" c ("objective", "delta") | skeleton == "SA"
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+ILS.ls_sample "--ILS.ls_sample=" i (4, 256) | skeleton == "ILS"  # log-scale
+VNS.shake_strength "--VNS.shake_strength=" i (1, 4) | skeleton == "VNS"
+VNS.ls_time_share "--VNS.ls_time_share=" r (0.02, 0.3) | skeleton == "VNS"
+VNS.ls_sample "--VNS.ls_sample=" i (4, 256) | skeleton == "VNS"  # log-scale
+TS.tenure "--TS.tenure=" i (3, 30) | skeleton == "TS"
+TS.candidate_size "--TS.candidate_size=" i (5, 100) | skeleton == "TS"  # log-scale
+TS.estimate_top "--TS.estimate_top=" i (0, 10) | skeleton == "TS"
+TS.elite_size "--TS.elite_size=" i (0, 8) | skeleton == "TS"
+TS.stall "--TS.stall=" i (20, 5000) | skeleton == "TS"  # log-scale

@@ -1,0 +1,377 @@
+{
+  "catalog": "generated",
+  "generated_components": [],
+  "settings": {
+    "trials": 70,
+    "budget": 10.0,
+    "train": 10,
+    "test": 10,
+    "problem": "jobshop",
+    "size": "15x15",
+    "seed": 0,
+    "tuner_seed": 0,
+    "seeds_test": 3,
+    "objective": "ratio",
+    "skeletons": "all",
+    "ref_time": 0.0,
+    "reeval_top": 0,
+    "reeval_seeds": 2,
+    "race_seeds": 6,
+    "screen": -1,
+    "defaults_margin": 0.005,
+    "native": true,
+    "tuner": "irace"
+  },
+  "tuning": {
+    "tuner": "irace",
+    "best_config": {
+      "skeleton": "TS",
+      "constructor": "trivial",
+      "neighborhood": "critical_path_adjacent_swap",
+      "critical_path_adjacent_swap.block_ends_only": 1,
+      "TS.tenure": 5,
+      "TS.candidate_size": 5,
+      "TS.estimate_top": 8,
+      "TS.elite_size": 8,
+      "TS.stall": 712
+    },
+    "best_cost": 0.1386386590637497,
+    "best_summary": "TS[constructor=trivial, neighborhood=critical_path_adjacent_swap]",
+    "n_trials": 728,
+    "n_failed": 0,
+    "seconds": 6974.6,
+    "skeleton_usage": {
+      "TS": 4
+    },
+    "elites": [
+      "TS[constructor=trivial, neighborhood=critical_path_adjacent_swap]",
+      "TS[constructor=trivial, neighborhood=critical_path_adjacent_swap]",
+      "TS[constructor=trivial, neighborhood=critical_path_adjacent_swap]",
+      "TS[constructor=trivial, neighborhood=critical_path_adjacent_swap]"
+    ],
+    "elite_configs": [
+      {
+        "skeleton": "TS",
+        "constructor": "trivial",
+        "neighborhood": "critical_path_adjacent_swap",
+        "critical_path_adjacent_swap.block_ends_only": 1,
+        "TS.tenure": 5,
+        "TS.candidate_size": 5,
+        "TS.estimate_top": 8,
+        "TS.elite_size": 8,
+        "TS.stall": 712
+      },
+      {
+        "skeleton": "TS",
+        "constructor": "trivial",
+        "neighborhood": "critical_path_adjacent_swap",
+        "critical_path_adjacent_swap.block_ends_only": 1,
+        "TS.tenure": 11,
+        "TS.candidate_size": 8,
+        "TS.estimate_top": 7,
+        "TS.elite_size": 5,
+        "TS.stall": 4141
+      },
+      {
+        "skeleton": "TS",
+        "constructor": "trivial",
+        "neighborhood": "critical_path_adjacent_swap",
+        "critical_path_adjacent_swap.block_ends_only": 1,
+        "TS.tenure": 12,
+        "TS.candidate_size": 36,
+        "TS.estimate_top": 10,
+        "TS.elite_size": 5,
+        "TS.stall": 2559
+      },
+      {
+        "skeleton": "TS",
+        "constructor": "trivial",
+        "neighborhood": "critical_path_adjacent_swap",
+        "critical_path_adjacent_swap.block_ends_only": 1,
+        "TS.tenure": 13,
+        "TS.candidate_size": 16,
+        "TS.estimate_top": 9,
+        "TS.elite_size": 6,
+        "TS.stall": 3416
+      }
+    ],
+    "reevaluated": [],
+    "log_tail": [
+      "110       TS     trivial critical_path_adjacent_swap         <NA>    NA       <NA>       NA       NA             NA    <NA>           NA            <NA>                NA            NA                 NA                NA            NA        11                 8               7             5     4141                          <NA>                             NA                             NA                            NA                              <NA>                                 NA                                  NA                               NA                                 <NA>                                    NA                                    NA                                   NA                                     NA                                           1                                     NA                                         <NA>                                        NA                                      NA                                   NA                                              NA                                  NA                                                NA",
+      "87        TS     trivial critical_path_adjacent_swap         <NA>    NA       <NA>       NA       NA             NA    <NA>           NA            <NA>                NA            NA                 NA                NA            NA        12                36              10             5     2559                          <NA>                             NA                             NA                            NA                              <NA>                                 NA                                  NA                               NA                                 <NA>                                    NA                                    NA                                   NA                                     NA                                           1                                     NA                                         <NA>                                        NA                                      NA                                   NA                                              NA                                  NA                                                NA",
+      "101       TS     trivial critical_path_adjacent_swap         <NA>    NA       <NA>       NA       NA             NA    <NA>           NA            <NA>                NA            NA                 NA                NA            NA        13                16               9             6     3416                          <NA>                             NA                             NA                            NA                              <NA>                                 NA                                  NA                               NA                                 <NA>                                    NA                                    NA                                   NA                                     NA                                           1                                     NA                                         <NA>                                        NA                                      NA                                   NA                                              NA                                  NA                                                NA",
+      "# 2026-10-31 12:40:51 UTC: Stopped because there is not enough budget left to race more than the minimum (7)",
+      "# You may either increase the budget or set 'minNbSurvival' to a lower value",
+      "# Iteration: 9",
+      "# nbIterations: 9",
+      "# experimentsUsedSoFar: 687",
+      "# timeUsed: 0",
+      "# remainingBudget: 41",
+      "# currentBudget: 41",
+      "# number of elites: 4",
+      "# nbConfigurations: 6",
+      "# Total CPU user time: 6947.021, CPU sys time: 26.232, Wall-clock time: 6973.81",
+      "# Best configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):",
+      "    skeleton constructor                neighborhood perturbation SA.T0 SA.cooling SA.T_end SA.alpha SA.iters_per_T SA.eval ILS.strength ILS.ls_strategy ILS.ls_time_share ILS.ls_sample VNS.shake_strength VNS.ls_time_share VNS.ls_sample TS.tenure TS.candidate_size TS.estimate_top TS.elite_size TS.stall greedy_ect_mwkr_dispatch.rule greedy_ect_mwkr_dispatch.alpha greedy_ect_mwkr_dispatch.w_end greedy_ect_mwkr_dispatch.mwkr greedy_lookahead_lower_bound.rule greedy_lookahead_lower_bound.alpha greedy_lookahead_lower_bound.idle_w greedy_lookahead_lower_bound.tie greedy_bottleneck_weighted_work.rule greedy_bottleneck_weighted_work.alpha greedy_bottleneck_weighted_work.gamma greedy_bottleneck_weighted_work.beta greedy_bottleneck_weighted_work.idle_w critical_path_adjacent_swap.block_ends_only critical_block_end_insertion.max_shift job_pair_priority_swap_all_machines.restrict critical_arc_swap_kick.swaps_per_strength critical_arc_swap_kick.random_swap_prob noisy_giffler_thompson_rebuild.noise noisy_giffler_thompson_rebuild.random_pick_prob topological_window_reshuffle.window topological_window_reshuffle.windows_per_strength",
+      "55        TS     trivial critical_path_adjacent_swap         <NA>    NA       <NA>       NA       NA             NA    <NA>           NA            <NA>                NA            NA                 NA                NA            NA         5                 5               8             8      712                          <NA>                             NA                             NA                            NA                              <NA>                                 NA                                  NA                               NA                                 <NA>                                    NA                                    NA                                   NA                                     NA                                           1                                     NA                                         <NA>                                        NA                                      NA                                   NA                                              NA                                  NA                                                NA",
+      "110       TS     trivial critical_path_adjacent_swap         <NA>    NA       <NA>       NA       NA             NA    <NA>           NA            <NA>                NA            NA                 NA                NA            NA        11                 8               7             5     4141                          <NA>                             NA                             NA                            NA                              <NA>                                 NA                                  NA                               NA                                 <NA>                                    NA                                    NA                                   NA                                     NA                                           1                                     NA                                         <NA>                                        NA                                      NA                                   NA                                              NA                                  NA                                                NA",
+      "87        TS     trivial critical_path_adjacent_swap         <NA>    NA       <NA>       NA       NA             NA    <NA>           NA            <NA>                NA            NA                 NA                NA            NA        12                36              10             5     2559                          <NA>                             NA                             NA                            NA                              <NA>                                 NA                                  NA                               NA                                 <NA>                                    NA                                    NA                                   NA                                     NA                                           1                                     NA                                         <NA>                                        NA                                      NA                                   NA                                              NA                                  NA                                                NA",
+      "101       TS     trivial critical_path_adjacent_swap         <NA>    NA       <NA>       NA       NA             NA    <NA>           NA            <NA>                NA            NA                 NA                NA            NA        13                16               9             6     3416                          <NA>                             NA                             NA                            NA                              <NA>                                 NA                                  NA                               NA                                 <NA>                                    NA                                    NA                                   NA                                     NA                                           1                                     NA                                         <NA>                                        NA                                      NA                                   NA                                              NA                                  NA                                                NA",
+      "# Best configurations as commandlines (first number is the configuration ID; same order as above):",
+      "55   --skeleton=TS --constructor=trivial --neighborhood=critical_path_adjacent_swap --critical_path_adjacent_swap.block_ends_only=1 --TS.tenure=5 --TS.candidate_size=5 --TS.estimate_top=8 --TS.elite_size=8 --TS.stall=712",
+      "110  --skeleton=TS --constructor=trivial --neighborhood=critical_path_adjacent_swap --critical_path_adjacent_swap.block_ends_only=1 --TS.tenure=11 --TS.candidate_size=8 --TS.estimate_top=7 --TS.elite_size=5 --TS.stall=4141",
+      "87   --skeleton=TS --constructor=trivial --neighborhood=critical_path_adjacent_swap --critical_path_adjacent_swap.block_ends_only=1 --TS.tenure=12 --TS.candidate_size=36 --TS.estimate_top=10 --TS.elite_size=5 --TS.stall=2559",
+      "101  --skeleton=TS --constructor=trivial --neighborhood=critical_path_adjacent_swap --critical_path_adjacent_swap.block_ends_only=1 --TS.tenure=13 --TS.candidate_size=16 --TS.estimate_top=9 --TS.elite_size=6 --TS.stall=3416",
+      "",
+      "",
+      "# Testing of elite configurations: 1 ",
+      "# Testing iteration configurations: FALSE ",
+      "# 2026-10-31 12:40:51 UTC: No test instances, skip testing"
+    ]
+  },
+  "test": {
+    "tuned": {
+      "label": "tuned",
+      "summary": "TS[constructor=trivial, neighborhood=critical_path_adjacent_swap]",
+      "mean": 1203.8,
+      "std": 65.49371471115886,
+      "per_instance": [
+        1211.0,
+        1166.3333333333333,
+        1246.3333333333333,
+        1158.0,
+        1278.0,
+        1322.0,
+        1235.0,
+        1095.0,
+        1194.0,
+        1132.3333333333333
+      ],
+      "config": {
+        "skeleton": "TS",
+        "constructor": "trivial",
+        "neighborhood": "critical_path_adjacent_swap",
+        "critical_path_adjacent_swap.block_ends_only": 1,
+        "TS.tenure": 5,
+        "TS.candidate_size": 5,
+        "TS.estimate_top": 8,
+        "TS.elite_size": 8,
+        "TS.stall": 712
+      },
+      "gap_per_instance": [
+        0.0008264462809917355,
+        0.0020045819014890527,
+        0.00026752273943279095,
+        0.0034662045060658577,
+        0.0007830853563038371,
+        0.0,
+        0.0040650406504065045,
+        0.0,
+        0.0025188916876574307,
+        0.0011788977306218015
+      ],
+      "mean_gap": 0.001511067085296901
+    },
+    "baselines": [
+      {
+        "label": "default:TS",
+        "summary": "TS[constructor=trivial, neighborhood=critical_path_adjacent_swap]",
+        "mean": 1214.7,
+        "std": 67.24886616144543,
+        "per_instance": [
+          1221.0,
+          1178.0,
+          1252.0,
+          1167.0,
+          1292.0,
+          1339.0,
+          1249.0,
+          1110.0,
+          1205.0,
+          1134.0
+        ],
+        "config": {
+          "skeleton": "TS",
+          "constructor": "trivial",
+          "neighborhood": "critical_path_adjacent_swap",
+          "critical_path_adjacent_swap.block_ends_only": 0,
+          "TS.tenure": 16,
+          "TS.candidate_size": 52,
+          "TS.estimate_top": 0,
+          "TS.elite_size": 0,
+          "TS.stall": 500
+        },
+        "gap_per_instance": [
+          0.00909090909090909,
+          0.012027491408934709,
+          0.004815409309791332,
+          0.011265164644714038,
+          0.011746280344557557,
+          0.012859304084720122,
+          0.015447154471544716,
+          0.0136986301369863,
+          0.011754827875734676,
+          0.002652519893899204
+        ],
+        "mean_gap": 0.010535769126179175
+      },
+      {
+        "label": "default:SA",
+        "summary": "SA[constructor=trivial, neighborhood=critical_path_adjacent_swap]",
+        "mean": 1219.9,
+        "std": 70.83000776507087,
+        "per_instance": [
+          1219.6666666666667,
+          1179.6666666666667,
+          1271.3333333333333,
+          1173.0,
+          1287.6666666666667,
+          1348.0,
+          1265.0,
+          1105.0,
+          1215.0,
+          1134.6666666666667
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "trivial",
+          "neighborhood": "critical_path_adjacent_swap",
+          "critical_path_adjacent_swap.block_ends_only": 0,
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26,
+          "SA.eval": "objective"
+        },
+        "gap_per_instance": [
+          0.007988980716253506,
+          0.013459335624284143,
+          0.020331728196896676,
+          0.016464471403812825,
+          0.008352910467240989,
+          0.019667170953101363,
+          0.028455284552845527,
+          0.0091324200913242,
+          0.020151133501259445,
+          0.0032419687592102056
+        ],
+        "mean_gap": 0.014724540426622888
+      },
+      {
+        "label": "default:ILS",
+        "summary": "ILS[constructor=trivial, neighborhood=critical_path_adjacent_swap, perturbation=critical_arc_swap_kick]",
+        "mean": 1345.9666666666667,
+        "std": 136.11967365357424,
+        "per_instance": [
+          1362.3333333333333,
+          1391.3333333333333,
+          1411.0,
+          1253.0,
+          1387.3333333333333,
+          1489.3333333333333,
+          1493.3333333333333,
+          1196.6666666666667,
+          1244.3333333333333,
+          1231.0
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "trivial",
+          "neighborhood": "critical_path_adjacent_swap",
+          "critical_path_adjacent_swap.block_ends_only": 0,
+          "perturbation": "critical_arc_swap_kick",
+          "critical_arc_swap_kick.swaps_per_strength": 2.25,
+          "critical_arc_swap_kick.random_swap_prob": 0.25,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.12589531680440766,
+          0.195303550973654,
+          0.13242375601926162,
+          0.08578856152512998,
+          0.08640041764552331,
+          0.12657589510842152,
+          0.21409214092140916,
+          0.09284627092846277,
+          0.04478029666946537,
+          0.08841732979664015
+        ],
+        "mean_gap": 0.11925235363923756
+      },
+      {
+        "label": "default:VNS",
+        "summary": "VNS[constructor=trivial, neighborhood=critical_path_adjacent_swap]",
+        "mean": 1528.9666666666667,
+        "std": 160.67015556377882,
+        "per_instance": [
+          1578.6666666666667,
+          1702.3333333333333,
+          1603.0,
+          1378.6666666666667,
+          1556.6666666666667,
+          1518.3333333333333,
+          1770.0,
+          1290.3333333333333,
+          1500.0,
+          1391.6666666666667
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "trivial",
+          "neighborhood": "critical_path_adjacent_swap",
+          "critical_path_adjacent_swap.block_ends_only": 0,
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.30468319559228657,
+          0.4624856815578464,
+          0.28651685393258425,
+          0.1946851530906991,
+          0.21900287131297316,
+          0.14851235501764998,
+          0.43902439024390244,
+          0.17838660578386598,
+          0.2594458438287154,
+          0.23047450633657537
+        ],
+        "mean_gap": 0.27232174566970985
+      }
+    ],
+    "best_baseline": "default:TS",
+    "gain_vs_best_baseline": 0.00897340907219897,
+    "wins_per_instance": "10/10",
+    "reference": 8975.2,
+    "best_known": [
+      1210.0,
+      1164.0,
+      1246.0,
+      1154.0,
+      1277.0,
+      1322.0,
+      1230.0,
+      1095.0,
+      1191.0,
+      1131.0
+    ],
+    "best_baseline_by_gap": "default:TS",
+    "tuned_vs_best_baseline": {
+      "a": "tuned",
+      "b": "default:TS",
+      "mean_diff": 0.009024702040882274,
+      "ci95": [
+        0.006654636007114672,
+        0.011061108435684665
+      ],
+      "wins_a": 10,
+      "n": 10,
+      "significant": true
+    },
+    "mip_reference": null
+  }
+}
