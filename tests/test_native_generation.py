@@ -174,3 +174,57 @@ def test_the_optimizer_accepts_an_edit_reply(pack, tmp_path):
     row = optimize_native(client, pack, tmp_path, rounds=2, verbose=False)["neighborhood/adjacent_swap"]
     assert row["accepted"] and row["reply_modes"] == ["edits"] and row["edit_failures"] == 1
     assert "no se pudo aplicar" in client.calls[1][1] and "BUSCAR" in client.calls[0][1]
+
+
+RELINK = '''```cpp
+// COMPONENT: {"name": "adjacent_order_relink", "slot": "relink", "params": {}}
+struct OrderRelink : hsf::Relink<JobShop> {
+    const JobShop& js;
+    explicit OrderRelink(const JobShop& m) : js(m) {}
+    static int pos(const std::vector<int>& v, int x) { return (int)(std::find(v.begin(), v.end(), x) - v.begin()); }
+    int distance(const JobShop::Solution& a, const JobShop::Solution& b) override {
+        int d = 0;
+        for (size_t mm = 0; mm < a.size(); ++mm)
+            for (size_t i = 0; i < a[mm].size(); ++i)
+                for (size_t k = i + 1; k < a[mm].size(); ++k) d += pos(b[mm], a[mm][i]) > pos(b[mm], a[mm][k]);
+        return d;
+    }
+    JobShop::Solution step(const JobShop::Solution& cur, const JobShop::Solution& guide, Rng& rng) override {
+        std::vector<std::pair<int, int>> inv;
+        for (size_t mm = 0; mm < cur.size(); ++mm)
+            for (size_t i = 0; i + 1 < cur[mm].size(); ++i)
+                if (pos(guide[mm], cur[mm][i]) > pos(guide[mm], cur[mm][i + 1])) inv.push_back({(int)mm, (int)i});
+        if (inv.empty()) return cur;
+        auto [mm, i] = inv[rng.below((int)inv.size())];
+        auto t = cur;
+        std::swap(t[mm][i], t[mm][i + 1]);
+        return t;
+    }
+};
+std::unique_ptr<hsf::Relink<JobShop>> make_component(const JobShop& model, const Config&) {
+    return std::make_unique<OrderRelink>(model);
+}
+```'''
+
+
+def test_a_generated_relink_runs_in_pr(pack, tmp_path):
+    from random import Random
+
+    from llm import ScriptedClient
+    from llm.native_generator import generate_native_slot, write_catalog
+    from tuning.cli import make_assembler
+
+    client = ScriptedClient(responses=[SWAP, RELINK])
+    nb, _ = generate_native_slot(client, pack, "neighborhood", 1, tmp_path, verbose=False)
+    rel, _ = generate_native_slot(client, pack, "relink", 1, tmp_path, verbose=False)
+    assert [c.name for c in rel] == ["adjacent_order_relink"]
+    assert "Relink" in client.calls[-1][1] and "path relinking" in client.calls[-1][1]
+    write_catalog(tmp_path, nb)
+    write_catalog(tmp_path, rel)
+    A, _ = make_assembler(pack, "generated", str(tmp_path), native=True)
+    assert "PR" in A.available_skeletons()
+    cfg = A.default_config("PR", {"neighborhood": "adjacent_swap", "relink": "adjacent_order_relink", "constructor": "random"})
+    cfg.update({"PR.pop_size": 3, "PR.ts_iters": 50})
+    inst = pack.make_instances(1, 0, pack.parse_size("5x4"))[0]
+    res = A.assemble(cfg)(inst, Random(0), 0.3)
+    assert pack.problem_factory(inst).is_feasible(res.best_solution)

@@ -126,7 +126,7 @@
  {
   "name": "critical_block_end_insertion",
   "slot": "neighborhood",
-  "path": "generated/jobshop_native/neighborhood/critical_block_end_insertion_r6.hpp",
+  "path": "generated/jobshop_native/neighborhood/critical_block_end_insertion_r8.hpp",
   "component": {
    "name": "critical_block_end_insertion",
    "slot": "neighborhood",
@@ -150,7 +150,7 @@
  {
   "name": "job_pair_priority_swap_all_machines",
   "slot": "neighborhood",
-  "path": "generated/jobshop_native/neighborhood/job_pair_priority_swap_all_machines_r1.hpp",
+  "path": "generated/jobshop_native/neighborhood/job_pair_priority_swap_all_machines_r2.hpp",
   "component": {
    "name": "job_pair_priority_swap_all_machines",
    "slot": "neighborhood",
@@ -252,6 +252,69 @@
    },
    "compatible_skeletons": [
     "ILS"
+   ]
+  }
+ },
+ {
+  "name": "kendall_adjacent_swap_relink",
+  "slot": "relink",
+  "path": "generated/jobshop_native/relink/kendall_adjacent_swap_relink_r1.hpp",
+  "component": {
+   "name": "kendall_adjacent_swap_relink",
+   "slot": "relink",
+   "params": {
+    "pick": {
+     "type": "cat",
+     "values": [
+      "pair",
+      "machine"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "lis_insertion_relink",
+  "slot": "relink",
+  "path": "generated/jobshop_native/relink/lis_insertion_relink_r1.hpp",
+  "component": {
+   "name": "lis_insertion_relink",
+   "slot": "relink",
+   "params": {
+    "pick": {
+     "type": "cat",
+     "values": [
+      "uniform",
+      "weighted"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "hamming_position_swap_relink",
+  "slot": "relink",
+  "path": "generated/jobshop_native/relink/hamming_position_swap_relink_r1.hpp",
+  "component": {
+   "name": "hamming_position_swap_relink",
+   "slot": "relink",
+   "params": {
+    "pick": {
+     "type": "cat",
+     "values": [
+      "position",
+      "machine"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
    ]
   }
  }

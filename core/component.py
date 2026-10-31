@@ -40,6 +40,7 @@ KNOWN_SLOTS = {
     "repair_heuristic",
     "repair_mip",
     "fixing_policy",
+    "relink",
     "stop",
 }
 

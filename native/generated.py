@@ -31,9 +31,9 @@ from typing import Any
 from .build import BUILD, build, import_path
 
 SLOT_BASE = {"constructor": "Constructor", "greedy_score": "GreedyScore", "neighborhood": "Neighborhood",
-             "perturbation": "Perturbation"}
+             "perturbation": "Perturbation", "relink": "Relink"}
 CATALOG_FIELD = {"constructor": "constructors", "greedy_score": "scores", "neighborhood": "neighborhoods",
-                 "perturbation": "perturbations"}
+                 "perturbation": "perturbations", "relink": "relinks"}
 STD_HEADERS = ["algorithm", "array", "cmath", "cstdint", "deque", "functional", "limits", "map", "memory", "numeric",
                "queue", "random", "set", "unordered_map", "unordered_set", "utility", "vector"]
 DEBUG_FLAGS = ["-D_GLIBCXX_ASSERTIONS"]  # índices fuera de rango abortan con mensaje en vez de corromper memoria
@@ -207,8 +207,18 @@ class NativeScore(_Wrapper):
         return self.h.score(partial, action)
 
 
+class NativeRelink(_Wrapper):
+    _make = staticmethod(lambda nat, m, name, p: nat.make_relink(m, name, p))
+
+    def distance(self, a, b) -> int:
+        return self.h.distance(a, b)
+
+    def step(self, cur, guide, rng: Random):
+        return self.h.step(cur, guide, rng.getrandbits(63))
+
+
 WRAPPERS = {"constructor": NativeConstructor, "neighborhood": NativeNeighborhood, "perturbation": NativePerturbation,
-            "greedy_score": NativeScore}
+            "greedy_score": NativeScore, "relink": NativeRelink}
 
 
 def factory(native, model_of, slot: str, name: str):

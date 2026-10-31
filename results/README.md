@@ -56,6 +56,8 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run55/`](tune_run55/) | 30 oct | job shop, catálogo a mano en C++, irace afinando en **15×15 con 10 s** | SA, ILS, VNS, TS | 10+10, 15×15 | 10 s | 700 exp. × 3 réplicas | afinar en el tamaño de Taillard |
 | [`tune_run56/`](tune_run56/) | 30 oct | lo mismo con los componentes C++ de Opus (corrida 104) | SA, ILS, VNS, TS | 10+10, 15×15 | 10 s | 700 exp. × 3 réplicas | ídem |
 | [`tune_run58/`](tune_run58/) | 31 oct | lo mismo con los componentes C++ **optimizados por el LLM** (corridas 106–108) | SA, ILS, VNS, TS | 10+10, 15×15 | 10 s | 700 exp. × 3 réplicas | etapa de optimización C++ |
+| [`tune_run59/`](tune_run59/) | 1 nov | lo mismo con la inserción con delta incremental (corrida 111) | SA, ILS, VNS, TS | 10+10, 15×15 | 10 s | 700 exp. × 3 réplicas | ¿cambia el tuning un vecindario más rápido? |
+| [`tune_run60/`](tune_run60/) | 1 nov | lo mismo con PR y los relinks del LLM (corrida 112) | SA, ILS, VNS, TS, PR | 10+10, 15×15 | 10 s | 700 exp. × 3 réplicas | ¿irace elige PR? |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -698,6 +700,76 @@ Todas las diferencias se separan del ruido. La mejor réplica (TS con N5 y salto
 óptimo en 15×15 y 1,46 % en 20×15 con 30 s. Todo el ciclo fue del LLM y del framework: componentes
 (corrida 104), optimización (106–108) y tuning (irace).
 
+**Respuestas como ediciones (corrida 109, 3,56 USD).** Cuarta pasada sobre el catálogo de la 108, con el LLM
+devolviendo solo bloques buscar/reemplazar (`native/edits.py`). 8 de 9 respuestas llegaron como ediciones,
+todas aplicables (0 fallos de edición). Pero el costo casi no bajó:
+
+| Corrida | Llamadas | Entrada | Salida | Salida por llamada | Costo |
+|---|---|---|---|---|---|
+| 108 (componente completo) | 10 | 179 k | 159 k | 15,9 k | 3,90 USD |
+| 109 (ediciones) | 9 | 190 k | 140 k | 15,6 k | 3,56 USD |
+
+Los componentes miden 4–25 KB (≈1–7 k tokens); la salida por llamada (≈15 k) está dominada por el pensamiento
+adaptativo, que con `effort: medium` no depende de cuánto código se devuelva. Las ediciones acortan la parte
+visible, pero el ahorro real está en el esfuerzo de razonamiento o en el número de rondas, no en el formato.
+
+Ningún vecindario mejoró: N5 llegó a 1,49× / 1,35× (pedía 1,5×), la inserción a 1,10×, y el tercero empeoró
+en los tres intentos. Tras tres pasadas el margen se agotó: el catálogo de la 108 queda como está.
+
+**Dónde se va el tiempo, y una medida que se dejaba engañar (corrida 110, 4,70 USD).** Un perfil (callgrind) de
+las configuraciones de la run 58 (TS y SA con N5) muestra que el modelo compartido (`schedule`, `objective`) casi
+no aparece: el tiempo está en el vecindario rehaciendo, para cada solución nueva, cabezas y colas. Se agregó una
+tercera medida, `walk` (50 pasos como en TS desde cada solución, aplicando uno de los 5 mejores: la solución
+siguiente es la que devolvió `apply`), la equivalencia recorre también una trayectoria, y el prompt sugiere dejar
+listo en `apply` lo que necesitará la solución siguiente.
+
+La corrida 110 aceptó un N5 con delta/s 3,3 M → 21,7 M y paso de TS 3,7 M → 13,9 M, pero `walk` 206 k → 204 k: el
+LLM agregó una tabla hash de hasta 256 soluciones con los delta memorizados, y la medida repetía las mismas 6
+soluciones en cada pasada. Arreglo: `bench` y `profile_neighborhood` generan soluciones nuevas en cada pasada
+(fuera del tiempo medido). Con la medida corregida, en la misma máquina:
+
+| N5 | delta/s | paso de TS | walk (pasos/s) |
+|---|---|---|---|
+| r1 (generado, corrida 104) | 442 k | 445 k | 51 k |
+| r5 (optimizado, 106–108) | 1,44 M | 1,58 M | 222 k |
+| r6 (corrida 110, no se usa) | 1,41 M | 1,65 M | 257 k |
+
+Las cifras de las corridas 106–108 de arriba también estaban infladas por la misma repetición (2,40 M delta/s
+era ~1,4 M), aunque la mejora es real (×3,3 en delta, ×4,4 en la trayectoria) y la confirman la run 58 y
+Taillard. El r6 no se incorpora: con la medida justa no gana.
+
+**Corrida 111 (5,96 USD, 16 llamadas, 475 k de entrada y 203 k de salida), ya con la medida justa.** Medido de
+nuevo localmente, con soluciones nuevas en cada pasada:
+
+| Vecindario | delta/s | paso de TS | walk (pasos/s) |
+|---|---|---|---|
+| inserción, r6 → **r8** (dos pasadas aceptadas) | 790 k → 3,14 M (×4,0) | 3,03 M → 4,58 M | 135 k → **230 k (×1,7)** |
+| intercambio de prioridad, r1 → r2 | 321 k → 420 k | 317 k → 409 k | 7,8 k → 7,4 k |
+| N5 (r5) | sin cambio: la trayectoria llegó a ×1,20 en 3 intentos | | |
+
+La inserción ahora calcula delta de forma incremental y es la primera mejora que se ve en la trayectoria. N5 no
+pasó: preparar una solución nueva (≈2,4 µs) sigue siendo la mayor parte del paso, y el LLM no llegó a actualizar
+cabezas y colas desde `apply`. El intercambio de prioridad pasó por 1,5× en delta/s en la máquina del workflow
+(localmente es 1,3×, sin cambio en la trayectoria). 15 de 16 respuestas de corrección fueron ediciones.
+
+Run 59 (irace, mismas condiciones que la 58, catálogo con la inserción r8): las tres réplicas vuelven a elegir N5
+(TS con `trivial`, TS con `greedy_lookahead_lower_bound` en RCL, SA con `SA.eval = delta`), igual que la 58; la
+inserción no entra en ninguna. N5 es el mismo r5 en los dos catálogos, así que la diferencia de gap entre las
+corridas (0,36 % contra 0,56 %, cada una contra el mejor conocido de sus propias réplicas) es del tuner, no del
+catálogo. Una inserción 1,7× más rápida no alcanza a N5 (230 k contra 222 k pasos/s, pero un vecindario más
+grande por paso); lo que movería el resultado es acelerar N5 en la trayectoria.
+
+Por qué N5 no pasó en la 111: su primer intento mejoró solo la trayectoria (1,11×, delta y paso de TS iguales),
+la marca de reutilizar en la solución siguiente lo que dejó `apply`; los otros dos llegaron a 1,16× y 1,20×. Pero
+preparar una solución nueva es ~40 % del paso (1,85 de ~4,5 µs) y un intercambio cambia las cabezas de todos los
+sucesores y las colas de todos los predecesores, así que el techo realista está en 1,2–1,3×, por debajo del 1,5×
+pedido. Desde ahora la trayectoria pide el 40 % de la mejora de las demás medidas (1,2× en la primera pasada,
+1,08× en las siguientes). No se volvió a correr.
+
+Cuánto habría dado: un N5 1,2× más rápido equivale a 20 % más tiempo. Las tres configuraciones de la run 58 en
+ta01–ta10 (15×15, 3 semillas) con 30 s y con 36 s (1,20× iteraciones): 0,705 % contra 0,698 % de gap, diferencia
++0,006 puntos, IC95 [−0,06, +0,06]. Nada medible: a esta altura de la búsqueda el tiempo extra casi no mejora.
+
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 
 Desde la corrida 43, una corrección trae solo las funciones o métodos que cambian y
@@ -953,3 +1025,69 @@ aceptado, casi todos por factibilidad; en la corrida 10 salió a la primera. Con
 constructor modular (`core/construction.py`) la factibilidad queda en la vista del problema
 y el LLM escribe solo un puntaje; en 360 construcciones de prueba ninguna fue infactible y en
 la run 6 los puntajes generados superaron a los constructores monolíticos generados.
+
+### Path relinking (PR): un esqueleto genérico que le gana a la TS afinada sin afinarse
+
+Esqueleto `PR` (`skeletons/pr.py`, `path_relinking` en `native/include/hsf/core.hpp`) y slot nuevo `relink`
+(`distance(a, b)`, `step(cur, guide, rng)`; el validador exige distancia 0 consigo misma, simetría y que cada paso
+la baje hasta llegar a la guía). Población de élite mejorada con tabú (el mismo paso de TS, `hsf::TabuStep`);
+caminos entre dos de la población al azar, la mejor solución del tramo central se mejora y reemplaza a la peor si
+no está repetida. Nada del problema: la idea de i-TSAB y TS/PR en el job shop y de GRASP con path relinking.
+
+Para el job shop, un relink escrito a mano (`machine_order`): distancia = pares de trabajos ordenados distinto en
+alguna máquina; un paso intercambia dos trabajos consecutivos que están al revés que en la guía. Prueba en
+ta01–ta10 (15×15), 30 s, 3 semillas, catálogo a mano (N5 con estimate), en este contenedor
+(`scripts/pr_vs_ts_taillard.py`, `taillard_pr_handwritten.json`). PR con los parámetros de tabú de la TS r1 de la
+run 55 y el resto por defecto (población 10, 2 candidatos por paso del camino, banda 0,25), sin afinar:
+
+| | gap medio | mejor de 3 por instancia | PR 10k mejor por (IC95) |
+|---|---|---|---|
+| TS afinada (run 55 r1) | 0,97 % | — | +0,50 [+0,16, +0,87], 8 de 10 instancias |
+| TS afinada (run 55 r2) | 0,92 % | — | +0,45 [+0,10, +0,88], 7 de 10 |
+| PR, 2000 iteraciones de tabú por mejora | 0,71 % | 0,54 % | +0,23 [+0,04, +0,44] |
+| **PR, 10000 iteraciones** | **0,47 %** | **0,33 %** | |
+
+Con el catálogo a mano, PR sin afinar queda por debajo de lo mejor del catálogo generado y optimizado con TS
+afinada (run 58: 0,75 % de media, 0,55 % la mejor réplica). Es la diferencia que más movió el gap desde el paso a
+C++. Pendiente: afinar PR con irace, probar con el catálogo generado y que el LLM escriba el relink.
+
+### Paso 3: el LLM escribe el relink (corrida 112, 0,22 USD)
+
+`llm.native_generator --slots relink` sobre el catálogo C++ existente: el LLM ve la descripción, el modelo C++, el
+contrato `hsf::Relink` y cómo PR usa `distance` y `step` (genérico); nada del job shop. 3 de 3 aceptados en una
+llamada, sin correcciones: `kendall_adjacent_swap_relink` (la misma idea que el escrito a mano),
+`lis_insertion_relink` (distancia = trabajos fuera de la subsecuencia común más larga; un paso inserta uno en su
+lugar) y `hamming_position_swap_relink` (posiciones distintas; un paso pone un trabajo en su posición de la guía).
+
+Taillard ta01–ta10, 30 s, 3 semillas, PR con los mismos parámetros que con el relink a mano (sin afinar), ahora
+sobre el N5 generado y optimizado (`scripts/pr_relinks_taillard.py`, `taillard_pr_generated.json`):
+
+| | gap medio | mejor de 3 | iteraciones de tabú | TS afinada (run 55 r2) peor por |
+|---|---|---|---|---|
+| PR + relink a mano + N5 a mano | 0,47 % | 0,33 % | 0,67 M | +0,45 [+0,10, +0,88] |
+| PR + **kendall** (LLM) + N5 (LLM) | **0,36 %** | **0,21 %** | 4,0 M | +0,56 [+0,28, +0,90], 9 de 10 |
+| PR + **hamming** (LLM) + N5 (LLM) | 0,39 % | 0,21 % | 3,8 M | +0,53 [+0,25, +0,85], 9 de 10 |
+| PR + **lis** (LLM) + N5 (LLM) | 0,42 % | 0,25 % | 3,9 M | +0,51 [+0,23, +0,84], 9 de 10 |
+
+Los tres relinks del LLM quedan a la par entre sí y con el escrito a mano (diferencias de 0,06–0,11 puntos, IC95
+que cruzan 0). Todo del LLM y del framework (N5, su optimización y el relink), el gap en 15×15 pasa de 0,75 % (run
+58, TS afinada) a 0,36 % con PR sin afinar.
+
+### Run 60: irace elige PR en las tres réplicas
+
+Mismas condiciones que las runs 58 y 59, con PR disponible (8 parámetros y los tres relinks del LLM). Las tres
+réplicas y todas sus élites son PR: r0 con `hamming` y la inserción optimizada en la corrida 111 (la primera vez
+que el tuner la usa), r1 y r2 con `lis` y N5 / N1. Taillard (`taillard_run60.json`; 3 semillas, 30 s; diferencia
+por instancia con IC95 bootstrap):
+
+| | run 58 (TS) | run 60 (PR) | 58 − 60 |
+|---|---|---|---|
+| 15×15, media de configuraciones y semillas | 0,75 % | **0,44 %** | +0,31 [+0,19, +0,42], 9 de 10 |
+| 15×15, mejor de 9 por instancia | 0,34 % | **0,01 %** (el óptimo en 9 de 10) | |
+| 20×15, media | 1,66 % | 1,57 % | +0,10 [−0,23, +0,32], 8 de 10 |
+| 20×15, mejor de 9 | 0,99 % | 0,86 % | |
+
+La mejor réplica (r1: PR con `lis`, N5, población 22, ~15 000 iteraciones de tabú por mejora) da 0,34 % y 1,41 %.
+En 15×15 la mejora es clara y el mejor de 9 corridas llega al óptimo en 9 de las 10 instancias; en 20×15 (afinado
+en 15×15) mejora poco y sin separarse del ruido. PR sin afinar con `kendall` daba 0,36 % en 15×15: con 10 s por
+corrida al afinar, irace prefiere mejoras tabú más cortas que las que convienen con 30 s.

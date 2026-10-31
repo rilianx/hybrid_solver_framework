@@ -159,6 +159,20 @@ class Perturbation(Protocol):
 
 
 @runtime_checkable
+class Relink(Protocol):
+    """Slot `relink` (usado por PR, path relinking): conectar dos soluciones.
+
+    `distance(a, b)`: cuántos pasos las separan, 0 si y solo si son la misma solución (simétrica).
+    `step(cur, guide, rng)`: una solución estrictamente más cerca de `guide` que `cur`. Puede ser
+    infactible (la penalización del objetivo la castiga); el esqueleto elige entre varios pasos.
+    """
+
+    def distance(self, a: Solution, b: Solution) -> int: ...
+
+    def step(self, cur: Solution, guide: Solution, rng: Random) -> Solution: ...
+
+
+@runtime_checkable
 class Destruction(Protocol):
     """Slot `destruction`: elimina parte de la solución (usado por LNS/matheurísticas)."""
 

@@ -9,6 +9,7 @@ from .components import (
     CriticalInsert,
     CriticalKick,
     CriticalSwap,
+    OrderRelink,
     EarliestEnd,
     JobOrder,
     MachineRemoval,
@@ -16,8 +17,8 @@ from .components import (
     TimeWindowRemoval,
 )
 
-CONSTRUCTOR_SKELETONS = ["SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH", "MIP_PERTURB"]
-LOCAL_SEARCH_SKELETONS = ["SA", "ILS", "TS", "VNS", "GRASP", "MIP_PERTURB"]
+CONSTRUCTOR_SKELETONS = ["SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH", "MIP_PERTURB", "PR"]
+LOCAL_SEARCH_SKELETONS = ["SA", "ILS", "TS", "VNS", "GRASP", "MIP_PERTURB", "PR"]
 
 HANDWRITTEN = [
     ({"name": "job_order", "slot": "constructor", "compatible_skeletons": CONSTRUCTOR_SKELETONS, "params": {}},
@@ -32,6 +33,8 @@ HANDWRITTEN = [
      lambda problem: CriticalInsert(problem)),
     ({"name": "critical_kick", "slot": "perturbation", "compatible_skeletons": ["ILS"], "params": {}},
      lambda problem: CriticalKick(problem)),
+    ({"name": "machine_order", "slot": "relink", "compatible_skeletons": ["PR"], "params": {}},
+     lambda problem: OrderRelink(problem)),
     ({"name": "time_window_removal", "slot": "destruction", "compatible_skeletons": ["LNS_MIP", "MIP_PERTURB"], "params": {}},
      lambda problem: TimeWindowRemoval(problem)),
     ({"name": "machine_removal", "slot": "destruction", "compatible_skeletons": ["LNS_MIP", "MIP_PERTURB"], "params": {}},

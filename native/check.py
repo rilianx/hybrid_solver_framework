@@ -17,8 +17,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-NATIVE_SKELETONS_FOR_SLOT = {"constructor": ["SA", "ILS", "TS", "VNS"], "greedy_score": ["SA", "ILS", "TS", "VNS"],
-                             "neighborhood": ["SA", "ILS", "TS", "VNS"], "perturbation": ["ILS"]}
+NATIVE_SKELETONS_FOR_SLOT = {"constructor": ["SA", "ILS", "TS", "VNS", "PR"], "greedy_score": ["SA", "ILS", "TS", "VNS", "PR"],
+                             "neighborhood": ["SA", "ILS", "TS", "VNS", "PR"], "perturbation": ["ILS"], "relink": ["PR"]}
 
 
 def run_check(request: dict, timeout: float = 900.0) -> dict:
@@ -79,7 +79,16 @@ def bench_solutions(pack, n: int = 6, seed: int = 4242):
 
 METRICS = {"delta": "delta exacto por segundo (búsqueda local, SA)",
            "ts_step": "candidatos revisados por segundo en un paso de TS (estimate o delta de todos, delta de los 5 mejores)",
+           "walk": "pasos por segundo de una trayectoria (revisar los candidatos como en TS, aplicar uno y seguir desde la "
+                   "solución que devolvió apply)",
            "perturbation": "perturbaciones por segundo", "greedy_score": "construcciones greedy completas por segundo"}
+
+
+def thresholds(before: dict, min_speedup: float) -> dict[str, float]:
+    """Cuánto tiene que mejorar cada medida para aceptar. La trayectoria también paga lo que no cambia (estimate,
+    apply, la revisión del paso), así que una mejora real se ve más chica ahí: se pide el 40 % de la mejora (1,2× si
+    a las demás se les pide 1,5×)."""
+    return {m: 1 + 0.4 * (min_speedup - 1) if m == "walk" else min_speedup for m in before}
 
 
 def profile(native, model_of, slot: str, name: str, inst, sols, seconds: float = 0.5) -> str:
@@ -100,13 +109,14 @@ def speeds(native, model_of, slot: str, name: str, inst, sols, seconds: float = 
     m = model_of(inst)
     if slot == "neighborhood":
         return {"delta": native.bench(m, "neighborhood", name, {}, sols, seconds),
-                "ts_step": native.bench(m, "neighborhood_ts", name, {}, sols, seconds)}
+                "ts_step": native.bench(m, "neighborhood_ts", name, {}, sols, seconds),
+                "walk": native.bench(m, "neighborhood_walk", name, {}, sols, seconds)}
     return {slot: native.bench(m, slot, name, {}, sols, seconds)}
 
 
 def optimize_check(request: dict) -> None:
     """La versión optimizada de un componente aceptado: pasa las capas, da las mismas salidas que la aceptada y es al
-    menos `min_speedup` veces más rápida (medido en C++)."""
+    menos `min_speedup` veces más rápida en alguna medida (en la trayectoria, el 40 % de esa mejora; medido en C++)."""
     from random import Random
 
     from core.validation.equivalence import check_component_equivalent
@@ -153,12 +163,14 @@ def optimize_check(request: dict) -> None:
     out.update(before=before, after=after)
     if out["passed"]:
         ratios = {m: after[m] / max(before[m], 1e-9) for m in before}
-        if max(ratios.values()) < k or min(ratios.values()) < 0.9:
-            detail = "; ".join(f"{METRICS[m]}: {before[m]:,.0f} → {after[m]:,.0f} ({ratios[m]:.2f}×)" for m in before)
+        need = thresholds(before, k)
+        if not any(ratios[m] >= need[m] for m in before) or min(ratios.values()) < 0.9:
+            detail = "; ".join(f"{METRICS[m]}: {before[m]:,.0f} → {after[m]:,.0f} ({ratios[m]:.2f}×, se pide "
+                               f"{need[m]:g}×)" for m in before)
             prof = profile(new, parts.model, slot, name, inst, sols)
             out.update(passed=False, failed_layer="speed",
-                       feedback=f"mismas salidas, pero no alcanza: {detail}. Se pide que alguna medida mejore al menos "
-                                f"{k:g} veces y que ninguna empeore más de un 10 %."
+                       feedback=f"mismas salidas, pero no alcanza: {detail}. Se pide que alguna medida mejore lo indicado y "
+                                "que ninguna empeore más de un 10 %."
                                 + (f"\nPerfil de tu versión: {prof}." if prof else ""))
     print(json.dumps(out))
 

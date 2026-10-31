@@ -234,6 +234,43 @@ struct CriticalKick : hsf::Perturbation<M> {
     }
 };
 
+// Relink por el orden en cada máquina: la distancia es la cantidad de pares de trabajos que dos soluciones ordenan
+// distinto en alguna máquina (Kendall); un paso intercambia dos trabajos consecutivos que están al revés que en la guía
+// (baja la distancia en exactamente 1). Puede formar un ciclo: el objetivo lo penaliza y PR elige entre varios pasos.
+struct OrderRelink : hsf::Relink<M> {
+    const M& js;
+    std::vector<int> pos;
+    std::vector<std::array<int, 2>> inv;
+    explicit OrderRelink(const M& m) : js(m), pos(m.n) {}
+    void positions(const std::vector<int>& seq) {
+        for (int i = 0; i < (int)seq.size(); ++i) pos[seq[i]] = i;
+    }
+    int distance(const Sol& a, const Sol& b) override {
+        int d = 0;
+        for (int mm = 0; mm < js.m; ++mm) {
+            positions(b[mm]);
+            auto& s = a[mm];
+            for (size_t i = 0; i < s.size(); ++i)
+                for (size_t k = i + 1; k < s.size(); ++k) d += pos[s[i]] > pos[s[k]];
+        }
+        return d;
+    }
+    Sol step(const Sol& cur, const Sol& guide, hsf::Rng& rng) override {
+        inv.clear();
+        for (int mm = 0; mm < js.m; ++mm) {
+            positions(guide[mm]);
+            auto& s = cur[mm];
+            for (int i = 0; i + 1 < (int)s.size(); ++i)
+                if (pos[s[i]] > pos[s[i + 1]]) inv.push_back({mm, i});
+        }
+        if (inv.empty()) return cur;
+        auto [mm, i] = inv[rng.below((int)inv.size())];
+        Sol t = cur;
+        std::swap(t[mm][i], t[mm][i + 1]);
+        return t;
+    }
+};
+
 inline hsf::Catalog<M> handwritten() {
     hsf::Catalog<M> c;
     c.constructors["job_order"] = [](const M& m, const hsf::Config&) { return std::make_unique<JobOrder>(m); };
@@ -242,6 +279,7 @@ inline hsf::Catalog<M> handwritten() {
     c.neighborhoods["critical_swap"] = [](const M& m, const hsf::Config&) { return std::make_unique<CriticalSwap>(m); };
     c.neighborhoods["critical_insert"] = [](const M& m, const hsf::Config&) { return std::make_unique<CriticalInsert>(m); };
     c.perturbations["critical_kick"] = [](const M& m, const hsf::Config&) { return std::make_unique<CriticalKick>(m); };
+    c.relinks["machine_order"] = [](const M& m, const hsf::Config&) { return std::make_unique<OrderRelink>(m); };
     return c;
 }
 

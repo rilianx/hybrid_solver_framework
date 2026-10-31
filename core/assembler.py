@@ -29,6 +29,7 @@ from skeletons.ils import build_ils, hill_climb
 from skeletons.lns_mip import build_lns_mip, run_lns_mip
 from skeletons.local_branching import build_local_branching, run_local_branching
 from skeletons.mip_perturbation import build_mip_perturbation, run_mip_perturbation
+from skeletons.pr import run_pr
 from skeletons.sa import MetropolisAcceptance, build_sa, make_run
 from skeletons.ts import build_ts
 from skeletons.vns import build_vns
@@ -98,6 +99,20 @@ SKELETONS: dict[str, SkeletonDef] = {
             "estimate_top": {"type": "int", "range": [0, 10], "default": 0},
             "elite_size": {"type": "int", "range": [0, 8], "default": 0},
             "stall": {"type": "int", "range": [20, 5000], "log": True, "default": 500},
+        },
+    ),
+    "PR": SkeletonDef(
+        # población de élite con path relinking y mejora tabú (skeletons/pr.py); `relink` conecta dos soluciones
+        "PR", ("constructor", "neighborhood", "relink"),
+        params={
+            "pop_size": {"type": "int", "range": [4, 30], "default": 10},
+            "ts_iters": {"type": "int", "range": [100, 20000], "log": True, "default": 2000},
+            "tenure": {"type": "int", "range": [3, 30]},
+            "candidate_size": {"type": "int", "range": [5, 100], "log": True},
+            "estimate_top": {"type": "int", "range": [0, 10], "default": 0},
+            "path_cands": {"type": "int", "range": [1, 8], "default": 2},
+            "band": {"type": "float", "range": [0.05, 0.5], "default": 0.25},
+            "init_moves": {"type": "int", "range": [1, 100], "log": True, "default": 20},
         },
     ),
     "VNS": SkeletonDef(
@@ -261,6 +276,12 @@ class Assembler:
                 sk = build_ts(P, constructor, nbh, MaxTimeStop(budget), tenure=sp("tenure"), candidate_size=sp("candidate_size"),
                               estimate_top=sp("estimate_top"), elite_size=sp("elite_size"), stall=sp("stall"))
                 return sk.run(inst, rng)
+            if skeleton == "PR":
+                nbh = self._component(config, "neighborhood", skeleton, P)
+                rel = self._component(config, "relink", skeleton, P)
+                return run_pr(P, constructor, nbh, rel, inst, rng, budget, pop_size=sp("pop_size"), ts_iters=sp("ts_iters"),
+                              tenure=sp("tenure"), candidate_size=sp("candidate_size"), estimate_top=sp("estimate_top"),
+                              path_cands=sp("path_cands"), band=sp("band"), init_moves=sp("init_moves"))
             if skeleton == "VNS":
                 ls_nbh = self._component(config, "neighborhood", skeleton, P)
                 others = [
@@ -325,5 +346,6 @@ class Assembler:
 def describe(config: dict[str, Any]) -> str:
     """Resumen legible de una configuración: esqueleto + componentes elegidos."""
     sk = config.get("skeleton", "?")
-    slots = [f"{k}={v}" for k, v in config.items() if k in {"constructor", "neighborhood", "perturbation", "destruction", "repair_mip", "fixing_policy"}]
+    slots = [f"{k}={v}" for k, v in config.items() if k in {"constructor", "neighborhood", "perturbation", "destruction", "repair_mip", "fixing_policy",
+                                                        "relink"}]
     return f"{sk}[{', '.join(slots)}]"

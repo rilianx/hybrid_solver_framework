@@ -7,6 +7,8 @@
   operaciones de cada bloque del camino crítico. Nunca forma un ciclo.
 - `CriticalInsert`: mover una operación de un bloque crítico al principio o al final del bloque.
 - `CriticalKick` (perturbación): `strength` intercambios adyacentes al azar en el camino crítico.
+- `OrderRelink` (relink, para PR): distancia = pares de trabajos ordenados distinto en alguna máquina; un paso
+  intercambia dos trabajos consecutivos que están al revés que en la guía.
 - `TimeWindowRemoval` y `MachineRemoval` (destrucción): liberan el orden entre las operaciones de una
   ventana de tiempo, o el de algunas máquinas, para que el sub-MIP las reordene.
 
@@ -117,6 +119,32 @@ class CriticalSwap:
 
     def delta(self, sol, mv):
         return self.problem.objective(self.apply(sol, mv)) - self.problem.objective(sol)
+
+
+class OrderRelink:
+    """Relink (path relinking) por el orden en cada máquina: la distancia es la cantidad de pares de trabajos que dos
+    soluciones ordenan distinto en alguna máquina; un paso intercambia dos trabajos consecutivos que están al revés
+    que en la guía (baja la distancia en exactamente 1). Puede formar un ciclo: el objetivo lo penaliza."""
+
+    def __init__(self, problem):
+        pass
+
+    def distance(self, a, b) -> int:
+        d = 0
+        for sa, sb in zip(a, b):
+            pos = {j: i for i, j in enumerate(sb)}
+            d += sum(pos[sa[i]] > pos[sa[k]] for i in range(len(sa)) for k in range(i + 1, len(sa)))
+        return d
+
+    def step(self, cur, guide, rng: Random):
+        inv = []
+        for m, (s, g) in enumerate(zip(cur, guide)):
+            pos = {j: i for i, j in enumerate(g)}
+            inv += [(m, i) for i in range(len(s) - 1) if pos[s[i]] > pos[s[i + 1]]]
+        if not inv:
+            return cur
+        m, i = inv[rng.randrange(len(inv))]
+        return _swap(cur, m, cur[m][i], cur[m][i + 1])
 
 
 def _move(sol, m, job, to):

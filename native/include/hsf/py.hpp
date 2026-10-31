@@ -52,6 +52,11 @@ struct ScoreHandle {
     std::unique_ptr<GreedyScore<M>> impl;
 };
 template <class M>
+struct RelinkHandle {
+    std::shared_ptr<M> model;
+    std::unique_ptr<Relink<M>> impl;
+};
+template <class M>
 struct CtorHandle {
     std::shared_ptr<M> model;
     std::unique_ptr<Constructor<M>> impl;
@@ -83,6 +88,12 @@ void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy 
             Rng rng(seed);
             return to_py(h.impl->perturb(from_py(s), strength, rng));
         });
+    py::class_<RelinkHandle<M>>(mod, "Relink", py::module_local())
+        .def("distance", [=](RelinkHandle<M>& h, py::handle a, py::handle b) { return h.impl->distance(from_py(a), from_py(b)); })
+        .def("step", [=](RelinkHandle<M>& h, py::handle cur, py::handle guide, uint64_t seed) {
+            Rng rng(seed);
+            return to_py(h.impl->step(from_py(cur), from_py(guide), rng));
+        });
     py::class_<CtorHandle<M>>(mod, "Constructor", py::module_local())
         .def("build", [=](CtorHandle<M>& h, uint64_t seed) {
             Rng rng(seed);
@@ -105,6 +116,7 @@ void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy 
         d["greedy_score"] = keys(catalog->scores);
         d["neighborhood"] = keys(catalog->neighborhoods);
         d["perturbation"] = keys(catalog->perturbations);
+        d["relink"] = keys(catalog->relinks);
         return d;
     });
     mod.def("make_neighborhood", [catalog](Model m, const std::string& name, py::dict params) {
@@ -119,6 +131,12 @@ void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy 
         for (auto& [k, v] : c.num) scoped.num[name + "." + k] = v;
         for (auto& [k, v] : c.str) scoped.str[name + "." + k] = v;
         return PertHandle<M>{m, catalog->perturbation(name, *m, scoped)};
+    });
+    mod.def("make_relink", [catalog](Model m, const std::string& name, py::dict params) {
+        Config c = config_from(params), scoped;
+        for (auto& [k, v] : c.num) scoped.num[name + "." + k] = v;
+        for (auto& [k, v] : c.str) scoped.str[name + "." + k] = v;
+        return RelinkHandle<M>{m, catalog->relink(name, *m, scoped)};
     });
     mod.def("make_constructor", [catalog](Model m, const std::string& name, py::dict params) {
         Config c = config_from(params), scoped;
@@ -139,17 +157,25 @@ void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy 
         for (auto& [k, v] : c.str) scoped.str[name + "." + k] = v;
         Clock clock;
         long n = 0;
-        Rng rng(0);
+        Rng rng(0), fresh(12345);
+        // soluciones nuevas en cada pasada (fuera del tiempo medido): repetir las mismas mediría una caché por solución
+        double paused = 0;
+        auto busy = [&] { return clock.elapsed() - paused; };
+        auto refresh = [&] {
+            Clock t;
+            for (auto& s : sols) s = m->random(fresh);
+            paused += t.elapsed();
+        };
         if (slot == "neighborhood") {
             auto nbh = catalog->neighborhood(name, *m, scoped);
             std::vector<Move> mv;
             volatile double sink = 0;
-            while (clock.elapsed() < seconds)
+            for (; busy() < seconds; refresh())
                 for (auto& s : sols) {
                     mv.clear();
                     nbh->moves(s, mv);
                     for (auto& x : mv) sink = sink + nbh->delta(s, x), ++n;
-                    if (clock.elapsed() >= seconds) break;
+                    if (busy() >= seconds) break;
                 }
         } else if (slot == "neighborhood_ts") {
             // un paso de TS: todos los candidatos con `estimate` (o `delta` si no la hay) y `delta` exacto de los 5
@@ -159,7 +185,7 @@ void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy 
             std::vector<std::pair<double, size_t>> order;
             volatile double sink = 0;
             bool est = nbh->has_estimate();
-            while (clock.elapsed() < seconds)
+            for (; busy() < seconds; refresh())
                 for (auto& s : sols) {
                     mv.clear();
                     nbh->moves(s, mv);
@@ -172,19 +198,46 @@ void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy 
                         for (size_t i = 0; i < k; ++i) sink = sink + nbh->delta(s, mv[order[i].second]);
                     }
                     n += (long)mv.size();
-                    if (clock.elapsed() >= seconds) break;
+                    if (busy() >= seconds) break;
+                }
+        } else if (slot == "neighborhood_walk") {
+            // una trayectoria, como la recorren los esqueletos: desde cada solución, 50 pasos en que se revisan los
+            // candidatos como en TS y se aplica uno de los 5 mejores (al azar, con la misma semilla); la solución
+            // siguiente es la que devolvió `apply`. Cuenta pasos por segundo
+            auto nbh = catalog->neighborhood(name, *m, scoped);
+            std::vector<Move> mv;
+            std::vector<std::pair<double, size_t>> order;
+            bool est = nbh->has_estimate();
+            for (; busy() < seconds; refresh())
+                for (auto& s0 : sols) {
+                    auto s = s0;
+                    for (int step = 0; step < 50; ++step) {
+                        mv.clear();
+                        nbh->moves(s, mv);
+                        if (mv.empty()) break;
+                        order.clear();
+                        for (size_t i = 0; i < mv.size(); ++i)
+                            order.push_back({est ? nbh->estimate(s, mv[i]) : nbh->delta(s, mv[i]), i});
+                        size_t k = std::min<size_t>(5, order.size());
+                        std::partial_sort(order.begin(), order.begin() + k, order.end());
+                        if (est)
+                            for (size_t i = 0; i < k; ++i) order[i].first = nbh->delta(s, mv[order[i].second]);
+                        s = nbh->apply(s, mv[order[rng.below((int)k)].second]);
+                        ++n;
+                    }
+                    if (busy() >= seconds) break;
                 }
         } else if (slot == "perturbation") {
             auto pert = catalog->perturbation(name, *m, scoped);
-            while (clock.elapsed() < seconds)
+            for (; busy() < seconds; refresh())
                 for (auto& s : sols) { pert->perturb(s, 1.0, rng); ++n; }
         } else if (slot == "greedy_score" || slot == "constructor") {
             auto ctor = catalog->constructor(slot == "greedy_score" ? "greedy_" + name : name, *m, scoped);
-            while (clock.elapsed() < seconds) { ctor->build(rng); ++n; }
+            while (busy() < seconds) { ctor->build(rng); ++n; }
         } else {
             throw std::invalid_argument("bench: slot sin medición: " + slot);
         }
-        return n / std::max(clock.elapsed(), 1e-9);
+        return n / std::max(busy(), 1e-9);
     });
     // cuánto cuesta cada método de un vecindario (microsegundos por llamada) y cuántos movimientos da por solución
     mod.def("profile_neighborhood", [catalog, from_py](Model m, const std::string& name, py::dict params, py::list sols_py,
@@ -201,7 +254,9 @@ void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy 
         std::vector<Move> mv;
         volatile double sink = 0;
         Clock total;
-        while (total.elapsed() < seconds)
+        Rng fresh(12345);
+        double paused = 0;
+        for (; total.elapsed() - paused < seconds; ) {
             for (auto& s : sols) {
                 // en una solución nueva (la primera llamada de cada método paga lo que el componente prepare por solución)
                 mv.clear();
@@ -221,8 +276,12 @@ void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy 
                 t_apply += d.elapsed();
                 ++n_sol;
                 n_moves += (long)mv.size();
-                if (total.elapsed() >= seconds) break;
+                if (total.elapsed() - paused >= seconds) break;
             }
+            Clock t;  // soluciones nuevas en cada pasada, como en `bench`
+            for (auto& s : sols) s = m->random(fresh);
+            paused += t.elapsed();
+        }
         py::dict out;
         out["moves_per_solution"] = n_sol ? (double)n_moves / n_sol : 0.0;
         out["moves_us_per_solution"] = n_sol ? 1e6 * t_moves / n_sol : 0.0;

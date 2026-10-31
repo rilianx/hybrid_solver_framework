@@ -123,6 +123,17 @@ struct Perturbation {
     virtual Sol perturb(const Sol& s, double strength, Rng& rng) = 0;
 };
 
+// Conectar dos soluciones (path relinking): una medida de cuánto difieren y un paso de una hacia la otra.
+template <class M>
+struct Relink {
+    using Sol = typename M::Solution;
+    virtual ~Relink() = default;
+    // cuántos pasos separan a `a` de `b`; 0 si y solo si son la misma solución
+    virtual int distance(const Sol& a, const Sol& b) = 0;
+    // una solución más cerca de `guide` que `cur` (distance estrictamente menor); al azar entre las posibles
+    virtual Sol step(const Sol& cur, const Sol& guide, Rng& rng) = 0;
+};
+
 template <class M>
 struct GreedyScore {
     virtual ~GreedyScore() = default;
@@ -187,6 +198,7 @@ struct Catalog {
     std::map<std::string, std::function<std::unique_ptr<GreedyScore<M>>(const M&, const Params&)>> scores;
     std::map<std::string, std::function<std::unique_ptr<Neighborhood<M>>(const M&, const Params&)>> neighborhoods;
     std::map<std::string, std::function<std::unique_ptr<Perturbation<M>>(const M&, const Params&)>> perturbations;
+    std::map<std::string, std::function<std::unique_ptr<Relink<M>>(const M&, const Params&)>> relinks;
 
     // `greedy_<puntaje>` es el constructor greedy con ese puntaje (como en `llm.catalog`)
     std::unique_ptr<Constructor<M>> constructor(const std::string& name, const M& m, const Config& cfg) const {
@@ -208,6 +220,11 @@ struct Catalog {
     std::unique_ptr<Perturbation<M>> perturbation(const std::string& name, const M& m, const Config& cfg) const {
         auto it = perturbations.find(name);
         if (it == perturbations.end()) throw std::invalid_argument("perturbación desconocida: " + name);
+        return it->second(m, cfg.scoped(name));
+    }
+    std::unique_ptr<Relink<M>> relink(const std::string& name, const M& m, const Config& cfg) const {
+        auto it = relinks.find(name);
+        if (it == relinks.end()) throw std::invalid_argument("relink desconocido: " + name);
         return it->second(m, cfg.scoped(name));
     }
 };
@@ -303,6 +320,137 @@ bool random_move(Neighborhood<M>& nbh, const typename M::Solution& s, Rng& rng, 
     return true;
 }
 
+// Un paso de la búsqueda tabú (`skeletons/ts.py`): entre una muestra de `size` movimientos (ordenados por `estimate`
+// y con delta exacto solo de los `top` primeros admisibles, si `top` > 0), el mejor no tabú o que mejora `f_best`;
+// si todos son tabú, el mejor de ellos (Nowicki y Smutnicki). Lo usan TS y la mejora de PR.
+template <class M>
+struct TabuStep {
+    using Sol = typename M::Solution;
+    Neighborhood<M>& nbh;
+    size_t tenure;
+    int size, top;
+    std::map<Move, int> tabu;
+    std::vector<Move> queue, buf;
+    size_t head = 0;
+    std::vector<std::pair<double, size_t>> order;
+
+    TabuStep(Neighborhood<M>& n, size_t ten, int sz, int tp) : nbh(n), tenure(ten), size(sz), top(n.has_estimate() ? tp : 0) {}
+    void clear() { tabu.clear(), queue.clear(), head = 0; }
+    bool operator()(const Sol& s, double f, double f_best, Rng& rng, Sol& cand, double& fc) {
+        nbh.sample(s, size, rng, buf);
+        order.clear();
+        for (size_t i = 0; i < buf.size(); ++i) order.push_back({top > 0 ? nbh.estimate(s, buf[i]) : 0.0, i});
+        if (top > 0) std::stable_sort(order.begin(), order.end(), [](auto& a, auto& b) { return a.first < b.first; });
+        const Move* best = nullptr;
+        const Move* best_tabu = nullptr;
+        double best_d = std::numeric_limits<double>::infinity(), tabu_d = best_d;
+        int exact = 0;
+        for (auto& [e, i] : order) {
+            const Move& m = buf[i];
+            double d = nbh.delta(s, m);
+            if (tabu.count(m) && !(f + d < f_best)) {
+                if (d < tabu_d) best_tabu = &m, tabu_d = d;
+                continue;
+            }
+            if (d < best_d) best = &m, best_d = d;
+            if (top > 0 && ++exact >= top) break;
+        }
+        if (!best) best = best_tabu, best_d = tabu_d;
+        if (!best) return false;
+        Move key = nbh.tabu_key(*best);
+        queue.push_back(key);
+        ++tabu[key];
+        while (queue.size() - head > tenure) {
+            auto it = tabu.find(queue[head++]);
+            if (it != tabu.end() && --it->second <= 0) tabu.erase(it);
+        }
+        cand = nbh.apply(s, *best);
+        fc = f + best_d;
+        return true;
+    }
+};
+
+// `skeletons/pr.py`: una población de élite de `PR.pop_size` soluciones mejoradas con tabú; en cada vuelta se eligen dos
+// al azar, se recorre el camino de una a la otra con el componente `relink` (en cada paso, la mejor de `PR.path_cands`
+// soluciones un paso más cerca) y la mejor solución del tramo central del camino (lejos de las dos, según `PR.band`)
+// se mejora con `PR.ts_iters` iteraciones de tabú. El resultado reemplaza a la peor de la población si es mejor que
+// ella y no está repetido. La población inicial: la partida y construcciones nuevas, cada una con `PR.init_moves`
+// movimientos al azar del vecindario (para que no salgan iguales) y mejorada con tabú.
+template <class M>
+Result<M> path_relinking(const Catalog<M>& cat, const M& model, const Config& cfg, typename M::Solution start,
+                         Constructor<M>& ctor, Rng& rng, double budget) {
+    using Sol = typename M::Solution;
+    Clock clock;
+    auto nbh = cat.neighborhood(cfg.text("neighborhood"), model, cfg);
+    auto rel = cat.relink(cfg.text("relink"), model, cfg);
+    TabuStep<M> step(*nbh, (size_t)cfg.get("PR.tenure"), (int)cfg.get("PR.candidate_size"), (int)cfg.get("PR.estimate_top", 0));
+    size_t pop_size = std::max(2, (int)cfg.get("PR.pop_size"));
+    long ts_iters = (long)cfg.get("PR.ts_iters");
+    int path_cands = std::max(1, (int)cfg.get("PR.path_cands", 1)), init_moves = (int)cfg.get("PR.init_moves", 20);
+    double band = cfg.get("PR.band", 0.25);
+    Result<M> res{start, model.objective(start), 0, 0.0};
+    auto over = [&] { return clock.elapsed() >= budget; };
+    auto improve = [&](Sol s) {
+        step.clear();
+        double f = model.objective(s), fb = f;
+        Sol best = s, cand;
+        for (long i = 0; i < ts_iters && !over(); ++i) {
+            double fc;
+            if (!step(s, f, fb, rng, cand, fc)) break;
+            s = std::move(cand), f = fc, ++res.iterations;
+            if (f < fb) best = s, fb = f;
+        }
+        if (fb < res.objective) res.best = best, res.objective = fb;
+        return std::make_pair(best, fb);
+    };
+    std::vector<std::pair<Sol, double>> pop;
+    auto repeated = [&](const Sol& s) {
+        for (auto& p : pop) if (rel->distance(s, p.first) == 0) return true;
+        return false;
+    };
+    std::vector<Move> buf;
+    for (size_t i = 0; i < pop_size && !over(); ++i) {
+        Sol s = i == 0 ? start : ctor.build(rng);
+        for (int k = 0; k < (i == 0 ? 0 : init_moves); ++k) {
+            Move m;
+            if (!random_move(*nbh, s, rng, buf, m)) break;
+            s = nbh->apply(s, m);
+        }
+        auto p = improve(s);
+        if (!repeated(p.first)) pop.push_back(std::move(p));
+    }
+    while (!over() && pop.size() >= 2) {
+        size_t a = rng.below((int)pop.size()), b = rng.below((int)pop.size() - 1);
+        if (b >= a) ++b;
+        const Sol& guide = pop[b].first;
+        Sol cur = pop[a].first;
+        int d0 = rel->distance(cur, guide), d = d0;
+        int lo = std::max(1, (int)std::ceil(band * d0)), hi = std::max(lo, d0 - lo);
+        Sol pick = cur;
+        double f_pick = std::numeric_limits<double>::infinity();
+        while (d > 0 && d0 - d < hi && !over()) {
+            Sol nxt;
+            double f_nxt = std::numeric_limits<double>::infinity();
+            for (int c = 0; c < path_cands; ++c) {
+                Sol x = rel->step(cur, guide, rng);
+                double fx = model.objective(x);
+                if (fx < f_nxt) nxt = std::move(x), f_nxt = fx;
+            }
+            int dn = rel->distance(nxt, guide);
+            if (dn >= d) throw std::runtime_error("relink: el paso no acercó la solución a la guía");
+            cur = std::move(nxt), d = dn;
+            if (d0 - d >= lo && f_nxt < f_pick) pick = cur, f_pick = f_nxt;
+        }
+        if (over()) break;
+        auto p = improve(pick);
+        size_t worst = 0;
+        for (size_t i = 1; i < pop.size(); ++i) if (pop[i].second > pop[worst].second) worst = i;
+        if (p.second < pop[worst].second && !repeated(p.first)) pop[worst] = std::move(p);
+    }
+    res.elapsed = clock.elapsed();
+    return res;
+}
+
 // Corre una configuración. `shake` son los vecindarios de VNS después del de la búsqueda local.
 template <class M>
 Result<M> solve(const Catalog<M>& cat, const M& model, const Config& cfg, const std::vector<std::string>& shake,
@@ -388,17 +536,11 @@ Result<M> solve(const Catalog<M>& cat, const M& model, const Config& cfg, const 
     if (sk == "TS") {
         // como `skeletons/ts.py`: filtrado por estimación (`estimate_top`) y saltos atrás a la élite (`elite_size`, `stall`)
         auto nbh = cat.neighborhood(cfg.text("neighborhood"), model, cfg);
-        size_t tenure = (size_t)cfg.get("TS.tenure");
-        int size = (int)cfg.get("TS.candidate_size");
-        int top = nbh->has_estimate() ? (int)cfg.get("TS.estimate_top", 0) : 0;
+        TabuStep<M> step(*nbh, (size_t)cfg.get("TS.tenure"), (int)cfg.get("TS.candidate_size"), (int)cfg.get("TS.estimate_top", 0));
         size_t elite_size = (size_t)cfg.get("TS.elite_size", 0);
         long stall = (long)cfg.get("TS.stall", 500), iter = 0, last_event = 0;
         double track_best = std::numeric_limits<double>::infinity();
         std::vector<typename M::Solution> elites;
-        std::map<Move, int> tabu;
-        std::vector<Move> queue;
-        size_t head = 0;
-        std::vector<std::pair<double, size_t>> order;
         auto gen = [&](const auto& s, double f, double f_best, double, auto& cand, double& fc) {
             ++iter;
             if (elite_size > 0) {
@@ -408,45 +550,17 @@ Result<M> solve(const Catalog<M>& cat, const M& model, const Config& cfg, const 
                     if (elites.size() > elite_size) elites.erase(elites.begin());
                 } else if (iter - last_event >= stall && !elites.empty()) {
                     last_event = iter;
-                    tabu.clear(), queue.clear(), head = 0;
+                    step.clear();
                     cand = elites.back();
                     elites.pop_back();
                     return true;
                 }
             }
-            nbh->sample(s, size, rng, buf);
-            order.clear();
-            for (size_t i = 0; i < buf.size(); ++i) order.push_back({top > 0 ? nbh->estimate(s, buf[i]) : 0.0, i});
-            if (top > 0) std::stable_sort(order.begin(), order.end(), [](auto& a, auto& b) { return a.first < b.first; });
-            const Move* best = nullptr;
-            const Move* best_tabu = nullptr;  // si todos son tabú, el mejor de ellos (Nowicki y Smutnicki)
-            double best_d = std::numeric_limits<double>::infinity(), tabu_d = best_d;
-            int exact = 0;
-            for (auto& [e, i] : order) {
-                const Move& m = buf[i];
-                double d = nbh->delta(s, m);
-                if (tabu.count(m) && !(f + d < f_best)) {
-                    if (d < tabu_d) best_tabu = &m, tabu_d = d;
-                    continue;
-                }
-                if (d < best_d) best = &m, best_d = d;
-                if (top > 0 && ++exact >= top) break;
-            }
-            if (!best) best = best_tabu, best_d = tabu_d;
-            if (!best) return false;
-            Move key = nbh->tabu_key(*best);
-            queue.push_back(key);
-            ++tabu[key];
-            while (queue.size() - head > tenure) {
-                auto it = tabu.find(queue[head++]);
-                if (it != tabu.end() && --it->second <= 0) tabu.erase(it);
-            }
-            cand = nbh->apply(s, *best);
-            fc = f + best_d;
-            return true;
+            return step(s, f, f_best, rng, cand, fc);
         };
         return trajectory(model, start, budget, gen, [](double, double) { return true; }, none);
     }
+    if (sk == "PR") return path_relinking(cat, model, cfg, std::move(start), *ctor, rng, budget);
     throw std::invalid_argument("esqueleto sin versión nativa: " + sk);
 }
 
