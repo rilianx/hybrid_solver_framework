@@ -56,6 +56,7 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run55/`](tune_run55/) | 30 oct | job shop, catálogo a mano en C++, irace afinando en **15×15 con 10 s** | SA, ILS, VNS, TS | 10+10, 15×15 | 10 s | 700 exp. × 3 réplicas | afinar en el tamaño de Taillard |
 | [`tune_run56/`](tune_run56/) | 30 oct | lo mismo con los componentes C++ de Opus (corrida 104) | SA, ILS, VNS, TS | 10+10, 15×15 | 10 s | 700 exp. × 3 réplicas | ídem |
 | [`tune_run58/`](tune_run58/) | 31 oct | lo mismo con los componentes C++ **optimizados por el LLM** (corridas 106–108) | SA, ILS, VNS, TS | 10+10, 15×15 | 10 s | 700 exp. × 3 réplicas | etapa de optimización C++ |
+| [`tune_run59/`](tune_run59/) | 1 nov | lo mismo con la inserción con delta incremental (corrida 111) | SA, ILS, VNS, TS | 10+10, 15×15 | 10 s | 700 exp. × 3 réplicas | ¿cambia el tuning un vecindario más rápido? |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -749,6 +750,13 @@ La inserción ahora calcula delta de forma incremental y es la primera mejora qu
 pasó: preparar una solución nueva (≈2,4 µs) sigue siendo la mayor parte del paso, y el LLM no llegó a actualizar
 cabezas y colas desde `apply`. El intercambio de prioridad pasó por 1,5× en delta/s en la máquina del workflow
 (localmente es 1,3×, sin cambio en la trayectoria). 15 de 16 respuestas de corrección fueron ediciones.
+
+Run 59 (irace, mismas condiciones que la 58, catálogo con la inserción r8): las tres réplicas vuelven a elegir N5
+(TS con `trivial`, TS con `greedy_lookahead_lower_bound` en RCL, SA con `SA.eval = delta`), igual que la 58; la
+inserción no entra en ninguna. N5 es el mismo r5 en los dos catálogos, así que la diferencia de gap entre las
+corridas (0,36 % contra 0,56 %, cada una contra el mejor conocido de sus propias réplicas) es del tuner, no del
+catálogo. Una inserción 1,7× más rápida no alcanza a N5 (230 k contra 222 k pasos/s, pero un vecindario más
+grande por paso); lo que movería el resultado es acelerar N5 en la trayectoria.
 
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 
