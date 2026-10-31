@@ -57,6 +57,7 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run56/`](tune_run56/) | 30 oct | lo mismo con los componentes C++ de Opus (corrida 104) | SA, ILS, VNS, TS | 10+10, 15×15 | 10 s | 700 exp. × 3 réplicas | ídem |
 | [`tune_run58/`](tune_run58/) | 31 oct | lo mismo con los componentes C++ **optimizados por el LLM** (corridas 106–108) | SA, ILS, VNS, TS | 10+10, 15×15 | 10 s | 700 exp. × 3 réplicas | etapa de optimización C++ |
 | [`tune_run59/`](tune_run59/) | 1 nov | lo mismo con la inserción con delta incremental (corrida 111) | SA, ILS, VNS, TS | 10+10, 15×15 | 10 s | 700 exp. × 3 réplicas | ¿cambia el tuning un vecindario más rápido? |
+| [`tune_run60/`](tune_run60/) | 1 nov | lo mismo con PR y los relinks del LLM (corrida 112) | SA, ILS, VNS, TS, PR | 10+10, 15×15 | 10 s | 700 exp. × 3 réplicas | ¿irace elige PR? |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -1071,3 +1072,22 @@ sobre el N5 generado y optimizado (`scripts/pr_relinks_taillard.py`, `taillard_p
 Los tres relinks del LLM quedan a la par entre sí y con el escrito a mano (diferencias de 0,06–0,11 puntos, IC95
 que cruzan 0). Todo del LLM y del framework (N5, su optimización y el relink), el gap en 15×15 pasa de 0,75 % (run
 58, TS afinada) a 0,36 % con PR sin afinar.
+
+### Run 60: irace elige PR en las tres réplicas
+
+Mismas condiciones que las runs 58 y 59, con PR disponible (8 parámetros y los tres relinks del LLM). Las tres
+réplicas y todas sus élites son PR: r0 con `hamming` y la inserción optimizada en la corrida 111 (la primera vez
+que el tuner la usa), r1 y r2 con `lis` y N5 / N1. Taillard (`taillard_run60.json`; 3 semillas, 30 s; diferencia
+por instancia con IC95 bootstrap):
+
+| | run 58 (TS) | run 60 (PR) | 58 − 60 |
+|---|---|---|---|
+| 15×15, media de configuraciones y semillas | 0,75 % | **0,44 %** | +0,31 [+0,19, +0,42], 9 de 10 |
+| 15×15, mejor de 9 por instancia | 0,34 % | **0,01 %** (el óptimo en 9 de 10) | |
+| 20×15, media | 1,66 % | 1,57 % | +0,10 [−0,23, +0,32], 8 de 10 |
+| 20×15, mejor de 9 | 0,99 % | 0,86 % | |
+
+La mejor réplica (r1: PR con `lis`, N5, población 22, ~15 000 iteraciones de tabú por mejora) da 0,34 % y 1,41 %.
+En 15×15 la mejora es clara y el mejor de 9 corridas llega al óptimo en 9 de las 10 instancias; en 20×15 (afinado
+en 15×15) mejora poco y sin separarse del ruido. PR sin afinar con `kendall` daba 0,36 % en 15×15: con 10 s por
+corrida al afinar, irace prefiere mejoras tabú más cortas que las que convienen con 30 s.
