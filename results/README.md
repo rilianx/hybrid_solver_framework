@@ -1049,3 +1049,25 @@ run 55 y el resto por defecto (población 10, 2 candidatos por paso del camino, 
 Con el catálogo a mano, PR sin afinar queda por debajo de lo mejor del catálogo generado y optimizado con TS
 afinada (run 58: 0,75 % de media, 0,55 % la mejor réplica). Es la diferencia que más movió el gap desde el paso a
 C++. Pendiente: afinar PR con irace, probar con el catálogo generado y que el LLM escriba el relink.
+
+### Paso 3: el LLM escribe el relink (corrida 112, 0,22 USD)
+
+`llm.native_generator --slots relink` sobre el catálogo C++ existente: el LLM ve la descripción, el modelo C++, el
+contrato `hsf::Relink` y cómo PR usa `distance` y `step` (genérico); nada del job shop. 3 de 3 aceptados en una
+llamada, sin correcciones: `kendall_adjacent_swap_relink` (la misma idea que el escrito a mano),
+`lis_insertion_relink` (distancia = trabajos fuera de la subsecuencia común más larga; un paso inserta uno en su
+lugar) y `hamming_position_swap_relink` (posiciones distintas; un paso pone un trabajo en su posición de la guía).
+
+Taillard ta01–ta10, 30 s, 3 semillas, PR con los mismos parámetros que con el relink a mano (sin afinar), ahora
+sobre el N5 generado y optimizado (`scripts/pr_relinks_taillard.py`, `taillard_pr_generated.json`):
+
+| | gap medio | mejor de 3 | iteraciones de tabú | TS afinada (run 55 r2) peor por |
+|---|---|---|---|---|
+| PR + relink a mano + N5 a mano | 0,47 % | 0,33 % | 0,67 M | +0,45 [+0,10, +0,88] |
+| PR + **kendall** (LLM) + N5 (LLM) | **0,36 %** | **0,21 %** | 4,0 M | +0,56 [+0,28, +0,90], 9 de 10 |
+| PR + **hamming** (LLM) + N5 (LLM) | 0,39 % | 0,21 % | 3,8 M | +0,53 [+0,25, +0,85], 9 de 10 |
+| PR + **lis** (LLM) + N5 (LLM) | 0,42 % | 0,25 % | 3,9 M | +0,51 [+0,23, +0,84], 9 de 10 |
+
+Los tres relinks del LLM quedan a la par entre sí y con el escrito a mano (diferencias de 0,06–0,11 puntos, IC95
+que cruzan 0). Todo del LLM y del framework (N5, su optimización y el relink), el gap en 15×15 pasa de 0,75 % (run
+58, TS afinada) a 0,36 % con PR sin afinar.
