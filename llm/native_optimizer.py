@@ -20,7 +20,7 @@ import time
 from pathlib import Path
 
 from native.build import NativeBuildError
-from native.check import bench_solutions, profile, run_check, speeds
+from native.check import bench_solutions, profile, run_check, speeds, thresholds
 from native.edits import EDIT_INSTRUCTIONS, EditError, merge_reply
 from native.generated import ModelCache, NativeComponent, build_components, load, parse_component, parse_response
 
@@ -59,7 +59,8 @@ def optimize_prompt(pack, gen: dict, comp: NativeComponent, before: dict, object
 
     spec = pack.make_model_spec()
     model = (Path(gen["dir"]) / gen["model_header"]).read_text()
-    measures = "\n".join(f"- {METRICS[m]}: {v:,.0f}" for m, v in before.items())
+    need = thresholds(before, min_speedup)
+    measures = "\n".join(f"- {METRICS[m]}: {v:,.0f} (para aceptar: {need[m]:g}×)" for m, v in before.items())
     if comp.slot == "neighborhood":
         measures += f"\n- referencia: evaluar el objetivo completo de una solución, {objective_rate:,.0f} por segundo"
     if prof:
@@ -77,7 +78,7 @@ def optimize_prompt(pack, gen: dict, comp: NativeComponent, before: dict, object
         f"\n# El modelo C++\n```cpp\n{model}\n```",
         f"\n# Técnicas\n{TECHNIQUES}",
         "\n# Lo que se verificará\n- Las mismas salidas que el componente actual, una por una, y las validaciones del slot.\n"
-        f"- Que alguna de las medidas de arriba mejore al menos {min_speedup:g} veces y ninguna empeore más de un 10 %.",
+        "- Que alguna de las medidas de arriba mejore lo que se indica junto a ella y ninguna empeore más de un 10 %.",
         f"\n# Formato de la respuesta\n{EDIT_INSTRUCTIONS}\nLa línea COMPONENT, el nombre `{comp.name}` y los parámetros no "
         "cambian.",
     ])

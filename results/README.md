@@ -758,6 +758,13 @@ corridas (0,36 % contra 0,56 %, cada una contra el mejor conocido de sus propias
 catálogo. Una inserción 1,7× más rápida no alcanza a N5 (230 k contra 222 k pasos/s, pero un vecindario más
 grande por paso); lo que movería el resultado es acelerar N5 en la trayectoria.
 
+Por qué N5 no pasó en la 111: su primer intento mejoró solo la trayectoria (1,11×, delta y paso de TS iguales),
+la marca de reutilizar en la solución siguiente lo que dejó `apply`; los otros dos llegaron a 1,16× y 1,20×. Pero
+preparar una solución nueva es ~40 % del paso (1,85 de ~4,5 µs) y un intercambio cambia las cabezas de todos los
+sucesores y las colas de todos los predecesores, así que el techo realista está en 1,2–1,3×, por debajo del 1,5×
+pedido. Desde ahora la trayectoria pide el 40 % de la mejora de las demás medidas (1,2× en la primera pasada,
+1,08× en las siguientes). No se volvió a correr.
+
 ### Reparación localizada: correcciones más cortas, no más componentes rescatados
 
 Desde la corrida 43, una corrección trae solo las funciones o métodos que cambian y

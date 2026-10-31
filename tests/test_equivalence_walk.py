@@ -31,3 +31,11 @@ def test_walk_detects_stale_cache():
     assert check_component_equivalent("neighborhood", Exact(), Exact(), None, [5]).passed
     rep = check_component_equivalent("neighborhood", Exact(), StaleCache(), None, [5])
     assert not rep.passed and "trayectoria" in rep.feedback()
+
+
+def test_walk_threshold_is_smaller():
+    from native.check import thresholds
+
+    need = thresholds({"delta": 1.0, "ts_step": 1.0, "walk": 1.0}, 1.5)
+    assert need["delta"] == need["ts_step"] == 1.5 and abs(need["walk"] - 1.2) < 1e-9
+    assert abs(thresholds({"walk": 1.0}, 1.2)["walk"] - 1.08) < 1e-9

@@ -84,6 +84,13 @@ METRICS = {"delta": "delta exacto por segundo (búsqueda local, SA)",
            "perturbation": "perturbaciones por segundo", "greedy_score": "construcciones greedy completas por segundo"}
 
 
+def thresholds(before: dict, min_speedup: float) -> dict[str, float]:
+    """Cuánto tiene que mejorar cada medida para aceptar. La trayectoria también paga lo que no cambia (estimate,
+    apply, la revisión del paso), así que una mejora real se ve más chica ahí: se pide el 40 % de la mejora (1,2× si
+    a las demás se les pide 1,5×)."""
+    return {m: 1 + 0.4 * (min_speedup - 1) if m == "walk" else min_speedup for m in before}
+
+
 def profile(native, model_of, slot: str, name: str, inst, sols, seconds: float = 0.5) -> str:
     """Dónde se va el tiempo de un vecindario, como texto para el prompt (vacío en otros slots)."""
     if slot != "neighborhood":
@@ -109,7 +116,7 @@ def speeds(native, model_of, slot: str, name: str, inst, sols, seconds: float = 
 
 def optimize_check(request: dict) -> None:
     """La versión optimizada de un componente aceptado: pasa las capas, da las mismas salidas que la aceptada y es al
-    menos `min_speedup` veces más rápida (medido en C++)."""
+    menos `min_speedup` veces más rápida en alguna medida (en la trayectoria, el 40 % de esa mejora; medido en C++)."""
     from random import Random
 
     from core.validation.equivalence import check_component_equivalent
@@ -156,12 +163,14 @@ def optimize_check(request: dict) -> None:
     out.update(before=before, after=after)
     if out["passed"]:
         ratios = {m: after[m] / max(before[m], 1e-9) for m in before}
-        if max(ratios.values()) < k or min(ratios.values()) < 0.9:
-            detail = "; ".join(f"{METRICS[m]}: {before[m]:,.0f} → {after[m]:,.0f} ({ratios[m]:.2f}×)" for m in before)
+        need = thresholds(before, k)
+        if not any(ratios[m] >= need[m] for m in before) or min(ratios.values()) < 0.9:
+            detail = "; ".join(f"{METRICS[m]}: {before[m]:,.0f} → {after[m]:,.0f} ({ratios[m]:.2f}×, se pide "
+                               f"{need[m]:g}×)" for m in before)
             prof = profile(new, parts.model, slot, name, inst, sols)
             out.update(passed=False, failed_layer="speed",
-                       feedback=f"mismas salidas, pero no alcanza: {detail}. Se pide que alguna medida mejore al menos "
-                                f"{k:g} veces y que ninguna empeore más de un 10 %."
+                       feedback=f"mismas salidas, pero no alcanza: {detail}. Se pide que alguna medida mejore lo indicado y "
+                                "que ninguna empeore más de un 10 %."
                                 + (f"\nPerfil de tu versión: {prof}." if prof else ""))
     print(json.dumps(out))
 
