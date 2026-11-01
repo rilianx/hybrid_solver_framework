@@ -60,3 +60,37 @@ def random_move(nbh: Any, sol: Solution, rng: Random) -> Move | None:
 
 
 __all__ = ["SampledNeighborhood", "random_move", "sample_moves"]
+
+
+class CompositeNeighborhood:
+    """La unión de varios vecindarios (`composite` en el catálogo, como `hsf::CompositeNeighborhood` en C++): un
+    movimiento es `(k, m)`, el movimiento `m` del vecindario `k`. Una búsqueda local revisa así todos los operadores
+    en el mismo paso, sin que ningún componente lo sepa."""
+
+    def __init__(self, subs: list):
+        self.subs = list(subs)
+        if any(callable(getattr(n, "estimate", None)) for n in self.subs):
+            self.estimate = self._estimate
+
+    def moves(self, sol):
+        for k, n in enumerate(self.subs):
+            for m in n.moves(sol):
+                yield (k, m)
+
+    def apply(self, sol, mv):
+        k, m = mv
+        return self.subs[k].apply(sol, m)
+
+    def delta(self, sol, mv):
+        k, m = mv
+        return self.subs[k].delta(sol, m)
+
+    def inverse(self, mv):
+        k, m = mv
+        inv = getattr(self.subs[k], "inverse", None)
+        return (k, inv(m)) if inv is not None else mv
+
+    def _estimate(self, sol, mv):
+        k, m = mv
+        est = getattr(self.subs[k], "estimate", None)
+        return est(sol, m) if est is not None else self.subs[k].delta(sol, m)

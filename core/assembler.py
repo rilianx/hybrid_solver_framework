@@ -25,7 +25,7 @@ from core.component import ComponentRegistry, ComponentSpec
 from core.skeleton import RunResult
 from skeletons.fix_and_optimize import build_fix_and_optimize, run_fix_and_optimize
 from skeletons.grasp import build_grasp, run_grasp
-from skeletons.ils import build_ils, hill_climb
+from skeletons.ils import RelativeAnnealingAcceptance, build_ils, hill_climb
 from skeletons.lns_mip import build_lns_mip, run_lns_mip
 from skeletons.local_branching import build_local_branching, run_local_branching
 from skeletons.mip_perturbation import build_mip_perturbation, run_mip_perturbation
@@ -73,6 +73,9 @@ SKELETONS: dict[str, SkeletonDef] = {
             "ls_strategy": {"type": "cat", "values": ["first", "best"]},
             "ls_time_share": {"type": "float", "range": [0.02, 0.3]},
             "ls_sample": {"type": "int", "range": [4, 256], "log": True, "default": 32},
+            # aceptación: solo si mejora, o por recocido relativo al objetivo (skeletons/ils.py)
+            "accept": {"type": "cat", "values": ["better", "anneal"]},
+            "T_rel": {"type": "float", "range": [1e-4, 0.05], "log": True, "default": 0.005},
         },
     ),
     "LNS_MIP": SkeletonDef(
@@ -256,7 +259,9 @@ class Assembler:
                 pert = self._component(config, "perturbation", skeleton, P)
                 ls = hill_climb(P, nbh, strategy=sp("ls_strategy"), max_seconds=budget * sp("ls_time_share"),
                                 sample_size=sp("ls_sample"))
-                sk = build_ils(P, constructor, ls, pert, BetterAcceptance(), MaxTimeStop(budget), strength=sp("strength"))
+                acc = (RelativeAnnealingAcceptance(sp("T_rel"), budget, Random(rng.getrandbits(32))) if sp("accept") == "anneal"
+                       else BetterAcceptance())
+                sk = build_ils(P, constructor, ls, pert, acc, MaxTimeStop(budget), strength=sp("strength"))
                 return sk.run(inst, rng)
             if skeleton == "LNS_MIP":
                 destr = self._component(config, "destruction", skeleton, P)
@@ -287,7 +292,7 @@ class Assembler:
                 others = [
                     spec.make(P, **{p_: config[f"{spec.name}.{p_}"] for p_ in spec.params if f"{spec.name}.{p_}" in config})
                     for spec in self.registry.compatible("neighborhood", skeleton)
-                    if spec.name != config["neighborhood"]
+                    if spec.name not in (config["neighborhood"], "composite")
                 ]
                 sk = build_vns(P, constructor, [ls_nbh] + others, MaxTimeStop(budget),
                                shake_strength=sp("shake_strength"), ls_max_seconds=budget * sp("ls_time_share"),

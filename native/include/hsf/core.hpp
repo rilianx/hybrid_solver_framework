@@ -35,8 +35,9 @@
 
 namespace hsf {
 
-// Un movimiento: hasta 6 enteros (máquina, trabajos, posiciones, ...). Los que sobran quedan en 0.
-using Move = std::array<int, 6>;
+// Un movimiento: hasta 6 enteros (máquina, trabajos, posiciones, ...); los que sobran quedan en 0. El séptimo
+// (m[6]) es del framework (el vecindario compuesto anota ahí de qué vecindario viene): un componente no lo usa.
+using Move = std::array<int, 7>;
 
 struct Rng {
     std::mt19937_64 g;
@@ -113,6 +114,41 @@ struct Neighborhood {
             for (int i = 0; i < k; ++i) std::swap(out[i], out[i + rng.below((int)out.size() - i)]);
             out.resize(k);
         }
+    }
+};
+
+// La unión de varios vecindarios (`composite` en el catálogo): sus movimientos juntos, cada uno marcado en m[6] con
+// el vecindario del que viene. Así una búsqueda local revisa todos los operadores en el mismo paso (como la búsqueda
+// local granular de los mejores algoritmos de ruteo), sin que ningún componente lo sepa.
+template <class M>
+struct CompositeNeighborhood : Neighborhood<M> {
+    using Sol = typename M::Solution;
+    std::vector<std::unique_ptr<Neighborhood<M>>> subs;
+    std::vector<Move> buf;
+    explicit CompositeNeighborhood(std::vector<std::unique_ptr<Neighborhood<M>>> s) : subs(std::move(s)) {}
+    static Move own(Move m) { m[6] = 0; return m; }
+    Neighborhood<M>& of(const Move& m) { return *subs[m[6]]; }
+    void moves(const Sol& s, std::vector<Move>& out) override {
+        for (size_t k = 0; k < subs.size(); ++k) {
+            buf.clear();
+            subs[k]->moves(s, buf);
+            for (Move m : buf) m[6] = (int)k, out.push_back(m);
+        }
+    }
+    Sol apply(const Sol& s, const Move& m) override { return of(m).apply(s, own(m)); }
+    double delta(const Sol& s, const Move& m) override { return of(m).delta(s, own(m)); }
+    Move tabu_key(const Move& m) override {
+        Move t = of(m).tabu_key(own(m));
+        t[6] = m[6];
+        return t;
+    }
+    bool has_estimate() const override {
+        for (auto& n : subs) if (n->has_estimate()) return true;
+        return false;
+    }
+    double estimate(const Sol& s, const Move& m) override {
+        auto& n = of(m);
+        return n.has_estimate() ? n.estimate(s, own(m)) : n.delta(s, own(m));
     }
 };
 
@@ -213,6 +249,11 @@ struct Catalog {
         throw std::invalid_argument("constructor desconocido: " + name);
     }
     std::unique_ptr<Neighborhood<M>> neighborhood(const std::string& name, const M& m, const Config& cfg) const {
+        if (name == "composite" && !neighborhoods.count(name)) {  // todos los vecindarios del catálogo a la vez
+            std::vector<std::unique_ptr<Neighborhood<M>>> subs;
+            for (auto& [n, make] : neighborhoods) subs.push_back(make(m, cfg.scoped(n)));
+            return std::make_unique<CompositeNeighborhood<M>>(std::move(subs));
+        }
         auto it = neighborhoods.find(name);
         if (it == neighborhoods.end()) throw std::invalid_argument("vecindario desconocido: " + name);
         return it->second(m, cfg.scoped(name));
@@ -511,7 +552,18 @@ Result<M> solve(const Catalog<M>& cat, const M& model, const Config& cfg, const 
             }
             return true;
         };
-        return trajectory(model, start, budget, gen, better, none);
+        // `ILS.accept`: "better" (solo si mejora) o "anneal": Metropolis con T = ILS.T_rel · f actual, que baja al 1 % al
+        // final del presupuesto (skeletons/ils.py, RelativeAnnealingAcceptance)
+        bool anneal = cfg.text("ILS.accept", "better") == "anneal";
+        double T_rel = cfg.get("ILS.T_rel", 0.005), T = T_rel;
+        auto accept = [&](double fc, double fn) {
+            if (!anneal) return fn < fc;  // como BetterAcceptance
+            double d = fn - fc;
+            if (d <= 0) return true;
+            return T > 0 && rng.uniform() < std::exp(-d / (T * std::abs(fc)));
+        };
+        auto cool = [&](double elapsed) { T = T_rel * std::pow(0.01, std::min(1.0, elapsed / budget)); };
+        return trajectory(model, start, budget, gen, accept, cool);
     }
     if (sk == "VNS") {
         std::vector<std::unique_ptr<Neighborhood<M>>> ns;

@@ -41,7 +41,7 @@ class NativeRunner:
                     full.setdefault(f"{name}.{p}", v)
         shake = []
         if sk == "VNS":
-            shake = [s.name for s in A.registry.compatible("neighborhood", sk) if s.name != config["neighborhood"]]
+            shake = [s.name for s in A.registry.compatible("neighborhood", sk) if s.name not in (config["neighborhood"], "composite")]
         return full, shake
 
     def assemble(self, config: dict[str, Any]):
