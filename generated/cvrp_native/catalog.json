@@ -1,0 +1,393 @@
+[
+ {
+  "name": "demand_weighted_insertion_ratio",
+  "slot": "greedy_score",
+  "path": "generated/cvrp_native/greedy_score/demand_weighted_insertion_ratio_r1.hpp",
+  "component": {
+   "name": "demand_weighted_insertion_ratio",
+   "slot": "greedy_score",
+   "params": {
+    "alpha": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.5
+     ]
+    },
+    "open_factor": {
+     "type": "float",
+     "range": [
+      1.0,
+      3.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "farthest_first_route_filling",
+  "slot": "greedy_score",
+  "path": "generated/cvrp_native/greedy_score/farthest_first_route_filling_r1.hpp",
+  "component": {
+   "name": "farthest_first_route_filling",
+   "slot": "greedy_score",
+   "params": {
+    "beta": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "angular_cohesion_insertion",
+  "slot": "greedy_score",
+  "path": "generated/cvrp_native/greedy_score/angular_cohesion_insertion_r1.hpp",
+  "component": {
+   "name": "angular_cohesion_insertion",
+   "slot": "greedy_score",
+   "params": {
+    "ang_w": {
+     "type": "float",
+     "range": [
+      0.0,
+      2.0
+     ]
+    },
+    "open_factor": {
+     "type": "float",
+     "range": [
+      1.0,
+      3.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "granular_relocate_customer",
+  "slot": "neighborhood",
+  "path": "generated/cvrp_native/neighborhood/granular_relocate_customer_r1.hpp",
+  "component": {
+   "name": "granular_relocate_customer",
+   "slot": "neighborhood",
+   "params": {
+    "k_neighbors": {
+     "type": "int",
+     "range": [
+      3,
+      30
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "granular_two_opt_star_tail_exchange",
+  "slot": "neighborhood",
+  "path": "generated/cvrp_native/neighborhood/granular_two_opt_star_tail_exchange_r1.hpp",
+  "component": {
+   "name": "granular_two_opt_star_tail_exchange",
+   "slot": "neighborhood",
+   "params": {
+    "k_neighbors": {
+     "type": "int",
+     "range": [
+      3,
+      30
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "granular_cross_exchange_segments",
+  "slot": "neighborhood",
+  "path": "generated/cvrp_native/neighborhood/granular_cross_exchange_segments_r1.hpp",
+  "component": {
+   "name": "granular_cross_exchange_segments",
+   "slot": "neighborhood",
+   "params": {
+    "k_neighbors": {
+     "type": "int",
+     "range": [
+      3,
+      20
+     ]
+    },
+    "max_seg": {
+     "type": "int",
+     "range": [
+      1,
+      4
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "radial_ruin_greedy_blink_recreate",
+  "slot": "perturbation",
+  "path": "generated/cvrp_native/perturbation/radial_ruin_greedy_blink_recreate_r1.hpp",
+  "component": {
+   "name": "radial_ruin_greedy_blink_recreate",
+   "slot": "perturbation",
+   "params": {
+    "remove_per_strength": {
+     "type": "float",
+     "range": [
+      1.0,
+      12.0
+     ]
+    },
+    "max_frac": {
+     "type": "float",
+     "range": [
+      0.05,
+      0.6
+     ]
+    },
+    "blink": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.2
+     ]
+    },
+    "order": {
+     "type": "cat",
+     "values": [
+      "random",
+      "demand",
+      "far",
+      "near"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS"
+   ]
+  }
+ },
+ {
+  "name": "neighbor_guided_random_move_walk",
+  "slot": "perturbation",
+  "path": "generated/cvrp_native/perturbation/neighbor_guided_random_move_walk_r2.hpp",
+  "component": {
+   "name": "neighbor_guided_random_move_walk",
+   "slot": "perturbation",
+   "params": {
+    "moves_per_strength": {
+     "type": "float",
+     "range": [
+      1.0,
+      5.0
+     ]
+    },
+    "neighbor_k": {
+     "type": "int",
+     "range": [
+      3,
+      30
+     ]
+    },
+    "max_seg": {
+     "type": "int",
+     "range": [
+      2,
+      6
+     ]
+    },
+    "p_relocate": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "p_swap": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "p_cross": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS"
+   ]
+  }
+ },
+ {
+  "name": "route_cluster_merge_prins_resplit",
+  "slot": "perturbation",
+  "path": "generated/cvrp_native/perturbation/route_cluster_merge_prins_resplit_r2.hpp",
+  "component": {
+   "name": "route_cluster_merge_prins_resplit",
+   "slot": "perturbation",
+   "params": {
+    "routes_per_strength": {
+     "type": "float",
+     "range": [
+      0.5,
+      4.0
+     ]
+    },
+    "orient": {
+     "type": "cat",
+     "values": [
+      "nn",
+      "random",
+      "mixed"
+     ]
+    },
+    "cut_penalty": {
+     "type": "float",
+     "range": [
+      0.2,
+      3.0
+     ]
+    },
+    "split_noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.5
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS"
+   ]
+  }
+ },
+ {
+  "name": "successor_chain_relink",
+  "slot": "relink",
+  "path": "generated/cvrp_native/relink/successor_chain_relink_r1.hpp",
+  "component": {
+   "name": "successor_chain_relink",
+   "slot": "relink",
+   "params": {
+    "link_weight": {
+     "type": "float",
+     "range": [
+      0.2,
+      5.0
+     ]
+    },
+    "merge_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "route_transplant_relink",
+  "slot": "relink",
+  "path": "generated/cvrp_native/relink/route_transplant_relink_r1.hpp",
+  "component": {
+   "name": "route_transplant_relink",
+   "slot": "relink",
+   "params": {
+    "greedy_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "arc_relocate_relink",
+  "slot": "relink",
+  "path": "generated/cvrp_native/relink/arc_relocate_relink_r1.hpp",
+  "component": {
+   "name": "arc_relocate_relink",
+   "slot": "relink",
+   "params": {
+    "strong_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "allow_new_route": {
+     "type": "int",
+     "range": [
+      0,
+      1
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ }
+]
