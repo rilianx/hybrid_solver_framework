@@ -91,8 +91,10 @@ def write_irace_scenario(
            + (f"export HSF_SKELETONS={shlex.quote(' '.join(skeletons))}\n" if skeletons else "")
            + ("export HSF_NATIVE=1\n" if native else "")
            + (f"export HSF_OBJECTIVE={objective}\n" if objective != "raw" else "")
-           # las mismas rutas de módulos que el tuner: en el CI, el target-runner lanzado por irace no encontraba
-           # paquetes instalados (pulp) aun con el mismo intérprete
+           # el entorno del tuner: irace (R) cambia LD_LIBRARY_PATH y el intérprete cargaba otra libpython (en el CI,
+           # `_ctypes: undefined symbol`, y por eso 'No module named pulp'); y las mismas rutas de módulos
+           + (f"export LD_LIBRARY_PATH={shlex.quote(os.environ['LD_LIBRARY_PATH'])}${{LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}}\n"
+              if os.environ.get("LD_LIBRARY_PATH") else "")
            + f"export PYTHONPATH={shlex.quote(os.pathsep.join(p for p in sys.path if p))}\n")
     root = Path(os.path.relpath(Path.cwd().resolve(), out.resolve())).as_posix()
     runner.write_text(
