@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 NATIVE_SKELETONS_FOR_SLOT = {"constructor": ["SA", "ILS", "TS", "VNS", "PR"], "greedy_score": ["SA", "ILS", "TS", "VNS", "PR"],
-                             "neighborhood": ["SA", "ILS", "TS", "VNS", "PR"], "perturbation": ["ILS"], "relink": ["PR"]}
+                             "neighborhood": ["SA", "ILS", "TS", "VNS", "PR"], "perturbation": ["ILS", "PR"], "relink": ["PR"]}
 
 
 def run_check(request: dict, timeout: float = 900.0) -> dict:
@@ -73,7 +73,7 @@ def bench_solutions(pack, n: int = 6, seed: int = 4242):
 
     gen = importlib.import_module(pack.native_module).GENERATION
     mip = importlib.import_module(gen["mip_parts"])
-    inst = pack.make_instances(1, seed, pack.parse_size(pack.default_size))[0]
+    inst = pack.make_instances(1, seed, pack.parse_size(pack.bench_size or pack.default_size))[0]
     return inst, [mip.random_solution(inst, Random(s)) for s in range(n)]
 
 

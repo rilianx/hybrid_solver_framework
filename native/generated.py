@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -118,7 +119,11 @@ def build_components(gen: dict, components: list[NativeComponent], debug: bool =
     src_dir = BUILD / "src"
     src_dir.mkdir(parents=True, exist_ok=True)
     src = src_dir / f"{name}.cpp"
-    src.write_text(module_source(gen, components, name))
+    text = module_source(gen, components, name)
+    if not src.exists() or src.read_text() != text:  # de una vez: otro proceso puede estar leyéndolo (ver native.build)
+        tmp = src.with_name(f".{src.name}.{os.getpid()}.tmp")
+        tmp.write_text(text)
+        os.replace(tmp, src)
     path = build(name, src, extra_flags=DEBUG_FLAGS if debug else None, include_dirs=[gen["dir"]], timeout=timeout)
     return path, name
 

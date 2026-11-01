@@ -173,7 +173,7 @@ def optimize_one(client, pack, gen: dict, ws: Path, comp: NativeComponent, comps
 
 def optimize_native(client, pack, workspace: str | Path, slots=("neighborhood",), rounds: int = 3,
                     min_speedup: float = 1.5, verbose: bool = True, deadline: float | None = None,
-                    passes: int = 1, later_speedup: float = 1.2) -> dict:
+                    passes: int = 1, later_speedup: float = 1.2, new_only: bool = False) -> dict:
     """Pasadas encadenadas: en cada una, los componentes que mejoraron en la anterior se vuelven a optimizar con su
     versión nueva como oráculo (pidiendo `later_speedup` en vez de `min_speedup`); el resto ya no. Los componentes del
     mismo slot que ya se optimizaron se muestran como referencia."""
@@ -183,7 +183,7 @@ def optimize_native(client, pack, workspace: str | Path, slots=("neighborhood",)
     out: dict = {}
     comps = _latest(ws)
     inst, sols = bench_solutions(pack)
-    active = [c for c in comps if c.slot in slots]
+    active = [c for c in comps if c.slot in slots and not (new_only and _round(c.path) > 1)]  # new_only: los no optimizados
     for p in range(1, passes + 1):
         if not active:
             break
@@ -226,11 +226,12 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--max-minutes", type=float, default=40.0)
     ap.add_argument("--passes", type=int, default=3, help="pasadas encadenadas (los que mejoran vuelven a optimizarse)")
     ap.add_argument("--later-speedup", type=float, default=1.2, help="mejora exigida desde la segunda pasada")
+    ap.add_argument("--new-only", action="store_true", help="solo los componentes que nunca se optimizaron (ronda 1)")
     args = ap.parse_args(argv)
     client = make_client(args.provider, args.model)
     out = optimize_native(client, base_pack(args.problem), args.workspace, tuple(args.slots), args.rounds,
                           args.min_speedup, deadline=time.monotonic() + 60 * args.max_minutes, passes=args.passes,
-                          later_speedup=args.later_speedup)
+                          later_speedup=args.later_speedup, new_only=args.new_only)
     path = Path(args.workspace) / "optimize_stats.json"
     path.write_text(json.dumps(out, indent=2, ensure_ascii=False))
     print(json.dumps({k: {kk: vv for kk, vv in v.items() if kk != "rejections"} if isinstance(v, dict) else v

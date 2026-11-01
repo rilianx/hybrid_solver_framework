@@ -25,7 +25,7 @@ from core.component import ComponentRegistry, ComponentSpec
 from core.skeleton import RunResult
 from skeletons.fix_and_optimize import build_fix_and_optimize, run_fix_and_optimize
 from skeletons.grasp import build_grasp, run_grasp
-from skeletons.ils import build_ils, hill_climb
+from skeletons.ils import RelativeAnnealingAcceptance, build_ils, hill_climb
 from skeletons.lns_mip import build_lns_mip, run_lns_mip
 from skeletons.local_branching import build_local_branching, run_local_branching
 from skeletons.mip_perturbation import build_mip_perturbation, run_mip_perturbation
@@ -52,6 +52,15 @@ class SkeletonDef:
     params: dict[str, dict[str, Any]] = field(default_factory=dict)
 
 
+# Peso de las violaciones durante la búsqueda (solo en C++, `PenaltyControl` en native/include/hsf/core.hpp): el
+# multiplicador inicial del peso del modelo y si se ajusta para visitar una fracción `pen_target` de soluciones factibles
+# (como HGS). Con los valores por defecto (1, no) la búsqueda es la de siempre.
+PENALTY_PARAMS = {
+    "pen_scale": {"type": "float", "range": [1e-4, 1.0], "log": True, "default": 1.0},
+    "pen_adapt": {"type": "cat", "values": ["no", "yes"]},
+    "pen_target": {"type": "float", "range": [0.05, 0.5], "default": 0.2},
+}
+
 SKELETONS: dict[str, SkeletonDef] = {
     "SA": SkeletonDef(
         "SA", ("constructor", "neighborhood"),
@@ -64,6 +73,7 @@ SKELETONS: dict[str, SkeletonDef] = {
             "iters_per_T": {"type": "int", "range": [1, 50]},
             # solo en C++: evaluar el candidato completo o decidir con el delta del vecindario (ver native/include/hsf/core.hpp)
             "eval": {"type": "cat", "values": ["objective", "delta"]},
+            **PENALTY_PARAMS,
         },
     ),
     "ILS": SkeletonDef(
@@ -73,6 +83,10 @@ SKELETONS: dict[str, SkeletonDef] = {
             "ls_strategy": {"type": "cat", "values": ["first", "best"]},
             "ls_time_share": {"type": "float", "range": [0.02, 0.3]},
             "ls_sample": {"type": "int", "range": [4, 256], "log": True, "default": 32},
+            # aceptación: solo si mejora, o por recocido relativo al objetivo (skeletons/ils.py)
+            "accept": {"type": "cat", "values": ["better", "anneal"]},
+            "T_rel": {"type": "float", "range": [1e-4, 0.05], "log": True, "default": 0.005},
+            **PENALTY_PARAMS,
         },
     ),
     "LNS_MIP": SkeletonDef(
@@ -99,11 +113,12 @@ SKELETONS: dict[str, SkeletonDef] = {
             "estimate_top": {"type": "int", "range": [0, 10], "default": 0},
             "elite_size": {"type": "int", "range": [0, 8], "default": 0},
             "stall": {"type": "int", "range": [20, 5000], "log": True, "default": 500},
+            **PENALTY_PARAMS,
         },
     ),
     "PR": SkeletonDef(
         # población de élite con path relinking y mejora tabú (skeletons/pr.py); `relink` conecta dos soluciones
-        "PR", ("constructor", "neighborhood", "relink"),
+        "PR", ("constructor", "neighborhood", "relink"), optional_slots=("perturbation",),
         params={
             "pop_size": {"type": "int", "range": [4, 30], "default": 10},
             "ts_iters": {"type": "int", "range": [100, 20000], "log": True, "default": 2000},
@@ -113,6 +128,11 @@ SKELETONS: dict[str, SkeletonDef] = {
             "path_cands": {"type": "int", "range": [1, 8], "default": 2},
             "band": {"type": "float", "range": [0.05, 0.5], "default": 0.25},
             "init_moves": {"type": "int", "range": [1, 100], "log": True, "default": 20},
+            # la mejora: tabú (los de arriba) o ILS con recocido (con la perturbación; ts_iters = iteraciones de ILS)
+            "improve": {"type": "cat", "values": ["ts", "ils"]},
+            "strength": {"type": "int", "range": [1, 6], "default": 1},
+            "ls_sample": {"type": "int", "range": [4, 256], "log": True, "default": 64},
+            "T_rel": {"type": "float", "range": [1e-4, 0.05], "log": True, "default": 0.005},
         },
     ),
     "VNS": SkeletonDef(
@@ -123,6 +143,7 @@ SKELETONS: dict[str, SkeletonDef] = {
             "shake_strength": {"type": "int", "range": [1, 4]},
             "ls_time_share": {"type": "float", "range": [0.02, 0.3]},
             "ls_sample": {"type": "int", "range": [4, 256], "log": True, "default": 32},
+            **PENALTY_PARAMS,
         },
     ),
     "GRASP": SkeletonDef(
@@ -256,7 +277,9 @@ class Assembler:
                 pert = self._component(config, "perturbation", skeleton, P)
                 ls = hill_climb(P, nbh, strategy=sp("ls_strategy"), max_seconds=budget * sp("ls_time_share"),
                                 sample_size=sp("ls_sample"))
-                sk = build_ils(P, constructor, ls, pert, BetterAcceptance(), MaxTimeStop(budget), strength=sp("strength"))
+                acc = (RelativeAnnealingAcceptance(sp("T_rel"), budget, Random(rng.getrandbits(32))) if sp("accept") == "anneal"
+                       else BetterAcceptance())
+                sk = build_ils(P, constructor, ls, pert, acc, MaxTimeStop(budget), strength=sp("strength"))
                 return sk.run(inst, rng)
             if skeleton == "LNS_MIP":
                 destr = self._component(config, "destruction", skeleton, P)
@@ -279,15 +302,17 @@ class Assembler:
             if skeleton == "PR":
                 nbh = self._component(config, "neighborhood", skeleton, P)
                 rel = self._component(config, "relink", skeleton, P)
+                pert = self._component(config, "perturbation", skeleton, P, required=False) if sp("improve") == "ils" else None
                 return run_pr(P, constructor, nbh, rel, inst, rng, budget, pop_size=sp("pop_size"), ts_iters=sp("ts_iters"),
                               tenure=sp("tenure"), candidate_size=sp("candidate_size"), estimate_top=sp("estimate_top"),
-                              path_cands=sp("path_cands"), band=sp("band"), init_moves=sp("init_moves"))
+                              path_cands=sp("path_cands"), band=sp("band"), init_moves=sp("init_moves"),
+                              perturbation=pert, strength=sp("strength"), ls_sample=sp("ls_sample"), T_rel=sp("T_rel"))
             if skeleton == "VNS":
                 ls_nbh = self._component(config, "neighborhood", skeleton, P)
                 others = [
                     spec.make(P, **{p_: config[f"{spec.name}.{p_}"] for p_ in spec.params if f"{spec.name}.{p_}" in config})
                     for spec in self.registry.compatible("neighborhood", skeleton)
-                    if spec.name != config["neighborhood"]
+                    if spec.name not in (config["neighborhood"], "composite")
                 ]
                 sk = build_vns(P, constructor, [ls_nbh] + others, MaxTimeStop(budget),
                                shake_strength=sp("shake_strength"), ls_max_seconds=budget * sp("ls_time_share"),

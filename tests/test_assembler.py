@@ -82,7 +82,7 @@ def test_generated_component_enters_catalog_and_space(inst, tmp_path):
     # grupo que incluye SA ofrece ambos
     nodes = [n for n in assembler.config_space().nodes if n.config_key == "neighborhood"]
     sa = next(n for n in nodes if "SA" in n.conditions[0].values)
-    assert set(sa.values) == {"setup_flip", "shift_setup_earlier"}
+    assert set(sa.values) == {"setup_flip", "shift_setup_earlier", "composite"}  # composite: los dos a la vez
     assert all("shift_setup_earlier" not in n.values for n in nodes if "SA" not in n.conditions[0].values)
 
     config = assembler.default_config("SA", choices={"neighborhood": "shift_setup_earlier"})

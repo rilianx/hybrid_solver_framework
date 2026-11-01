@@ -12,6 +12,7 @@ reparación MIP, que es la puerta de entrada natural a LNS-MIP: ver
 
 from __future__ import annotations
 
+import math
 import time
 from random import Random
 from typing import Callable
@@ -77,6 +78,22 @@ def hill_climb(
         return current
 
     return _local_search
+
+
+class RelativeAnnealingAcceptance:
+    """Aceptación de ILS por recocido (como en SISR, Christiaens y Vanden Berghe, 2020): siempre si mejora; si no, con
+    probabilidad exp(-Δ / T), con T = `T_rel` · |f actual| al comienzo, que baja hasta el 1 % al final del presupuesto.
+    Relativa al objetivo, el mismo `T_rel` sirve en instancias de cualquier escala."""
+
+    def __init__(self, T_rel: float, budget: float, rng: Random):
+        self.T_rel, self.budget, self.rng = T_rel, budget, rng
+
+    def accept(self, f_cur: float, f_cand: float, state: SearchState) -> bool:
+        delta = f_cand - f_cur
+        if delta <= 0:
+            return True
+        T = self.T_rel * abs(f_cur) * 0.01 ** min(1.0, state.elapsed_time / max(self.budget, 1e-9))
+        return T > 0 and self.rng.random() < math.exp(-delta / T)
 
 
 def build_ils(

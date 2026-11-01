@@ -228,3 +228,16 @@ def test_a_generated_relink_runs_in_pr(pack, tmp_path):
     inst = pack.make_instances(1, 0, pack.parse_size("5x4"))[0]
     res = A.assemble(cfg)(inst, Random(0), 0.3)
     assert pack.problem_factory(inst).is_feasible(res.best_solution)
+
+
+def test_generating_a_slot_again_shows_the_existing_catalog(pack, tmp_path):
+    from llm import ScriptedClient
+    from llm.native_generator import generate_native_slot, write_catalog
+
+    acc, _ = generate_native_slot(ScriptedClient(responses=[SWAP]), pack, "neighborhood", 1, tmp_path, verbose=False)
+    write_catalog(tmp_path, acc)
+    again = ScriptedClient(responses=[SWAP])  # el mismo nombre otra vez: se descarta, ya está en el catálogo
+    acc2, stats = generate_native_slot(again, pack, "neighborhood", 1, tmp_path, verbose=False)
+    prompt = again.calls[0][1]
+    assert "YA están en el catálogo" in prompt and "struct AdjacentSwap" in prompt
+    assert acc2 == [] and stats.parsed == 0

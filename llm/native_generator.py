@@ -114,7 +114,8 @@ def _model_type(gen: dict) -> str:
     return gen["model_type"].split("::")[-1]
 
 
-def generation_prompt(pack, gen: dict, slot: str, n: int, avoid: list[str]) -> str:
+def generation_prompt(pack, gen: dict, slot: str, n: int, avoid: list[str],
+                      existing: list[NativeComponent] | None = None) -> str:
     spec = pack.make_model_spec()
     model = (Path(gen["dir"]) / gen["model_header"]).read_text()
     T = _model_type(gen)
@@ -127,6 +128,11 @@ def generation_prompt(pack, gen: dict, slot: str, n: int, avoid: list[str]) -> s
         f"\n# Problema: {spec.name}\n{spec.description}",
         f"\n## El modelo C++ (`{gen['model_type']}`; tu componente recibe una referencia const a él)\n```cpp\n{model}\n```",
     ]
+    if existing:
+        parts.append("\n# Componentes que YA están en el catálogo para este slot\nEl tuner los combina con los tuyos. Aporta ideas "
+                     "que cubran lo que estos no cubren (por ejemplo, partes o aspectos de la solución que ninguno cambia), "
+                     "con nombres distintos.")
+        parts += [f"```cpp\n{c.source}\n```" for c in existing]
     if avoid:
         parts.append(f"\nYa existen componentes llamados {avoid} en este slot; usa ideas y nombres distintos.")
     parts.append(f"\nDevuelve exactamente {n} bloques ```cpp```.")
@@ -174,6 +180,19 @@ def _compile_feedback(err: str, name: str) -> str:
             + "\n".join(own[:40] or lines[-40:]))
 
 
+def _existing(ws: Path, slot: str) -> list[NativeComponent]:
+    path = ws / "catalog.json"
+    if not path.exists():
+        return []
+    out = []
+    for e in json.loads(path.read_text()):
+        if e["slot"] == slot:
+            c = parse_component(Path(e["path"]).read_text())
+            c.name, c.slot, c.component, c.path = e["name"], e["slot"], dict(e["component"]), Path(e["path"])
+            out.append(c)
+    return out
+
+
 def generate_native_slot(client, pack, slot: str, n: int, workspace: str | Path, max_rounds: int = 3,
                          verbose: bool = True) -> tuple[list[NativeComponent], NativeStats]:
     gen = importlib.import_module(pack.native_module).GENERATION
@@ -192,8 +211,9 @@ def generate_native_slot(client, pack, slot: str, n: int, workspace: str | Path,
             stats.tokens.add(used)
         return text
 
-    comps, errors = parse_response(ask(generation_prompt(pack, gen, slot, n, [])))
-    comps = [c for c in comps if c.slot == slot]
+    existing = _existing(ws, slot)  # lo que ya está en el catálogo del workspace: se muestra y cuenta para la diversidad
+    comps, errors = parse_response(ask(generation_prompt(pack, gen, slot, n, [], existing)))
+    comps = [c for c in comps if c.slot == slot and c.name not in {e.name for e in existing}]
     stats.parsed = len(comps)
     if verbose:
         print(f"[{slot}] ronda 1: {len(comps)} componentes" + (f"; sin leer: {errors}" if errors else ""))
@@ -202,7 +222,7 @@ def generate_native_slot(client, pack, slot: str, n: int, workspace: str | Path,
         comp, rnd = pending.pop(0)
         comp.path = ws / slot / f"{comp.name}_r{rnd}.hpp"
         comp.path.write_text(comp.source)
-        same = [c for c in accepted if c.slot == slot]
+        same = existing + [c for c in accepted if c.slot == slot]
         try:
             so, module = build_components(gen, same + [comp], debug=True)
             result = run_check({"problem": pack.name, "so": str(so), "module": module, "candidate": comp.name,

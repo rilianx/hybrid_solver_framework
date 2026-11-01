@@ -38,7 +38,32 @@ def build_registry(pack: ProblemPack, generated: list[GeneratedComponent] | None
         register_generated(registry, generated)
     for spec in list(registry.for_slot("greedy_score")):
         registry.register(greedy_constructor_spec(spec, pack.constructor_skeletons))
+    composite = composite_spec(registry.for_slot("neighborhood"))
+    if composite is not None:
+        registry.register(composite)
     return registry
+
+
+COMPOSITE = "composite"
+
+
+def composite_spec(nbhs: list[ComponentSpec]) -> ComponentSpec | None:
+    """`composite`: todos los vecindarios del catálogo a la vez (`core.neighborhood.CompositeNeighborhood`; en C++,
+    `hsf::CompositeNeighborhood`), en los esqueletos que todos comparten. Cada vecindario con sus parámetros por
+    defecto. Con menos de dos vecindarios no hay nada que unir."""
+    from core.neighborhood import CompositeNeighborhood
+
+    nbhs = [s for s in nbhs if s.name != COMPOSITE]
+    if len(nbhs) < 2:
+        return None
+    common = set(nbhs[0].compatible_skeletons)
+    for s in nbhs[1:]:
+        common &= set(s.compatible_skeletons)
+    skeletons = [k for k in nbhs[0].compatible_skeletons if k in common]
+    if not skeletons:
+        return None
+    return ComponentSpec.from_dict({"name": COMPOSITE, "slot": "neighborhood", "compatible_skeletons": skeletons, "params": {}},
+                                   lambda problem: CompositeNeighborhood([s.make(problem) for s in nbhs]))
 
 
 def greedy_constructor_spec(score_spec: ComponentSpec, skeletons: list[str]) -> ComponentSpec:

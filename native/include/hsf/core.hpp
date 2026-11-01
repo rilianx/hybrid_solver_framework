@@ -31,12 +31,15 @@
 #include <random>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace hsf {
 
-// Un movimiento: hasta 6 enteros (máquina, trabajos, posiciones, ...). Los que sobran quedan en 0.
-using Move = std::array<int, 6>;
+// Un movimiento: hasta 6 enteros (máquina, trabajos, posiciones, ...); los que sobran quedan en 0. El séptimo
+// (m[6]) es del framework (el vecindario compuesto anota ahí de qué vecindario viene): un componente no lo usa.
+using Move = std::array<int, 7>;
 
 struct Rng {
     std::mt19937_64 g;
@@ -113,6 +116,41 @@ struct Neighborhood {
             for (int i = 0; i < k; ++i) std::swap(out[i], out[i + rng.below((int)out.size() - i)]);
             out.resize(k);
         }
+    }
+};
+
+// La unión de varios vecindarios (`composite` en el catálogo): sus movimientos juntos, cada uno marcado en m[6] con
+// el vecindario del que viene. Así una búsqueda local revisa todos los operadores en el mismo paso (como la búsqueda
+// local granular de los mejores algoritmos de ruteo), sin que ningún componente lo sepa.
+template <class M>
+struct CompositeNeighborhood : Neighborhood<M> {
+    using Sol = typename M::Solution;
+    std::vector<std::unique_ptr<Neighborhood<M>>> subs;
+    std::vector<Move> buf;
+    explicit CompositeNeighborhood(std::vector<std::unique_ptr<Neighborhood<M>>> s) : subs(std::move(s)) {}
+    static Move own(Move m) { m[6] = 0; return m; }
+    Neighborhood<M>& of(const Move& m) { return *subs[m[6]]; }
+    void moves(const Sol& s, std::vector<Move>& out) override {
+        for (size_t k = 0; k < subs.size(); ++k) {
+            buf.clear();
+            subs[k]->moves(s, buf);
+            for (Move m : buf) m[6] = (int)k, out.push_back(m);
+        }
+    }
+    Sol apply(const Sol& s, const Move& m) override { return of(m).apply(s, own(m)); }
+    double delta(const Sol& s, const Move& m) override { return of(m).delta(s, own(m)); }
+    Move tabu_key(const Move& m) override {
+        Move t = of(m).tabu_key(own(m));
+        t[6] = m[6];
+        return t;
+    }
+    bool has_estimate() const override {
+        for (auto& n : subs) if (n->has_estimate()) return true;
+        return false;
+    }
+    double estimate(const Sol& s, const Move& m) override {
+        auto& n = of(m);
+        return n.has_estimate() ? n.estimate(s, own(m)) : n.delta(s, own(m));
     }
 };
 
@@ -213,6 +251,11 @@ struct Catalog {
         throw std::invalid_argument("constructor desconocido: " + name);
     }
     std::unique_ptr<Neighborhood<M>> neighborhood(const std::string& name, const M& m, const Config& cfg) const {
+        if (name == "composite" && !neighborhoods.count(name)) {  // todos los vecindarios del catálogo a la vez
+            std::vector<std::unique_ptr<Neighborhood<M>>> subs;
+            for (auto& [n, make] : neighborhoods) subs.push_back(make(m, cfg.scoped(n)));
+            return std::make_unique<CompositeNeighborhood<M>>(std::move(subs));
+        }
         auto it = neighborhoods.find(name);
         if (it == neighborhoods.end()) throw std::invalid_argument("vecindario desconocido: " + name);
         return it->second(m, cfg.scoped(name));
@@ -259,11 +302,60 @@ struct Result {
 };
 
 // El bucle genérico (`core.skeleton.TrajectorySkeleton`): candidato, aceptación, mejor, actualización.
+// Peso de las violaciones durante la búsqueda (como la penalización adaptativa de HGS, Vidal 2012): el esqueleto trabaja
+// sobre una copia del modelo cuyo `penalty` empieza en `SK.pen_scale` veces el original y, con `SK.pen_adapt = yes`, se
+// ajusta para que la fracción de soluciones factibles visitadas se acerque a `SK.pen_target` (sube 20 % si hay menos,
+// baja 15 % si hay más; nunca por encima del original). Al cambiar el peso se reconstruyen los componentes (`rebuild`):
+// un componente puede guardar valores del objetivo de la solución actual. La mejor solución que se devuelve es la mejor
+// FACTIBLE (con un peso bajo, una infactible puede tener menor objetivo); si no hubo ninguna, la de menor objetivo
+// con el peso original. Lo usa el modelo con un miembro `double penalty` (ver `solve`).
+template <class M>
+struct PenaltyControl {
+    M& model;
+    double base, target;
+    bool adapt;
+    std::function<void()> rebuild = [] {};
+    long checks = 0, feasible = 0, iter = 0;
+    bool any_feasible = false;
+    PenaltyControl(M& m, double scale, bool ad, double tg) : model(m), base(m.penalty), target(tg), adapt(ad) {
+        m.penalty = base * scale;
+    }
+    double true_objective(const typename M::Solution& s) {
+        double w = model.penalty;
+        model.penalty = base;
+        double v = model.objective(s);
+        model.penalty = w;
+        return v;
+    }
+    // tras cada iteración, con la solución actual y su objetivo: actualiza la mejor; true si el peso cambió
+    bool observe(const typename M::Solution& s, double f, Result<M>& res) {
+        if (f < res.objective || !any_feasible) {
+            bool feas = model.feasible(s);
+            if (feas && (!any_feasible || f < res.objective)) res.best = s, res.objective = f, any_feasible = true;
+            else if (!any_feasible) {
+                double v = true_objective(s);
+                if (v < res.objective) res.best = s, res.objective = v;
+            }
+        }
+        if (!adapt || ++iter % 8) return false;  // la fracción de factibles se estima cada 8 iteraciones
+        feasible += model.feasible(s);
+        if (++checks < 100) return false;
+        double frac = (double)feasible / checks, w = model.penalty;
+        model.penalty = std::max(base * 1e-6, std::min(base, frac < target ? w * 1.2 : w * 0.85));
+        checks = feasible = 0;
+        if (model.penalty == w) return false;
+        rebuild();
+        return true;
+    }
+};
+
 template <class M, class Gen, class Accept, class Update>
-Result<M> trajectory(const M& model, typename M::Solution sol, double budget, Gen gen, Accept accept, Update update) {
+Result<M> trajectory(const M& model, typename M::Solution sol, double budget, Gen gen, Accept accept, Update update,
+                     PenaltyControl<M>* pen = nullptr) {
     Clock clock;
     double f = model.objective(sol);
     Result<M> res{sol, f, 0, 0.0};
+    if (pen) res.objective = std::numeric_limits<double>::infinity(), pen->observe(sol, f, res);
     double elapsed = 0.0;
     typename M::Solution cand;
     while (elapsed < budget) {
@@ -274,9 +366,10 @@ Result<M> trajectory(const M& model, typename M::Solution sol, double budget, Ge
             if (accept(f, fc)) {
                 sol = cand;
                 f = fc;
-                if (f < res.objective) res.best = sol, res.objective = f;
+                if (!pen && f < res.objective) res.best = sol, res.objective = f;
             }
         }
+        if (pen && pen->observe(sol, f, res)) f = model.objective(sol);  // el peso cambió: el objetivo actual también
         update(elapsed);
         ++res.iterations;
         elapsed = clock.elapsed();
@@ -326,7 +419,7 @@ bool random_move(Neighborhood<M>& nbh, const typename M::Solution& s, Rng& rng, 
 template <class M>
 struct TabuStep {
     using Sol = typename M::Solution;
-    Neighborhood<M>& nbh;
+    Neighborhood<M>* nbh;
     size_t tenure;
     int size, top;
     std::map<Move, int> tabu;
@@ -334,12 +427,13 @@ struct TabuStep {
     size_t head = 0;
     std::vector<std::pair<double, size_t>> order;
 
-    TabuStep(Neighborhood<M>& n, size_t ten, int sz, int tp) : nbh(n), tenure(ten), size(sz), top(n.has_estimate() ? tp : 0) {}
+    TabuStep(Neighborhood<M>& n, size_t ten, int sz, int tp) : nbh(&n), tenure(ten), size(sz), top(n.has_estimate() ? tp : 0) {}
+    void rebind(Neighborhood<M>& n) { nbh = &n, clear(); }
     void clear() { tabu.clear(), queue.clear(), head = 0; }
     bool operator()(const Sol& s, double f, double f_best, Rng& rng, Sol& cand, double& fc) {
-        nbh.sample(s, size, rng, buf);
+        nbh->sample(s, size, rng, buf);
         order.clear();
-        for (size_t i = 0; i < buf.size(); ++i) order.push_back({top > 0 ? nbh.estimate(s, buf[i]) : 0.0, i});
+        for (size_t i = 0; i < buf.size(); ++i) order.push_back({top > 0 ? nbh->estimate(s, buf[i]) : 0.0, i});
         if (top > 0) std::stable_sort(order.begin(), order.end(), [](auto& a, auto& b) { return a.first < b.first; });
         const Move* best = nullptr;
         const Move* best_tabu = nullptr;
@@ -347,7 +441,7 @@ struct TabuStep {
         int exact = 0;
         for (auto& [e, i] : order) {
             const Move& m = buf[i];
-            double d = nbh.delta(s, m);
+            double d = nbh->delta(s, m);
             if (tabu.count(m) && !(f + d < f_best)) {
                 if (d < tabu_d) best_tabu = &m, tabu_d = d;
                 continue;
@@ -357,14 +451,14 @@ struct TabuStep {
         }
         if (!best) best = best_tabu, best_d = tabu_d;
         if (!best) return false;
-        Move key = nbh.tabu_key(*best);
+        Move key = nbh->tabu_key(*best);
         queue.push_back(key);
         ++tabu[key];
         while (queue.size() - head > tenure) {
             auto it = tabu.find(queue[head++]);
             if (it != tabu.end() && --it->second <= 0) tabu.erase(it);
         }
-        cand = nbh.apply(s, *best);
+        cand = nbh->apply(s, *best);
         fc = f + best_d;
         return true;
     }
@@ -390,15 +484,32 @@ Result<M> path_relinking(const Catalog<M>& cat, const M& model, const Config& cf
     double band = cfg.get("PR.band", 0.25);
     Result<M> res{start, model.objective(start), 0, 0.0};
     auto over = [&] { return clock.elapsed() >= budget; };
+    // la mejora: `PR.ts_iters` iteraciones de tabú, o con `PR.improve = ils` (y una perturbación) iteraciones de ILS con
+    // recocido: perturbar con `PR.strength`, búsqueda local sobre `PR.ls_sample` movimientos y Metropolis con
+    // T = PR.T_rel · f, que baja al 1 % en las iteraciones de cada mejora
+    std::unique_ptr<Perturbation<M>> pert;
+    if (cfg.text("PR.improve", "ts") == "ils" && !cfg.text("perturbation", "").empty())
+        pert = cat.perturbation(cfg.text("perturbation"), model, cfg);
+    double strength = cfg.get("PR.strength", 1), T_rel = cfg.get("PR.T_rel", 0.005);
+    int ls_sample = (int)cfg.get("PR.ls_sample", 64);
     auto improve = [&](Sol s) {
-        step.clear();
         double f = model.objective(s), fb = f;
         Sol best = s, cand;
-        for (long i = 0; i < ts_iters && !over(); ++i) {
-            double fc;
-            if (!step(s, f, fb, rng, cand, fc)) break;
-            s = std::move(cand), f = fc, ++res.iterations;
-            if (f < fb) best = s, fb = f;
+        if (pert) {
+            for (long i = 0; i < ts_iters && !over(); ++i, ++res.iterations) {
+                cand = hill_climb(*nbh, pert->perturb(s, strength, rng), false, ls_sample, budget - clock.elapsed(), rng);
+                double fc = model.objective(cand), T = T_rel * std::pow(0.01, (double)i / ts_iters) * std::abs(f);
+                if (fc <= f || (T > 0 && rng.uniform() < std::exp(-(fc - f) / T))) s = std::move(cand), f = fc;
+                if (f < fb) best = s, fb = f;
+            }
+        } else {
+            step.clear();
+            for (long i = 0; i < ts_iters && !over(); ++i) {
+                double fc;
+                if (!step(s, f, fb, rng, cand, fc)) break;
+                s = std::move(cand), f = fc, ++res.iterations;
+                if (f < fb) best = s, fb = f;
+            }
         }
         if (fb < res.objective) res.best = best, res.objective = fb;
         return std::make_pair(best, fb);
@@ -451,10 +562,37 @@ Result<M> path_relinking(const Catalog<M>& cat, const M& model, const Config& cf
     return res;
 }
 
-// Corre una configuración. `shake` son los vecindarios de VNS después del de la búsqueda local.
+template <class M, class = void>
+struct has_penalty : std::false_type {};
+template <class M>
+struct has_penalty<M, std::void_t<decltype(std::declval<M&>().penalty = 1.0)>> : std::true_type {};
+
+template <class M>
+Result<M> solve_with(const Catalog<M>& cat, const M& model, const Config& cfg, const std::vector<std::string>& shake,
+                     uint64_t seed, double budget, PenaltyControl<M>* pen);
+
+// Corre una configuración. `shake` son los vecindarios de VNS después del de la búsqueda local. Con `SK.pen_scale` < 1 o
+// `SK.pen_adapt = yes` (SA, ILS, VNS, TS; modelos con `penalty`), sobre una copia del modelo con el peso de las
+// violaciones bajo control (`PenaltyControl`).
 template <class M>
 Result<M> solve(const Catalog<M>& cat, const M& model, const Config& cfg, const std::vector<std::string>& shake,
                 uint64_t seed, double budget) {
+    std::string sk = cfg.text("skeleton");
+    if constexpr (has_penalty<M>::value) {
+        double scale = cfg.get(sk + ".pen_scale", 1.0);
+        bool adapt = cfg.text(sk + ".pen_adapt", "no") == "yes";
+        if (sk != "PR" && (scale < 1.0 || adapt)) {
+            M copy = model;
+            PenaltyControl<M> pen(copy, scale, adapt, cfg.get(sk + ".pen_target", 0.2));
+            return solve_with(cat, copy, cfg, shake, seed, budget, &pen);
+        }
+    }
+    return solve_with<M>(cat, model, cfg, shake, seed, budget, nullptr);
+}
+
+template <class M>
+Result<M> solve_with(const Catalog<M>& cat, const M& model, const Config& cfg, const std::vector<std::string>& shake,
+                     uint64_t seed, double budget, PenaltyControl<M>* pen) {
     Rng rng(seed);
     std::string sk = cfg.text("skeleton");
     auto ctor = cat.constructor(cfg.text("constructor"), model, cfg);
@@ -464,6 +602,7 @@ Result<M> solve(const Catalog<M>& cat, const M& model, const Config& cfg, const 
     std::vector<Move> buf;
     if (sk == "SA") {
         auto nbh = cat.neighborhood(cfg.text("neighborhood"), model, cfg);
+        if (pen) pen->rebuild = [&] { nbh = cat.neighborhood(cfg.text("neighborhood"), model, cfg); };
         double T0 = cfg.get("SA.T0"), T = T0;
         bool by_time = cfg.text("SA.cooling") == "time";
         double T_end = cfg.get("SA.T_end"), alpha = cfg.get("SA.alpha");
@@ -493,11 +632,16 @@ Result<M> solve(const Catalog<M>& cat, const M& model, const Config& cfg, const 
             if (by_time) T = T0 * std::pow(T_end, std::min(1.0, elapsed / budget));
             else if (++at_T >= per_T) T *= alpha, at_T = 0;
         };
-        return trajectory(model, start, budget, gen, accept, update);
+        return trajectory(model, start, budget, gen, accept, update, pen);
     }
     if (sk == "ILS") {
         auto nbh = cat.neighborhood(cfg.text("neighborhood"), model, cfg);
         auto pert = cat.perturbation(cfg.text("perturbation"), model, cfg);
+        if (pen)
+            pen->rebuild = [&] {
+                nbh = cat.neighborhood(cfg.text("neighborhood"), model, cfg);
+                pert = cat.perturbation(cfg.text("perturbation"), model, cfg);
+            };
         bool first = cfg.text("ILS.ls_strategy") == "first";
         int sample = (int)cfg.get("ILS.ls_sample");
         double ls_s = budget * cfg.get("ILS.ls_time_share"), strength = cfg.get("ILS.strength");
@@ -511,12 +655,28 @@ Result<M> solve(const Catalog<M>& cat, const M& model, const Config& cfg, const 
             }
             return true;
         };
-        return trajectory(model, start, budget, gen, better, none);
+        // `ILS.accept`: "better" (solo si mejora) o "anneal": Metropolis con T = ILS.T_rel · f actual, que baja al 1 % al
+        // final del presupuesto (skeletons/ils.py, RelativeAnnealingAcceptance)
+        bool anneal = cfg.text("ILS.accept", "better") == "anneal";
+        double T_rel = cfg.get("ILS.T_rel", 0.005), T = T_rel;
+        auto accept = [&](double fc, double fn) {
+            if (!anneal) return fn < fc;  // como BetterAcceptance
+            double d = fn - fc;
+            if (d <= 0) return true;
+            return T > 0 && rng.uniform() < std::exp(-d / (T * std::abs(fc)));
+        };
+        auto cool = [&](double elapsed) { T = T_rel * std::pow(0.01, std::min(1.0, elapsed / budget)); };
+        return trajectory(model, start, budget, gen, accept, cool, pen);
     }
     if (sk == "VNS") {
         std::vector<std::unique_ptr<Neighborhood<M>>> ns;
         ns.push_back(cat.neighborhood(cfg.text("neighborhood"), model, cfg));
         for (auto& n : shake) ns.push_back(cat.neighborhood(n, model, cfg));
+        if (pen)
+            pen->rebuild = [&] {
+                ns[0] = cat.neighborhood(cfg.text("neighborhood"), model, cfg);
+                for (size_t i = 0; i < shake.size(); ++i) ns[i + 1] = cat.neighborhood(shake[i], model, cfg);
+            };
         int strength = (int)cfg.get("VNS.shake_strength"), sample = (int)cfg.get("VNS.ls_sample");
         double ls_s = budget * cfg.get("VNS.ls_time_share");
         size_t k = 0;
@@ -531,12 +691,17 @@ Result<M> solve(const Catalog<M>& cat, const M& model, const Config& cfg, const 
             k = model.objective(cand) < f ? 0 : (k + 1) % ns.size();
             return true;
         };
-        return trajectory(model, start, budget, gen, better, none);
+        return trajectory(model, start, budget, gen, better, none, pen);
     }
     if (sk == "TS") {
         // como `skeletons/ts.py`: filtrado por estimación (`estimate_top`) y saltos atrás a la élite (`elite_size`, `stall`)
         auto nbh = cat.neighborhood(cfg.text("neighborhood"), model, cfg);
         TabuStep<M> step(*nbh, (size_t)cfg.get("TS.tenure"), (int)cfg.get("TS.candidate_size"), (int)cfg.get("TS.estimate_top", 0));
+        if (pen)
+            pen->rebuild = [&] {
+                nbh = cat.neighborhood(cfg.text("neighborhood"), model, cfg);
+                step.rebind(*nbh);
+            };
         size_t elite_size = (size_t)cfg.get("TS.elite_size", 0);
         long stall = (long)cfg.get("TS.stall", 500), iter = 0, last_event = 0;
         double track_best = std::numeric_limits<double>::infinity();
@@ -558,7 +723,7 @@ Result<M> solve(const Catalog<M>& cat, const M& model, const Config& cfg, const 
             }
             return step(s, f, f_best, rng, cand, fc);
         };
-        return trajectory(model, start, budget, gen, [](double, double) { return true; }, none);
+        return trajectory(model, start, budget, gen, [](double, double) { return true; }, none, pen);
     }
     if (sk == "PR") return path_relinking(cat, model, cfg, std::move(start), *ctor, rng, budget);
     throw std::invalid_argument("esqueleto sin versión nativa: " + sk);

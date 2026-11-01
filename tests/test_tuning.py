@@ -178,7 +178,7 @@ def test_generated_only_catalog_drops_handwritten_in_generated_slots():
     gen_slots = {c.slot for c in gen}
     for slot in gen_slots:
         names = {s.name for s in only.for_slot(slot)}
-        assert names and names <= {c.name for c in gen}, slot
+        assert names and names <= {c.name for c in gen} | {"composite"}, slot  # composite: la unión de los generados
     # slots que el LLM no genera conservan el de mano, así FIX_OPT sigue existiendo
     assert {s.name for s in only.for_slot("fixing_policy")} == {"sliding_window"}
     assert {s.name for s in build_registry(gen).for_slot("neighborhood")} >= {"setup_flip"}

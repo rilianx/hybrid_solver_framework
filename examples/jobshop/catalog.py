@@ -31,7 +31,7 @@ HANDWRITTEN = [
      lambda problem: CriticalSwap(problem)),
     ({"name": "critical_insert", "slot": "neighborhood", "compatible_skeletons": LOCAL_SEARCH_SKELETONS, "params": {}},
      lambda problem: CriticalInsert(problem)),
-    ({"name": "critical_kick", "slot": "perturbation", "compatible_skeletons": ["ILS"], "params": {}},
+    ({"name": "critical_kick", "slot": "perturbation", "compatible_skeletons": ["ILS", "PR"], "params": {}},
      lambda problem: CriticalKick(problem)),
     ({"name": "machine_order", "slot": "relink", "compatible_skeletons": ["PR"], "params": {}},
      lambda problem: OrderRelink(problem)),

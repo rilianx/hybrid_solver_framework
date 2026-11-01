@@ -17,6 +17,7 @@ from __future__ import annotations
 import hashlib
 import importlib.machinery
 import importlib.util
+import os
 import subprocess
 import sys
 import sysconfig
@@ -58,11 +59,16 @@ def build(name: str, source: str | Path, sanitize: bool = False, extra_flags: li
     if out.exists():
         return out
     out.parent.mkdir(parents=True, exist_ok=True)
+    # varios procesos pueden compilar el mismo módulo a la vez (p.ej. una evaluación en paralelo): cada uno escribe su
+    # propio archivo y lo mueve al nombre final de una vez, así nadie importa un .so a medio escribir
+    tmp = out.with_name(f".{out.name}.{os.getpid()}.tmp")
     cmd = ["g++", *flags, *(f"-I{d}" for d in _includes()), *(f"-I{d}" for d in incs), f"-I{source.parent}", str(source),
-           "-o", str(out)]
+           "-o", str(tmp)]
     proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     if proc.returncode != 0:
+        tmp.unlink(missing_ok=True)
         raise NativeBuildError(f"no compila {source.name}:\n{proc.stderr[-6000:]}")
+    os.replace(tmp, out)
     return out
 
 

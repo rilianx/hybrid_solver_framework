@@ -1108,3 +1108,96 @@ optimizada. Taillard (`taillard_run61.json`; 3 semillas, 30 s):
 
 Afinar más cerca de las instancias de evaluación ayuda en 20×15 (significativo contra las dos) sin perder en
 15×15. Mejores réplicas: r1 0,25 % en 15×15, r2 1,17 % en 20×15.
+
+## CVRP en C++ (instancias X de Uchoa)
+
+Modelo por rutas en C++ (`examples/cvrp/native/model.hpp`, lo que ve el LLM), 43 instancias X de 101 a 298
+clientes (CVRPLIB vía PyVRP/Instances, `examples/cvrp/uchoa/`, mejores conocidas verificadas) e instancias de
+entrenamiento como las X (`CVRPInstance.uchoa_like`, tamaño `x<n>`).
+
+- **Corrida 113** (1,61 USD): 12 de 12 componentes aceptados. Vecindarios granulares (relocate, 2-opt* entre rutas,
+  CROSS-exchange; solo hacia los k más cercanos), destrucción radial con reconstrucción con "blinks" (la idea de
+  SISR), fusión de rutas cercanas con Split de Prins, tres relinks y tres puntajes greedy.
+- **Corrida 114** (3,44 USD, optimización): pasos de trayectoria/s relocate 11,9 k → 21,4 k, 2-opt* 7,0 k → 17,4 k,
+  CROSS 2,1 k → 6,3 k.
+- **Run 65** (irace en `x150`, 10 s, 3 réplicas; las runs 62–64 fallaron: `pulp` en el target-runner y el límite de
+  5 h): VNS en las tres réplicas, con el constructor greedy que empieza por el cliente más lejano.
+
+Instancias X (`scripts/uchoa_eval.py`, `uchoa_run65.json`; 3 semillas, 30 s):
+
+| | 101–149 | 150–199 | 200–298 | las 43 | mejor de 3 |
+|---|---|---|---|---|---|
+| run 65 r0 (VNS, CROSS) | 1,82 % | 3,14 % | 4,32 % | 3,41 % | 2,99 % |
+| run 65 r1 (VNS, CROSS) | 1,96 % | 2,44 % | 3,93 % | 3,08 % | 2,61 % |
+| run 65 r2 (VNS, relocate) | 1,66 % | 2,50 % | 3,79 % | 2,94 % | 2,48 % |
+| PR sin afinar | 1,53 % | 2,52 % | 4,40 % | 3,23 % | 2,86 % |
+
+Afinar no mejora a PR sin afinar (diferencia +0,09 [−0,35, +0,51]). A ~3 % el resultado está lejos del estado del
+arte (HGS, ~0,1–0,3 % en estas instancias). Lo que falta, a la vista del catálogo: no hay un vecindario dentro de
+cada ruta (2-opt intra-ruta), la búsqueda local usa un vecindario por vez (HGS combina todos en una sola descenso
+granular) y el afinado se hizo con 10 s en 150 clientes.
+
+### Mejoras del framework para el CVRP: vecindario compuesto, ILS con recocido y generación que ve el catálogo
+
+- **Vecindario `composite`** (Python y C++): la unión de todos los vecindarios del catálogo, para revisar todos los
+  operadores en el mismo paso (`hsf::Move` tiene un séptimo entero del framework con el vecindario de origen).
+- **`ILS.accept = anneal`**: Metropolis con temperatura relativa al objetivo (`ILS.T_rel`), que baja al 1 % al final.
+- **Generación que ve el catálogo existente**: el LLM ve el código de los componentes del slot que ya están y se le
+  pide cubrir lo que no cubren. Corrida 115 (0,58 USD, 3 de 3): Or-opt intra-ruta con inversión, SWAP* y
+  fusión/división de rutas por los extremos, justo lo que faltaba. Corrida 116 (3,35 USD, solo los nuevos con
+  `--new-only`): pasos de trayectoria ×2,6–3,0.
+- Compilación nativa segura con varios procesos a la vez (`os.replace`).
+
+Prueba rápida (4 instancias X, 20 s, ILS con la destrucción radial): 7,6 % con los parámetros por defecto; 1,95 %
+con intensidad 1 y muestra 256; 1,15–1,21 % con recocido (3 vecindarios); 0,85–0,93 % con recocido y los 6.
+
+Run 66 (como la 65: `x150`, 10 s): TS con `composite` en dos réplicas, ILS con recocido y la destrucción radial en
+la tercera. Instancias X (`uchoa_run66.json`; 3 semillas, 30 s):
+
+| | 101–149 | 150–199 | 200–298 | las 43 | mejor de 3 |
+|---|---|---|---|---|---|
+| run 66 r0 (TS, composite) | 1,13 % | 1,81 % | 3,16 % | 2,33 % | 1,98 % |
+| run 66 r1 (TS, composite) | 1,29 % | 2,13 % | 3,13 % | 2,42 % | 1,65 % |
+| **run 66 r2 (ILS, recocido)** | **0,88 %** | **1,57 %** | **2,07 %** | **1,65 %** | **1,33 %** |
+| ILS con recocido sin afinar | 0,92 % | 1,94 % | 2,42 % | 1,92 % | 1,55 % |
+
+Run 65 → run 66 (media de las réplicas): 3,14 % → 2,13 %, −1,01 [−1,29, −0,74], mejor en 39 de 43. El mejor de las
+12 corridas por instancia queda a 1,09 %. Sigue lejos de HGS (~0,1–0,3 %), y el gap crece con el tamaño: 30 s es
+poco para 200–300 clientes (la regla usual en la literatura da 240–720 s a estas instancias).
+
+### PR con mejora por ILS con recocido (`PR.improve = ils`)
+
+La mejora de PR puede ser ILS con recocido (con la perturbación del catálogo, `PR.strength`, `PR.ls_sample`,
+`PR.T_rel`; `PR.ts_iters` pasa a ser iteraciones de ILS) en vez de tabú. En las 4 instancias X de la prueba rápida
+(20 s, relink por cadenas de sucesores, el resto como ILS con recocido sin afinar):
+
+| | gap |
+|---|---|
+| ILS con recocido solo | **0,87 %** |
+| PR + ILS, población 6, 1000 iteraciones por mejora | 1,59 % |
+| PR + ILS, población 10, 3000 | 1,44 % |
+| PR + ILS, población 4, 300 | 1,89 % |
+| PR + ILS, población 4, 1000, T_rel 0,005 | 1,47 % |
+
+En el CVRP, combinar soluciones de élite con estos relinks no ayuda: un recocido largo y continuo le gana a
+recocidos cortos que reinician desde las soluciones del camino (mezclas peores). En el job shop PR sí ganó con tabú.
+La opción queda para que el tuner la elija donde sirva.
+
+### Penalización adaptativa (como HGS): no ayuda en los esqueletos de una trayectoria
+
+`SK.pen_scale`, `SK.pen_adapt`, `SK.pen_target` (SA, ILS, VNS, TS; C++, `PenaltyControl`): la búsqueda corre sobre una
+copia del modelo con el peso de las violaciones multiplicado por `pen_scale` y, con `pen_adapt`, ajustado para que la
+fracción de soluciones factibles visitadas se acerque a `pen_target` (+20 % / −15 %, nunca por encima del original).
+Al cambiar el peso se reconstruyen los componentes (pueden guardar el objetivo de la solución actual) y se devuelve la
+mejor solución factible. Los vecindarios generados sí proponen movimientos infactibles y los evalúan con `M.penalty`.
+
+4 instancias X × 3 semillas, 20 s (esta máquina es más lenta que la de las pruebas anteriores: ~27 k iteraciones de
+ILS en vez de ~34 k):
+
+| | sin control | adaptativa, desde 0,01 | adaptativa, desde 0,1, objetivo 30 % |
+|---|---|---|---|
+| ILS con recocido | **1,07 %** | 1,17 % | 1,15 % |
+| TS con `composite` | **1,82 %** | 1,90 % | — |
+
+En HGS el peso adaptativo trabaja junto con la población (subpoblaciones factible e infactible, reparación); en una
+sola trayectoria, pasar por infactibles no paga. Queda como parámetro del tuner, apagado por defecto.
