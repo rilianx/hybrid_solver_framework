@@ -1108,3 +1108,31 @@ optimizada. Taillard (`taillard_run61.json`; 3 semillas, 30 s):
 
 Afinar más cerca de las instancias de evaluación ayuda en 20×15 (significativo contra las dos) sin perder en
 15×15. Mejores réplicas: r1 0,25 % en 15×15, r2 1,17 % en 20×15.
+
+## CVRP en C++ (instancias X de Uchoa)
+
+Modelo por rutas en C++ (`examples/cvrp/native/model.hpp`, lo que ve el LLM), 43 instancias X de 101 a 298
+clientes (CVRPLIB vía PyVRP/Instances, `examples/cvrp/uchoa/`, mejores conocidas verificadas) e instancias de
+entrenamiento como las X (`CVRPInstance.uchoa_like`, tamaño `x<n>`).
+
+- **Corrida 113** (1,61 USD): 12 de 12 componentes aceptados. Vecindarios granulares (relocate, 2-opt* entre rutas,
+  CROSS-exchange; solo hacia los k más cercanos), destrucción radial con reconstrucción con "blinks" (la idea de
+  SISR), fusión de rutas cercanas con Split de Prins, tres relinks y tres puntajes greedy.
+- **Corrida 114** (3,44 USD, optimización): pasos de trayectoria/s relocate 11,9 k → 21,4 k, 2-opt* 7,0 k → 17,4 k,
+  CROSS 2,1 k → 6,3 k.
+- **Run 65** (irace en `x150`, 10 s, 3 réplicas; las runs 62–64 fallaron: `pulp` en el target-runner y el límite de
+  5 h): VNS en las tres réplicas, con el constructor greedy que empieza por el cliente más lejano.
+
+Instancias X (`scripts/uchoa_eval.py`, `uchoa_run65.json`; 3 semillas, 30 s):
+
+| | 101–149 | 150–199 | 200–298 | las 43 | mejor de 3 |
+|---|---|---|---|---|---|
+| run 65 r0 (VNS, CROSS) | 1,82 % | 3,14 % | 4,32 % | 3,41 % | 2,99 % |
+| run 65 r1 (VNS, CROSS) | 1,96 % | 2,44 % | 3,93 % | 3,08 % | 2,61 % |
+| run 65 r2 (VNS, relocate) | 1,66 % | 2,50 % | 3,79 % | 2,94 % | 2,48 % |
+| PR sin afinar | 1,53 % | 2,52 % | 4,40 % | 3,23 % | 2,86 % |
+
+Afinar no mejora a PR sin afinar (diferencia +0,09 [−0,35, +0,51]). A ~3 % el resultado está lejos del estado del
+arte (HGS, ~0,1–0,3 % en estas instancias). Lo que falta, a la vista del catálogo: no hay un vecindario dentro de
+cada ruta (2-opt intra-ruta), la búsqueda local usa un vecindario por vez (HGS combina todos en una sola descenso
+granular) y el afinado se hizo con 10 s en 150 clientes.
