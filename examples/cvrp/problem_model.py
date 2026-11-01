@@ -27,7 +27,6 @@ from __future__ import annotations
 import math
 from random import Random
 
-import pulp
 
 from .instance import CVRPInstance
 
@@ -208,6 +207,8 @@ class CVRPMip:
         return all_arcs(self.inst)
 
     def solve(self, fixed, integer, relaxed, time_limit, warm_start=None, near=None):
+        import pulp  # solo aquí: cargar el pack (p.ej. el target-runner de irace con el backend C++) no necesita el MIP
+
         inst = self.inst
         V = range(len(inst.coords))
         C = list(inst.customers)
