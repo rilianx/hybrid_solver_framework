@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import os
 import shlex
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -97,7 +98,7 @@ def write_irace_scenario(
         "set -euo pipefail\n"
         f"cd \"$(dirname \"$0\")/{root}\"  # raíz del repo\n"
         f"{env}"
-        f"exec python -W ignore -m {target_runner_module} \"$@\"\n"
+        f"exec {shlex.quote(sys.executable)} -W ignore -m {target_runner_module} \"$@\"\n"  # el mismo intérprete
     )
     runner.chmod(0o755)
     (out / "scenario.txt").write_text(
