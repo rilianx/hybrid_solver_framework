@@ -1228,3 +1228,19 @@ semilla, gap contra la mejor de todas, sin afinar:
 
 En el CLSP el cuello de botella es evaluar el modelo (un flujo por evaluación): ILS hace 16 iteraciones en 10 s. La
 matheurística sigue siendo lo mejor, y HYB queda cerca de LNS_MIP sin afinar.
+
+**Optimización del modelo C++** (`llm.native_model_optimizer`, corrida 119, 0,55 USD, 2 llamadas, las dos pasadas
+aceptadas a la primera): misma salida que el modelo aceptado (también en soluciones rotas), red reducida (un nodo por
+tramo entre setups) y flujo de costo mínimo primal-dual. Evaluaciones del objetivo/s 1148 → 4453 (×3,9); pasos de
+trayectoria de los vecindarios del catálogo 4 → 32 por segundo (×8). La misma prueba rápida (5 instancias 10×15, 10 s):
+
+| | antes | con el modelo optimizado |
+|---|---|---|
+| ILS (C++) | 2,97 % (16 iter.) | 1,55 % (127 iter.) |
+| **HYB (ILS en C++ + sub-MIP)** | 1,46 % | **0,40 %** |
+| PR (C++) | 4,46 % | 3,44 % |
+| LNS_MIP (Python, a mano) | 1,01 % | 0,86 % |
+| FIX_OPT (Python, a mano) | 3,94 % | 3,79 % |
+
+Con el modelo más rápido, la matheurística híbrida con todo generado (modelo, componentes y su optimización) le gana a
+la LNS_MIP de Python con los componentes a mano, sin afinar ninguna de las dos.
