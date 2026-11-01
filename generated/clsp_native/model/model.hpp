@@ -21,15 +21,32 @@ struct Model {
 
     struct Edge { int to; int rev; double cap; double cost; };
     int V = 0, SRC = 0, SNK = 0;
-    std::vector<std::vector<int>> adj;   // edge indices
-    mutable std::vector<Edge> E;
+    std::vector<std::vector<int>> adj;   // edge indices (original network)
+    mutable std::vector<Edge> E;         // residual state of the original network after solveFlow
     std::vector<int> srcEdge;            // per period: source->period
     std::vector<std::vector<int>> prodEdge; // [i][t]: period t -> node(i,t)
     std::vector<Edge> E0;
+    std::vector<int> sinkEdge;           // [i*T+t] original sink edge or -1
+    std::vector<int> chainEdge;          // [i*T+t] original chain edge or -1
+
+    // reduced network (one node per setup segment)
+    int VMAX = 0, EMAX = 0, rSNK = 0;
+    mutable int rE = 0, rV = 0;
+    mutable std::vector<int> rHead, rNxt, rTo;
+    mutable std::vector<double> rCap, rCost;
+    mutable std::vector<int> rSrcArc, rProdArc, rSinkArc;
+    mutable std::vector<double> Ct;
 
     mutable std::vector<double> dist, pot;
-    mutable std::vector<int> prevE;
     mutable std::vector<std::pair<double,int>> heap;
+    mutable std::vector<int> level, itp, que;
+    mutable std::vector<char> reach;
+    mutable double curCost = 0.0;
+
+    mutable std::vector<int> lastY;
+    mutable bool lastValid = false;
+    mutable double lastUnmet = 0.0, lastHold = 0.0;
+
     static constexpr double INF = 1e300;
     static constexpr double EPS = 1e-9;
 
@@ -64,16 +81,32 @@ struct Model {
         m.srcEdge.resize(m.T);
         for (int t = 0; t < m.T; ++t) m.srcEdge[t] = m.addEdge(m.SRC, 1 + t, 0.0, 0.0);
         m.prodEdge.assign(m.n, std::vector<int>(m.T, -1));
+        m.sinkEdge.assign((size_t)m.n * m.T, -1);
+        m.chainEdge.assign((size_t)m.n * m.T, -1);
         for (int i = 0; i < m.n; ++i) {
             for (int t = 0; t < m.T; ++t) {
                 m.prodEdge[i][t] = m.addEdge(1 + t, m.itemNode(i, t), 0.0, 0.0);
-                if (m.d[i][t] > 0) m.addEdge(m.itemNode(i, t), m.SNK, m.d[i][t], 0.0);
-                if (t + 1 < m.T) m.addEdge(m.itemNode(i, t), m.itemNode(i, t + 1), INF, m.h[i]);
+                if (m.d[i][t] > 0) m.sinkEdge[i * m.T + t] = m.addEdge(m.itemNode(i, t), m.SNK, m.d[i][t], 0.0);
+                if (t + 1 < m.T) m.chainEdge[i * m.T + t] = m.addEdge(m.itemNode(i, t), m.itemNode(i, t + 1), INF, m.h[i]);
             }
         }
         m.E = m.E0;
-        m.dist.resize(m.V); m.pot.resize(m.V); m.prevE.resize(m.V);
-        m.heap.reserve(m.E0.size() + m.V + 4);
+
+        m.VMAX = 2 + m.T + m.n * m.T;
+        m.EMAX = 2 * (m.T + 3 * m.n * m.T) + 4;
+        m.rSNK = 1 + m.T;
+        m.rHead.assign(m.VMAX, -1);
+        m.rNxt.resize(m.EMAX); m.rTo.resize(m.EMAX);
+        m.rCap.resize(m.EMAX); m.rCost.resize(m.EMAX);
+        m.rSrcArc.assign(m.T, -1);
+        m.rProdArc.assign((size_t)m.n * m.T, -1);
+        m.rSinkArc.assign((size_t)m.n * m.T, -1);
+        m.Ct.assign(m.T, 0.0);
+        m.level.resize(m.VMAX); m.itp.resize(m.VMAX); m.que.resize(m.VMAX); m.reach.resize(m.VMAX);
+        m.dist.resize(m.VMAX); m.pot.resize(m.VMAX);
+        m.heap.reserve(m.EMAX + m.VMAX + 4);
+        m.lastY.assign((size_t)m.n * m.T, 0);
+
         Solution tr = m.trivial();
         double unmet, hold;
         m.solveFlow(tr, unmet, hold);
@@ -84,73 +117,201 @@ struct Model {
 
     double setupCost(const Solution& y) const {
         double c = 0.0;
-        for (int i = 0; i < n; ++i)
+        for (int i = 0; i < n; ++i) {
+            const int* yi = y[i].data();
             for (int t = 0; t < T; ++t)
-                if (y[i][t]) c += s[i];
+                if (yi[t]) c += s[i];
+        }
         return c;
     }
 
-    // Min-cost max-flow: maximize served demand, then minimize holding cost.
-    void solveFlow(const Solution& y, double& unmet, double& hold) const {
+    inline int rAdd(int u, int v, double c, double w) const {
+        int id = rE;
+        rTo[id] = v; rCap[id] = c; rCost[id] = w; rNxt[id] = rHead[u]; rHead[u] = id;
+        rTo[id + 1] = u; rCap[id + 1] = 0.0; rCost[id + 1] = -w; rNxt[id + 1] = rHead[v]; rHead[v] = id + 1;
+        rE += 2;
+        return id;
+    }
+
+    inline bool admissible(int u, int k) const {
+        int v = rTo[k];
+        if (rCap[k] <= EPS || !reach[v]) return false;
+        double rc = rCost[k] + pot[u] - pot[v];
+        double tol = 1e-9 * (1.0 + std::fabs(pot[u]) + std::fabs(pot[v]));
+        return std::fabs(rc) <= tol;
+    }
+
+    double dfsAug(int u, double f) const {
+        if (u == rSNK) return f;
+        for (int& k = itp[u]; k != -1; k = rNxt[k]) {
+            int v = rTo[k];
+            if (level[v] != level[u] + 1) continue;
+            if (!admissible(u, k)) continue;
+            double r = dfsAug(v, std::min(f, rCap[k]));
+            if (r > EPS) {
+                rCap[k] -= r;
+                rCap[k ^ 1] += r;
+                curCost += r * rCost[k];
+                return r;
+            }
+        }
+        return 0.0;
+    }
+
+    void writeBack() const {
         std::copy(E0.begin(), E0.end(), E.begin());
+        for (int t = 0; t < T; ++t) {
+            int a = rSrcArc[t];
+            int id = srcEdge[t];
+            E[id].cap = rCap[a];
+            E[id + 1].cap = rCap[a ^ 1];
+        }
+        for (int i = 0; i < n; ++i) {
+            double inv = 0.0;
+            const std::vector<int>& pe = prodEdge[i];
+            for (int t = 0; t < T; ++t) {
+                int idx = i * T + t;
+                int pa = rProdArc[idx];
+                if (pa >= 0) {
+                    int id = pe[t];
+                    E[id].cap = rCap[pa];
+                    E[id + 1].cap = rCap[pa ^ 1];
+                    inv += rCap[pa ^ 1];
+                }
+                int sa = rSinkArc[idx];
+                if (sa >= 0) {
+                    int id = sinkEdge[idx];
+                    E[id].cap = rCap[sa];
+                    E[id + 1].cap = rCap[sa ^ 1];
+                    inv -= rCap[sa ^ 1];
+                }
+                if (inv < 0) inv = 0.0;
+                int ce = chainEdge[idx];
+                if (ce >= 0) {
+                    E[ce].cap = INF - inv;
+                    E[ce + 1].cap = inv;
+                }
+            }
+        }
+    }
+
+    // Min-cost max-flow (primal-dual): maximize served demand, then minimize holding cost.
+    void solveFlow(const Solution& y, double& unmet, double& hold) const {
+        if (lastValid) {
+            bool same = true;
+            for (int i = 0; i < n && same; ++i) {
+                const int* yi = y[i].data();
+                const int* li = lastY.data() + (size_t)i * T;
+                for (int t = 0; t < T; ++t) if ((yi[t] != 0) != (li[t] != 0)) { same = false; break; }
+            }
+            if (same) {
+                writeBack();
+                unmet = lastUnmet; hold = lastHold;
+                return;
+            }
+        }
+        for (int i = 0; i < n; ++i) {
+            const int* yi = y[i].data();
+            int* li = lastY.data() + (size_t)i * T;
+            for (int t = 0; t < T; ++t) li[t] = yi[t] ? 1 : 0;
+        }
+
+        // build reduced network
+        std::fill(rHead.begin(), rHead.end(), -1);
+        rE = 0; rV = 2 + T;
         for (int t = 0; t < T; ++t) {
             double c = cap[t];
             for (int i = 0; i < n; ++i) if (y[i][t]) c -= st[i];
-            E[srcEdge[t]].cap = std::max(0.0, c);
+            c = std::max(0.0, c);
+            Ct[t] = c;
+            rSrcArc[t] = rAdd(0, 1 + t, c, 0.0);
         }
-        for (int i = 0; i < n; ++i)
-            for (int t = 0; t < T; ++t)
-                E[prodEdge[i][t]].cap = y[i][t] ? INF : 0.0;
-        std::fill(pot.begin(), pot.end(), 0.0);
-        double flow = 0.0, cost = 0.0;
+        for (int i = 0; i < n; ++i) {
+            const int* yi = y[i].data();
+            const double* di = d[i].data();
+            double hi = h[i];
+            int seg = -1, tseg = -1;
+            for (int t = 0; t < T; ++t) {
+                int idx = i * T + t;
+                rProdArc[idx] = -1; rSinkArc[idx] = -1;
+                if (yi[t]) {
+                    int u = rV++;
+                    rProdArc[idx] = rAdd(1 + t, u, INF, 0.0);
+                    if (seg >= 0) rAdd(seg, u, INF, hi * (t - tseg));
+                    seg = u; tseg = t;
+                }
+                if (seg >= 0 && di[t] > 0) rSinkArc[idx] = rAdd(seg, rSNK, di[t], hi * (t - tseg));
+            }
+        }
+
+        std::fill(pot.begin(), pot.begin() + rV, 0.0);
+        double flow = 0.0;
+        curCost = 0.0;
         auto cmp = [](const std::pair<double,int>& x, const std::pair<double,int>& z) { return x.first > z.first; };
         while (true) {
-            std::fill(dist.begin(), dist.end(), INF);
-            std::fill(prevE.begin(), prevE.end(), -1);
-            dist[SRC] = 0.0;
+            std::fill(dist.begin(), dist.begin() + rV, INF);
+            dist[0] = 0.0;
             heap.clear();
-            heap.push_back({0.0, SRC});
+            heap.push_back({0.0, 0});
             while (!heap.empty()) {
                 std::pop_heap(heap.begin(), heap.end(), cmp);
                 auto [du, u] = heap.back();
                 heap.pop_back();
                 if (du > dist[u] + 1e-12) continue;
-                for (int id : adj[u]) {
-                    const Edge& e = E[id];
-                    if (e.cap <= EPS) continue;
-                    double rc = e.cost + pot[u] - pot[e.to];
+                double pu = pot[u];
+                for (int k = rHead[u]; k != -1; k = rNxt[k]) {
+                    if (rCap[k] <= EPS) continue;
+                    int v = rTo[k];
+                    double rc = rCost[k] + pu - pot[v];
                     if (rc < 0) rc = 0;
                     double nd = du + rc;
-                    if (nd < dist[e.to] - 1e-12) {
-                        dist[e.to] = nd;
-                        prevE[e.to] = id;
-                        heap.push_back({nd, e.to});
+                    if (nd < dist[v] - 1e-12) {
+                        dist[v] = nd;
+                        heap.push_back({nd, v});
                         std::push_heap(heap.begin(), heap.end(), cmp);
                     }
                 }
             }
-            if (dist[SNK] >= INF) break;
-            for (int v = 0; v < V; ++v) if (dist[v] < INF) pot[v] += dist[v];
-            double f = INF;
-            for (int v = SNK; v != SRC; ) {
-                int id = prevE[v];
-                f = std::min(f, E[id].cap);
-                v = E[E[id].rev].to;
+            if (dist[rSNK] >= INF) break;
+            for (int v = 0; v < rV; ++v) {
+                if (dist[v] < INF) { pot[v] += dist[v]; reach[v] = 1; }
+                else reach[v] = 0;
             }
-            if (f <= EPS) break;
-            for (int v = SNK; v != SRC; ) {
-                int id = prevE[v];
-                E[id].cap -= f;
-                E[E[id].rev].cap += f;
-                cost += f * E[id].cost;
-                v = E[E[id].rev].to;
+            double phaseFlow = 0.0;
+            while (true) {
+                std::fill(level.begin(), level.begin() + rV, -1);
+                level[0] = 0;
+                int qh = 0, qt = 0;
+                que[qt++] = 0;
+                while (qh < qt) {
+                    int u = que[qh++];
+                    for (int k = rHead[u]; k != -1; k = rNxt[k]) {
+                        int v = rTo[k];
+                        if (level[v] >= 0) continue;
+                        if (!admissible(u, k)) continue;
+                        level[v] = level[u] + 1;
+                        que[qt++] = v;
+                    }
+                }
+                if (level[rSNK] < 0) break;
+                for (int v = 0; v < rV; ++v) itp[v] = rHead[v];
+                bool any = false;
+                while (true) {
+                    double f = dfsAug(0, INF);
+                    if (f <= EPS) break;
+                    flow += f; phaseFlow += f; any = true;
+                }
+                if (!any) break;
             }
-            flow += f;
+            if (phaseFlow <= EPS) break;
         }
+        double cost = curCost;
         unmet = totalDemand - flow;
         if (unmet < 1e-6) unmet = 0.0;
         hold = cost;
         if (std::fabs(hold) < 1e-9) hold = 0.0;
+        lastUnmet = unmet; lastHold = hold; lastValid = true;
+        writeBack();
     }
 
     Solution trivial() const {
