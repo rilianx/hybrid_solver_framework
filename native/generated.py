@@ -145,6 +145,10 @@ class ModelCache:
 def parts_for(native, mip_parts, model_of=None) -> SimpleNamespace:
     """Las piezas de un modelo nativo (`core.model_parts`): vista heurística y constructiva en C++, vista MIP
     de Python (`mip_parts`)."""
+    if not hasattr(native, "empty_partial"):  # un modelo generado por el LLM (native/include/hsf/generic.hpp)
+        from .generic_model import model_parts
+
+        return model_parts(native, mip_parts, model_of)
     model_of = model_of or ModelCache(native)
     seed = lambda rng: rng.getrandbits(63)  # noqa: E731
     ns = SimpleNamespace(

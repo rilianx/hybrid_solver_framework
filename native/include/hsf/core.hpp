@@ -172,10 +172,23 @@ struct Relink {
     virtual Sol step(const Sol& cur, const Sol& guide, Rng& rng) = 0;
 };
 
+// La vista constructiva es opcional: un modelo sin `Partial`/`Action` no tiene constructores greedy ni puntajes.
+struct NoConstruction {};
+template <class M, class = void>
+struct partial_of { using type = NoConstruction; };
+template <class M>
+struct partial_of<M, std::void_t<typename M::Partial>> { using type = typename M::Partial; };
+template <class M, class = void>
+struct action_of { using type = NoConstruction; };
+template <class M>
+struct action_of<M, std::void_t<typename M::Action>> { using type = typename M::Action; };
+template <class M>
+inline constexpr bool has_construction = !std::is_same_v<typename partial_of<M>::type, NoConstruction>;
+
 template <class M>
 struct GreedyScore {
     virtual ~GreedyScore() = default;
-    virtual double score(const typename M::Partial& p, const typename M::Action& a) = 0;
+    virtual double score(const typename partial_of<M>::type& p, const typename action_of<M>::type& a) = 0;
 };
 
 // El constructor greedy modular (`core.construction.GreedyConstructor`): reglas greedy | rcl | roulette.
@@ -243,10 +256,12 @@ struct Catalog {
         Params p = cfg.scoped(name);
         auto it = constructors.find(name);
         if (it != constructors.end()) return it->second(m, p);
-        if (name.rfind("greedy_", 0) == 0) {
-            auto s = scores.find(name.substr(7));
-            if (s != scores.end())
-                return std::make_unique<GreedyConstructor<M>>(m, s->second(m, p), p.text("rule", "greedy"), p.get("alpha", 0.2));
+        if constexpr (has_construction<M>) {
+            if (name.rfind("greedy_", 0) == 0) {
+                auto s = scores.find(name.substr(7));
+                if (s != scores.end())
+                    return std::make_unique<GreedyConstructor<M>>(m, s->second(m, p), p.text("rule", "greedy"), p.get("alpha", 0.2));
+            }
         }
         throw std::invalid_argument("constructor desconocido: " + name);
     }

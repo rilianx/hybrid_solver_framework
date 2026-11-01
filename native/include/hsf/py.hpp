@@ -101,7 +101,7 @@ void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy 
         });
 
     py::class_<ScoreHandle<M>>(mod, "GreedyScore", py::module_local())
-        .def("score", [](ScoreHandle<M>& h, const typename M::Partial& p, const typename M::Action& a) {
+        .def("score", [](ScoreHandle<M>& h, const typename partial_of<M>::type& p, const typename action_of<M>::type& a) {
             return h.impl->score(p, a);
         });
     mod.def("make_score", [catalog](Model m, const std::string& name, py::dict params) {
