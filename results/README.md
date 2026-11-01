@@ -1136,3 +1136,31 @@ Afinar no mejora a PR sin afinar (diferencia +0,09 [−0,35, +0,51]). A ~3 % el 
 arte (HGS, ~0,1–0,3 % en estas instancias). Lo que falta, a la vista del catálogo: no hay un vecindario dentro de
 cada ruta (2-opt intra-ruta), la búsqueda local usa un vecindario por vez (HGS combina todos en una sola descenso
 granular) y el afinado se hizo con 10 s en 150 clientes.
+
+### Mejoras del framework para el CVRP: vecindario compuesto, ILS con recocido y generación que ve el catálogo
+
+- **Vecindario `composite`** (Python y C++): la unión de todos los vecindarios del catálogo, para revisar todos los
+  operadores en el mismo paso (`hsf::Move` tiene un séptimo entero del framework con el vecindario de origen).
+- **`ILS.accept = anneal`**: Metropolis con temperatura relativa al objetivo (`ILS.T_rel`), que baja al 1 % al final.
+- **Generación que ve el catálogo existente**: el LLM ve el código de los componentes del slot que ya están y se le
+  pide cubrir lo que no cubren. Corrida 115 (0,58 USD, 3 de 3): Or-opt intra-ruta con inversión, SWAP* y
+  fusión/división de rutas por los extremos, justo lo que faltaba. Corrida 116 (3,35 USD, solo los nuevos con
+  `--new-only`): pasos de trayectoria ×2,6–3,0.
+- Compilación nativa segura con varios procesos a la vez (`os.replace`).
+
+Prueba rápida (4 instancias X, 20 s, ILS con la destrucción radial): 7,6 % con los parámetros por defecto; 1,95 %
+con intensidad 1 y muestra 256; 1,15–1,21 % con recocido (3 vecindarios); 0,85–0,93 % con recocido y los 6.
+
+Run 66 (como la 65: `x150`, 10 s): TS con `composite` en dos réplicas, ILS con recocido y la destrucción radial en
+la tercera. Instancias X (`uchoa_run66.json`; 3 semillas, 30 s):
+
+| | 101–149 | 150–199 | 200–298 | las 43 | mejor de 3 |
+|---|---|---|---|---|---|
+| run 66 r0 (TS, composite) | 1,13 % | 1,81 % | 3,16 % | 2,33 % | 1,98 % |
+| run 66 r1 (TS, composite) | 1,29 % | 2,13 % | 3,13 % | 2,42 % | 1,65 % |
+| **run 66 r2 (ILS, recocido)** | **0,88 %** | **1,57 %** | **2,07 %** | **1,65 %** | **1,33 %** |
+| ILS con recocido sin afinar | 0,92 % | 1,94 % | 2,42 % | 1,92 % | 1,55 % |
+
+Run 65 → run 66 (media de las réplicas): 3,14 % → 2,13 %, −1,01 [−1,29, −0,74], mejor en 39 de 43. El mejor de las
+12 corridas por instancia queda a 1,09 %. Sigue lejos de HGS (~0,1–0,3 %), y el gap crece con el tamaño: 30 s es
+poco para 200–300 clientes (la regla usual en la literatura da 240–720 s a estas instancias).
