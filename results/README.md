@@ -58,6 +58,7 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run58/`](tune_run58/) | 31 oct | lo mismo con los componentes C++ **optimizados por el LLM** (corridas 106–108) | SA, ILS, VNS, TS | 10+10, 15×15 | 10 s | 700 exp. × 3 réplicas | etapa de optimización C++ |
 | [`tune_run59/`](tune_run59/) | 1 nov | lo mismo con la inserción con delta incremental (corrida 111) | SA, ILS, VNS, TS | 10+10, 15×15 | 10 s | 700 exp. × 3 réplicas | ¿cambia el tuning un vecindario más rápido? |
 | [`tune_run60/`](tune_run60/) | 1 nov | lo mismo con PR y los relinks del LLM (corrida 112) | SA, ILS, VNS, TS, PR | 10+10, 15×15 | 10 s | 700 exp. × 3 réplicas | ¿irace elige PR? |
+| [`tune_run61/`](tune_run61/) | 1 nov | lo mismo afinando en 20×15 con 15 s | SA, ILS, VNS, TS, PR | 10+10, 20×15 | 15 s | 728 exp. × 3 réplicas | afinar más cerca de Taillard |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -1091,3 +1092,19 @@ La mejor réplica (r1: PR con `lis`, N5, población 22, ~15 000 iteraciones de t
 En 15×15 la mejora es clara y el mejor de 9 corridas llega al óptimo en 9 de las 10 instancias; en 20×15 (afinado
 en 15×15) mejora poco y sin separarse del ruido. PR sin afinar con `kendall` daba 0,36 % en 15×15: con 10 s por
 corrida al afinar, irace prefiere mejoras tabú más cortas que las que convienen con 30 s.
+
+### Run 61: afinar en 20×15 con 15 s
+
+Como la 60 pero con instancias 20×15 y 15 s por corrida (3 h por réplica). Otra vez PR en las tres réplicas, con
+mejoras tabú más largas (6000–16 500 iteraciones): r0 y r2 con `lis` y N5, r1 con `kendall` y la inserción
+optimizada. Taillard (`taillard_run61.json`; 3 semillas, 30 s):
+
+| | run 58 (TS) | run 60 (PR, 15×15, 10 s) | run 61 (PR, 20×15, 15 s) | 58 − 61 | 60 − 61 |
+|---|---|---|---|---|---|
+| 15×15, media | 0,75 % | 0,44 % | **0,36 %** | +0,39 [+0,23, +0,56] | +0,08 [−0,01, +0,19] |
+| 15×15, mejor de 9 | 0,34 % | **0,01 %** | 0,13 % | | |
+| 20×15, media | 1,66 % | 1,57 % | **1,29 %** | +0,38 [+0,20, +0,57] | +0,28 [+0,06, +0,57] |
+| 20×15, mejor de 9 | 0,99 % | 0,86 % | **0,76 %** | | |
+
+Afinar más cerca de las instancias de evaluación ayuda en 20×15 (significativo contra las dos) sin perder en
+15×15. Mejores réplicas: r1 0,25 % en 15×15, r2 1,17 % en 20×15.
