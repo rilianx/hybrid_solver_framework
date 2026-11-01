@@ -46,6 +46,38 @@ class CVRPInstance:
         capacity = float(max(max(demand), round(route_size * sum(demand) / n_customers)))
         return CVRPInstance(tuple(coords), tuple(demand), capacity)
 
+    @staticmethod
+    def uchoa_like(n_customers: int, rng: Random) -> "CVRPInstance":
+        """Como las instancias X (Uchoa et al., 2017), para afinar sin usar las del benchmark: grilla [0, 1000]²
+        entera y distancias redondeadas; depósito central, excéntrico o al azar; clientes al azar, agrupados o mitad
+        y mitad; demandas de uno de los siete tipos del artículo; capacidad para rutas de 3 a 25 clientes en promedio."""
+        depot = rng.choice([(500, 500), (0, 0), (rng.randint(0, 1000), rng.randint(0, 1000))])
+        kind = rng.choice(["R", "C", "RC"])
+        seeds = [(rng.randint(0, 1000), rng.randint(0, 1000)) for _ in range(rng.randint(3, 8))]
+        coords = [depot]
+        for k in range(n_customers):
+            if kind == "R" or (kind == "RC" and k % 2 == 0):
+                coords.append((rng.randint(0, 1000), rng.randint(0, 1000)))
+            else:
+                cx, cy = rng.choice(seeds)
+                coords.append((min(1000, max(0, round(rng.gauss(cx, 60)))), min(1000, max(0, round(rng.gauss(cy, 60))))))
+        dem = rng.choice(["unit", "1-10", "5-10", "1-100", "50-100", "quadrant", "many-small"])
+
+        def demand(x, y):
+            if dem == "unit":
+                return 1
+            if dem == "quadrant":
+                return rng.randint(51, 100) if (x >= 500) == (y >= 500) else rng.randint(1, 50)
+            if dem == "many-small":
+                return rng.randint(1, 10) if rng.random() < rng.uniform(0.7, 0.95) else rng.randint(50, 100)
+            lo, hi = map(int, dem.split("-"))
+            return rng.randint(lo, hi)
+
+        demands = [0.0] + [float(demand(x, y)) for x, y in coords[1:]]
+        r = rng.triangular(3, 25, 6)
+        capacity = float(max(max(demands), math.ceil(r * sum(demands) / n_customers)))
+        return CVRPInstance(tuple((float(x), float(y)) for x, y in coords), tuple(demands), capacity, rounded=True)
+
     def save(self, path: str) -> None:
         with open(path, "w") as f:
             f.write(f"{self.n_customers} {self.capacity}\n")

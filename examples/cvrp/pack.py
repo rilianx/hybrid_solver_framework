@@ -13,7 +13,10 @@ from .problem_model import CVRPInstance, CVRPModel
 
 
 def make_instances(n: int, seed0: int, size: dict):
-    """Mitad uniformes y mitad agrupadas; rutas de ~5 clientes (de ~3 en micro-instancias)."""
+    """Mitad uniformes y mitad agrupadas; rutas de ~5 clientes (de ~3 en micro-instancias). Con un tamaño `x<n>`
+    (p.ej. `x150`), como las instancias X de Uchoa (`CVRPInstance.uchoa_like`)."""
+    if size.get("uchoa"):
+        return [CVRPInstance.uchoa_like(size["customers"], Random(seed0 + k)) for k in range(n)]
     route = 3.0 if size["customers"] <= 8 else 5.0
     return [CVRPInstance.random(size["customers"], Random(seed0 + k), route_size=route, clustered=k % 2 == 1) for k in range(n)]
 
@@ -25,6 +28,8 @@ def _load_cases():
 
 
 def parse_size(text: str) -> dict:
+    if text.startswith("x"):
+        return {"customers": int(text[1:]), "uchoa": True}
     return {"customers": int(text)}
 
 
@@ -45,6 +50,7 @@ PACK = ProblemPack(
     micro_size="6",
     load_cases=_load_cases,
     native_module="examples.cvrp.native_parts",
+    bench_size="x150",
     variants={"routes": (make_model_spec, "examples.cvrp.model_parts"),
               "tour": (make_tour_model_spec, "examples.cvrp.tour_parts")},
 )
