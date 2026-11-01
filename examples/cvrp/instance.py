@@ -13,6 +13,7 @@ class CVRPInstance:
     coords: tuple[tuple[float, float], ...]  # coords[0] = depósito
     demand: tuple[float, ...]  # demand[0] = 0
     capacity: float
+    rounded: bool = False  # distancias redondeadas al entero más cercano (EUC_2D de TSPLIB, las instancias X de Uchoa)
 
     @property
     def n_customers(self) -> int:
@@ -24,7 +25,8 @@ class CVRPInstance:
 
     def dist(self, i: int, j: int) -> float:
         (xi, yi), (xj, yj) = self.coords[i], self.coords[j]
-        return math.hypot(xi - xj, yi - yj)
+        d = math.hypot(xi - xj, yi - yj)
+        return float(int(d + 0.5)) if self.rounded else d
 
     @staticmethod
     def random(n_customers: int, rng: Random, route_size: float = 5.0, clustered: bool = False) -> "CVRPInstance":
@@ -51,21 +53,48 @@ class CVRPInstance:
                 f.write(f"{x} {y} {d}\n")
 
     def to_text(self) -> str:
-        """Formato de entrada (como un problema de Codeforces): `n Q`, luego n+1 líneas `x y d`
-        (la primera es el depósito, con d = 0)."""
-        lines = [f"{self.n_customers} {self.capacity:g}"]
+        """Formato de entrada (como un problema de Codeforces): `n Q` (y `round` si las distancias se redondean),
+        luego n+1 líneas `x y d` (la primera es el depósito, con d = 0)."""
+        lines = [f"{self.n_customers} {self.capacity:g}" + (" round" if self.rounded else "")]
         lines += [f"{x:g} {y:g} {d:g}" for (x, y), d in zip(self.coords, self.demand)]
         return "\n".join(lines) + "\n"
 
     @staticmethod
     def parse(text: str) -> "CVRPInstance":
         lines = [ln for ln in text.splitlines() if ln.strip()]
-        n, cap = lines[0].split()
+        head = lines[0].split()
+        n, cap = head[0], head[1]
         rows = [tuple(map(float, ln.split())) for ln in lines[1:]]
         assert len(rows) == int(n) + 1, "se esperaban n+1 filas (depósito + clientes)"
-        return CVRPInstance(tuple((x, y) for x, y, _ in rows), tuple(d for _, _, d in rows), float(cap))
+        return CVRPInstance(tuple((x, y) for x, y, _ in rows), tuple(d for _, _, d in rows), float(cap),
+                            rounded=len(head) > 2 and head[2] == "round")
+
+    @staticmethod
+    def parse_vrplib(text: str) -> "CVRPInstance":
+        """El formato VRPLIB de CVRPLIB (EUC_2D, un depósito): las instancias X de Uchoa et al. (2017)."""
+        sec, coords, demand, cap, depot = None, {}, {}, None, 1
+        for ln in text.splitlines():
+            tok = ln.replace(":", " : ").split()
+            if not tok:
+                continue
+            if tok[0] == "CAPACITY":
+                cap = float(tok[-1])
+            elif tok[0].endswith("_SECTION"):
+                sec = tok[0]
+            elif tok[0] in ("EOF", "-1"):
+                sec = None if tok[0] == "EOF" else sec
+            elif sec == "NODE_COORD_SECTION":
+                coords[int(tok[0])] = (float(tok[1]), float(tok[2]))
+            elif sec == "DEMAND_SECTION":
+                demand[int(tok[0])] = float(tok[1])
+            elif sec == "DEPOT_SECTION" and int(tok[0]) > 0:
+                depot = int(tok[0])
+        order = [depot] + [k for k in sorted(coords) if k != depot]
+        return CVRPInstance(tuple(coords[k] for k in order), tuple(0.0 if k == depot else demand[k] for k in order),
+                            cap, rounded=True)
 
     @staticmethod
     def load(path: str) -> "CVRPInstance":
         with open(path) as f:
-            return CVRPInstance.parse(f.read())
+            text = f.read()
+        return CVRPInstance.parse_vrplib(text) if "NODE_COORD_SECTION" in text else CVRPInstance.parse(text)

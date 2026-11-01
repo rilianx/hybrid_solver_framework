@@ -44,6 +44,7 @@ PACK = ProblemPack(
     make_model_spec=make_model_spec,
     micro_size="6",
     load_cases=_load_cases,
+    native_module="examples.cvrp.native_parts",
     variants={"routes": (make_model_spec, "examples.cvrp.model_parts"),
               "tour": (make_tour_model_spec, "examples.cvrp.tour_parts")},
 )
