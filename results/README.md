@@ -1182,3 +1182,22 @@ La mejora de PR puede ser ILS con recocido (con la perturbación del catálogo, 
 En el CVRP, combinar soluciones de élite con estos relinks no ayuda: un recocido largo y continuo le gana a
 recocidos cortos que reinician desde las soluciones del camino (mezclas peores). En el job shop PR sí ganó con tabú.
 La opción queda para que el tuner la elija donde sirva.
+
+### Penalización adaptativa (como HGS): no ayuda en los esqueletos de una trayectoria
+
+`SK.pen_scale`, `SK.pen_adapt`, `SK.pen_target` (SA, ILS, VNS, TS; C++, `PenaltyControl`): la búsqueda corre sobre una
+copia del modelo con el peso de las violaciones multiplicado por `pen_scale` y, con `pen_adapt`, ajustado para que la
+fracción de soluciones factibles visitadas se acerque a `pen_target` (+20 % / −15 %, nunca por encima del original).
+Al cambiar el peso se reconstruyen los componentes (pueden guardar el objetivo de la solución actual) y se devuelve la
+mejor solución factible. Los vecindarios generados sí proponen movimientos infactibles y los evalúan con `M.penalty`.
+
+4 instancias X × 3 semillas, 20 s (esta máquina es más lenta que la de las pruebas anteriores: ~27 k iteraciones de
+ILS en vez de ~34 k):
+
+| | sin control | adaptativa, desde 0,01 | adaptativa, desde 0,1, objetivo 30 % |
+|---|---|---|---|
+| ILS con recocido | **1,07 %** | 1,17 % | 1,15 % |
+| TS con `composite` | **1,82 %** | 1,90 % | — |
+
+En HGS el peso adaptativo trabaja junto con la población (subpoblaciones factible e infactible, reparación); en una
+sola trayectoria, pasar por infactibles no paga. Queda como parámetro del tuner, apagado por defecto.

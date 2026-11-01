@@ -52,6 +52,15 @@ class SkeletonDef:
     params: dict[str, dict[str, Any]] = field(default_factory=dict)
 
 
+# Peso de las violaciones durante la búsqueda (solo en C++, `PenaltyControl` en native/include/hsf/core.hpp): el
+# multiplicador inicial del peso del modelo y si se ajusta para visitar una fracción `pen_target` de soluciones factibles
+# (como HGS). Con los valores por defecto (1, no) la búsqueda es la de siempre.
+PENALTY_PARAMS = {
+    "pen_scale": {"type": "float", "range": [1e-4, 1.0], "log": True, "default": 1.0},
+    "pen_adapt": {"type": "cat", "values": ["no", "yes"]},
+    "pen_target": {"type": "float", "range": [0.05, 0.5], "default": 0.2},
+}
+
 SKELETONS: dict[str, SkeletonDef] = {
     "SA": SkeletonDef(
         "SA", ("constructor", "neighborhood"),
@@ -64,6 +73,7 @@ SKELETONS: dict[str, SkeletonDef] = {
             "iters_per_T": {"type": "int", "range": [1, 50]},
             # solo en C++: evaluar el candidato completo o decidir con el delta del vecindario (ver native/include/hsf/core.hpp)
             "eval": {"type": "cat", "values": ["objective", "delta"]},
+            **PENALTY_PARAMS,
         },
     ),
     "ILS": SkeletonDef(
@@ -76,6 +86,7 @@ SKELETONS: dict[str, SkeletonDef] = {
             # aceptación: solo si mejora, o por recocido relativo al objetivo (skeletons/ils.py)
             "accept": {"type": "cat", "values": ["better", "anneal"]},
             "T_rel": {"type": "float", "range": [1e-4, 0.05], "log": True, "default": 0.005},
+            **PENALTY_PARAMS,
         },
     ),
     "LNS_MIP": SkeletonDef(
@@ -102,6 +113,7 @@ SKELETONS: dict[str, SkeletonDef] = {
             "estimate_top": {"type": "int", "range": [0, 10], "default": 0},
             "elite_size": {"type": "int", "range": [0, 8], "default": 0},
             "stall": {"type": "int", "range": [20, 5000], "log": True, "default": 500},
+            **PENALTY_PARAMS,
         },
     ),
     "PR": SkeletonDef(
@@ -131,6 +143,7 @@ SKELETONS: dict[str, SkeletonDef] = {
             "shake_strength": {"type": "int", "range": [1, 4]},
             "ls_time_share": {"type": "float", "range": [0.02, 0.3]},
             "ls_sample": {"type": "int", "range": [4, 256], "log": True, "default": 32},
+            **PENALTY_PARAMS,
         },
     ),
     "GRASP": SkeletonDef(
