@@ -90,7 +90,10 @@ def write_irace_scenario(
            + (f"export HSF_CATALOG={shlex.quote(catalog)}\n" if catalog else "")
            + (f"export HSF_SKELETONS={shlex.quote(' '.join(skeletons))}\n" if skeletons else "")
            + ("export HSF_NATIVE=1\n" if native else "")
-           + (f"export HSF_OBJECTIVE={objective}\n" if objective != "raw" else ""))
+           + (f"export HSF_OBJECTIVE={objective}\n" if objective != "raw" else "")
+           # las mismas rutas de módulos que el tuner: en el CI, el target-runner lanzado por irace no encontraba
+           # paquetes instalados (pulp) aun con el mismo intérprete
+           + f"export PYTHONPATH={shlex.quote(os.pathsep.join(p for p in sys.path if p))}\n")
     root = Path(os.path.relpath(Path.cwd().resolve(), out.resolve())).as_posix()
     runner.write_text(
         "#!/usr/bin/env bash\n"
