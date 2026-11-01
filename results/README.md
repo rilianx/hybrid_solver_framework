@@ -1201,3 +1201,30 @@ ILS en vez de ~34 k):
 
 En HGS el peso adaptativo trabaja junto con la población (subpoblaciones factible e infactible, reparación); en una
 sola trayectoria, pasar por infactibles no paga. Queda como parámetro del tuner, apagado por defecto.
+
+## CLSP en C++ con el modelo escrito por el LLM, y la matheurística híbrida HYB
+
+**Modelo C++ del LLM** (`llm.native_model_generator`, corrida 117, 0,13 USD, aceptado en la primera ronda): con el
+contrato genérico (`native/include/hsf/generic.hpp`) y sin ver ningún modelo escrito. Para el plan de producción con
+los setups fijos (un LP en Python) escribió un **flujo de costo mínimo** (primero máxima demanda atendida, después
+mínimo inventario): exacto, mismos costos que el LP en todos los casos, ocultos y generados, y 22× más rápido (1650
+evaluaciones/s contra 74 en 10×15).
+
+**Componentes C++** sobre ese modelo (corrida 118, 0,62 USD): 8 de 9 (encender/apagar un setup, consolidar lotes en
+una ventana; perturbaciones con reparación por flujo, mover y fusionar lotes y reconstruir una ventana con
+**Wagner-Whitin**; tres relinks).
+
+**HYB** (`skeletons/hybrid.py`): ILS con recocido (en C++ con `solve_from`, que parte de una solución dada)
+alternado con sub-MIPs sobre la parte que libera una destrucción. Prueba rápida, 5 instancias 10×15, 10 s, una
+semilla, gap contra la mejor de todas, sin afinar:
+
+| | gap | iteraciones |
+|---|---|---|
+| ILS (C++) | 2,97 % | 16 |
+| **HYB (ILS en C++ + sub-MIP)** | 1,46 % | 33 |
+| PR (C++) | 4,46 % | 218 |
+| **LNS_MIP (Python, a mano)** | **1,01 %** | 39 |
+| FIX_OPT (Python, a mano) | 3,94 % | 172 |
+
+En el CLSP el cuello de botella es evaluar el modelo (un flujo por evaluación): ILS hace 16 iteraciones en 10 s. La
+matheurística sigue siendo lo mejor, y HYB queda cerca de LNS_MIP sin afinar.
