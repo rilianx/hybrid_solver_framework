@@ -49,3 +49,14 @@ def test_ils_annealing_acceptance_runs_python_and_native():
         cfg.update({"ILS.accept": "anneal", "ILS.T_rel": 0.01})
         res = A.assemble(cfg)(inst, Random(0), 0.4)
         assert PACK.problem_factory(inst).is_feasible(res.best_solution)
+
+
+def test_pr_with_ils_improvement_python_and_native():
+    inst = PACK.make_instances(1, 3, PACK.parse_size("6x5"))[0]
+    for native in (False, True):
+        A, _ = make_assembler(PACK, "handwritten", None, native=native)
+        cfg = A.default_config("PR", {"constructor": "job_order", "neighborhood": "critical_swap", "relink": "machine_order",
+                                      "perturbation": "critical_kick"})
+        cfg.update({"PR.improve": "ils", "PR.pop_size": 4, "PR.ts_iters": 20, "PR.T_rel": 0.01})
+        res = A.assemble(cfg)(inst, Random(0), 0.5)
+        assert PACK.problem_factory(inst).is_feasible(res.best_solution) and res.iterations > 0

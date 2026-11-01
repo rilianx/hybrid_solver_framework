@@ -106,7 +106,7 @@ SKELETONS: dict[str, SkeletonDef] = {
     ),
     "PR": SkeletonDef(
         # población de élite con path relinking y mejora tabú (skeletons/pr.py); `relink` conecta dos soluciones
-        "PR", ("constructor", "neighborhood", "relink"),
+        "PR", ("constructor", "neighborhood", "relink"), optional_slots=("perturbation",),
         params={
             "pop_size": {"type": "int", "range": [4, 30], "default": 10},
             "ts_iters": {"type": "int", "range": [100, 20000], "log": True, "default": 2000},
@@ -116,6 +116,11 @@ SKELETONS: dict[str, SkeletonDef] = {
             "path_cands": {"type": "int", "range": [1, 8], "default": 2},
             "band": {"type": "float", "range": [0.05, 0.5], "default": 0.25},
             "init_moves": {"type": "int", "range": [1, 100], "log": True, "default": 20},
+            # la mejora: tabú (los de arriba) o ILS con recocido (con la perturbación; ts_iters = iteraciones de ILS)
+            "improve": {"type": "cat", "values": ["ts", "ils"]},
+            "strength": {"type": "int", "range": [1, 6], "default": 1},
+            "ls_sample": {"type": "int", "range": [4, 256], "log": True, "default": 64},
+            "T_rel": {"type": "float", "range": [1e-4, 0.05], "log": True, "default": 0.005},
         },
     ),
     "VNS": SkeletonDef(
@@ -284,9 +289,11 @@ class Assembler:
             if skeleton == "PR":
                 nbh = self._component(config, "neighborhood", skeleton, P)
                 rel = self._component(config, "relink", skeleton, P)
+                pert = self._component(config, "perturbation", skeleton, P, required=False) if sp("improve") == "ils" else None
                 return run_pr(P, constructor, nbh, rel, inst, rng, budget, pop_size=sp("pop_size"), ts_iters=sp("ts_iters"),
                               tenure=sp("tenure"), candidate_size=sp("candidate_size"), estimate_top=sp("estimate_top"),
-                              path_cands=sp("path_cands"), band=sp("band"), init_moves=sp("init_moves"))
+                              path_cands=sp("path_cands"), band=sp("band"), init_moves=sp("init_moves"),
+                              perturbation=pert, strength=sp("strength"), ls_sample=sp("ls_sample"), T_rel=sp("T_rel"))
             if skeleton == "VNS":
                 ls_nbh = self._component(config, "neighborhood", skeleton, P)
                 others = [

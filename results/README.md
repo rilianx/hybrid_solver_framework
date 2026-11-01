@@ -1164,3 +1164,21 @@ la tercera. Instancias X (`uchoa_run66.json`; 3 semillas, 30 s):
 Run 65 → run 66 (media de las réplicas): 3,14 % → 2,13 %, −1,01 [−1,29, −0,74], mejor en 39 de 43. El mejor de las
 12 corridas por instancia queda a 1,09 %. Sigue lejos de HGS (~0,1–0,3 %), y el gap crece con el tamaño: 30 s es
 poco para 200–300 clientes (la regla usual en la literatura da 240–720 s a estas instancias).
+
+### PR con mejora por ILS con recocido (`PR.improve = ils`)
+
+La mejora de PR puede ser ILS con recocido (con la perturbación del catálogo, `PR.strength`, `PR.ls_sample`,
+`PR.T_rel`; `PR.ts_iters` pasa a ser iteraciones de ILS) en vez de tabú. En las 4 instancias X de la prueba rápida
+(20 s, relink por cadenas de sucesores, el resto como ILS con recocido sin afinar):
+
+| | gap |
+|---|---|
+| ILS con recocido solo | **0,87 %** |
+| PR + ILS, población 6, 1000 iteraciones por mejora | 1,59 % |
+| PR + ILS, población 10, 3000 | 1,44 % |
+| PR + ILS, población 4, 300 | 1,89 % |
+| PR + ILS, población 4, 1000, T_rel 0,005 | 1,47 % |
+
+En el CVRP, combinar soluciones de élite con estos relinks no ayuda: un recocido largo y continuo le gana a
+recocidos cortos que reinician desde las soluciones del camino (mezclas peores). En el job shop PR sí ganó con tabú.
+La opción queda para que el tuner la elija donde sirva.

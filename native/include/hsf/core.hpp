@@ -431,15 +431,32 @@ Result<M> path_relinking(const Catalog<M>& cat, const M& model, const Config& cf
     double band = cfg.get("PR.band", 0.25);
     Result<M> res{start, model.objective(start), 0, 0.0};
     auto over = [&] { return clock.elapsed() >= budget; };
+    // la mejora: `PR.ts_iters` iteraciones de tabú, o con `PR.improve = ils` (y una perturbación) iteraciones de ILS con
+    // recocido: perturbar con `PR.strength`, búsqueda local sobre `PR.ls_sample` movimientos y Metropolis con
+    // T = PR.T_rel · f, que baja al 1 % en las iteraciones de cada mejora
+    std::unique_ptr<Perturbation<M>> pert;
+    if (cfg.text("PR.improve", "ts") == "ils" && !cfg.text("perturbation", "").empty())
+        pert = cat.perturbation(cfg.text("perturbation"), model, cfg);
+    double strength = cfg.get("PR.strength", 1), T_rel = cfg.get("PR.T_rel", 0.005);
+    int ls_sample = (int)cfg.get("PR.ls_sample", 64);
     auto improve = [&](Sol s) {
-        step.clear();
         double f = model.objective(s), fb = f;
         Sol best = s, cand;
-        for (long i = 0; i < ts_iters && !over(); ++i) {
-            double fc;
-            if (!step(s, f, fb, rng, cand, fc)) break;
-            s = std::move(cand), f = fc, ++res.iterations;
-            if (f < fb) best = s, fb = f;
+        if (pert) {
+            for (long i = 0; i < ts_iters && !over(); ++i, ++res.iterations) {
+                cand = hill_climb(*nbh, pert->perturb(s, strength, rng), false, ls_sample, budget - clock.elapsed(), rng);
+                double fc = model.objective(cand), T = T_rel * std::pow(0.01, (double)i / ts_iters) * std::abs(f);
+                if (fc <= f || (T > 0 && rng.uniform() < std::exp(-(fc - f) / T))) s = std::move(cand), f = fc;
+                if (f < fb) best = s, fb = f;
+            }
+        } else {
+            step.clear();
+            for (long i = 0; i < ts_iters && !over(); ++i) {
+                double fc;
+                if (!step(s, f, fb, rng, cand, fc)) break;
+                s = std::move(cand), f = fc, ++res.iterations;
+                if (f < fb) best = s, fb = f;
+            }
         }
         if (fb < res.objective) res.best = best, res.objective = fb;
         return std::make_pair(best, fb);

@@ -1,6 +1,7 @@
 """PR (path relinking con población de élite), como en `native/include/hsf/core.hpp` (`path_relinking`).
 
-Slots: Constructor, Vecindario (la mejora con tabú, `skeletons/ts.py`) y Relink (`distance(a, b)` y
+Slots: Constructor, Vecindario (la mejora con tabú, `skeletons/ts.py`, o con `improve="ils"` ILS con recocido y la
+Perturbación opcional) y Relink (`distance(a, b)` y
 `step(cur, guide, rng)`: cuánto difieren dos soluciones y un paso de una hacia la otra). Nada del problema:
 
     población ← PR.pop_size soluciones (la partida y construcciones nuevas con PR.init_moves movimientos al
@@ -26,6 +27,7 @@ from core.common_components import AnyStop, MaxIterationsStop, MaxTimeStop
 from core.contracts import Constructor, Neighborhood, ProblemModel
 from core.skeleton import RunResult
 
+from .ils import hill_climb
 from .ts import build_ts
 
 
@@ -39,7 +41,8 @@ class _Given:
 
 def run_pr(problem: ProblemModel, constructor: Constructor, neighborhood: Neighborhood, relink, inst, rng: Random,
            budget: float, pop_size: int = 10, ts_iters: int = 1000, tenure: int = 10, candidate_size: int = 30,
-           estimate_top: int = 0, path_cands: int = 1, band: float = 0.25, init_moves: int = 20) -> RunResult:
+           estimate_top: int = 0, path_cands: int = 1, band: float = 0.25, init_moves: int = 20, perturbation=None,
+           strength: int = 1, ls_sample: int = 64, T_rel: float = 0.005) -> RunResult:
     t0 = time.monotonic()
     left = lambda: budget - (time.monotonic() - t0)  # noqa: E731
     stats = {"iterations": 0}
@@ -47,6 +50,23 @@ def run_pr(problem: ProblemModel, constructor: Constructor, neighborhood: Neighb
     best = [start, problem.objective(start)]
 
     def improve(sol):
+        if perturbation is not None:  # ILS con recocido (como en C++)
+            ls = hill_climb(problem, neighborhood, strategy="best", max_seconds=max(0.0, left()), sample_size=ls_sample)
+            cur, f = sol, problem.objective(sol)
+            bsol, fb = cur, f
+            for i in range(ts_iters):
+                if left() <= 0:
+                    break
+                cand = ls(perturbation.perturb(cur, strength, rng), rng)
+                fc, T = problem.objective(cand), T_rel * 0.01 ** (i / ts_iters) * abs(f)
+                if fc <= f or (T > 0 and rng.random() < math.exp(-(fc - f) / T)):
+                    cur, f = cand, fc
+                if f < fb:
+                    bsol, fb = cur, f
+                stats["iterations"] += 1
+            if fb < best[1]:
+                best[0], best[1] = bsol, fb
+            return bsol, fb
         stop = AnyStop((MaxIterationsStop(ts_iters), MaxTimeStop(max(0.0, left()))))
         res = build_ts(problem, _Given(sol), neighborhood, stop, tenure=tenure, candidate_size=candidate_size,
                        estimate_top=estimate_top).run(inst, rng)
