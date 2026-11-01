@@ -81,6 +81,10 @@ on:
         description: "Ciclo, target=problem_model: solo la vista constructiva, sobre el modelo ya aceptado del workspace"
         default: false
         type: boolean
+      opt_new_only:
+        description: "Con target=native_optimize: solo los componentes C++ que nunca se optimizaron"
+        default: false
+        type: boolean
       opt_slots:
         description: "Con target=optimize: slots cuyos componentes se aceleran (none = solo el modelo)"
         default: "neighborhood greedy_score"
@@ -170,6 +174,7 @@ jobs:
           ANTHROPIC_WORKSPACE_ID: ${{ secrets.ANTHROPIC_WORKSPACE_ID || vars.ANTHROPIC_WORKSPACE_ID }}
           SLOTS: ${{ inputs.slots }}
           OPT_SLOTS: ${{ inputs.opt_slots }}
+          OPT_NEW_ONLY: ${{ inputs.opt_new_only && 'true' || 'false' }}
           N: ${{ inputs.n }}
           ROUNDS: ${{ inputs.rounds }}
           PROVIDER: ${{ inputs.provider }}
@@ -208,6 +213,7 @@ jobs:
           if [ "$TARGET" = "native_optimize" ]; then
             OPT="${OPT_SLOTS:-neighborhood}"; [ "$OPT" = "none" ] && OPT="neighborhood"
             ARGS="--problem $PROBLEM --workspace $WS --slots $OPT --rounds $ROUNDS --provider $PROVIDER --max-minutes 75"
+            [ "$OPT_NEW_ONLY" = "true" ] && ARGS="$ARGS --new-only"
             if [ -n "$MODEL" ]; then ARGS="$ARGS --model $MODEL"; fi
             echo "python -m llm.native_optimizer $ARGS"
             python -u -W ignore -m llm.native_optimizer $ARGS 2>&1 | tee generate.log
