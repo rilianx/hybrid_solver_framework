@@ -1,0 +1,66 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("SA", "ILS", "VNS", "TS", "PR")
+constructor "--constructor=" c ("trivial", "random", "greedy_demand_weighted_insertion_ratio", "greedy_farthest_first_route_filling", "greedy_angular_cohesion_insertion") | skeleton %in% c("SA", "ILS", "VNS", "TS", "PR")
+greedy_demand_weighted_insertion_ratio.rule "--greedy_demand_weighted_insertion_ratio.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "TS", "PR") & constructor == "greedy_demand_weighted_insertion_ratio"
+greedy_demand_weighted_insertion_ratio.alpha "--greedy_demand_weighted_insertion_ratio.alpha=" r (0.0, 1.5) | skeleton %in% c("SA", "ILS", "VNS", "TS", "PR") & constructor == "greedy_demand_weighted_insertion_ratio"
+greedy_demand_weighted_insertion_ratio.open_factor "--greedy_demand_weighted_insertion_ratio.open_factor=" r (1.0, 3.0) | skeleton %in% c("SA", "ILS", "VNS", "TS", "PR") & constructor == "greedy_demand_weighted_insertion_ratio"
+greedy_farthest_first_route_filling.rule "--greedy_farthest_first_route_filling.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "TS", "PR") & constructor == "greedy_farthest_first_route_filling"
+greedy_farthest_first_route_filling.alpha "--greedy_farthest_first_route_filling.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "TS", "PR") & constructor == "greedy_farthest_first_route_filling"
+greedy_farthest_first_route_filling.beta "--greedy_farthest_first_route_filling.beta=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "TS", "PR") & constructor == "greedy_farthest_first_route_filling"
+greedy_angular_cohesion_insertion.rule "--greedy_angular_cohesion_insertion.rule=" c ("greedy", "rcl", "roulette") | skeleton %in% c("SA", "ILS", "VNS", "TS", "PR") & constructor == "greedy_angular_cohesion_insertion"
+greedy_angular_cohesion_insertion.alpha "--greedy_angular_cohesion_insertion.alpha=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "TS", "PR") & constructor == "greedy_angular_cohesion_insertion"
+greedy_angular_cohesion_insertion.ang_w "--greedy_angular_cohesion_insertion.ang_w=" r (0.0, 2.0) | skeleton %in% c("SA", "ILS", "VNS", "TS", "PR") & constructor == "greedy_angular_cohesion_insertion"
+greedy_angular_cohesion_insertion.open_factor "--greedy_angular_cohesion_insertion.open_factor=" r (1.0, 3.0) | skeleton %in% c("SA", "ILS", "VNS", "TS", "PR") & constructor == "greedy_angular_cohesion_insertion"
+neighborhood "--neighborhood=" c ("granular_relocate_customer", "granular_two_opt_star_tail_exchange", "granular_cross_exchange_segments") | skeleton %in% c("SA", "ILS", "VNS", "TS", "PR")
+granular_relocate_customer.k_neighbors "--granular_relocate_customer.k_neighbors=" i (3, 30) | skeleton %in% c("SA", "ILS", "VNS", "TS", "PR") & neighborhood == "granular_relocate_customer"
+granular_two_opt_star_tail_exchange.k_neighbors "--granular_two_opt_star_tail_exchange.k_neighbors=" i (3, 30) | skeleton %in% c("SA", "ILS", "VNS", "TS", "PR") & neighborhood == "granular_two_opt_star_tail_exchange"
+granular_cross_exchange_segments.k_neighbors "--granular_cross_exchange_segments.k_neighbors=" i (3, 20) | skeleton %in% c("SA", "ILS", "VNS", "TS", "PR") & neighborhood == "granular_cross_exchange_segments"
+granular_cross_exchange_segments.max_seg "--granular_cross_exchange_segments.max_seg=" i (1, 4) | skeleton %in% c("SA", "ILS", "VNS", "TS", "PR") & neighborhood == "granular_cross_exchange_segments"
+perturbation "--perturbation=" c ("radial_ruin_greedy_blink_recreate", "neighbor_guided_random_move_walk", "route_cluster_merge_prins_resplit") | skeleton %in% c("ILS")
+radial_ruin_greedy_blink_recreate.remove_per_strength "--radial_ruin_greedy_blink_recreate.remove_per_strength=" r (1.0, 12.0) | skeleton %in% c("ILS") & perturbation == "radial_ruin_greedy_blink_recreate"
+radial_ruin_greedy_blink_recreate.max_frac "--radial_ruin_greedy_blink_recreate.max_frac=" r (0.05, 0.6) | skeleton %in% c("ILS") & perturbation == "radial_ruin_greedy_blink_recreate"
+radial_ruin_greedy_blink_recreate.blink "--radial_ruin_greedy_blink_recreate.blink=" r (0.0, 0.2) | skeleton %in% c("ILS") & perturbation == "radial_ruin_greedy_blink_recreate"
+radial_ruin_greedy_blink_recreate.order "--radial_ruin_greedy_blink_recreate.order=" c ("random", "demand", "far", "near") | skeleton %in% c("ILS") & perturbation == "radial_ruin_greedy_blink_recreate"
+neighbor_guided_random_move_walk.moves_per_strength "--neighbor_guided_random_move_walk.moves_per_strength=" r (1.0, 5.0) | skeleton %in% c("ILS") & perturbation == "neighbor_guided_random_move_walk"
+neighbor_guided_random_move_walk.neighbor_k "--neighbor_guided_random_move_walk.neighbor_k=" i (3, 30) | skeleton %in% c("ILS") & perturbation == "neighbor_guided_random_move_walk"
+neighbor_guided_random_move_walk.max_seg "--neighbor_guided_random_move_walk.max_seg=" i (2, 6) | skeleton %in% c("ILS") & perturbation == "neighbor_guided_random_move_walk"
+neighbor_guided_random_move_walk.p_relocate "--neighbor_guided_random_move_walk.p_relocate=" r (0.0, 1.0) | skeleton %in% c("ILS") & perturbation == "neighbor_guided_random_move_walk"
+neighbor_guided_random_move_walk.p_swap "--neighbor_guided_random_move_walk.p_swap=" r (0.0, 1.0) | skeleton %in% c("ILS") & perturbation == "neighbor_guided_random_move_walk"
+neighbor_guided_random_move_walk.p_cross "--neighbor_guided_random_move_walk.p_cross=" r (0.0, 1.0) | skeleton %in% c("ILS") & perturbation == "neighbor_guided_random_move_walk"
+route_cluster_merge_prins_resplit.routes_per_strength "--route_cluster_merge_prins_resplit.routes_per_strength=" r (0.5, 4.0) | skeleton %in% c("ILS") & perturbation == "route_cluster_merge_prins_resplit"
+route_cluster_merge_prins_resplit.orient "--route_cluster_merge_prins_resplit.orient=" c ("nn", "random", "mixed") | skeleton %in% c("ILS") & perturbation == "route_cluster_merge_prins_resplit"
+route_cluster_merge_prins_resplit.cut_penalty "--route_cluster_merge_prins_resplit.cut_penalty=" r (0.2, 3.0) | skeleton %in% c("ILS") & perturbation == "route_cluster_merge_prins_resplit"
+route_cluster_merge_prins_resplit.split_noise "--route_cluster_merge_prins_resplit.split_noise=" r (0.0, 0.5) | skeleton %in% c("ILS") & perturbation == "route_cluster_merge_prins_resplit"
+relink "--relink=" c ("successor_chain_relink", "route_transplant_relink", "arc_relocate_relink") | skeleton %in% c("PR")
+successor_chain_relink.link_weight "--successor_chain_relink.link_weight=" r (0.2, 5.0) | skeleton %in% c("PR") & relink == "successor_chain_relink"
+successor_chain_relink.merge_prob "--successor_chain_relink.merge_prob=" r (0.0, 1.0) | skeleton %in% c("PR") & relink == "successor_chain_relink"
+route_transplant_relink.greedy_prob "--route_transplant_relink.greedy_prob=" r (0.0, 1.0) | skeleton %in% c("PR") & relink == "route_transplant_relink"
+arc_relocate_relink.strong_prob "--arc_relocate_relink.strong_prob=" r (0.0, 1.0) | skeleton %in% c("PR") & relink == "arc_relocate_relink"
+arc_relocate_relink.allow_new_route "--arc_relocate_relink.allow_new_route=" i (0, 1) | skeleton %in% c("PR") & relink == "arc_relocate_relink"
+SA.T0 "--SA.T0=" r (1.0, 1000.0) | skeleton == "SA"  # log-scale
+SA.cooling "--SA.cooling=" c ("time", "iterations") | skeleton == "SA"
+SA.T_end "--SA.T_end=" r (1e-05, 0.1) | skeleton == "SA"  # log-scale
+SA.alpha "--SA.alpha=" r (0.8, 0.999) | skeleton == "SA"
+SA.iters_per_T "--SA.iters_per_T=" i (1, 50) | skeleton == "SA"
+SA.eval "--SA.eval=" c ("objective", "delta") | skeleton == "SA"
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+ILS.ls_sample "--ILS.ls_sample=" i (4, 256) | skeleton == "ILS"  # log-scale
+VNS.shake_strength "--VNS.shake_strength=" i (1, 4) | skeleton == "VNS"
+VNS.ls_time_share "--VNS.ls_time_share=" r (0.02, 0.3) | skeleton == "VNS"
+VNS.ls_sample "--VNS.ls_sample=" i (4, 256) | skeleton == "VNS"  # log-scale
+TS.tenure "--TS.tenure=" i (3, 30) | skeleton == "TS"
+TS.candidate_size "--TS.candidate_size=" i (5, 100) | skeleton == "TS"  # log-scale
+TS.estimate_top "--TS.estimate_top=" i (0, 10) | skeleton == "TS"
+TS.elite_size "--TS.elite_size=" i (0, 8) | skeleton == "TS"
+TS.stall "--TS.stall=" i (20, 5000) | skeleton == "TS"  # log-scale
+PR.pop_size "--PR.pop_size=" i (4, 30) | skeleton == "PR"
+PR.ts_iters "--PR.ts_iters=" i (100, 20000) | skeleton == "PR"  # log-scale
+PR.tenure "--PR.tenure=" i (3, 30) | skeleton == "PR"
+PR.candidate_size "--PR.candidate_size=" i (5, 100) | skeleton == "PR"  # log-scale
+PR.estimate_top "--PR.estimate_top=" i (0, 10) | skeleton == "PR"
+PR.path_cands "--PR.path_cands=" i (1, 8) | skeleton == "PR"
+PR.band "--PR.band=" r (0.05, 0.5) | skeleton == "PR"
+PR.init_moves "--PR.init_moves=" i (1, 100) | skeleton == "PR"  # log-scale
