@@ -119,6 +119,83 @@ def speed(native, ref, pack, seconds: float = 0.5) -> float:
     return native.bench_objective(m, sols, seconds)
 
 
+def equivalence(old, new, ref, pack) -> list[str]:
+    """Las mismas salidas que el modelo aceptado: violaciones, costo, objetivo, factibilidad y la trivial."""
+    from native.generated import ModelCache
+
+    mo, mn = ModelCache(old), ModelCache(new)
+    for size in [pack.micro_size or pack.default_size, pack.default_size, pack.bench_size or pack.default_size]:
+        for k, inst in enumerate(pack.make_instances(2, 400, pack.parse_size(size))):
+            a, b = mo(inst), mn(inst)
+            if ref.canonical(old.trivial_solution(a)) != ref.canonical(new.trivial_solution(b)):
+                return [f"trivial cambió en una instancia de tamaño {size}"]
+            rng = Random(k)
+            sols = [ref.random_solution(inst, Random(s)) for s in range(8)] + [old.random_solution(a, s) for s in range(4)]
+            sols += [x for s in sols[:4] for x in _broken(s, rng)]
+            for s in sols:
+                try:
+                    want = (old.violations(a, s), old.cost_terms(a, s), a.objective(s), a.feasible(s))
+                except Exception:  # noqa: BLE001 — el aceptado no admite esta solución rota
+                    continue
+                try:
+                    got = (new.violations(b, s), new.cost_terms(b, s), b.objective(s), b.feasible(s))
+                except Exception as exc:  # noqa: BLE001
+                    return [f"lanzó {type(exc).__name__}: {exc} en una solución que el modelo aceptado evalúa"]
+                if not (_dict_close(_viol(want[0]), _viol(got[0])) and _dict_close(want[1], got[1]) and _close(want[2], got[2])
+                        and want[3] == got[3]):
+                    shown = f" (solución {json.dumps(s)[:200]})" if size == (pack.micro_size or pack.default_size) else ""
+                    return [f"en una instancia de tamaño {size}{shown}: el aceptado da violaciones {want[0]}, costo {want[1]}, "
+                            f"objetivo {want[2]:g}, factible {want[3]}; tu versión da {got[0]}, {got[1]}, {got[2]:g}, {got[3]}"]
+    return []
+
+
+MODEL_METRICS = {"objective": "evaluaciones del objetivo por segundo (soluciones nuevas en cada pasada)",
+                 "walk": "pasos por segundo de una trayectoria con los vecindarios del catálogo (media geométrica)"}
+
+
+def model_speeds(native, ref, pack, neighborhoods: list[str], seconds: float = 0.5) -> dict[str, float]:
+    inst = pack.make_instances(1, 77, pack.parse_size(pack.bench_size or pack.default_size))[0]
+    m = native.parse(inst.to_text())
+    sols = [ref.random_solution(inst, Random(s)) for s in range(8)]
+    out = {"objective": native.bench_objective(m, sols, seconds)}
+    if neighborhoods:
+        rates = [max(native.bench(m, "neighborhood_walk", n, {}, sols, seconds), 1e-9) for n in neighborhoods]
+        out["walk"] = math.exp(sum(math.log(r) for r in rates) / len(rates))
+    return out
+
+
+def optimize_check(request: dict) -> dict:
+    """Una versión más rápida del modelo aceptado: los mismos chequeos, las mismas salidas y al menos `min_speedup`
+    veces más rápida en alguna medida (la trayectoria pide el 40 % de esa mejora; ninguna empeora más de un 10 %)."""
+    from core.validation.model_parts import check_heuristic_view
+    from llm.cycle import base_pack
+    from native.check import thresholds
+    from native.generated import load
+    from native.generic_model import model_parts
+
+    pack = base_pack(request["problem"])
+    old, new = load(request["old_so"], request["old_module"]), load(request["so"], request["module"])
+    ref = importlib.import_module(request["mip_parts"])
+    out = {"passed": False, "failed_layer": "", "feedback": ""}
+    rep = check_heuristic_view(model_parts(new, ref), pack.load_cases())
+    if not rep.passed:
+        return dict(out, failed_layer="cases", feedback=rep.feedback())
+    for layer, problems in (("equivalence", equivalence(old, new, ref, pack)), ("coherence", coherence(new, ref, pack))):
+        if problems:
+            return dict(out, failed_layer=layer, feedback="\n- ".join(["Las salidas no son las del modelo aceptado:"] + problems))
+    nbhs = request.get("neighborhoods", [])
+    before, after = model_speeds(old, ref, pack, nbhs), model_speeds(new, ref, pack, nbhs)
+    ratios = {k: after[k] / max(before[k], 1e-9) for k in before}
+    need = thresholds(before, request.get("min_speedup", 1.5))
+    out.update(before=before, after=after)
+    detail = "; ".join(f"{MODEL_METRICS[k]}: {before[k]:,.0f} → {after[k]:,.0f} ({ratios[k]:.2f}×, se pide {need[k]:g}×)"
+                       for k in before)
+    if not any(ratios[k] >= need[k] for k in before) or min(ratios.values()) < 0.9:
+        return dict(out, failed_layer="speed", feedback=f"mismas salidas, pero no alcanza: {detail}. Se pide que alguna medida "
+                                                        "mejore lo indicado y que ninguna empeore más de un 10 %.")
+    return dict(out, passed=True, feedback=detail)
+
+
 def main(path: str) -> None:
     from core.validation.model_parts import check_heuristic_view
     from llm.cycle import base_pack
@@ -126,6 +203,9 @@ def main(path: str) -> None:
     from native.generic_model import model_parts
 
     request = json.loads(Path(path).read_text())
+    if request.get("mode") == "optimize":
+        print(json.dumps(optimize_check(request)))
+        return
     pack = base_pack(request["problem"])
     native = load(request["so"], request["module"])
     ref = importlib.import_module(request["mip_parts"])

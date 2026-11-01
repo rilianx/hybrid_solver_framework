@@ -187,3 +187,22 @@ def test_a_generated_model_is_validated_corrected_and_used(tmp_path):
     inst = pack.make_instances(1, 0, pack.parse_size("15"))[0]
     res = A.assemble(cfg)(inst, Random(0), 0.3)
     assert pack.problem_factory(inst).is_feasible(res.best_solution)
+
+
+def test_model_optimizer_rejects_changed_outputs_and_no_speedup(tmp_path):
+    from llm import ScriptedClient
+    from llm.cycle import base_pack
+    from llm.native_model_generator import generate_native_model
+    from llm.native_model_optimizer import optimize_model
+
+    pack = base_pack("cvrp")
+    assert generate_native_model(ScriptedClient(responses=[MODEL]), pack, tmp_path, rounds=1, verbose=False)["accepted"]
+    accepted = (tmp_path / "model" / "model.hpp").read_text()
+    wrong = ("<<<<<<< BUSCAR\n        return t + penalty * (v + c);\n=======\n        return t + 0.5 * penalty * (v + c);\n"
+             ">>>>>>> REEMPLAZAR")
+    same = "<<<<<<< BUSCAR\n0.5 * penalty\n=======\npenalty\n>>>>>>> REEMPLAZAR"  # (sobre la rechazada) deshace el error
+    out = optimize_model(ScriptedClient(responses=[wrong, same]), pack, tmp_path, rounds=2, passes=1, verbose=False)
+    row = out["passes"][0]
+    assert not row["accepted"] and row["rejections"][0].split("]")[0] in ("[coherence", "[equivalence"), row["rejections"][0]
+    assert row["rejections"][1].startswith("[speed]")
+    assert (tmp_path / "model" / "model.hpp").read_text() == accepted  # el aceptado no cambió

@@ -297,9 +297,16 @@ void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy 
         Clock clock;
         long n = 0;
         volatile double sink = 0;
-        while (clock.elapsed() < seconds)
+        Rng fresh(12345);
+        double paused = 0;
+        // soluciones nuevas en cada pasada (fuera del tiempo medido), como en `bench`
+        for (; clock.elapsed() - paused < seconds;) {
             for (auto& s : sols) sink = sink + m->objective(s), ++n;
-        return n / std::max(clock.elapsed(), 1e-9);
+            Clock t;
+            for (auto& s : sols) s = m->random(fresh);
+            paused += t.elapsed();
+        }
+        return n / std::max(clock.elapsed() - paused, 1e-9);
     });
     // lo mismo desde una solución dada (el híbrido con el MIP alterna búsqueda en C++ y sub-MIPs en Python)
     mod.def("solve_from", [catalog, to_py, from_py](Model m, py::dict config, std::vector<std::string> shake, py::handle start,
