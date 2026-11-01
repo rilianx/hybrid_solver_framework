@@ -301,6 +301,17 @@ void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy 
             for (auto& s : sols) sink = sink + m->objective(s), ++n;
         return n / std::max(clock.elapsed(), 1e-9);
     });
+    // lo mismo desde una solución dada (el híbrido con el MIP alterna búsqueda en C++ y sub-MIPs en Python)
+    mod.def("solve_from", [catalog, to_py, from_py](Model m, py::dict config, std::vector<std::string> shake, py::handle start,
+                                                    uint64_t seed, double budget) {
+        Config c = config_from(config);
+        auto s0 = from_py(start);
+        Result<M> r = [&] {
+            py::gil_scoped_release nogil;
+            return solve(*catalog, *m, c, shake, seed, budget, &s0);
+        }();
+        return py::make_tuple(to_py(r.best), r.objective, r.iterations, r.elapsed);
+    });
     mod.def("solve", [catalog, to_py](Model m, py::dict config, std::vector<std::string> shake, uint64_t seed, double budget) {
         Config c = config_from(config);
         Result<M> r = [&] {

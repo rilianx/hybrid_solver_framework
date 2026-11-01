@@ -17,7 +17,7 @@ from typing import Any, Callable
 from core.assembler import Assembler
 from core.skeleton import RunResult
 
-NATIVE_SKELETONS = ("SA", "ILS", "VNS", "TS", "PR")
+NATIVE_SKELETONS = ("SA", "ILS", "VNS", "TS", "PR", "HYB")  # HYB: ILS en C++ + sub-MIPs en Python
 
 
 class NativeRunner:
@@ -34,7 +34,7 @@ class NativeRunner:
             full.setdefault(f"{sk}.{p}", A._skeleton_param(config, sk, p))
         if sk == "SA":  # configuraciones de antes del enfriamiento por tiempo (como en el Assembler)
             full["SA.cooling"] = config.get("SA.cooling", "iterations" if "SA.alpha" in config else full["SA.cooling"])
-        for slot in ("constructor", "neighborhood", "perturbation", "relink"):
+        for slot in ("constructor", "neighborhood", "perturbation", "relink", "destruction"):
             name = config.get(slot)
             if name is not None:
                 for p, v in A.registry.get(slot, name).default_params().items():
@@ -46,10 +46,44 @@ class NativeRunner:
 
     def assemble(self, config: dict[str, Any]):
         full, shake = self.full_config(config)
+        if full["skeleton"] == "HYB":
+            return self._hybrid(full)
 
         def run(inst, rng: Random, budget: float) -> RunResult:
             best, obj, iters, secs = self.native.solve(self.model_of(inst), full, shake, rng.getrandbits(63), float(budget))
             return RunResult(best_solution=best, best_objective=obj, iterations=iters, elapsed_time=secs, accepted=0)
+
+        return run
+
+
+    def _hybrid(self, full: dict[str, Any]):
+        """HYB: ILS con recocido en C++ (`solve_from`) alternado con sub-MIPs en Python (`skeletons/hybrid.py`)."""
+        from core.common_components import MIPModelRepair
+        from skeletons.hybrid import run_hybrid
+
+        A = self.assembler
+        inner = {k: v for k, v in full.items() if not k.startswith("HYB.") and k not in ("destruction", "skeleton")}
+        inner.update({"skeleton": "ILS", "ILS.strength": full["HYB.strength"], "ILS.ls_sample": full["HYB.ls_sample"],
+                      "ILS.ls_strategy": "best", "ILS.ls_time_share": 1.0, "ILS.accept": "anneal", "ILS.T_rel": full["HYB.T_rel"]})
+        inner, _ = NativeRunner(A, self.native, self.model_of).full_config(inner)
+        dname = full["destruction"]
+        dspec = A.registry.get("destruction", dname)
+
+        def run(inst, rng: Random, budget: float) -> RunResult:
+            P = A.problem_factory(inst)
+            m = self.model_of(inst)
+            destr = dspec.make(P, **{p: full[f"{dname}.{p}"] for p in dspec.params if f"{dname}.{p}" in full})
+
+            def local_search(sol, seconds, rng_):
+                seed = rng_.getrandbits(63)
+                if sol is None:
+                    best, obj, iters, _ = self.native.solve(m, inner, [], seed, float(seconds))
+                else:
+                    best, obj, iters, _ = self.native.solve_from(m, inner, [], sol, seed, float(seconds))
+                return best, obj, iters
+
+            return run_hybrid(P, local_search, destr, MIPModelRepair(P), inst, rng, budget, ls_share=full["HYB.ls_share"],
+                              mip_share=full["HYB.mip_share"], destroy_ratio=full["HYB.destroy_ratio"])
 
         return run
 

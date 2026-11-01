@@ -45,11 +45,11 @@ HANDWRITTEN = [
         lambda problem: SetupFlipPerturbation(),
     ),
     (
-        {"name": "period_window", "slot": "destruction", "compatible_skeletons": ["LNS_MIP", "MIP_PERTURB"], "params": {}},
+        {"name": "period_window", "slot": "destruction", "compatible_skeletons": ["LNS_MIP", "MIP_PERTURB", "HYB"], "params": {}},
         lambda problem: PeriodWindowDestruction(problem.inst),
     ),
     (
-        {"name": "random_setups", "slot": "destruction", "compatible_skeletons": ["LNS_MIP", "MIP_PERTURB"], "params": {}},
+        {"name": "random_setups", "slot": "destruction", "compatible_skeletons": ["LNS_MIP", "MIP_PERTURB", "HYB"], "params": {}},
         lambda problem: RandomSetupDestruction(problem.inst),
     ),
     (
