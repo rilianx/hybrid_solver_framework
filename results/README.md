@@ -59,6 +59,8 @@ sobre las instancias de test (cada una pesa lo mismo). En todas las corridas con
 | [`tune_run59/`](tune_run59/) | 1 nov | lo mismo con la inserción con delta incremental (corrida 111) | SA, ILS, VNS, TS | 10+10, 15×15 | 10 s | 700 exp. × 3 réplicas | ¿cambia el tuning un vecindario más rápido? |
 | [`tune_run60/`](tune_run60/) | 1 nov | lo mismo con PR y los relinks del LLM (corrida 112) | SA, ILS, VNS, TS, PR | 10+10, 15×15 | 10 s | 700 exp. × 3 réplicas | ¿irace elige PR? |
 | [`tune_run61/`](tune_run61/) | 1 nov | lo mismo afinando en 20×15 con 15 s | SA, ILS, VNS, TS, PR | 10+10, 20×15 | 15 s | 728 exp. × 3 réplicas | afinar más cerca de Taillard |
+| [`tune_run71/`](tune_run71/) | 2 nov | CLSP con todo generado en C++ (modelo, componentes, optimización) | SA, ILS, VNS, TS, PR, HYB | 10+10, 10×15 | 10 s | ~1000 exp. × 3 réplicas | ¿la matheurística generada iguala a la escrita? |
+| [`tune_run72/`](tune_run72/) | 2 nov | CLSP con el catálogo a mano en Python | SA, ILS, LNS_MIP, FIX_OPT, TS, VNS, GRASP, LOCAL_BRANCH, MIP_PERTURB | 10+10, 10×15 | 10 s | ~1000 exp. × 3 réplicas | referencia |
 
 Cada carpeta trae su `README.md` con las tablas completas, los JSON con cada trial y el
 costo por instancia, y el `tune.log`. La run 3 de Actions se canceló (no cabía en el
@@ -1201,3 +1203,67 @@ ILS en vez de ~34 k):
 
 En HGS el peso adaptativo trabaja junto con la población (subpoblaciones factible e infactible, reparación); en una
 sola trayectoria, pasar por infactibles no paga. Queda como parámetro del tuner, apagado por defecto.
+
+## CLSP en C++ con el modelo escrito por el LLM, y la matheurística híbrida HYB
+
+**Modelo C++ del LLM** (`llm.native_model_generator`, corrida 117, 0,13 USD, aceptado en la primera ronda): con el
+contrato genérico (`native/include/hsf/generic.hpp`) y sin ver ningún modelo escrito. Para el plan de producción con
+los setups fijos (un LP en Python) escribió un **flujo de costo mínimo** (primero máxima demanda atendida, después
+mínimo inventario): exacto, mismos costos que el LP en todos los casos, ocultos y generados, y 22× más rápido (1650
+evaluaciones/s contra 74 en 10×15).
+
+**Componentes C++** sobre ese modelo (corrida 118, 0,62 USD): 8 de 9 (encender/apagar un setup, consolidar lotes en
+una ventana; perturbaciones con reparación por flujo, mover y fusionar lotes y reconstruir una ventana con
+**Wagner-Whitin**; tres relinks).
+
+**HYB** (`skeletons/hybrid.py`): ILS con recocido (en C++ con `solve_from`, que parte de una solución dada)
+alternado con sub-MIPs sobre la parte que libera una destrucción. Prueba rápida, 5 instancias 10×15, 10 s, una
+semilla, gap contra la mejor de todas, sin afinar:
+
+| | gap | iteraciones |
+|---|---|---|
+| ILS (C++) | 2,97 % | 16 |
+| **HYB (ILS en C++ + sub-MIP)** | 1,46 % | 33 |
+| PR (C++) | 4,46 % | 218 |
+| **LNS_MIP (Python, a mano)** | **1,01 %** | 39 |
+| FIX_OPT (Python, a mano) | 3,94 % | 172 |
+
+En el CLSP el cuello de botella es evaluar el modelo (un flujo por evaluación): ILS hace 16 iteraciones en 10 s. La
+matheurística sigue siendo lo mejor, y HYB queda cerca de LNS_MIP sin afinar.
+
+**Optimización del modelo C++** (`llm.native_model_optimizer`, corrida 119, 0,55 USD, 2 llamadas, las dos pasadas
+aceptadas a la primera): misma salida que el modelo aceptado (también en soluciones rotas), red reducida (un nodo por
+tramo entre setups) y flujo de costo mínimo primal-dual. Evaluaciones del objetivo/s 1148 → 4453 (×3,9); pasos de
+trayectoria de los vecindarios del catálogo 4 → 32 por segundo (×8). La misma prueba rápida (5 instancias 10×15, 10 s):
+
+| | antes | con el modelo optimizado |
+|---|---|---|
+| ILS (C++) | 2,97 % (16 iter.) | 1,55 % (127 iter.) |
+| **HYB (ILS en C++ + sub-MIP)** | 1,46 % | **0,40 %** |
+| PR (C++) | 4,46 % | 3,44 % |
+| LNS_MIP (Python, a mano) | 1,01 % | 0,86 % |
+| FIX_OPT (Python, a mano) | 3,94 % | 3,79 % |
+
+Con el modelo más rápido, la matheurística híbrida con todo generado (modelo, componentes y su optimización) le gana a
+la LNS_MIP de Python con los componentes a mano, sin afinar ninguna de las dos.
+
+### Runs 71 y 72: la matheurística con todo generado iguala a la escrita a mano
+
+irace en las mismas condiciones (10×15, 10 s, 10+10 instancias, 3 semillas de test, 3 réplicas). Run 71: lo
+generado en C++ (modelo del LLM y su optimización, componentes del LLM), con HYB disponible. Run 72: el catálogo a mano
+en Python con todas las matheurísticas. Las tres réplicas de la 71 eligen HYB (con la reconstrucción por Wagner-Whitin
+como perturbación y la ventana de períodos como destrucción); las tres de la 72, LNS_MIP. Gap en test contra la mejor
+de las seis réplicas en cada instancia (mismas instancias):
+
+| | r0 | r1 | r2 | media |
+|---|---|---|---|---|
+| run 71, HYB (todo generado, C++) | 0,61 % | **0,17 %** | 0,28 % | **0,35 %** |
+| run 72, LNS_MIP (a mano, Python) | 0,44 % | 1,23 % | 0,18 % | 0,61 % |
+
+Diferencia (72 − 71, media de réplicas): +0,26 [−0,24, +0,98]: sin diferencia significativa, la 71 mejor en 4 de 10
+instancias. Las mejores réplicas empatan (0,17 % y 0,18 %) y la generada varía menos entre réplicas. El ciclo
+completo en C++ (modelo, componentes, optimización y la matheurística híbrida) llega al nivel de la matheurística
+escrita a mano, sin una línea de código del problema escrita por una persona.
+
+Las runs 62–64 y 67–70 fallaron en el target-runner de irace: R cambia `LD_LIBRARY_PATH` y el intérprete de Python
+del CI cargaba otra libpython (al importar `ctypes`, que usa `pulp`). Arreglado pasándole el entorno del tuner.

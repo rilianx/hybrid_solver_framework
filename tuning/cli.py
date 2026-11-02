@@ -62,7 +62,9 @@ def make_assembler(pack: ProblemPack, catalog: str, generated_dir: str | None = 
             mod, model_of, entries = load_native_catalog(pack, generated_dir)
             base = [({"name": n, "slot": "constructor", "compatible_skeletons": NATIVE_SKELETONS_FOR_SLOT["constructor"],
                       "params": {}}, factory(mod, model_of, "constructor", n)) for n in ("trivial", "random")]
-            pack = replace(pack, handwritten=base + entries)
+            # las destrucciones son de Python (el sub-MIP también): las del catálogo a mano, para HYB y LNS
+            mip = [(c, f) for c, f in pack.handwritten if c["slot"] == "destruction"]
+            pack = replace(pack, handwritten=base + entries + mip)
             catalog = "handwritten"  # el registro se arma con esa lista; no se cargan generados de Python
         else:
             raise SystemExit("--native: catálogo handwritten (a mano, en C++) o generated (C++ del LLM)")

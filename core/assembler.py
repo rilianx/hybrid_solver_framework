@@ -29,7 +29,8 @@ from skeletons.ils import RelativeAnnealingAcceptance, build_ils, hill_climb
 from skeletons.lns_mip import build_lns_mip, run_lns_mip
 from skeletons.local_branching import build_local_branching, run_local_branching
 from skeletons.mip_perturbation import build_mip_perturbation, run_mip_perturbation
-from skeletons.pr import run_pr
+from skeletons.hybrid import run_hybrid
+from skeletons.pr import _Given, run_pr
 from skeletons.sa import MetropolisAcceptance, build_sa, make_run
 from skeletons.ts import build_ts
 from skeletons.vns import build_vns
@@ -130,6 +131,18 @@ SKELETONS: dict[str, SkeletonDef] = {
             "init_moves": {"type": "int", "range": [1, 100], "log": True, "default": 20},
             # la mejora: tabú (los de arriba) o ILS con recocido (con la perturbación; ts_iters = iteraciones de ILS)
             "improve": {"type": "cat", "values": ["ts", "ils"]},
+            "strength": {"type": "int", "range": [1, 6], "default": 1},
+            "ls_sample": {"type": "int", "range": [4, 256], "log": True, "default": 64},
+            "T_rel": {"type": "float", "range": [1e-4, 0.05], "log": True, "default": 0.005},
+        },
+    ),
+    "HYB": SkeletonDef(
+        # matheurística: ILS con recocido (en C++ con el backend nativo) alternada con sub-MIPs (skeletons/hybrid.py)
+        "HYB", ("constructor", "neighborhood", "perturbation", "destruction"),
+        params={
+            "ls_share": {"type": "float", "range": [0.02, 0.5], "log": True, "default": 0.1},
+            "mip_share": {"type": "float", "range": [0.01, 0.3], "log": True, "default": 0.05},
+            "destroy_ratio": {"type": "float", "range": [0.05, 0.6], "default": 0.2},
             "strength": {"type": "int", "range": [1, 6], "default": 1},
             "ls_sample": {"type": "int", "range": [4, 256], "log": True, "default": 64},
             "T_rel": {"type": "float", "range": [1e-4, 0.05], "log": True, "default": 0.005},
@@ -307,6 +320,21 @@ class Assembler:
                               tenure=sp("tenure"), candidate_size=sp("candidate_size"), estimate_top=sp("estimate_top"),
                               path_cands=sp("path_cands"), band=sp("band"), init_moves=sp("init_moves"),
                               perturbation=pert, strength=sp("strength"), ls_sample=sp("ls_sample"), T_rel=sp("T_rel"))
+            if skeleton == "HYB":
+                nbh = self._component(config, "neighborhood", skeleton, P)
+                pert = self._component(config, "perturbation", skeleton, P)
+                destr = self._component(config, "destruction", skeleton, P)
+                ls_rel = sp("T_rel")
+
+                def local_search(sol, seconds, rng_):
+                    acc = RelativeAnnealingAcceptance(ls_rel, seconds, Random(rng_.getrandbits(32)))
+                    ls = hill_climb(P, nbh, strategy="best", max_seconds=seconds, sample_size=sp("ls_sample"))
+                    start = constructor if sol is None else _Given(sol)
+                    res = build_ils(P, start, ls, pert, acc, MaxTimeStop(seconds), strength=sp("strength")).run(inst, rng_)
+                    return res.best_solution, res.best_objective, res.iterations
+
+                return run_hybrid(P, local_search, destr, MIPModelRepair(P), inst, rng, budget, ls_share=sp("ls_share"),
+                                  mip_share=sp("mip_share"), destroy_ratio=sp("destroy_ratio"))
             if skeleton == "VNS":
                 ls_nbh = self._component(config, "neighborhood", skeleton, P)
                 others = [

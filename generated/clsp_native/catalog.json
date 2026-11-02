@@ -1,0 +1,245 @@
+[
+ {
+  "name": "setup_toggle_flip",
+  "slot": "neighborhood",
+  "path": "generated/clsp_native/neighborhood/setup_toggle_flip_r1.hpp",
+  "component": {
+   "name": "setup_toggle_flip",
+   "slot": "neighborhood",
+   "params": {
+    "sweep_items_first": {
+     "type": "cat",
+     "values": [
+      "yes",
+      "no"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "lot_consolidation_window",
+  "slot": "neighborhood",
+  "path": "generated/clsp_native/neighborhood/lot_consolidation_window_r1.hpp",
+  "component": {
+   "name": "lot_consolidation_window",
+   "slot": "neighborhood",
+   "params": {
+    "max_len": {
+     "type": "int",
+     "range": [
+      1,
+      10
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "random_setup_flips_flow_repair",
+  "slot": "perturbation",
+  "path": "generated/clsp_native/perturbation/random_setup_flips_flow_repair_r1.hpp",
+  "component": {
+   "name": "random_setup_flips_flow_repair",
+   "slot": "perturbation",
+   "params": {
+    "flips_per_strength": {
+     "type": "float",
+     "range": [
+      0.5,
+      4.0
+     ]
+    },
+    "off_bias": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "repair_iters": {
+     "type": "int",
+     "range": [
+      20,
+      400
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "lot_shift_merge_swap_repair",
+  "slot": "perturbation",
+  "path": "generated/clsp_native/perturbation/lot_shift_merge_swap_repair_r1.hpp",
+  "component": {
+   "name": "lot_shift_merge_swap_repair",
+   "slot": "perturbation",
+   "params": {
+    "moves_per_strength": {
+     "type": "float",
+     "range": [
+      0.5,
+      4.0
+     ]
+    },
+    "p_shift": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "p_merge": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "repair_iters": {
+     "type": "int",
+     "range": [
+      20,
+      400
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "window_wagner_whitin_rebuild",
+  "slot": "perturbation",
+  "path": "generated/clsp_native/perturbation/window_wagner_whitin_rebuild_r1.hpp",
+  "component": {
+   "name": "window_wagner_whitin_rebuild",
+   "slot": "perturbation",
+   "params": {
+    "window_base": {
+     "type": "int",
+     "range": [
+      2,
+      12
+     ]
+    },
+    "window_per_strength": {
+     "type": "float",
+     "range": [
+      0.5,
+      4.0
+     ]
+    },
+    "item_frac": {
+     "type": "float",
+     "range": [
+      0.05,
+      1.0
+     ]
+    },
+    "cost_noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.9
+     ]
+    },
+    "repair_iters": {
+     "type": "int",
+     "range": [
+      20,
+      400
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "hamming_single_setup_flip",
+  "slot": "relink",
+  "path": "generated/clsp_native/relink/hamming_single_setup_flip_r1.hpp",
+  "component": {
+   "name": "hamming_single_setup_flip",
+   "slot": "relink",
+   "params": {
+    "add_bias": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "differing_run_segment_copy",
+  "slot": "relink",
+  "path": "generated/clsp_native/relink/differing_run_segment_copy_r1.hpp",
+  "component": {
+   "name": "differing_run_segment_copy",
+   "slot": "relink",
+   "params": {
+    "prefer_short": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "period_column_transplant",
+  "slot": "relink",
+  "path": "generated/clsp_native/relink/period_column_transplant_r1.hpp",
+  "component": {
+   "name": "period_column_transplant",
+   "slot": "relink",
+   "params": {
+    "pick": {
+     "type": "cat",
+     "values": [
+      "random",
+      "fewest_diffs",
+      "most_diffs"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ }
+]

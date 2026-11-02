@@ -115,6 +115,9 @@ def module_source(gen: dict, components: list[NativeComponent], module_name: str
 def build_components(gen: dict, components: list[NativeComponent], debug: bool = False, timeout: float = 600.0):
     """Compila el módulo con estos componentes; (ruta del .so, nombre del módulo)."""
     h = hashlib.sha256(json.dumps([[c.name, c.slot, c.source] for c in components]).encode() + bytes(debug))
+    model = Path(gen["dir"]) / gen["model_header"]
+    if model.exists():  # dos modelos distintos (p.ej. el aceptado y uno optimizado) dan módulos con nombres distintos
+        h.update(model.read_bytes())
     name = f"hsf_gen_{h.hexdigest()[:12]}"
     src_dir = BUILD / "src"
     src_dir.mkdir(parents=True, exist_ok=True)
@@ -145,6 +148,10 @@ class ModelCache:
 def parts_for(native, mip_parts, model_of=None) -> SimpleNamespace:
     """Las piezas de un modelo nativo (`core.model_parts`): vista heurística y constructiva en C++, vista MIP
     de Python (`mip_parts`)."""
+    if not hasattr(native, "empty_partial"):  # un modelo generado por el LLM (native/include/hsf/generic.hpp)
+        from .generic_model import model_parts
+
+        return model_parts(native, mip_parts, model_of)
     model_of = model_of or ModelCache(native)
     seed = lambda rng: rng.getrandbits(63)  # noqa: E731
     ns = SimpleNamespace(

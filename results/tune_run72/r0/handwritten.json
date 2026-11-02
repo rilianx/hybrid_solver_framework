@@ -1,0 +1,593 @@
+{
+  "catalog": "handwritten",
+  "generated_components": [],
+  "settings": {
+    "trials": 50,
+    "budget": 10.0,
+    "train": 10,
+    "test": 10,
+    "problem": "clsp",
+    "size": "10x15",
+    "seed": 0,
+    "tuner_seed": 0,
+    "seeds_test": 3,
+    "objective": "ratio",
+    "skeletons": "all",
+    "ref_time": 0.0,
+    "reeval_top": 0,
+    "reeval_seeds": 2,
+    "race_seeds": 6,
+    "screen": -1,
+    "defaults_margin": 0.005,
+    "native": false,
+    "tuner": "irace"
+  },
+  "tuning": {
+    "tuner": "irace",
+    "best_config": {
+      "skeleton": "LNS_MIP",
+      "constructor": "greedy_latest_source",
+      "greedy_latest_source.rule": "roulette",
+      "greedy_latest_source.alpha": 0.1527,
+      "destruction": "period_window",
+      "LNS_MIP.destroy_ratio": 0.4052,
+      "LNS_MIP.mip_time_share": 0.3829
+    },
+    "best_cost": 0.6500763516474349,
+    "best_summary": "LNS_MIP[constructor=greedy_latest_source, destruction=period_window]",
+    "n_trials": 728,
+    "n_failed": 0,
+    "seconds": 7628.2,
+    "skeleton_usage": {
+      "LNS_MIP": 7
+    },
+    "elites": [
+      "LNS_MIP[constructor=greedy_latest_source, destruction=period_window]",
+      "LNS_MIP[constructor=greedy_latest_source, destruction=period_window]",
+      "LNS_MIP[constructor=lot_for_lot, destruction=period_window]",
+      "LNS_MIP[constructor=lot_for_lot, destruction=period_window]",
+      "LNS_MIP[constructor=lot_for_lot, destruction=period_window]",
+      "LNS_MIP[constructor=lot_for_lot, destruction=period_window]",
+      "LNS_MIP[constructor=greedy_latest_source, destruction=period_window]"
+    ],
+    "elite_configs": [
+      {
+        "skeleton": "LNS_MIP",
+        "constructor": "greedy_latest_source",
+        "greedy_latest_source.rule": "roulette",
+        "greedy_latest_source.alpha": 0.1527,
+        "destruction": "period_window",
+        "LNS_MIP.destroy_ratio": 0.4052,
+        "LNS_MIP.mip_time_share": 0.3829
+      },
+      {
+        "skeleton": "LNS_MIP",
+        "constructor": "greedy_latest_source",
+        "greedy_latest_source.rule": "roulette",
+        "greedy_latest_source.alpha": 0.5132,
+        "destruction": "period_window",
+        "LNS_MIP.destroy_ratio": 0.5301,
+        "LNS_MIP.mip_time_share": 0.0675
+      },
+      {
+        "skeleton": "LNS_MIP",
+        "constructor": "lot_for_lot",
+        "destruction": "period_window",
+        "LNS_MIP.destroy_ratio": 0.4044,
+        "LNS_MIP.mip_time_share": 0.7534
+      },
+      {
+        "skeleton": "LNS_MIP",
+        "constructor": "lot_for_lot",
+        "destruction": "period_window",
+        "LNS_MIP.destroy_ratio": 0.3914,
+        "LNS_MIP.mip_time_share": 0.6505
+      },
+      {
+        "skeleton": "LNS_MIP",
+        "constructor": "lot_for_lot",
+        "destruction": "period_window",
+        "LNS_MIP.destroy_ratio": 0.4089,
+        "LNS_MIP.mip_time_share": 0.7028
+      },
+      {
+        "skeleton": "LNS_MIP",
+        "constructor": "lot_for_lot",
+        "destruction": "period_window",
+        "LNS_MIP.destroy_ratio": 0.4012,
+        "LNS_MIP.mip_time_share": 0.111
+      },
+      {
+        "skeleton": "LNS_MIP",
+        "constructor": "greedy_latest_source",
+        "greedy_latest_source.rule": "roulette",
+        "greedy_latest_source.alpha": 0.6666,
+        "destruction": "period_window",
+        "LNS_MIP.destroy_ratio": 0.3545,
+        "LNS_MIP.mip_time_share": 0.4395
+      }
+    ],
+    "reevaluated": [],
+    "log_tail": [
+      "# nbIterations: 8",
+      "# experimentsUsedSoFar: 728",
+      "# timeUsed: 0",
+      "# remainingBudget: 0",
+      "# currentBudget: 71",
+      "# number of elites: 7",
+      "# nbConfigurations: 11",
+      "# Total CPU user time: 6975.991, CPU sys time: 656.078, Wall-clock time: 7627.792",
+      "# Best configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):",
+      "   skeleton          constructor neighborhood perturbation   destruction fixing_policy SA.T0 SA.cooling SA.T_end SA.alpha SA.iters_per_T SA.eval SA.pen_scale SA.pen_adapt SA.pen_target ILS.strength ILS.ls_strategy ILS.ls_time_share ILS.ls_sample ILS.accept ILS.T_rel ILS.pen_scale ILS.pen_adapt ILS.pen_target LNS_MIP.destroy_ratio LNS_MIP.mip_time_share FIX_OPT.block_size FIX_OPT.mip_time_share FIX_OPT.order TS.tenure TS.candidate_size TS.estimate_top TS.elite_size TS.stall TS.pen_scale TS.pen_adapt TS.pen_target VNS.shake_strength VNS.ls_time_share VNS.ls_sample VNS.pen_scale VNS.pen_adapt VNS.pen_target GRASP.ls_strategy GRASP.ls_time_share GRASP.ls_sample LOCAL_BRANCH.k LOCAL_BRANCH.k_step LOCAL_BRANCH.mip_time_share MIP_PERTURB.destroy_ratio MIP_PERTURB.flips MIP_PERTURB.mip_time_share MIP_PERTURB.ls_time_share MIP_PERTURB.ls_sample greedy_unit_marginal_cost.rule greedy_unit_marginal_cost.alpha greedy_latest_source.rule greedy_latest_source.alpha sliding_window.window_size sliding_window.overlap",
+      "60  LNS_MIP greedy_latest_source         <NA>         <NA> period_window          <NA>    NA       <NA>       NA       NA             NA    <NA>           NA         <NA>            NA           NA            <NA>                NA            NA       <NA>        NA            NA          <NA>             NA                0.4052                 0.3829                 NA                     NA          <NA>        NA                NA              NA            NA       NA           NA         <NA>            NA                 NA                NA            NA            NA          <NA>             NA              <NA>                  NA              NA             NA                  NA                          NA                        NA                NA                         NA                        NA                    NA                           <NA>                              NA                  roulette                     0.1527                         NA                     NA",
+      "89  LNS_MIP greedy_latest_source         <NA>         <NA> period_window          <NA>    NA       <NA>       NA       NA             NA    <NA>           NA         <NA>            NA           NA            <NA>                NA            NA       <NA>        NA            NA          <NA>             NA                0.5301                 0.0675                 NA                     NA          <NA>        NA                NA              NA            NA       NA           NA         <NA>            NA                 NA                NA            NA            NA          <NA>             NA              <NA>                  NA              NA             NA                  NA                          NA                        NA                NA                         NA                        NA                    NA                           <NA>                              NA                  roulette                     0.5132                         NA                     NA",
+      "46  LNS_MIP          lot_for_lot         <NA>         <NA> period_window          <NA>    NA       <NA>       NA       NA             NA    <NA>           NA         <NA>            NA           NA            <NA>                NA            NA       <NA>        NA            NA          <NA>             NA                0.4044                 0.7534                 NA                     NA          <NA>        NA                NA              NA            NA       NA           NA         <NA>            NA                 NA                NA            NA            NA          <NA>             NA              <NA>                  NA              NA             NA                  NA                          NA                        NA                NA                         NA                        NA                    NA                           <NA>                              NA                      <NA>                         NA                         NA                     NA",
+      "57  LNS_MIP          lot_for_lot         <NA>         <NA> period_window          <NA>    NA       <NA>       NA       NA             NA    <NA>           NA         <NA>            NA           NA            <NA>                NA            NA       <NA>        NA            NA          <NA>             NA                0.3914                 0.6505                 NA                     NA          <NA>        NA                NA              NA            NA       NA           NA         <NA>            NA                 NA                NA            NA            NA          <NA>             NA              <NA>                  NA              NA             NA                  NA                          NA                        NA                NA                         NA                        NA                    NA                           <NA>                              NA                      <NA>                         NA                         NA                     NA",
+      "65  LNS_MIP          lot_for_lot         <NA>         <NA> period_window          <NA>    NA       <NA>       NA       NA             NA    <NA>           NA         <NA>            NA           NA            <NA>                NA            NA       <NA>        NA            NA          <NA>             NA                0.4089                 0.7028                 NA                     NA          <NA>        NA                NA              NA            NA       NA           NA         <NA>            NA                 NA                NA            NA            NA          <NA>             NA              <NA>                  NA              NA             NA                  NA                          NA                        NA                NA                         NA                        NA                    NA                           <NA>                              NA                      <NA>                         NA                         NA                     NA",
+      "79  LNS_MIP          lot_for_lot         <NA>         <NA> period_window          <NA>    NA       <NA>       NA       NA             NA    <NA>           NA         <NA>            NA           NA            <NA>                NA            NA       <NA>        NA            NA          <NA>             NA                0.4012                 0.1110                 NA                     NA          <NA>        NA                NA              NA            NA       NA           NA         <NA>            NA                 NA                NA            NA            NA          <NA>             NA              <NA>                  NA              NA             NA                  NA                          NA                        NA                NA                         NA                        NA                    NA                           <NA>                              NA                      <NA>                         NA                         NA                     NA",
+      "88  LNS_MIP greedy_latest_source         <NA>         <NA> period_window          <NA>    NA       <NA>       NA       NA             NA    <NA>           NA         <NA>            NA           NA            <NA>                NA            NA       <NA>        NA            NA          <NA>             NA                0.3545                 0.4395                 NA                     NA          <NA>        NA                NA              NA            NA       NA           NA         <NA>            NA                 NA                NA            NA            NA          <NA>             NA              <NA>                  NA              NA             NA                  NA                          NA                        NA                NA                         NA                        NA                    NA                           <NA>                              NA                  roulette                     0.6666                         NA                     NA",
+      "# Best configurations as commandlines (first number is the configuration ID; same order as above):",
+      "60  --skeleton=LNS_MIP --constructor=greedy_latest_source --greedy_latest_source.rule=roulette --greedy_latest_source.alpha=0.1527 --destruction=period_window --LNS_MIP.destroy_ratio=0.4052 --LNS_MIP.mip_time_share=0.3829",
+      "89  --skeleton=LNS_MIP --constructor=greedy_latest_source --greedy_latest_source.rule=roulette --greedy_latest_source.alpha=0.5132 --destruction=period_window --LNS_MIP.destroy_ratio=0.5301 --LNS_MIP.mip_time_share=0.0675",
+      "46  --skeleton=LNS_MIP --constructor=lot_for_lot --destruction=period_window --LNS_MIP.destroy_ratio=0.4044 --LNS_MIP.mip_time_share=0.7534",
+      "57  --skeleton=LNS_MIP --constructor=lot_for_lot --destruction=period_window --LNS_MIP.destroy_ratio=0.3914 --LNS_MIP.mip_time_share=0.6505",
+      "65  --skeleton=LNS_MIP --constructor=lot_for_lot --destruction=period_window --LNS_MIP.destroy_ratio=0.4089 --LNS_MIP.mip_time_share=0.7028",
+      "79  --skeleton=LNS_MIP --constructor=lot_for_lot --destruction=period_window --LNS_MIP.destroy_ratio=0.4012 --LNS_MIP.mip_time_share=0.111",
+      "88  --skeleton=LNS_MIP --constructor=greedy_latest_source --greedy_latest_source.rule=roulette --greedy_latest_source.alpha=0.6666 --destruction=period_window --LNS_MIP.destroy_ratio=0.3545 --LNS_MIP.mip_time_share=0.4395",
+      "",
+      "",
+      "# Testing of elite configurations: 1 ",
+      "# Testing iteration configurations: FALSE ",
+      "# 2026-11-01 23:54:27 UTC: No test instances, skip testing"
+    ]
+  },
+  "test": {
+    "tuned": {
+      "label": "tuned",
+      "summary": "LNS_MIP[constructor=greedy_latest_source, destruction=period_window]",
+      "mean": 86498.96333333333,
+      "std": 16207.046427927233,
+      "per_instance": [
+        77157.73333333334,
+        69668.4,
+        82273.26666666668,
+        82733.0,
+        118371.33333333333,
+        90518.0,
+        114847.3,
+        71230.8,
+        75364.20000000001,
+        82825.6
+      ],
+      "config": {
+        "skeleton": "LNS_MIP",
+        "constructor": "greedy_latest_source",
+        "greedy_latest_source.rule": "roulette",
+        "greedy_latest_source.alpha": 0.1527,
+        "destruction": "period_window",
+        "LNS_MIP.destroy_ratio": 0.4052,
+        "LNS_MIP.mip_time_share": 0.3829
+      },
+      "gap_per_instance": [
+        0.00023247834883334287,
+        0.0,
+        0.0012250636668022128,
+        0.0,
+        0.04997767665747118,
+        0.0,
+        0.0005209626483720171,
+        0.0,
+        0.0,
+        0.0003913364865712906
+      ],
+      "mean_gap": 0.005234751780805004
+    },
+    "baselines": [
+      {
+        "label": "default:LNS_MIP",
+        "summary": "LNS_MIP[constructor=lot_for_lot, destruction=period_window]",
+        "mean": 86238.09666666666,
+        "std": 15550.394811225497,
+        "per_instance": [
+          77170.2,
+          69793.06666666667,
+          82273.26666666668,
+          82733.0,
+          115091.0,
+          90666.33333333333,
+          114930.63333333333,
+          71244.13333333333,
+          75382.20000000001,
+          83097.13333333335
+        ],
+        "config": {
+          "skeleton": "LNS_MIP",
+          "constructor": "lot_for_lot",
+          "destruction": "period_window",
+          "LNS_MIP.destroy_ratio": 0.325,
+          "LNS_MIP.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.0003940896917025216,
+          0.0017894291625280834,
+          0.0012250636668022128,
+          0.0,
+          0.02088045628320782,
+          0.0016387164247257835,
+          0.0012469418127699567,
+          0.0001871849443404887,
+          0.00023884019202751434,
+          0.0036709939141539917
+        ],
+        "mean_gap": 0.0031271716092258375
+      },
+      {
+        "label": "default:LOCAL_BRANCH",
+        "summary": "LOCAL_BRANCH[constructor=lot_for_lot]",
+        "mean": 86345.75666666667,
+        "std": 15649.448097205292,
+        "per_instance": [
+          77531.4,
+          69668.4,
+          82434.8,
+          82733.0,
+          115022.0,
+          90518.0,
+          115801.56666666668,
+          71230.8,
+          75478.2,
+          83039.40000000002
+        ],
+        "config": {
+          "skeleton": "LOCAL_BRANCH",
+          "constructor": "lot_for_lot",
+          "LOCAL_BRANCH.k": 11,
+          "LOCAL_BRANCH.k_step": 6,
+          "LOCAL_BRANCH.mip_time_share": 0.2
+        },
+        "gap_per_instance": [
+          0.005076497476010973,
+          0.0,
+          0.0031908446367767004,
+          0.0,
+          0.020268412322485076,
+          0.0,
+          0.00883429525572628,
+          0.0,
+          0.001512654549507398,
+          0.0029736741664775804
+        ],
+        "mean_gap": 0.0041856378406984005
+      },
+      {
+        "label": "default:MIP_PERTURB",
+        "summary": "MIP_PERTURB[constructor=lot_for_lot, destruction=period_window, neighborhood=setup_flip]",
+        "mean": 87149.66666666667,
+        "std": 15547.557275669456,
+        "per_instance": [
+          77778.2,
+          70593.53333333334,
+          83852.26666666666,
+          83557.06666666667,
+          114884.33333333333,
+          91920.0,
+          116659.93333333333,
+          71644.2,
+          76428.06666666667,
+          84179.06666666668
+        ],
+        "config": {
+          "skeleton": "MIP_PERTURB",
+          "constructor": "lot_for_lot",
+          "destruction": "period_window",
+          "neighborhood": "setup_flip",
+          "MIP_PERTURB.destroy_ratio": 0.325,
+          "MIP_PERTURB.flips": 1,
+          "MIP_PERTURB.mip_time_share": 0.2,
+          "MIP_PERTURB.ls_time_share": 0.16,
+          "MIP_PERTURB.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.008275883525754464,
+          0.013279095448343095,
+          0.020440714625880853,
+          0.009960555844302343,
+          0.019047281135149318,
+          0.015488632095273867,
+          0.016312171040691142,
+          0.005803669199278882,
+          0.014116339942129737,
+          0.016738894820669672
+        ],
+        "mean_gap": 0.013946323767747338
+      },
+      {
+        "label": "default:FIX_OPT",
+        "summary": "FIX_OPT[constructor=lot_for_lot, fixing_policy=sliding_window]",
+        "mean": 88419.27,
+        "std": 15021.865227064847,
+        "per_instance": [
+          80241.6,
+          76181.2,
+          83359.8,
+          85369.0,
+          115643.0,
+          92731.0,
+          117455.1,
+          72451.8,
+          77380.20000000001,
+          83380.0
+        ],
+        "config": {
+          "skeleton": "FIX_OPT",
+          "constructor": "lot_for_lot",
+          "fixing_policy": "sliding_window",
+          "sliding_window.window_size": 2,
+          "sliding_window.overlap": 1,
+          "FIX_OPT.block_size": 2,
+          "FIX_OPT.mip_time_share": 0.2,
+          "FIX_OPT.order": "sequential"
+        },
+        "gap_per_instance": [
+          0.04021011203036568,
+          0.09348284157523358,
+          0.01444763826384947,
+          0.03186153046547327,
+          0.025776807968989773,
+          0.02444817605338165,
+          0.023239464227376726,
+          0.017141461277986488,
+          0.026750101507081608,
+          0.007087538590125618
+        ],
+        "mean_gap": 0.030444567195986386
+      },
+      {
+        "label": "default:SA",
+        "summary": "SA[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "mean": 91971.15000000001,
+        "std": 16671.71917681257,
+        "per_instance": [
+          82529.2,
+          74125.73333333334,
+          88063.93333333333,
+          87959.53333333334,
+          120397.66666666667,
+          99083.0,
+          123802.20000000001,
+          73899.0,
+          81231.40000000001,
+          88619.83333333334
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26,
+          "SA.eval": "objective",
+          "SA.pen_scale": 1.0,
+          "SA.pen_adapt": "no",
+          "SA.pen_target": 0.2
+        },
+        "gap_per_instance": [
+          0.069865361330986,
+          0.06397926941530656,
+          0.07169462002338162,
+          0.06317350190774347,
+          0.0679516633107735,
+          0.09462206411984357,
+          0.07853381247958194,
+          0.03745851513671048,
+          0.07785128748132397,
+          0.07037574744463712
+        ],
+        "mean_gap": 0.06955058426502882
+      },
+      {
+        "label": "default:VNS",
+        "summary": "VNS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "mean": 93369.11333333334,
+        "std": 17156.78096168263,
+        "per_instance": [
+          84926.8,
+          75828.53333333333,
+          88464.4,
+          88044.2,
+          126361.0,
+          98687.16666666667,
+          123586.3,
+          75254.0,
+          82170.13333333333,
+          90368.6
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32,
+          "VNS.pen_scale": 1.0,
+          "VNS.pen_adapt": "no",
+          "VNS.pen_target": 0.2
+        },
+        "gap_per_instance": [
+          0.10094659306868828,
+          0.08842076656465961,
+          0.07656810177601765,
+          0.06419687428232987,
+          0.12084763653458935,
+          0.09024908489655838,
+          0.07665294566045958,
+          0.05648118510531957,
+          0.09030724579221061,
+          0.09149785248063842
+        ],
+        "mean_gap": 0.08561682861614713
+      },
+      {
+        "label": "default:ILS",
+        "summary": "ILS[constructor=lot_for_lot, neighborhood=setup_flip, perturbation=setup_flip_perturbation]",
+        "mean": 94942.97,
+        "std": 18066.609583227473,
+        "per_instance": [
+          86146.86666666667,
+          75827.2,
+          92411.8,
+          89886.6,
+          128001.0,
+          99090.5,
+          127669.63333333335,
+          74799.93333333333,
+          82152.13333333333,
+          93444.03333333334
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "perturbation": "setup_flip_perturbation",
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32,
+          "ILS.accept": "better",
+          "ILS.T_rel": 0.005,
+          "ILS.pen_scale": 1.0,
+          "ILS.pen_adapt": "no",
+          "ILS.pen_target": 0.2
+        },
+        "gap_per_instance": [
+          0.11676289887537517,
+          0.08840162828484655,
+          0.12460601222305241,
+          0.08646610179734816,
+          0.13539476835466616,
+          0.09470492056828476,
+          0.11222592471596077,
+          0.05010660182580192,
+          0.09006840560018309,
+          0.12864381776925313
+        ],
+        "mean_gap": 0.10273810800147722
+      },
+      {
+        "label": "default:GRASP",
+        "summary": "GRASP[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "mean": 98283.62666666666,
+        "std": 18263.27343639749,
+        "per_instance": [
+          88260.46666666667,
+          78797.73333333332,
+          93425.53333333333,
+          91127.33333333334,
+          131497.66666666666,
+          107230.33333333333,
+          131349.69999999998,
+          79215.06666666667,
+          87456.2,
+          94476.23333333334
+        ],
+        "config": {
+          "skeleton": "GRASP",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "GRASP.ls_strategy": "first",
+          "GRASP.ls_time_share": 0.16,
+          "GRASP.ls_sample": 32
+        },
+        "gap_per_instance": [
+          0.14416250323006632,
+          0.13103980188052733,
+          0.13694264673788245,
+          0.10146293901264723,
+          0.16641090916617132,
+          0.18462994468871746,
+          0.1442857453991069,
+          0.11209008837001216,
+          0.1604475334442611,
+          0.1411110252210728
+        ],
+        "mean_gap": 0.14225831371504652
+      },
+      {
+        "label": "default:TS",
+        "summary": "TS[constructor=lot_for_lot, neighborhood=setup_flip]",
+        "mean": 109830.75333333334,
+        "std": 20918.11724025744,
+        "per_instance": [
+          98970.26666666666,
+          89317.8,
+          102574.46666666666,
+          99886.80000000002,
+          145104.66666666666,
+          120659.66666666667,
+          151111.76666666666,
+          89147.66666666667,
+          97154.2,
+          104380.23333333332
+        ],
+        "config": {
+          "skeleton": "TS",
+          "constructor": "lot_for_lot",
+          "neighborhood": "setup_flip",
+          "TS.tenure": 16,
+          "TS.candidate_size": 52,
+          "TS.estimate_top": 0,
+          "TS.elite_size": 0,
+          "TS.stall": 500,
+          "TS.pen_scale": 1.0,
+          "TS.pen_adapt": "no",
+          "TS.pen_target": 0.2
+        },
+        "gap_per_instance": [
+          0.28299874599968705,
+          0.28204178652014417,
+          0.24828065153915846,
+          0.20733927211632622,
+          0.2871077522611623,
+          0.3329908600131098,
+          0.31644792914443354,
+          0.2515325767317883,
+          0.289129321348863,
+          0.26073437593103427
+        ],
+        "mean_gap": 0.2758603271605707
+      }
+    ],
+    "best_baseline": "default:LNS_MIP",
+    "gain_vs_best_baseline": -0.003024958536306618,
+    "wins_per_instance": "7/10",
+    "reference": 132104.72,
+    "best_known": [
+      77139.8,
+      69668.4,
+      82172.6,
+      82733.0,
+      112737.0,
+      90518.0,
+      114787.5,
+      71230.8,
+      75364.20000000001,
+      82793.20000000001
+    ],
+    "best_baseline_by_gap": "default:LNS_MIP",
+    "tuned_vs_best_baseline": {
+      "a": "tuned",
+      "b": "default:LNS_MIP",
+      "mean_diff": -0.002107580171579167,
+      "ci95": [
+        -0.008292384293217148,
+        0.0013967950281339183
+      ],
+      "wins_a": 7,
+      "n": 10,
+      "significant": false
+    },
+    "mip_reference": null
+  }
+}

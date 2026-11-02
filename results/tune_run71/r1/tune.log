@@ -1,0 +1,17 @@
+
+=== catálogo `generated`: 73 parámetros, 0 opciones generadas por LLM ===
+  irace: 1008 experimentos en 10208s; élite: HYB[constructor=random, neighborhood=setup_toggle_flip, perturbation=window_wagner_whitin_rebuild, destruction=period_window]; HYB[constructor=random, neighborhood=setup_toggle_flip, perturbation=random_setup_flips_flow_repair, destruction=period_window]; HYB[constructor=random, neighborhood=setup_toggle_flip, perturbation=window_wagner_whitin_rebuild, destruction=period_window]; HYB[constructor=random, neighborhood=setup_toggle_flip, perturbation=window_wagner_whitin_rebuild, destruction=period_window]; HYB[constructor=random, neighborhood=setup_toggle_flip, perturbation=random_setup_flips_flow_repair, destruction=period_window]; HYB[constructor=random, neighborhood=setup_toggle_flip, perturbation=random_setup_flips_flow_repair, destruction=period_window]; HYB[constructor=random, neighborhood=setup_toggle_flip, perturbation=window_wagner_whitin_rebuild, destruction=period_window]; HYB[constructor=random, neighborhood=setup_toggle_flip, perturbation=window_wagner_whitin_rebuild, destruction=period_window]
+  mejor en train: 0.6481  HYB[constructor=random, neighborhood=setup_toggle_flip, perturbation=window_wagner_whitin_rebuild, destruction=period_window]
+
+=== TEST `generated` (partida trivial sin búsqueda = 132104.7; gap vs mejor conocido por instancia) ===
+    tuned                                            gap   0.25%        86156.3 ±  15298.3   (+34.8% vs partida)   HYB[constructor=random, neighborhood=setup_toggle_flip, perturbation=window_wagner_whitin_rebuild, destruction=period_window]
+    default:HYB                                      gap   0.38%        86242.2 ±  15129.4   (+34.7% vs partida)   HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=random_setup_flips_flow_repair, destruction=period_window]
+    default:TS                                       gap   1.35%        87084.8 ±  15370.0   (+34.1% vs partida)   TS[constructor=trivial, neighborhood=setup_toggle_flip]
+    default:PR                                       gap   1.35%        87086.9 ±  15367.8   (+34.1% vs partida)   PR[constructor=trivial, neighborhood=setup_toggle_flip, relink=hamming_single_setup_flip, perturbation=random_setup_flips_flow_repair]
+    default:VNS                                      gap   1.75%        87485.2 ±  15736.6   (+33.8% vs partida)   VNS[constructor=trivial, neighborhood=setup_toggle_flip]
+    default:ILS                                      gap   2.40%        88019.1 ±  15768.1   (+33.4% vs partida)   ILS[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=random_setup_flips_flow_repair]
+    default:SA                                       gap   9.13%        93860.3 ±  17339.4   (+29.0% vs partida)   SA[constructor=trivial, neighborhood=setup_toggle_flip]
+  ganancia del afinado vs mejor default: +0.10%; gana en 7/10 instancias
+  afinado vs default:HYB: gap +0.13% a favor del afinado, IC95 [-0.05%, +0.32%] (no se distingue del ruido)
+
+Escenario irace escrito en tuning_out/irace/scenario.txt (correr: irace --scenario tuning_out/irace/scenario.txt)

@@ -14,7 +14,7 @@ on:
         description: "Qué generar: componentes (slots), el ProblemModel completo (§6.1), optimize, native_components (componentes C++ sobre el modelo nativo; slots por defecto greedy_score neighborhood perturbation) o native_optimize (versiones más rápidas de los C++ aceptados; slots de opt_slots, por defecto neighborhood)"
         default: components
         type: choice
-        options: [components, problem_model, optimize, native_components, native_optimize]
+        options: [components, problem_model, optimize, native_model, native_model_optimize, native_components, native_optimize]
       model_mode:
         description: "Con target=problem_model: por piezas validadas con casos de prueba, o en un solo módulo"
         default: parts
@@ -103,7 +103,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      WS: ${{ inputs.workspace || ((inputs.target == 'native_components' || inputs.target == 'native_optimize') && format('generated/{0}_native', inputs.problem)) || (inputs.variant != '' && format('generated/{0}_{1}_cycle{2}', inputs.problem, inputs.variant, inputs.reference && '_ref' || '')) || (inputs.target == 'problem_model' && format('generated/{0}_model{1}', inputs.problem, inputs.model_mode == 'parts' && '_parts' || '')) || format('generated/{0}{1}{2}', inputs.problem, inputs.from_scratch && '_scratch' || '', inputs.planner && '_planner' || '') }}
+      WS: ${{ inputs.workspace || ((inputs.target == 'native_model' || inputs.target == 'native_model_optimize' || inputs.target == 'native_components' || inputs.target == 'native_optimize') && format('generated/{0}_native', inputs.problem)) || (inputs.variant != '' && format('generated/{0}_{1}_cycle{2}', inputs.problem, inputs.variant, inputs.reference && '_ref' || '')) || (inputs.target == 'problem_model' && format('generated/{0}_model{1}', inputs.problem, inputs.model_mode == 'parts' && '_parts' || '')) || format('generated/{0}{1}{2}', inputs.problem, inputs.from_scratch && '_scratch' || '', inputs.planner && '_planner' || '') }}
       TARGET: ${{ inputs.target }}
       MODEL_MODE: ${{ inputs.model_mode }}
       PKG: ${{ inputs.problem == 'cvrp' && 'cvrp' || inputs.problem == 'jobshop' && 'jobshop' || 'lotsizing' }}
@@ -157,8 +157,8 @@ jobs:
         working-directory: ${{ env.ROOT }}
         run: |
           # en el ciclo, la etapa de componentes conserva el modelo que generó la etapa anterior
-          if [ "$TARGET" = "native_optimize" ]; then
-            echo "native_optimize trabaja sobre los componentes C++ aceptados del workspace: no se limpia"
+          if [ "$TARGET" = "native_optimize" ] || [ "$TARGET" = "native_model_optimize" ]; then
+            echo "$TARGET trabaja sobre lo aceptado en el workspace: no se limpia"
           elif [ -n "$VARIANT" ] && { [ "$TARGET" = "optimize" ] || [ "$CONSTRUCTION_ONLY" = "true" ]; }; then
             echo "optimize y --construction-only trabajan sobre el workspace existente: no se limpia"
           elif [ -n "$VARIANT" ] && [ "$TARGET" = "components" ] && [ -d "$WS" ]; then
@@ -217,6 +217,20 @@ jobs:
             if [ -n "$MODEL" ]; then ARGS="$ARGS --model $MODEL"; fi
             echo "python -m llm.native_optimizer $ARGS"
             python -u -W ignore -m llm.native_optimizer $ARGS 2>&1 | tee generate.log
+            exit 0
+          fi
+          if [ "$TARGET" = "native_model" ]; then
+            ARGS="--problem $PROBLEM --workspace $WS --rounds $ROUNDS --provider $PROVIDER"
+            if [ -n "$MODEL" ]; then ARGS="$ARGS --model $MODEL"; fi
+            echo "python -m llm.native_model_generator $ARGS"
+            python -u -W ignore -m llm.native_model_generator $ARGS 2>&1 | tee generate.log
+            exit 0
+          fi
+          if [ "$TARGET" = "native_model_optimize" ]; then
+            ARGS="--problem $PROBLEM --workspace $WS --rounds $ROUNDS --provider $PROVIDER"
+            if [ -n "$MODEL" ]; then ARGS="$ARGS --model $MODEL"; fi
+            echo "python -m llm.native_model_optimizer $ARGS"
+            python -u -W ignore -m llm.native_model_optimizer $ARGS 2>&1 | tee generate.log
             exit 0
           fi
           if [ "$TARGET" = "native_components" ]; then
@@ -333,6 +347,8 @@ jobs:
           [ "$SCRATCH" = "true" ] && BRANCH="llm-generated/$PFX-scratch-run$RUN"
           [ "$PLANNER" = "true" ] && BRANCH="$BRANCH-planner"
           [ "$TARGET" = "problem_model" ] && BRANCH="llm-generated/$PROBLEM-$PROVIDER-model-run$RUN"
+          [ "$TARGET" = "native_model" ] && BRANCH="llm-generated/$PROBLEM-native-model-$PROVIDER-run$RUN"
+          [ "$TARGET" = "native_model_optimize" ] && BRANCH="llm-generated/$PROBLEM-native-model-optimize-$PROVIDER-run$RUN"
           [ "$TARGET" = "native_components" ] && BRANCH="llm-generated/$PROBLEM-native-$PROVIDER-run$RUN"
           [ "$TARGET" = "native_optimize" ] && BRANCH="llm-generated/$PROBLEM-native-optimize-$PROVIDER-run$RUN"
           [ -n "$VARIANT" ] && BRANCH="llm-generated/$PROBLEM-$VARIANT-cycle-$TARGET-run$RUN"
@@ -346,6 +362,8 @@ jobs:
           [ "$PLANNER" = "true" ] && TAG="$TAG, con planificador"
           [ "$PROBLEM" != "clsp" ] && TAG="$TAG, $PROBLEM"
           [ "$TARGET" = "problem_model" ] && TAG="$TAG, ProblemModel"
+          [ "$TARGET" = "native_model" ] && TAG="$TAG, modelo C++"
+          [ "$TARGET" = "native_model_optimize" ] && TAG="$TAG, optimización del modelo C++"
           [ "$TARGET" = "native_components" ] && TAG="$TAG, C++"
           [ "$TARGET" = "native_optimize" ] && TAG="$TAG, optimización C++"
           [ -n "$VARIANT" ] && TAG="$TAG, ciclo $VARIANT"

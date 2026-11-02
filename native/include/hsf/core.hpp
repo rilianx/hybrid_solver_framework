@@ -172,10 +172,23 @@ struct Relink {
     virtual Sol step(const Sol& cur, const Sol& guide, Rng& rng) = 0;
 };
 
+// La vista constructiva es opcional: un modelo sin `Partial`/`Action` no tiene constructores greedy ni puntajes.
+struct NoConstruction {};
+template <class M, class = void>
+struct partial_of { using type = NoConstruction; };
+template <class M>
+struct partial_of<M, std::void_t<typename M::Partial>> { using type = typename M::Partial; };
+template <class M, class = void>
+struct action_of { using type = NoConstruction; };
+template <class M>
+struct action_of<M, std::void_t<typename M::Action>> { using type = typename M::Action; };
+template <class M>
+inline constexpr bool has_construction = !std::is_same_v<typename partial_of<M>::type, NoConstruction>;
+
 template <class M>
 struct GreedyScore {
     virtual ~GreedyScore() = default;
-    virtual double score(const typename M::Partial& p, const typename M::Action& a) = 0;
+    virtual double score(const typename partial_of<M>::type& p, const typename action_of<M>::type& a) = 0;
 };
 
 // El constructor greedy modular (`core.construction.GreedyConstructor`): reglas greedy | rcl | roulette.
@@ -243,10 +256,12 @@ struct Catalog {
         Params p = cfg.scoped(name);
         auto it = constructors.find(name);
         if (it != constructors.end()) return it->second(m, p);
-        if (name.rfind("greedy_", 0) == 0) {
-            auto s = scores.find(name.substr(7));
-            if (s != scores.end())
-                return std::make_unique<GreedyConstructor<M>>(m, s->second(m, p), p.text("rule", "greedy"), p.get("alpha", 0.2));
+        if constexpr (has_construction<M>) {
+            if (name.rfind("greedy_", 0) == 0) {
+                auto s = scores.find(name.substr(7));
+                if (s != scores.end())
+                    return std::make_unique<GreedyConstructor<M>>(m, s->second(m, p), p.text("rule", "greedy"), p.get("alpha", 0.2));
+            }
         }
         throw std::invalid_argument("constructor desconocido: " + name);
     }
@@ -569,14 +584,15 @@ struct has_penalty<M, std::void_t<decltype(std::declval<M&>().penalty = 1.0)>> :
 
 template <class M>
 Result<M> solve_with(const Catalog<M>& cat, const M& model, const Config& cfg, const std::vector<std::string>& shake,
-                     uint64_t seed, double budget, PenaltyControl<M>* pen);
+                     uint64_t seed, double budget, PenaltyControl<M>* pen, const typename M::Solution* from = nullptr);
 
 // Corre una configuración. `shake` son los vecindarios de VNS después del de la búsqueda local. Con `SK.pen_scale` < 1 o
 // `SK.pen_adapt = yes` (SA, ILS, VNS, TS; modelos con `penalty`), sobre una copia del modelo con el peso de las
 // violaciones bajo control (`PenaltyControl`).
+// `from`: la solución de partida (si no, la del constructor); la usa el híbrido con el MIP (`skeletons/hybrid.py`)
 template <class M>
 Result<M> solve(const Catalog<M>& cat, const M& model, const Config& cfg, const std::vector<std::string>& shake,
-                uint64_t seed, double budget) {
+                uint64_t seed, double budget, const typename M::Solution* from = nullptr) {
     std::string sk = cfg.text("skeleton");
     if constexpr (has_penalty<M>::value) {
         double scale = cfg.get(sk + ".pen_scale", 1.0);
@@ -584,19 +600,19 @@ Result<M> solve(const Catalog<M>& cat, const M& model, const Config& cfg, const 
         if (sk != "PR" && (scale < 1.0 || adapt)) {
             M copy = model;
             PenaltyControl<M> pen(copy, scale, adapt, cfg.get(sk + ".pen_target", 0.2));
-            return solve_with(cat, copy, cfg, shake, seed, budget, &pen);
+            return solve_with(cat, copy, cfg, shake, seed, budget, &pen, from);
         }
     }
-    return solve_with<M>(cat, model, cfg, shake, seed, budget, nullptr);
+    return solve_with<M>(cat, model, cfg, shake, seed, budget, nullptr, from);
 }
 
 template <class M>
 Result<M> solve_with(const Catalog<M>& cat, const M& model, const Config& cfg, const std::vector<std::string>& shake,
-                     uint64_t seed, double budget, PenaltyControl<M>* pen) {
+                     uint64_t seed, double budget, PenaltyControl<M>* pen, const typename M::Solution* from) {
     Rng rng(seed);
     std::string sk = cfg.text("skeleton");
     auto ctor = cat.constructor(cfg.text("constructor"), model, cfg);
-    auto start = ctor->build(rng);
+    auto start = from ? *from : ctor->build(rng);
     auto better = [](double fc, double fn) { return fn < fc; };
     auto none = [](double) {};
     std::vector<Move> buf;
