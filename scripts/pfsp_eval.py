@@ -60,6 +60,7 @@ def main() -> None:
     ap.add_argument("--native", action="store_true")
     ap.add_argument("--t", type=float, default=60.0)
     ap.add_argument("--seeds", type=int, default=1)
+    ap.add_argument("--first-seed", type=int, default=0, help="semillas first-seed .. first-seed+seeds-1 (para repartir corridas largas)")
     ap.add_argument("--classes", nargs="*", default=CLASSES)
     ap.add_argument("--extra", nargs="*", default=[])
     ap.add_argument("--workers", type=int, default=4)
@@ -84,7 +85,7 @@ def main() -> None:
     bk = best_known(args.problem, args.best_known)
     names = [f"tai{c}_{k}" for c in args.classes for k in range(10) if f"tai{c}_{k}" in bk]
     jobs = [(label, cfg, n, s, args.t, args.native, args.catalog, args.generated, args.problem) for label, (cfg, _) in configs.items()
-            for n in names for s in range(args.seeds)]
+            for n in names for s in range(args.first_seed, args.first_seed + args.seeds)]
     jobs.sort(key=lambda j: -budget(j[2], args.t))  # las largas primero
     with ProcessPoolExecutor(args.workers) as pool:
         rows = list(pool.map(_run, jobs))
