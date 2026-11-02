@@ -1412,3 +1412,27 @@ Tune 76 r1 con 3 semillas (`pfsp_cmax_tune76_full_t60.json` semilla 0, `pfsp_cma
 
 Con el mismo tiempo que IGirms60, el algoritmo generado iguala a IGirms con 4 veces más tiempo; las tres semillas
 quedan por debajo de IGirms60 y de IGirms120.
+
+### Flowtime en instancias grandes: vecindarios acotados (corridas 126–127, tune 77)
+
+Con una indicación explícita del investigador (`--hint`, registrada en `stats_neighborhood.json`): en flowtime una
+inserción cuesta O(n·m) y no hay aceleración de Taillard, así que se pidieron vecindarios acotados con anchos
+relativos a n. Corrida 126 (0,44 USD): 3 de 3 aceptados (reubicación de bloques en ventana, reordenar una ventana por
+reglas, intercambio de bloques no contiguos), con parámetros relativos (`win_frac`, `len_frac`). Corrida 127 (3,89
+USD, medida en 500×20 con `bench_size`): ×8–13 en pasos de trayectoria. Tune 77 (50×10, 200×20, 500×20, base 1 s):
+ninguna réplica elige los vecindarios acotados; todas eligen `ls_scope = full` acotada por tiempo. En t = 60
+(`pfsp_large_t77_r0.json`): 100_20 0,84 % (tune 75: 1,00 %), 200_20 1,95 % (1,92 %), 500_20 2,78 % (2,86 %). Acotar
+reduce cuántos movimientos se miran pero no el costo de cada uno; en 200 y 500 trabajos sigue la distancia con
+MRSILS y ALGirtct.
+
+### Cierre del flow shop
+
+- Makespan: todo generado (modelo, componentes con la aceleración de Taillard y su optimización). Con 3 semillas y el
+  tiempo de IGirms60, 0,155 % medio en las 120 instancias: igual que IGirms con 4 veces más tiempo, por delante en
+  50_10, 50_20, 100_20 y 200_20. Contra las cotas de EoH, −0,15 % frente a su 0,23 %, mejor en las 11 clases con
+  menos tiempo.
+- Flowtime: competitivo hasta 100 trabajos (por delante de ALGirtct60 en todas esas clases, al nivel de ALGirtct240);
+  en 200 y 500 trabajos queda 2–4 puntos detrás de MRSILS: el costo por movimiento y la falta de aceleraciones
+  específicas, que el LLM no encontró ni con la indicación explícita.
+- Lo que aportó el framework: `ls_scope = full` (búsqueda local completa en orden), tuning en tamaños mezclados con
+  tiempo ∝ n·m (`--size a,b,c --scale-budget`), baselines de test baratos, `--hint` y `bench_size`.
