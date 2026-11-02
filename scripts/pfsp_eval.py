@@ -22,8 +22,9 @@ BEST_KNOWN = {"flowshop": TAILLARD / "best_known.json",
 CLASSES = ["20_5", "20_10", "20_20", "50_5", "50_10", "50_20", "100_5", "100_10", "100_20", "200_10", "200_20", "500_20"]
 
 
-def best_known(problem: str = "flowshop") -> dict[str, float]:
-    return {k: v for k, v in json.loads(BEST_KNOWN[problem].read_text()).items() if not k.startswith("_")}
+def best_known(problem: str = "flowshop", path: str | None = None) -> dict[str, float]:
+    src = Path(path) if path else BEST_KNOWN[problem]
+    return {k: v for k, v in json.loads(src.read_text()).items() if not k.startswith("_")}
 
 
 def _pack(problem: str):
@@ -62,6 +63,8 @@ def main() -> None:
     ap.add_argument("--classes", nargs="*", default=CLASSES)
     ap.add_argument("--extra", nargs="*", default=[])
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--best-known", default=None,
+                    help="otra referencia del gap (p.ej. examples/flowshop_cmax/eoh_upper_bounds.json, las cotas que usa EoH)")
     ap.add_argument("--problem", choices=sorted(BEST_KNOWN), default="flowshop", help="flowshop (flowtime) o flowshop_cmax")
     ap.add_argument("--out")
     args = ap.parse_args()
@@ -78,8 +81,8 @@ def main() -> None:
     for item in args.extra:
         name, cfg = item.split("=", 1)
         configs[name] = (json.loads(cfg), "extra")
-    bk = best_known(args.problem)
-    names = [f"tai{c}_{k}" for c in args.classes for k in range(10)]
+    bk = best_known(args.problem, args.best_known)
+    names = [f"tai{c}_{k}" for c in args.classes for k in range(10) if f"tai{c}_{k}" in bk]
     jobs = [(label, cfg, n, s, args.t, args.native, args.catalog, args.generated, args.problem) for label, (cfg, _) in configs.items()
             for n in names for s in range(args.seeds)]
     jobs.sort(key=lambda j: -budget(j[2], args.t))  # las largas primero
