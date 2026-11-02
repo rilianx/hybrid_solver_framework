@@ -1267,3 +1267,52 @@ escrita a mano, sin una línea de código del problema escrita por una persona.
 
 Las runs 62–64 y 67–70 fallaron en el target-runner de irace: R cambia `LD_LIBRARY_PATH` y el intérprete de Python
 del CI cargaba otra libpython (al importar `ctypes`, que usa `pulp`). Arreglado pasándole el entorno del tuner.
+
+## Flow shop de permutación con flowtime total (Taillard), todo generado en C++
+
+Problema nuevo, elegido porque el estado del arte todavía se mueve (ALGirtct, IBS, MRSILS). Instancias de Taillard
+(120, `examples/flowshop/taillard/`, de librallu/dogs-pfsp); mejor conocida = mínimo entre la literatura, ALGirtct e
+IBS. Protocolo de la literatura: n·m/2·t ms por instancia (`scripts/pfsp_eval.py`). Gap (RPD) contra esa mejor
+conocida, que es más exigente que la usada en los papers (sus ARPD están medidos contra la anterior).
+
+- Corrida 120 (0,05 USD): el LLM escribe el modelo C++ (contrato genérico), aceptado a la primera.
+- Corrida 121 (1,09 USD): 3 constructores (entre ellos un NEH para flowtime), 3 vecindarios, 3 relinks y 3
+  perturbaciones (iterated greedy, inserciones múltiples, mezclar un segmento; revalidadas tras arreglar el validador
+  sin vista MIP).
+- Corrida 122 (3,64 USD): optimización C++. Los tres vecindarios ×3–4 en pasos de trayectoria (125→495, 251→748,
+  246→937); la perturbación iterated greedy ×3,5. Las otras dos perturbaciones no llegaron a 1,5×.
+- Tune 73 falló (faltaba `PFSPInstance.save`). Tune 74: irace en 50×10, 10 s, SA/ILS/TS/PR/VNS, 3 réplicas; llegó a
+  ~1000 experimentos por réplica pero el job se cortó a las 5 h antes de evaluar en test (cada experimento de 10 s
+  tomó ~18 s). Las élites se sacaron de `irace.Rdata` (`pfsp_tune74_elites.json`): todas ILS + iterated greedy +
+  recocido con T_rel ≈ 0,03, un solo vecindario (intercambio o inserción con ventana), constructor por prioridades.
+
+t = 60, una semilla, 50_10 / 100_20 (`pfsp_tune74_elites_t60.json`):
+
+| | 50_10 | 100_20 |
+|---|---|---|
+| r2_83 (irace) | **0,42 %** | **0,98 %** |
+| r2_126 (irace) | 0,43 % | 1,03 % |
+| ILS_IG sin afinar (NEH, compuesto, T_rel 0,001) | 0,68 % | 1,23 % |
+| IGA60 (lit., contra la BKS anterior) | 1,1 % | 1,54 % |
+| ALGirtct60 (lit.) | 0,51 % | 1,15 % |
+| MRSILS (lit.) | 0,47 % | 0,83 % |
+
+Las 120 instancias, t = 60, una semilla (`pfsp_tune74_full_t60.json`, `pfsp_ils_untuned_full_t60.json`):
+
+| clase | r2_83 | r2_126 | ILS_IG sin afinar |
+|---|---|---|---|
+| 20_5 / 20_10 / 20_20 | 0,00 % | 0,00 % | 0,00 % |
+| 50_5 | **0,36 %** | 0,38 % | 0,45 % |
+| 50_10 | **0,39 %** | 0,42 % | 0,61 % |
+| 50_20 | **0,27 %** | 0,32 % | 0,79 % |
+| 100_5 | 1,10 % | 0,91 % | **0,86 %** |
+| 100_10 | 1,29 % | **1,22 %** | 1,38 % |
+| 100_20 | 1,10 % | **0,99 %** | 1,13 % |
+| 200_10 | 2,12 % | 1,88 % | **1,87 %** |
+| 200_20 | 2,61 % | **2,04 %** | 2,10 % |
+| 500_20 | 3,71 % | 3,42 % | **2,85 %** |
+| media | 1,08 % | **0,97 %** | 1,00 % |
+
+Sin mejores soluciones nuevas. Afinado en 50×10, el algoritmo queda al nivel del estado del arte en las clases de 50
+trabajos y empeora en las grandes: los parámetros absolutos (ventana del vecindario, muestra de la búsqueda local) no
+escalan con n. Falta afinar en tamaños mezclados (o con parámetros relativos a n) y con más semillas.
