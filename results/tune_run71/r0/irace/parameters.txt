@@ -1,0 +1,75 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("SA", "ILS", "VNS", "TS", "PR", "HYB")
+constructor "--constructor=" c ("trivial", "random") | skeleton %in% c("SA", "ILS", "VNS", "TS", "PR", "HYB")
+neighborhood "--neighborhood=" c ("setup_toggle_flip", "lot_consolidation_window", "composite") | skeleton %in% c("SA", "ILS", "VNS", "TS", "PR", "HYB")
+setup_toggle_flip.sweep_items_first "--setup_toggle_flip.sweep_items_first=" c ("yes", "no") | skeleton %in% c("SA", "ILS", "VNS", "TS", "PR", "HYB") & neighborhood == "setup_toggle_flip"
+lot_consolidation_window.max_len "--lot_consolidation_window.max_len=" i (1, 10) | skeleton %in% c("SA", "ILS", "VNS", "TS", "PR", "HYB") & neighborhood == "lot_consolidation_window"
+perturbation "--perturbation=" c ("random_setup_flips_flow_repair", "lot_shift_merge_swap_repair", "window_wagner_whitin_rebuild") | skeleton %in% c("ILS", "PR", "HYB")
+random_setup_flips_flow_repair.flips_per_strength "--random_setup_flips_flow_repair.flips_per_strength=" r (0.5, 4.0) | skeleton %in% c("ILS", "PR", "HYB") & perturbation == "random_setup_flips_flow_repair"
+random_setup_flips_flow_repair.off_bias "--random_setup_flips_flow_repair.off_bias=" r (0.0, 1.0) | skeleton %in% c("ILS", "PR", "HYB") & perturbation == "random_setup_flips_flow_repair"
+random_setup_flips_flow_repair.repair_iters "--random_setup_flips_flow_repair.repair_iters=" i (20, 400) | skeleton %in% c("ILS", "PR", "HYB") & perturbation == "random_setup_flips_flow_repair"
+lot_shift_merge_swap_repair.moves_per_strength "--lot_shift_merge_swap_repair.moves_per_strength=" r (0.5, 4.0) | skeleton %in% c("ILS", "PR", "HYB") & perturbation == "lot_shift_merge_swap_repair"
+lot_shift_merge_swap_repair.p_shift "--lot_shift_merge_swap_repair.p_shift=" r (0.0, 1.0) | skeleton %in% c("ILS", "PR", "HYB") & perturbation == "lot_shift_merge_swap_repair"
+lot_shift_merge_swap_repair.p_merge "--lot_shift_merge_swap_repair.p_merge=" r (0.0, 1.0) | skeleton %in% c("ILS", "PR", "HYB") & perturbation == "lot_shift_merge_swap_repair"
+lot_shift_merge_swap_repair.repair_iters "--lot_shift_merge_swap_repair.repair_iters=" i (20, 400) | skeleton %in% c("ILS", "PR", "HYB") & perturbation == "lot_shift_merge_swap_repair"
+window_wagner_whitin_rebuild.window_base "--window_wagner_whitin_rebuild.window_base=" i (2, 12) | skeleton %in% c("ILS", "PR", "HYB") & perturbation == "window_wagner_whitin_rebuild"
+window_wagner_whitin_rebuild.window_per_strength "--window_wagner_whitin_rebuild.window_per_strength=" r (0.5, 4.0) | skeleton %in% c("ILS", "PR", "HYB") & perturbation == "window_wagner_whitin_rebuild"
+window_wagner_whitin_rebuild.item_frac "--window_wagner_whitin_rebuild.item_frac=" r (0.05, 1.0) | skeleton %in% c("ILS", "PR", "HYB") & perturbation == "window_wagner_whitin_rebuild"
+window_wagner_whitin_rebuild.cost_noise "--window_wagner_whitin_rebuild.cost_noise=" r (0.0, 0.9) | skeleton %in% c("ILS", "PR", "HYB") & perturbation == "window_wagner_whitin_rebuild"
+window_wagner_whitin_rebuild.repair_iters "--window_wagner_whitin_rebuild.repair_iters=" i (20, 400) | skeleton %in% c("ILS", "PR", "HYB") & perturbation == "window_wagner_whitin_rebuild"
+relink "--relink=" c ("hamming_single_setup_flip", "differing_run_segment_copy", "period_column_transplant") | skeleton %in% c("PR")
+hamming_single_setup_flip.add_bias "--hamming_single_setup_flip.add_bias=" r (0.0, 1.0) | skeleton %in% c("PR") & relink == "hamming_single_setup_flip"
+differing_run_segment_copy.prefer_short "--differing_run_segment_copy.prefer_short=" r (0.0, 1.0) | skeleton %in% c("PR") & relink == "differing_run_segment_copy"
+period_column_transplant.pick "--period_column_transplant.pick=" c ("random", "fewest_diffs", "most_diffs") | skeleton %in% c("PR") & relink == "period_column_transplant"
+destruction "--destruction=" c ("period_window", "random_setups") | skeleton %in% c("HYB")
+SA.T0 "--SA.T0=" r (1.0, 1000.0) | skeleton == "SA"  # log-scale
+SA.cooling "--SA.cooling=" c ("time", "iterations") | skeleton == "SA"
+SA.T_end "--SA.T_end=" r (1e-05, 0.1) | skeleton == "SA"  # log-scale
+SA.alpha "--SA.alpha=" r (0.8, 0.999) | skeleton == "SA"
+SA.iters_per_T "--SA.iters_per_T=" i (1, 50) | skeleton == "SA"
+SA.eval "--SA.eval=" c ("objective", "delta") | skeleton == "SA"
+SA.pen_scale "--SA.pen_scale=" r (0.0001, 1.0) | skeleton == "SA"  # log-scale
+SA.pen_adapt "--SA.pen_adapt=" c ("no", "yes") | skeleton == "SA"
+SA.pen_target "--SA.pen_target=" r (0.05, 0.5) | skeleton == "SA"
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+ILS.ls_sample "--ILS.ls_sample=" i (4, 256) | skeleton == "ILS"  # log-scale
+ILS.accept "--ILS.accept=" c ("better", "anneal") | skeleton == "ILS"
+ILS.T_rel "--ILS.T_rel=" r (0.0001, 0.05) | skeleton == "ILS"  # log-scale
+ILS.pen_scale "--ILS.pen_scale=" r (0.0001, 1.0) | skeleton == "ILS"  # log-scale
+ILS.pen_adapt "--ILS.pen_adapt=" c ("no", "yes") | skeleton == "ILS"
+ILS.pen_target "--ILS.pen_target=" r (0.05, 0.5) | skeleton == "ILS"
+VNS.shake_strength "--VNS.shake_strength=" i (1, 4) | skeleton == "VNS"
+VNS.ls_time_share "--VNS.ls_time_share=" r (0.02, 0.3) | skeleton == "VNS"
+VNS.ls_sample "--VNS.ls_sample=" i (4, 256) | skeleton == "VNS"  # log-scale
+VNS.pen_scale "--VNS.pen_scale=" r (0.0001, 1.0) | skeleton == "VNS"  # log-scale
+VNS.pen_adapt "--VNS.pen_adapt=" c ("no", "yes") | skeleton == "VNS"
+VNS.pen_target "--VNS.pen_target=" r (0.05, 0.5) | skeleton == "VNS"
+TS.tenure "--TS.tenure=" i (3, 30) | skeleton == "TS"
+TS.candidate_size "--TS.candidate_size=" i (5, 100) | skeleton == "TS"  # log-scale
+TS.estimate_top "--TS.estimate_top=" i (0, 10) | skeleton == "TS"
+TS.elite_size "--TS.elite_size=" i (0, 8) | skeleton == "TS"
+TS.stall "--TS.stall=" i (20, 5000) | skeleton == "TS"  # log-scale
+TS.pen_scale "--TS.pen_scale=" r (0.0001, 1.0) | skeleton == "TS"  # log-scale
+TS.pen_adapt "--TS.pen_adapt=" c ("no", "yes") | skeleton == "TS"
+TS.pen_target "--TS.pen_target=" r (0.05, 0.5) | skeleton == "TS"
+PR.pop_size "--PR.pop_size=" i (4, 30) | skeleton == "PR"
+PR.ts_iters "--PR.ts_iters=" i (100, 20000) | skeleton == "PR"  # log-scale
+PR.tenure "--PR.tenure=" i (3, 30) | skeleton == "PR"
+PR.candidate_size "--PR.candidate_size=" i (5, 100) | skeleton == "PR"  # log-scale
+PR.estimate_top "--PR.estimate_top=" i (0, 10) | skeleton == "PR"
+PR.path_cands "--PR.path_cands=" i (1, 8) | skeleton == "PR"
+PR.band "--PR.band=" r (0.05, 0.5) | skeleton == "PR"
+PR.init_moves "--PR.init_moves=" i (1, 100) | skeleton == "PR"  # log-scale
+PR.improve "--PR.improve=" c ("ts", "ils") | skeleton == "PR"
+PR.strength "--PR.strength=" i (1, 6) | skeleton == "PR"
+PR.ls_sample "--PR.ls_sample=" i (4, 256) | skeleton == "PR"  # log-scale
+PR.T_rel "--PR.T_rel=" r (0.0001, 0.05) | skeleton == "PR"  # log-scale
+HYB.ls_share "--HYB.ls_share=" r (0.02, 0.5) | skeleton == "HYB"  # log-scale
+HYB.mip_share "--HYB.mip_share=" r (0.01, 0.3) | skeleton == "HYB"  # log-scale
+HYB.destroy_ratio "--HYB.destroy_ratio=" r (0.05, 0.6) | skeleton == "HYB"
+HYB.strength "--HYB.strength=" i (1, 6) | skeleton == "HYB"
+HYB.ls_sample "--HYB.ls_sample=" i (4, 256) | skeleton == "HYB"  # log-scale
+HYB.T_rel "--HYB.T_rel=" r (0.0001, 0.05) | skeleton == "HYB"  # log-scale

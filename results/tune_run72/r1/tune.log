@@ -1,0 +1,20 @@
+
+=== catálogo `handwritten`: 60 parámetros, 0 opciones generadas por LLM ===
+  irace: 728 experimentos en 7750s; élite: LNS_MIP[constructor=greedy_latest_source, destruction=period_window]; LNS_MIP[constructor=greedy_latest_source, destruction=period_window]; LNS_MIP[constructor=greedy_latest_source, destruction=period_window]; LNS_MIP[constructor=greedy_latest_source, destruction=period_window]; LNS_MIP[constructor=greedy_latest_source, destruction=period_window]; LNS_MIP[constructor=greedy_latest_source, destruction=period_window]; LNS_MIP[constructor=greedy_latest_source, destruction=period_window]
+  mejor en train: 0.6615  LNS_MIP[constructor=greedy_latest_source, destruction=period_window]
+
+=== TEST `handwritten` (partida trivial sin búsqueda = 132104.7; gap vs mejor conocido por instancia) ===
+    tuned                                            gap   1.30%        87226.8 ±  16782.3   (+34.0% vs partida)   LNS_MIP[constructor=greedy_latest_source, destruction=period_window]
+    default:LOCAL_BRANCH                             gap   0.55%        86479.1 ±  15733.8   (+34.5% vs partida)   LOCAL_BRANCH[constructor=lot_for_lot]
+    default:LNS_MIP                                  gap   1.04%        86908.4 ±  15979.2   (+34.2% vs partida)   LNS_MIP[constructor=lot_for_lot, destruction=period_window]
+    default:MIP_PERTURB                              gap   2.43%        88178.7 ±  16592.5   (+33.3% vs partida)   MIP_PERTURB[constructor=lot_for_lot, destruction=period_window, neighborhood=setup_flip]
+    default:FIX_OPT                                  gap   3.03%        88419.3 ±  15021.9   (+33.1% vs partida)   FIX_OPT[constructor=lot_for_lot, fixing_policy=sliding_window]
+    default:SA                                       gap   7.88%        92813.8 ±  17165.6   (+29.7% vs partida)   SA[constructor=lot_for_lot, neighborhood=setup_flip]
+    default:VNS                                      gap  10.54%        95159.8 ±  17997.5   (+28.0% vs partida)   VNS[constructor=lot_for_lot, neighborhood=setup_flip]
+    default:ILS                                      gap  14.82%        98780.5 ±  18545.4   (+25.2% vs partida)   ILS[constructor=lot_for_lot, neighborhood=setup_flip, perturbation=setup_flip_perturbation]
+    default:GRASP                                    gap  22.10%       105018.3 ±  19154.8   (+20.5% vs partida)   GRASP[constructor=lot_for_lot, neighborhood=setup_flip]
+    default:TS                                       gap  37.40%       118280.7 ±  22403.6   (+10.5% vs partida)   TS[constructor=lot_for_lot, neighborhood=setup_flip]
+  ganancia del afinado vs mejor default: -0.86%; gana en 4/10 instancias
+  afinado vs default:LOCAL_BRANCH: gap -0.75% a favor del afinado, IC95 [-1.83%, +0.13%] (no se distingue del ruido)
+
+Escenario irace escrito en tuning_out/irace/scenario.txt (correr: irace --scenario tuning_out/irace/scenario.txt)
