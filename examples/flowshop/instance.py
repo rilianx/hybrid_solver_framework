@@ -39,3 +39,7 @@ class PFSPInstance:
     def load(path: str) -> "PFSPInstance":
         with open(path) as f:
             return PFSPInstance.parse(f.read())
+
+    def save(self, path: str) -> None:
+        with open(path, "w") as f:
+            f.write(self.to_text())

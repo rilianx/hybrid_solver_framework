@@ -21,3 +21,13 @@ def test_taillard_instances_and_best_known():
     assert (inst.n_jobs, inst.n_machines) == (20, 5) and PFSPInstance.parse(inst.to_text()) == inst
     # ninguna permutación puede bajar de la mejor conocida (óptima en ta001); la identidad queda arriba
     assert ref.cost_terms(inst, ref.trivial_solution(inst))["flowtime"] > bk["tai20_5_0"]
+
+
+def test_instance_save_roundtrip(tmp_path):
+    from random import Random
+
+    from examples.flowshop.instance import PFSPInstance
+
+    inst = PFSPInstance.random(7, 3, Random(1))
+    inst.save(str(tmp_path / "i.txt"))
+    assert PFSPInstance.load(str(tmp_path / "i.txt")) == inst
