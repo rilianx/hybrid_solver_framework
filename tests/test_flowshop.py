@@ -31,3 +31,25 @@ def test_instance_save_roundtrip(tmp_path):
     inst = PFSPInstance.random(7, 3, Random(1))
     inst.save(str(tmp_path / "i.txt"))
     assert PFSPInstance.load(str(tmp_path / "i.txt")) == inst
+
+
+def test_mixed_sizes_and_budget_scale(tmp_path):
+    from examples.flowshop.pack import PACK
+    from tuning.cli import mixed_instances
+    from tuning.irace_scenario import write_irace_scenario
+    from tuning.cli import make_assembler
+
+    insts = mixed_instances(PACK, "8x3,12x4", 5, 0)
+    assert [(i.n_jobs, i.n_machines) for i in insts] == [(8, 3)] * 3 + [(12, 4)] * 2
+    assert mixed_instances(PACK, "8x3", 2, 0) == PACK.make_instances(2, 0, PACK.parse_size("8x3"))
+    assert PACK.budget_scale(PACK.make_instances(1, 0, PACK.parse_size("100x20"))[0]) == 4.0
+
+    assembler, _ = make_assembler(PACK, "generated", "generated/flowshop_native", native=True, scale_budget=True)
+    seen = []
+    assembler.assemble = lambda config: (lambda inst, rng, budget: seen.append(budget) or (_ for _ in ()).throw(RuntimeError()))
+    assembler.evaluate({}, [insts[3]], 2.0)  # el runner falla a propósito: solo interesa el presupuesto
+    assert seen == [2.0 * 12 * 4 / 500]
+
+    space = assembler.config_space()
+    write_irace_scenario(space, tmp_path, [], 1.0, scale_budget=True)
+    assert "HSF_SCALE_BUDGET=1" in (tmp_path / "target-runner").read_text()

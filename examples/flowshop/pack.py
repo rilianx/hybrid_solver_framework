@@ -45,4 +45,6 @@ PACK.module = "examples.flowshop"
 PACK.baseline_constructor = lambda: TrivialConstructor(model_parts)
 PACK.native_module = "examples.flowshop.native_parts"
 PACK.bench_size = "100x10"
+# tiempo proporcional a n·m como en la literatura (n·m/2·t ms); 1 en el tamaño por defecto (50x10)
+PACK.budget_scale = lambda inst: inst.n_jobs * inst.n_machines / 500
 PACK.variants = {"permutation": (make_model_spec, "examples.flowshop.model_parts")}

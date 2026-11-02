@@ -200,6 +200,7 @@ class Assembler:
     registry: ComponentRegistry
     skeletons: dict[str, SkeletonDef] = field(default_factory=lambda: dict(SKELETONS))
     penalty_cost: float = 1e12  # costo devuelto cuando una variante falla (§8: "penalized si falla")
+    budget_scale: Callable[[Any], float] | None = None  # presupuesto por instancia = budget · budget_scale(inst)
 
     # ------------------------------------------------------------------ espacio
     def available_skeletons(self) -> list[str]:
@@ -385,7 +386,8 @@ class Assembler:
             runner = self.assemble(config)
             costs = []
             for k, inst in enumerate(instances):
-                result = runner(inst, Random(seed + k), budget)
+                b = budget * self.budget_scale(inst) if self.budget_scale is not None else budget
+                result = runner(inst, Random(seed + k), b)
                 if not self.problem_factory(inst).is_feasible(result.best_solution):
                     return self.penalty_cost
                 costs.append(result.best_objective / normalizers[k] if normalizers is not None else result.best_objective)
