@@ -16,33 +16,12 @@ public:
             removed.push_back(v[idx]);
             v.erase(v.begin() + idx);
         }
+        eValid = 0;
         for (int job : removed) insertBest(v, job, rng);
-        if ((int)v.size() != N) {
-            Sol safe = s;
-            auto& w = safe[0];
-            int i = rng.below(N), j = rng.below(N - 1);
-            if (j >= i) ++j;
-            std::swap(w[i], w[j]);
-            return safe;
-        }
         if (v == s[0]) {
             int i = rng.below(N), j = rng.below(N - 1);
             if (j >= i) ++j;
             std::swap(v[i], v[j]);
-        }
-        {
-            chk.assign(v.begin(), v.end());
-            ref.assign(s[0].begin(), s[0].end());
-            std::sort(chk.begin(), chk.end());
-            std::sort(ref.begin(), ref.end());
-            if (chk != ref) {
-                Sol safe = s;
-                auto& w = safe[0];
-                int i = rng.below(N), j = rng.below(N - 1);
-                if (j >= i) ++j;
-                std::swap(w[i], w[j]);
-                return safe;
-            }
         }
         return out;
     }
@@ -51,8 +30,9 @@ private:
     int dbase;
     double dscale;
     std::vector<int> removed;
-    std::vector<int> chk, ref;
     std::vector<long long> E, F, C;
+    std::vector<int> V;
+    int eValid = 0;  // filas de E/F/V válidas: 0..eValid
 
     inline bool valid(int j) const { return j >= 0 && j < md.n; }
 
@@ -60,44 +40,86 @@ private:
         int L = (int)v.size();
         int m = md.m;
         if (m == 0) { v.insert(v.begin() + rng.below(L + 1), job); return; }
-        E.assign((size_t)(L + 1) * m, 0);
-        F.assign(L + 1, 0);
-        for (int k = 0; k < L; ++k) {
+        if (E.size() < (size_t)(L + 1) * m) E.resize((size_t)(L + 1) * m);
+        if (F.size() < (size_t)(L + 1)) { F.resize(L + 1); V.resize(L + 1); }
+        if (eValid <= 0) {
+            std::fill(E.begin(), E.begin() + m, 0LL);
+            F[0] = 0; V[0] = 0; eValid = 0;
+        }
+        const long long* pjb = md.pj.data();
+        for (int k = eValid; k < L; ++k) {
             const long long* prev = &E[(size_t)k * m];
             long long* cur = &E[(size_t)(k + 1) * m];
             int j = v[k];
-            if (!valid(j)) { std::copy(prev, prev + m, cur); F[k + 1] = F[k]; continue; }
-            const long long* p = &md.pj[(size_t)j * m];
-            cur[0] = prev[0] + p[0];
-            for (int i = 1; i < m; ++i) cur[i] = std::max(prev[i], cur[i - 1]) + p[i];
-            F[k + 1] = F[k] + cur[m - 1];
+            if (!valid(j)) { std::copy(prev, prev + m, cur); F[k + 1] = F[k]; V[k + 1] = V[k]; continue; }
+            const long long* p = pjb + (size_t)j * m;
+            long long c = prev[0] + p[0];
+            cur[0] = c;
+            for (int i = 1; i < m; ++i) { long long a = prev[i]; c = (a > c ? a : c) + p[i]; cur[i] = c; }
+            F[k + 1] = F[k] + c;
+            V[k + 1] = V[k] + 1;
         }
         C.resize(m);
+        long long* Cp = C.data();
+        const long long FL = F[L];
+        const int VL = V[L];
+        const bool jobValid = valid(job);
+        const long long* pjob = jobValid ? pjb + (size_t)job * m : nullptr;
         long long best = std::numeric_limits<long long>::max();
         int bestPos = L;
         int ties = 0;
         for (int pos = 0; pos <= L; ++pos) {
-            std::copy(&E[(size_t)pos * m], &E[(size_t)pos * m] + m, C.begin());
-            long long sum = F[pos];
-            bool cut = false;
-            auto process = [&](int j) {
-                if (!valid(j)) return;
-                const long long* p = &md.pj[(size_t)j * m];
-                C[0] += p[0];
-                for (int i = 1; i < m; ++i) C[i] = std::max(C[i], C[i - 1]) + p[i];
-                sum += C[m - 1];
-            };
-            process(job);
+            const long long* Ep = &E[(size_t)pos * m];
+            long long sum, dmin, dmax;
+            if (jobValid) {
+                long long c = Ep[0] + pjob[0];
+                Cp[0] = c;
+                dmin = dmax = c - Ep[0];
+                for (int i = 1; i < m; ++i) {
+                    long long a = Ep[i];
+                    c = (a > c ? a : c) + pjob[i];
+                    Cp[i] = c;
+                    long long dd = c - a;
+                    if (dd < dmin) dmin = dd;
+                    if (dd > dmax) dmax = dd;
+                }
+                sum = F[pos] + c;
+            } else {
+                std::copy(Ep, Ep + m, Cp);
+                sum = F[pos];
+                dmin = dmax = 0;
+            }
             if (sum > best) continue;
-            for (int k = pos; k < L; ++k) {
-                process(v[k]);
-                if (sum > best) { cut = true; break; }
+            bool cut = false;
+            int k = pos;
+            for (;; ++k) {
+                long long lb = sum + (FL - F[k]) + (long long)(VL - V[k]) * dmin;
+                if (dmin == dmax || k >= L) { sum = lb; break; }
+                if (lb > best) { cut = true; break; }
+                int j = v[k];
+                if (!valid(j)) continue;
+                const long long* p = pjb + (size_t)j * m;
+                const long long* En = &E[(size_t)(k + 1) * m];
+                long long c = Cp[0] + p[0];
+                Cp[0] = c;
+                dmin = dmax = c - En[0];
+                for (int i = 1; i < m; ++i) {
+                    long long a = Cp[i];
+                    c = (a > c ? a : c) + p[i];
+                    Cp[i] = c;
+                    long long dd = c - En[i];
+                    if (dd < dmin) dmin = dd;
+                    if (dd > dmax) dmax = dd;
+                }
+                sum += c;
             }
             if (cut) continue;
+            if (sum > best) continue;
             if (sum < best) { best = sum; bestPos = pos; ties = 1; }
-            else if (sum == best) { ++ties; if (rng.below(ties) == 0) bestPos = pos; }
+            else { ++ties; if (rng.below(ties) == 0) bestPos = pos; }
         }
         v.insert(v.begin() + bestPos, job);
+        eValid = bestPos;
     }
 };
 
