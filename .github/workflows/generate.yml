@@ -9,7 +9,7 @@ on:
         description: "Problema"
         default: clsp
         type: choice
-        options: [clsp, cvrp, jobshop, flowshop]
+        options: [clsp, cvrp, jobshop, flowshop, flowshop_cmax]
       target:
         description: "Qué generar: componentes (slots), el ProblemModel completo (§6.1), optimize, native_components (componentes C++ sobre el modelo nativo; slots por defecto greedy_score neighborhood perturbation) o native_optimize (versiones más rápidas de los C++ aceptados; slots de opt_slots, por defecto neighborhood)"
         default: components
@@ -106,7 +106,7 @@ jobs:
       WS: ${{ inputs.workspace || ((inputs.target == 'native_model' || inputs.target == 'native_model_optimize' || inputs.target == 'native_components' || inputs.target == 'native_optimize') && format('generated/{0}_native', inputs.problem)) || (inputs.variant != '' && format('generated/{0}_{1}_cycle{2}', inputs.problem, inputs.variant, inputs.reference && '_ref' || '')) || (inputs.target == 'problem_model' && format('generated/{0}_model{1}', inputs.problem, inputs.model_mode == 'parts' && '_parts' || '')) || format('generated/{0}{1}{2}', inputs.problem, inputs.from_scratch && '_scratch' || '', inputs.planner && '_planner' || '') }}
       TARGET: ${{ inputs.target }}
       MODEL_MODE: ${{ inputs.model_mode }}
-      PKG: ${{ inputs.problem == 'cvrp' && 'cvrp' || inputs.problem == 'jobshop' && 'jobshop' || inputs.problem == 'flowshop' && 'flowshop' || 'lotsizing' }}
+      PKG: ${{ inputs.problem == 'cvrp' && 'cvrp' || inputs.problem == 'jobshop' && 'jobshop' || inputs.problem == 'flowshop' && 'flowshop' || inputs.problem == 'flowshop_cmax' && 'flowshop_cmax' || 'lotsizing' }}
       SCRATCH: ${{ inputs.from_scratch && 'true' || 'false' }}
       PLANNER: ${{ inputs.planner && 'true' || 'false' }}
       VARIANT: ${{ inputs.variant }}

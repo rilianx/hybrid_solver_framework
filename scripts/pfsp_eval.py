@@ -1,6 +1,7 @@
 """Configuraciones del flow shop de permutación (flowtime total) en las 120 instancias de Taillard, con el protocolo de la
 literatura: n·m/2·t milisegundos por instancia (t = 60, 90, ...). Gap (RPD) contra la mejor conocida
-(`examples/flowshop/taillard/best_known.json`); un gap negativo es una mejor solución nueva.
+(`examples/flowshop/taillard/best_known.json`; con `--problem flowshop_cmax`, makespan y `examples/flowshop_cmax/best_known.json`);
+un gap negativo es una mejor solución nueva.
 
     python -m scripts.pfsp_eval results/tune_runNN --generated generated/flowshop_native --native --t 60 --seeds 1 \\
         --out results/pfsp_runNN.json [--extra nombre='{"skeleton": ...}'] [--classes 50_10 100_20]
@@ -16,11 +17,19 @@ from random import Random
 from statistics import mean
 
 TAILLARD = Path(__file__).resolve().parent.parent / "examples" / "flowshop" / "taillard"
+BEST_KNOWN = {"flowshop": TAILLARD / "best_known.json",
+              "flowshop_cmax": TAILLARD.parent.parent / "flowshop_cmax" / "best_known.json"}
 CLASSES = ["20_5", "20_10", "20_20", "50_5", "50_10", "50_20", "100_5", "100_10", "100_20", "200_10", "200_20", "500_20"]
 
 
-def best_known() -> dict[str, float]:
-    return {k: v for k, v in json.loads((TAILLARD / "best_known.json").read_text()).items() if not k.startswith("_")}
+def best_known(problem: str = "flowshop") -> dict[str, float]:
+    return {k: v for k, v in json.loads(BEST_KNOWN[problem].read_text()).items() if not k.startswith("_")}
+
+
+def _pack(problem: str):
+    import importlib
+
+    return importlib.import_module(f"examples.{problem}.pack").PACK
 
 
 def budget(name: str, t: float) -> float:
@@ -29,11 +38,11 @@ def budget(name: str, t: float) -> float:
 
 
 def _run(args):
-    label, config, name, seed, t, native, catalog, generated = args
+    label, config, name, seed, t, native, catalog, generated, problem = args
     from examples.flowshop.instance import PFSPInstance
-    from examples.flowshop.pack import PACK
     from tuning.cli import make_assembler
 
+    PACK = _pack(problem)
     assembler, _ = make_assembler(PACK, catalog, generated, native=native)
     inst = PFSPInstance.load(str(TAILLARD / f"{name}.txt"))
     res = assembler.assemble(config)(inst, Random(seed), budget(name, t))
@@ -53,13 +62,13 @@ def main() -> None:
     ap.add_argument("--classes", nargs="*", default=CLASSES)
     ap.add_argument("--extra", nargs="*", default=[])
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--problem", choices=sorted(BEST_KNOWN), default="flowshop", help="flowshop (flowtime) o flowshop_cmax")
     ap.add_argument("--out")
     args = ap.parse_args()
 
     from scripts.tuning_replicas import load_replicas
     from tuning.cli import make_assembler
-    from examples.flowshop.pack import PACK
-
+    PACK = _pack(args.problem)
     make_assembler(PACK, args.catalog, args.generated, native=args.native)  # compila una vez antes de repartir
     configs = {}
     for run in args.runs:
@@ -69,9 +78,9 @@ def main() -> None:
     for item in args.extra:
         name, cfg = item.split("=", 1)
         configs[name] = (json.loads(cfg), "extra")
-    bk = best_known()
+    bk = best_known(args.problem)
     names = [f"tai{c}_{k}" for c in args.classes for k in range(10)]
-    jobs = [(label, cfg, n, s, args.t, args.native, args.catalog, args.generated) for label, (cfg, _) in configs.items()
+    jobs = [(label, cfg, n, s, args.t, args.native, args.catalog, args.generated, args.problem) for label, (cfg, _) in configs.items()
             for n in names for s in range(args.seeds)]
     jobs.sort(key=lambda j: -budget(j[2], args.t))  # las largas primero
     with ProcessPoolExecutor(args.workers) as pool:
