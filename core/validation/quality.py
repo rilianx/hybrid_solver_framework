@@ -11,7 +11,7 @@ from dataclasses import replace
 from random import Random
 from statistics import mean
 
-from .base import CheckResult, ValidationContext, fail, ok, describe_exception
+from .base import CheckResult, ValidationContext, assignment_of, fail, ok, describe_exception
 from .diversity import most_similar, novelty_of_improvements
 from .operational import VariantRunner
 
@@ -61,7 +61,7 @@ def check_min_quality(
 
 
 def _hamming(problem, a, b) -> int:
-    xa, xb = problem.to_assignment(a), problem.to_assignment(b)
+    xa, xb = assignment_of(problem, a), assignment_of(problem, b)
     return sum(1 for k in xa if abs(xa[k] - xb.get(k, xa[k])) > 1e-9)
 
 
@@ -161,6 +161,14 @@ def probe_checks(slot: str, impl, probe) -> list[CheckResult]:
             return [fail(LAYER, "destruction.ratio_monotone",
                          f"en la instancia de tamaño realista, |free_vars| con ratio=0.5 ({mean(n_hi):.1f}) no supera a ratio=0.1 ({mean(n_lo):.1f})")]
         return [ok(LAYER, "destruction.ratio_monotone", f"|free_vars|: ratio 0.1 → {mean(n_lo):.1f}, ratio 0.5 → {mean(n_hi):.1f}")]
+    if slot == "perturbation":
+        d1 = [_hamming(P, probe.solution, impl.perturb(probe.solution, 1.0, Random(s))) for s in range(6)]
+        d3 = [_hamming(P, probe.solution, impl.perturb(probe.solution, 3.0, Random(s))) for s in range(6)]
+        if mean(d3) < mean(d1):
+            return [fail(LAYER, "perturbation.strength_monotone",
+                         f"en la instancia de tamaño realista, la distancia media con strength=3 ({mean(d3):.1f}) es menor que "
+                         f"con strength=1 ({mean(d1):.1f})")]
+        return [ok(LAYER, "perturbation.strength_monotone", f"distancia media: strength 1 → {mean(d1):.1f}, 3 → {mean(d3):.1f}")]
     if slot == "greedy_score":  # un puntaje se juzga por el constructor greedy que arma
         from core.construction import GreedyConstructor
 
@@ -295,7 +303,11 @@ def check_component_quality(slot: str, impl, ctx: ValidationContext) -> list[Che
                 f"{imp_start} mejoras desde soluciones de partida, {imp_rand} desde aleatorias"))
 
     elif slot == "perturbation":
-        # `strength` debe significar algo: más fuerza, más distancia (Hamming en la vista MIP).
+        # `strength` debe significar algo: más fuerza, más distancia (Hamming en la vista MIP o por posiciones). Con
+        # sonda se mide allí (`probe_checks`): en una micro-instancia (6 trabajos) destruir y reinsertar greedy puede
+        # rehacer casi la misma solución con cualquier fuerza (corrida 121, flow shop).
+        if ctx.diversity_probe is not None:
+            return results
         d1, d3 = [], []
         for k in range(len(ctx.instances)):
             sol = ctx.trivial_solutions[k]

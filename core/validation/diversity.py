@@ -37,6 +37,8 @@ from random import Random
 from statistics import mean
 from typing import Any
 
+from .base import assignment_of
+
 _INT = re.compile(r"\d+")
 
 
@@ -91,10 +93,10 @@ def perturbation_signature(
     otro rng). Sin `problem` no hay vista de asignación y se cae al conjunto exacto."""
     if problem is None:
         return {impl.perturb(sol, strength, Random(s)) for s in seeds}
-    base = problem.to_assignment(sol)
+    base = assignment_of(problem, sol)
     rows = []
     for s in seeds:
-        new = problem.to_assignment(impl.perturb(sol, strength, Random(s)))
+        new = assignment_of(problem, impl.perturb(sol, strength, Random(s)))
         changed = [v for v in base if abs(base[v] - new.get(v, base[v])) > 1e-9]
         rows.append(_shape_features(changed, len(base), base))  # on_fraction = apagados / cambiados
     keys = set().union(*rows) if rows else set()
