@@ -1345,3 +1345,53 @@ Con el mismo tiempo (t = 60) el algoritmo generado le gana a ALGirtct60 en todas
 (100_20: 0,70 contra 1,15; mejor también que MRSILS ahí) y queda al nivel de ALGirtct con 4 veces más tiempo. En 200
 y 500 trabajos sigue lejos: MRSILS y ALGirtct mejoran bastante la referencia y nosotros no. Media contra la mejor
 conocida actual: r2 0,82 % (tune 74: 0,97 %; sin afinar: 1,00 %). Sin mejores soluciones nuevas.
+
+## Flow shop con makespan (Taillard): el objetivo de los generadores con LLM
+
+`examples/flowshop_cmax`: mismas 120 instancias, makespan. Mejores conocidas e IGirms (el iterated greedy de Ruiz,
+t = 60/120/240) de github.com/librallu/dogs-pfsp. Todo generado como en el flowtime:
+
+- Corrida 123 (0,05 USD): modelo C++ a la primera.
+- Corrida 124 (0,83 USD): 11 de 12 componentes. El LLM usó por su cuenta la aceleración de Taillard (NEH con
+  aceleración, inserción con aceleración, iterated greedy de destruir y reconstruir con aceleración).
+- Corrida 125 (5,03 USD): optimización C++; inserción ×3,8 en delta/s (17,5 → 67 M/s), intercambio ×4, 2-opt ×4,6, el
+  iterated greedy ×1,9.
+- Framework: `ILS.ls_scope = full` (búsqueda local sobre el vecindario completo en orden, cíclica con primera mejora).
+  Con la muestra de 256 movimientos la búsqueda local paraba demasiado pronto y el orden al azar deshacía la
+  aceleración (50_10: 1,01 % → 0,35 %; 100_20: 2,36 % → ~1,0 %, sin afinar).
+- Tune 76: irace en 50×10, 100×20 y 200×20 con tiempo ∝ n·m (como el tune 75). Las réplicas eligen ILS + iterated
+  greedy con aceleración; dos con la inserción con aceleración y `ls_scope = full`.
+
+Las 120 instancias, n·m/2·60 ms, una semilla (`pfsp_cmax_tune76_full_t60.json`), gap contra la mejor conocida:
+
+| clase | r0 | **r1** | r2 | IGirms60 | IGirms120 | IGirms240 |
+|---|---|---|---|---|---|---|
+| 20_5 / 20_10 / 20_20 | 0,00 | 0,00 | 0,00 | 0,03 / 0,01 / 0,01 | 0,02 / 0,01 / 0,01 | 0,01 / 0,01 / 0,01 |
+| 50_5 | 0,00 | 0,00 | 0,00 | 0 | 0 | 0 |
+| 50_10 | 0,26 | **0,24** | 0,33 | 0,30 | 0,28 | 0,25 |
+| 50_20 | 0,34 | **0,34** | 0,54 | 0,47 | 0,39 | 0,34 |
+| 100_5 | 0,00 | 0,00 | 0,00 | 0 | 0 | 0 |
+| 100_10 | 0,05 | **0,02** | 0,07 | 0,03 | 0,03 | 0,02 |
+| 100_20 | 0,57 | **0,46** | 0,73 | 0,62 | 0,52 | 0,44 |
+| 200_10 | 0,04 | 0,04 | 0,04 | 0,03 | 0,03 | 0,03 |
+| 200_20 | 0,69 | **0,53** | 0,77 | 0,66 | 0,57 | 0,51 |
+| 500_20 | 0,36 | 0,36 | 0,37 | 0,29 | 0,26 | 0,24 |
+| media | 0,19 | **0,17** | 0,24 | 0,20 | 0,18 | 0,16 |
+
+Con el mismo tiempo, r1 le gana al iterated greedy de Ruiz en 50_10, 50_20, 100_20 y 200_20 y queda al nivel de
+IGirms con el doble de tiempo (media 0,17 contra 0,18); solo en 500_20 queda detrás. Ojo: IGirms se corrió en otra
+máquina (la de Libralesso et al.); falta repetir con varias semillas.
+
+Contra EoH (Liu et al., ICML 2024, apéndice D.3): su gap es contra las cotas de los encabezados de sus instancias
+(`eoh_upper_bounds.json`, 0,30 % por encima de la mejor conocida actual en promedio) con 60 s por instancia. Contra
+esas mismas cotas, con n·m/2·60 ms (3 s en 20×5, 15 s en 50×10, 60 s en 100×20):
+
+| clase | r1 | EoH |
+|---|---|---|
+| 20_5 / 20_10 / 20_20 | −0,05 / −0,01 / 0,00 | 0,09 / 0,30 / 0,10 |
+| 50_5 / 50_10 / 50_20 | 0,00 / −0,24 / −0,22 | 0,02 / 0,19 / 0,60 |
+| 100_5 / 100_10 / 100_20 | −0,05 / −0,02 / −0,56 | −0,04 / 0,14 / 0,41 |
+| 200_10 / 200_20 | 0,02 / −0,51 | 0,12 / 0,61 |
+| media (110 instancias) | **−0,15** | 0,23 |
+
+Mejor en las 11 clases, con menos tiempo en casi todas. Sin mejores soluciones nuevas.
