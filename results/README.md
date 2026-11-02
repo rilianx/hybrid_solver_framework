@@ -1395,3 +1395,20 @@ esas mismas cotas, con n·m/2·60 ms (3 s en 20×5, 15 s en 50×10, 60 s en 100�
 | media (110 instancias) | **−0,15** | 0,23 |
 
 Mejor en las 11 clases, con menos tiempo en casi todas. Sin mejores soluciones nuevas.
+
+Tune 76 r1 con 3 semillas (`pfsp_cmax_tune76_full_t60.json` semilla 0, `pfsp_cmax_tune76r1_seed1.json`,
+`pfsp_cmax_tune76r1_seed2.json`), media por clase de las tres (entre paréntesis, cada semilla):
+
+| clase | r1 (3 semillas) | IGirms60 | IGirms120 | IGirms240 |
+|---|---|---|---|---|
+| 50_10 | **0,24** (0,24 0,27 0,23) | 0,30 | 0,28 | 0,25 |
+| 50_20 | **0,29** (0,34 0,29 0,25) | 0,47 | 0,39 | 0,34 |
+| 100_10 | 0,02 (0,02 0,03 0,02) | 0,03 | 0,03 | 0,02 |
+| 100_20 | **0,39** (0,46 0,40 0,32) | 0,62 | 0,52 | 0,44 |
+| 200_10 | 0,04 (0,04 0,04 0,04) | 0,03 | 0,03 | 0,03 |
+| 200_20 | **0,55** (0,53 0,56 0,56) | 0,66 | 0,57 | 0,51 |
+| 500_20 | 0,31 (0,36 0,27 0,30) | 0,29 | 0,26 | 0,24 |
+| media (120) | **0,155** (0,166 0,156 0,143) | 0,204 | 0,177 | 0,155 |
+
+Con el mismo tiempo que IGirms60, el algoritmo generado iguala a IGirms con 4 veces más tiempo; las tres semillas
+quedan por debajo de IGirms60 y de IGirms120.
