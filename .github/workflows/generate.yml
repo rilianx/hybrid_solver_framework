@@ -89,6 +89,14 @@ on:
         description: "Con target=optimize: slots cuyos componentes se aceleran (none = solo el modelo)"
         default: "neighborhood greedy_score"
         type: string
+      hint:
+        description: "Con target=native_components: indicación del investigador que se agrega al pedido al LLM"
+        default: ""
+        type: string
+      bench_size:
+        description: "Tamaño donde se mide la velocidad de los componentes (vacío = bench_size del problema), p.ej. 500x20"
+        default: ""
+        type: string
       workspace:
         description: "Directorio de salida (vacío = según from_scratch/planner); úsalo para no pisar una corrida anterior"
         default: ""
@@ -112,6 +120,8 @@ jobs:
       VARIANT: ${{ inputs.variant }}
       REFERENCE: ${{ inputs.reference && 'true' || 'false' }}
       CONSTRUCTION_ONLY: ${{ inputs.construction_only && 'true' || 'false' }}
+      HINT: ${{ inputs.hint }}
+      HSF_BENCH_SIZE: ${{ inputs.bench_size }}
     steps:
       - uses: actions/checkout@v4
 
@@ -237,8 +247,9 @@ jobs:
             NSLOTS="$SLOTS"; [ "$NSLOTS" = "neighborhood destruction constructor perturbation" ] && NSLOTS="greedy_score neighborhood perturbation"
             ARGS="--problem $PROBLEM --workspace $WS --slots $NSLOTS --n $N --rounds $ROUNDS --provider $PROVIDER"
             if [ -n "$MODEL" ]; then ARGS="$ARGS --model $MODEL"; fi
-            echo "python -m llm.native_generator $ARGS"
-            python -u -W ignore -m llm.native_generator $ARGS 2>&1 | tee generate.log
+            HINT_ARGS=(); [ -n "$HINT" ] && HINT_ARGS=(--hint "$HINT")
+            echo "python -m llm.native_generator $ARGS ${HINT:+--hint ...}"
+            python -u -W ignore -m llm.native_generator $ARGS "${HINT_ARGS[@]}" 2>&1 | tee generate.log
             exit 0
           fi
           if [ "$TARGET" = "problem_model" ]; then

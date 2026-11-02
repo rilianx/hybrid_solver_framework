@@ -17,6 +17,7 @@ from __future__ import annotations
 import importlib
 import json
 import math
+import os
 import sys
 import time
 from pathlib import Path
@@ -113,7 +114,7 @@ def coherence(native, ref, pack) -> list[str]:
 
 
 def speed(native, ref, pack, seconds: float = 0.5) -> float:
-    inst = pack.make_instances(1, 77, pack.parse_size(pack.bench_size or pack.default_size))[0]
+    inst = pack.make_instances(1, 77, pack.parse_size(os.environ.get("HSF_BENCH_SIZE") or pack.bench_size or pack.default_size))[0]
     m = native.parse(inst.to_text())
     sols = [ref.random_solution(inst, Random(s)) for s in range(8)]
     return native.bench_objective(m, sols, seconds)
@@ -124,7 +125,7 @@ def equivalence(old, new, ref, pack) -> list[str]:
     from native.generated import ModelCache
 
     mo, mn = ModelCache(old), ModelCache(new)
-    for size in [pack.micro_size or pack.default_size, pack.default_size, pack.bench_size or pack.default_size]:
+    for size in [pack.micro_size or pack.default_size, pack.default_size, os.environ.get("HSF_BENCH_SIZE") or pack.bench_size or pack.default_size]:
         for k, inst in enumerate(pack.make_instances(2, 400, pack.parse_size(size))):
             a, b = mo(inst), mn(inst)
             if ref.canonical(old.trivial_solution(a)) != ref.canonical(new.trivial_solution(b)):
@@ -154,7 +155,7 @@ MODEL_METRICS = {"objective": "evaluaciones del objetivo por segundo (soluciones
 
 
 def model_speeds(native, ref, pack, neighborhoods: list[str], seconds: float = 0.5) -> dict[str, float]:
-    inst = pack.make_instances(1, 77, pack.parse_size(pack.bench_size or pack.default_size))[0]
+    inst = pack.make_instances(1, 77, pack.parse_size(os.environ.get("HSF_BENCH_SIZE") or pack.bench_size or pack.default_size))[0]
     m = native.parse(inst.to_text())
     sols = [ref.random_solution(inst, Random(s)) for s in range(8)]
     out = {"objective": native.bench_objective(m, sols, seconds)}

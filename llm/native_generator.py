@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import importlib
 import json
+import os
 import re
 import time
 from collections import Counter
@@ -115,7 +116,7 @@ def _model_type(gen: dict) -> str:
 
 
 def generation_prompt(pack, gen: dict, slot: str, n: int, avoid: list[str],
-                      existing: list[NativeComponent] | None = None) -> str:
+                      existing: list[NativeComponent] | None = None, hint: str = "") -> str:
     spec = pack.make_model_spec()
     model = (Path(gen["dir"]) / gen["model_header"]).read_text()
     T = _model_type(gen)
@@ -135,6 +136,8 @@ def generation_prompt(pack, gen: dict, slot: str, n: int, avoid: list[str],
         parts += [f"```cpp\n{c.source}\n```" for c in existing]
     if avoid:
         parts.append(f"\nYa existen componentes llamados {avoid} en este slot; usa ideas y nombres distintos.")
+    if hint:  # indicación explícita del investigador (queda registrada en stats.json)
+        parts.append(f"\n# Indicación del investigador\n{hint}")
     parts.append(f"\nDevuelve exactamente {n} bloques ```cpp```.")
     return "\n".join(parts)
 
@@ -194,7 +197,7 @@ def _existing(ws: Path, slot: str) -> list[NativeComponent]:
 
 
 def generate_native_slot(client, pack, slot: str, n: int, workspace: str | Path, max_rounds: int = 3,
-                         verbose: bool = True) -> tuple[list[NativeComponent], NativeStats]:
+                         verbose: bool = True, hint: str = "") -> tuple[list[NativeComponent], NativeStats]:
     gen = importlib.import_module(pack.native_module).GENERATION
     ws = Path(workspace)
     (ws / slot).mkdir(parents=True, exist_ok=True)
@@ -212,7 +215,7 @@ def generate_native_slot(client, pack, slot: str, n: int, workspace: str | Path,
         return text
 
     existing = _existing(ws, slot)  # lo que ya está en el catálogo del workspace: se muestra y cuenta para la diversidad
-    comps, errors = parse_response(ask(generation_prompt(pack, gen, slot, n, [], existing)))
+    comps, errors = parse_response(ask(generation_prompt(pack, gen, slot, n, [], existing, hint)))
     comps = [c for c in comps if c.slot == slot and c.name not in {e.name for e in existing}]
     stats.parsed = len(comps)
     if verbose:
@@ -287,6 +290,7 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--rounds", type=int, default=3)
     ap.add_argument("--provider", default="anthropic")
     ap.add_argument("--model", default=None)
+    ap.add_argument("--hint", default="", help="indicación del investigador que se agrega al pedido (queda en stats.json)")
     args = ap.parse_args(argv)
 
     pack = base_pack(args.problem)
@@ -294,7 +298,7 @@ def main(argv: list[str] | None = None) -> None:
     t0 = time.perf_counter()
     all_stats, every = {}, []
     for slot in args.slots:
-        accepted, stats = generate_native_slot(client, pack, slot, args.n, args.workspace, args.rounds)
+        accepted, stats = generate_native_slot(client, pack, slot, args.n, args.workspace, args.rounds, hint=args.hint)
         every += accepted
         all_stats[slot] = stats.as_dict(client.model, accepted)
         write_catalog(args.workspace, accepted)
@@ -305,7 +309,8 @@ def main(argv: list[str] | None = None) -> None:
                              t.get("reasoning_tokens", 0), t["calls"]))
     all_stats["_run"] = {"problem": args.problem, "model": client.model, "provider": args.provider, "language": "cpp",
                          "from_scratch": True, "wall_seconds": round(time.perf_counter() - t0, 1),
-                         "tokens": total.as_dict(client.model)}
+                         "tokens": total.as_dict(client.model), "hint": args.hint,
+                         "bench_size": os.environ.get("HSF_BENCH_SIZE") or pack.bench_size}
     out = Path(args.workspace) / "stats.json"
     if out.exists():  # un slot nuevo sobre un catálogo existente: no se pisan las estadísticas de la corrida anterior
         out = out.with_name(f"stats_{'_'.join(args.slots)}.json")

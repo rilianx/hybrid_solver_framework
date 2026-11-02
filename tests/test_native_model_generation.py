@@ -206,3 +206,15 @@ def test_model_optimizer_rejects_changed_outputs_and_no_speedup(tmp_path):
     assert not row["accepted"] and row["rejections"][0].split("]")[0] in ("[coherence", "[equivalence"), row["rejections"][0]
     assert row["rejections"][1].startswith("[speed]")
     assert (tmp_path / "model" / "model.hpp").read_text() == accepted  # el aceptado no cambió
+
+
+def test_generation_prompt_includes_researcher_hint():
+    import importlib
+
+    from examples.flowshop.pack import PACK
+    from llm.native_generator import generation_prompt
+
+    gen = importlib.import_module(PACK.native_module).GENERATION
+    text = generation_prompt(PACK, gen, "neighborhood", 2, [], None, hint="vecindarios acotados")
+    assert "# Indicación del investigador\nvecindarios acotados" in text
+    assert "Indicación del investigador" not in generation_prompt(PACK, gen, "neighborhood", 2, [], None)
