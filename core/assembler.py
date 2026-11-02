@@ -84,6 +84,9 @@ SKELETONS: dict[str, SkeletonDef] = {
             "ls_strategy": {"type": "cat", "values": ["first", "best"]},
             "ls_time_share": {"type": "float", "range": [0.02, 0.3]},
             "ls_sample": {"type": "int", "range": [4, 256], "log": True, "default": 32},
+            # "full": el vecindario completo en orden en vez de una muestra de ls_sample (en C++, con primera mejora,
+            # el recorrido es cíclico: sigue desde la última mejora, como la búsqueda local del iterated greedy)
+            "ls_scope": {"type": "cat", "values": ["sample", "full"]},
             # aceptación: solo si mejora, o por recocido relativo al objetivo (skeletons/ils.py)
             "accept": {"type": "cat", "values": ["better", "anneal"]},
             "T_rel": {"type": "float", "range": [1e-4, 0.05], "log": True, "default": 0.005},
@@ -290,7 +293,7 @@ class Assembler:
                 nbh = self._component(config, "neighborhood", skeleton, P)
                 pert = self._component(config, "perturbation", skeleton, P)
                 ls = hill_climb(P, nbh, strategy=sp("ls_strategy"), max_seconds=budget * sp("ls_time_share"),
-                                sample_size=sp("ls_sample"))
+                                sample_size=None if sp("ls_scope") == "full" else sp("ls_sample"))
                 acc = (RelativeAnnealingAcceptance(sp("T_rel"), budget, Random(rng.getrandbits(32))) if sp("accept") == "anneal"
                        else BetterAcceptance())
                 sk = build_ils(P, constructor, ls, pert, acc, MaxTimeStop(budget), strength=sp("strength"))
