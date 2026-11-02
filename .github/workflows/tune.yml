@@ -10,7 +10,7 @@ on:
         description: "Problema"
         default: clsp
         type: choice
-        options: [clsp, cvrp, jobshop]
+        options: [clsp, cvrp, jobshop, flowshop]
       trials:
         description: "Trials de Optuna por catálogo (los 8 defaults van incluidos)"
         default: "40"
@@ -145,7 +145,7 @@ jobs:
           CATALOG: ${{ inputs.catalog }}
           SKELETONS: ${{ inputs.skeletons }}
           SIZE: ${{ inputs.size }}
-          PKG: ${{ inputs.problem == 'cvrp' && 'cvrp' || inputs.problem == 'jobshop' && 'jobshop' || 'lotsizing' }}
+          PKG: ${{ inputs.problem == 'cvrp' && 'cvrp' || inputs.problem == 'jobshop' && 'jobshop' || inputs.problem == 'flowshop' && 'flowshop' || 'lotsizing' }}
           REF_TIME: ${{ inputs.ref_time }}
           GEN_DIR: ${{ inputs.generated_dir }}
           REEVAL: ${{ inputs.reeval_top }}
