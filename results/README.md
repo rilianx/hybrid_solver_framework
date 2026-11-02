@@ -1316,3 +1316,32 @@ Las 120 instancias, t = 60, una semilla (`pfsp_tune74_full_t60.json`, `pfsp_ils_
 Sin mejores soluciones nuevas. Afinado en 50×10, el algoritmo queda al nivel del estado del arte en las clases de 50
 trabajos y empeora en las grandes: los parámetros absolutos (ventana del vecindario, muestra de la búsqueda local) no
 escalan con n. Falta afinar en tamaños mezclados (o con parámetros relativos a n) y con más semillas.
+
+### Tune 75: afinar en tamaños mezclados con tiempo proporcional a n·m
+
+irace en 50×10, 100×20 y 200×20 (4+4+4 instancias), `--scale-budget` (2,5 s en 50×10, 10 s en 100×20, 20 s en
+200×20, como n·m/2·t), solo ILS, 84×12 experimentos por réplica, 3 réplicas; test con `--baselines defaults` (el tune
+74 se había cortado por evaluar ~40 variantes en test). Las tres réplicas eligen ILS + iterated greedy + recocido
+(dos con NEH e inserción, una con GRASP por LR e intercambio); 0,33 % en test contra 1,34 % del default.
+
+Las 120 instancias de Taillard, t = 60, una semilla (`pfsp_tune75_full_t60.json`). Para comparar con la tabla de
+Libralesso et al. (github.com/librallu/dogs-pfsp, `flowtime_taillard_ARPD.csv`) el gap se mide aquí contra SU
+referencia (la mejor conocida de la literatura antes de 2022), no contra la mejor conocida actual:
+
+| clase | r2 (t=60) | r1 | IGA60 | ALGirtct60 | ALGirtct240 | MRSILS (t≈60) |
+|---|---|---|---|---|---|---|
+| 20_* | 0,00 | 0,00 | 0,00–0,15 | 0,00 | 0,00 | 0,00 |
+| 50_5 | **0,21** | 0,31 | 0,64 | 0,47 | 0,31 | 0,28 |
+| 50_10 | 0,40 | 0,44 | 1,10 | 0,51 | **0,35** | 0,47 |
+| 50_20 | 0,32 | 0,32 | 0,72 | 0,45 | **0,29** | 0,63 |
+| 100_5 | 0,49 | 0,78 | 1,17 | 0,99 | 0,81 | **0,22** |
+| 100_10 | 0,68 | 0,81 | 1,49 | 1,03 | 0,79 | **0,27** |
+| 100_20 | **0,70** | 0,73 | 1,54 | 1,15 | 0,83 | 0,83 |
+| 200_10 | 1,07 | 1,33 | 1,27 | 0,86 | 0,64 | **−0,71** |
+| 200_20 | 1,13 | 1,10 | 1,09 | 0,70 | 0,39 | **−0,83** |
+| 500_20 | 2,33 | 2,44 | 0,49 | 0,63 | 0,24 | **−1,90** |
+
+Con el mismo tiempo (t = 60) el algoritmo generado le gana a ALGirtct60 en todas las clases de 50 y 100 trabajos
+(100_20: 0,70 contra 1,15; mejor también que MRSILS ahí) y queda al nivel de ALGirtct con 4 veces más tiempo. En 200
+y 500 trabajos sigue lejos: MRSILS y ALGirtct mejoran bastante la referencia y nosotros no. Media contra la mejor
+conocida actual: r2 0,82 % (tune 74: 0,97 %; sin afinar: 1,00 %). Sin mejores soluciones nuevas.
