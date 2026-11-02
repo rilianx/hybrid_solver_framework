@@ -1,0 +1,12 @@
+
+=== catálogo `generated`: 41 parámetros, 0 opciones generadas por LLM ===
+  irace: 1008 experimentos en 9367s; élite: ILS[constructor=weighted_priority_sort_adjacent_sweep, neighborhood=pairwise_job_swap, perturbation=ig_destruct_greedy_reinsert]; ILS[constructor=weighted_priority_sort_adjacent_sweep, neighborhood=pairwise_job_swap, perturbation=ig_destruct_greedy_reinsert]; ILS[constructor=weighted_priority_sort_adjacent_sweep, neighborhood=pairwise_job_swap, perturbation=ig_destruct_greedy_reinsert]; ILS[constructor=neh_flowtime_prefix_insertion, neighborhood=window_priority_resort, perturbation=ig_destruct_greedy_reinsert]; ILS[constructor=weighted_priority_sort_adjacent_sweep, neighborhood=pairwise_job_swap, perturbation=ig_destruct_greedy_reinsert]; ILS[constructor=neh_flowtime_prefix_insertion, neighborhood=window_priority_resort, perturbation=ig_destruct_greedy_reinsert]; ILS[constructor=weighted_priority_sort_adjacent_sweep, neighborhood=pairwise_job_swap, perturbation=ig_destruct_greedy_reinsert]
+  mejor en train: 0.7989  ILS[constructor=weighted_priority_sort_adjacent_sweep, neighborhood=pairwise_job_swap, perturbation=ig_destruct_greedy_reinsert]
+
+=== TEST `generated` (partida trivial sin búsqueda = 3324857.0; gap vs mejor conocido por instancia) ===
+    tuned                                            gap   0.16%      2748498.4 ± 2971164.9   (+17.3% vs partida)   ILS[constructor=weighted_priority_sort_adjacent_sweep, neighborhood=pairwise_job_swap, perturbation=ig_destruct_greedy_reinsert]
+    default:ILS                                      gap   1.25%      2789388.6 ± 3022949.5   (+16.1% vs partida)   ILS[constructor=trivial, neighborhood=job_insertion_shift, perturbation=ig_destruct_greedy_reinsert]
+  ganancia del afinado vs mejor default: +1.47%; gana en 6/6 instancias
+  afinado vs default:ILS: gap +1.09% a favor del afinado, IC95 [+0.73%, +1.51%]
+
+Escenario irace escrito en tuning_out/irace/scenario.txt (correr: irace --scenario tuning_out/irace/scenario.txt)
