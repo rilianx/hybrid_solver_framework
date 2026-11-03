@@ -1490,3 +1490,26 @@ a r0 al nivel del branch-and-price de Degraeve y Jans, pero empeora las F, donde
 mejor (y el único que siempre encuentra factible en F3N, una instancia muy ajustada). Ninguna configuración domina en
 todo: la comparación con el estado del arte del CLSP queda en "al nivel de los métodos exactos de los 2000, detrás del
 branch-and-cut de Belvaux y Wolsey".
+
+### Tune 79: afinar con 60 s (irace en paralelo)
+
+irace en tamaños de Trigeiro (6×15, 12×30, 24×30; 3+3+3), **60 s** por corrida, solo HYB e ILS (mínimo de irace 728
+experimentos), `--irace-parallel 4`, 3 réplicas. Elige ILS (r0, vecindario compuesto + reconstrucción por
+Wagner-Whitin) y HYB (r1, r2). En Trigeiro, 60 s, una semilla (`clsp_trigeiro_G_run79_60s.json`,
+`clsp_trigeiro_F_{hyb_default,t79_r0,t79_r1,t79_r2}.json`):
+
+| | G (6, sin G30) | F (68) | óptimos en F |
+|---|---|---|---|
+| tune 79 r0 (ILS) | **0,40** | 0,26 | 29 |
+| tune 79 r1 (HYB) | 0,74 | 0,23 | 27 |
+| tune 79 r2 (HYB) | 0,61 | 0,31 | 24 |
+| HYB por defecto | 0,45 | 0,54 | 12 |
+| tune 78 r0 (ILS, 10 s) | 0,46 | 0,31 | 16 |
+| tune 71 r1 (HYB, 10×15) | 1,62 | **0,09** | **49** |
+| Degraeve y Jans (B&P) | 0,47 | – | – |
+| Belvaux y Wolsey (B&C, 900 s) | 0,18 | – | – |
+
+El HYB por defecto mejora la mejor conocida publicada en G69 (131 208 < 131 234); con G53 (74 729 < 74 799) son dos
+instancias G por debajo de la literatura de los métodos exactos. La configuración más pareja es la r0 del tune 79:
+mejor que el branch-and-price de Degraeve y Jans en las G (0,40 % contra 0,47 %) y 0,26 % en las F; el
+branch-and-cut de Belvaux y Wolsey (0,18 %) sigue por delante, y en las F el HYB del tune 71 es mejor.
