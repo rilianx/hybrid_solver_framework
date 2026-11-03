@@ -1,0 +1,13 @@
+
+=== catálogo `generated`: 35 parámetros, 0 opciones generadas por LLM ===
+  irace: 729 experimentos en 13785s; élite: ILS[constructor=trivial, neighborhood=composite, perturbation=window_wagner_whitin_rebuild]; ILS[constructor=trivial, neighborhood=composite, perturbation=window_wagner_whitin_rebuild]; ILS[constructor=trivial, neighborhood=composite, perturbation=window_wagner_whitin_rebuild]; ILS[constructor=trivial, neighborhood=composite, perturbation=window_wagner_whitin_rebuild]; HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=random_setup_flips_flow_repair, destruction=period_window]; HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=random_setup_flips_flow_repair, destruction=period_window]; ILS[constructor=trivial, neighborhood=composite, perturbation=window_wagner_whitin_rebuild]
+  mejor en train: 0.6349  ILS[constructor=trivial, neighborhood=composite, perturbation=window_wagner_whitin_rebuild]
+
+=== TEST `generated` (partida trivial sin búsqueda = 355853.1; gap vs mejor conocido por instancia) ===
+    tuned                                            gap   0.80%       228617.5 ± 158922.3   (+35.8% vs partida)   ILS[constructor=trivial, neighborhood=composite, perturbation=window_wagner_whitin_rebuild]
+    default:HYB                                      gap   0.12%       225882.2 ± 155835.6   (+36.5% vs partida)   HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=random_setup_flips_flow_repair, destruction=period_window]
+    default:ILS                                      gap   2.76%       234645.5 ± 164462.5   (+34.1% vs partida)   ILS[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=random_setup_flips_flow_repair]
+  ganancia del afinado vs mejor default: -1.21%; gana en 1/3 instancias
+  afinado vs default:HYB: gap -0.68% a favor del afinado, IC95 [-1.61%, +0.35%] (no se distingue del ruido)
+
+Escenario irace escrito en tuning_out/irace/scenario.txt (correr: irace --scenario tuning_out/irace/scenario.txt)
