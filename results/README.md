@@ -1436,3 +1436,36 @@ MRSILS y ALGirtct.
   específicas, que el LLM no encontró ni con la indicación explícita.
 - Lo que aportó el framework: `ls_scope = full` (búsqueda local completa en orden), tuning en tamaños mezclados con
   tiempo ∝ n·m (`--size a,b,c --scale-budget`), baselines de test baratos, `--hint` y `bench_size`.
+
+## CLSP en instancias de la literatura: Trigeiro, Thomas y McClain (1989)
+
+Instancias de strIPlib (`lotsizing/single-level/trigeiro/textbook`, LP de Zimpl) convertidas al formato del CLSP
+(`examples/lotsizing/trigeiro_convert.py`): 68 F (6×15; F19N viene dañada) y las G30, G30b, G53, G57, G62, G69, G72.
+Es el mismo modelo; en las G el tiempo por unidad ≠ 1 se absorbe midiendo cada ítem en unidades de tiempo (validado:
+G30 da el mismo óptimo, 37 809, desde el LP original y desde la conversión). Referencias: CBC 600 s sobre los LP
+originales (`trigeiro/cbc.json`: óptimo probado en 66 F, G30 y G30b) y, para las G, la tabla 9 de Degraeve y Jans
+(ERS-2003-010-LIS, versión de trabajo de Operations Research 2007) con el branch-and-cut de Belvaux y Wolsey (2000,
+900 s) y su branch-and-price (`trigeiro/reference.json`). Configuraciones: las 3 réplicas del tune 71 (HYB con todo
+generado, afinado en instancias al azar de 10×15 con 10 s), sin re-afinar; 60 s por instancia, una semilla
+(`scripts/clsp_trigeiro_eval.py`).
+
+Instancias G, gap contra la mejor conocida (%):
+
+| | G30 | G30b | G53 | G57 | G62 | G69 | G72 | media sin G30 |
+|---|---|---|---|---|---|---|---|---|
+| Belvaux y Wolsey (B&C, 900 s, 200 MHz) | – | 0,00 | 0,00 | 0,01 | 0,00 | 1,08 | 0,01 | 0,18 |
+| Degraeve y Jans (B&P, 750 MHz) | 0,00 | 1,17 | 0,32 | 0,00 | 1,36 | 0,00 | 0,00 | 0,47 |
+| CBC 600 s (hoy) | 0,00 | 0,00 | 0,72 | 1,65 | 1,59 | 4,31 | 5,13 | 2,23 |
+| HYB generado r0 (60 s) | 0,64 | 0,12 | 0,99 | 0,68 | 0,15 | 0,47 | 1,66 | 0,68 |
+| HYB generado, mejor de 3 réplicas | 0,33 | 0,00 | **−0,09** | 0,68 | 0,15 | 0,47 | 1,66 | 0,48 |
+
+En G53 la réplica r2 encuentra 74 729, mejor que lo publicado por Belvaux y Wolsey (74 799) y Degraeve y Jans
+(75 035).
+
+Instancias F (68, contra el óptimo de CBC; `clsp_trigeiro_F_run71_60s.json`): r1 0,10 % medio y el óptimo en 49 de
+68; r2 0,19 % (34 óptimos); r0 1,13 % (22 óptimos; una corrida infactible en F3N); la mejor de las 3, 0,04 % (52
+óptimos).
+
+Sin re-afinar para estas instancias ni tamaños, el HYB generado queda a la altura de los métodos exactos de los 2000
+con el mejor de 3, muy por delante de CBC actual con 10 veces menos tiempo, pero detrás del branch-and-cut de Belvaux
+y Wolsey; la variación entre réplicas es grande (r0 falla en F3N), así que falta afinar en tamaños de Trigeiro.
