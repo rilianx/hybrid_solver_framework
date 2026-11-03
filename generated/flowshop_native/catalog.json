@@ -1,0 +1,476 @@
+[
+ {
+  "name": "grasp_lr_index_append",
+  "slot": "constructor",
+  "path": "generated/flowshop_native/constructor/grasp_lr_index_append_r1.hpp",
+  "component": {
+   "name": "grasp_lr_index_append",
+   "slot": "constructor",
+   "params": {
+    "alpha": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.4
+     ]
+    },
+    "idle_weight": {
+     "type": "float",
+     "range": [
+      0.2,
+      3.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "neh_flowtime_prefix_insertion",
+  "slot": "constructor",
+  "path": "generated/flowshop_native/constructor/neh_flowtime_prefix_insertion_r1.hpp",
+  "component": {
+   "name": "neh_flowtime_prefix_insertion",
+   "slot": "constructor",
+   "params": {
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.5
+     ]
+    },
+    "max_pos": {
+     "type": "int",
+     "range": [
+      10,
+      300
+     ]
+    },
+    "order": {
+     "type": "cat",
+     "values": [
+      "sum_asc",
+      "sum_desc",
+      "random"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "weighted_priority_sort_adjacent_sweep",
+  "slot": "constructor",
+  "path": "generated/flowshop_native/constructor/weighted_priority_sort_adjacent_sweep_r1.hpp",
+  "component": {
+   "name": "weighted_priority_sort_adjacent_sweep",
+   "slot": "constructor",
+   "params": {
+    "slope": {
+     "type": "float",
+     "range": [
+      -1.0,
+      3.0
+     ]
+    },
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.5
+     ]
+    },
+    "sweeps": {
+     "type": "int",
+     "range": [
+      0,
+      6
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "job_insertion_shift",
+  "slot": "neighborhood",
+  "path": "generated/flowshop_native/neighborhood/job_insertion_shift_r4.hpp",
+  "component": {
+   "name": "job_insertion_shift",
+   "slot": "neighborhood",
+   "params": {
+    "window": {
+     "type": "int",
+     "range": [
+      0,
+      500
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "pairwise_job_swap",
+  "slot": "neighborhood",
+  "path": "generated/flowshop_native/neighborhood/pairwise_job_swap_r4.hpp",
+  "component": {
+   "name": "pairwise_job_swap",
+   "slot": "neighborhood",
+   "params": {
+    "window": {
+     "type": "int",
+     "range": [
+      0,
+      500
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "block_reversal_2opt",
+  "slot": "neighborhood",
+  "path": "generated/flowshop_native/neighborhood/block_reversal_2opt_r4.hpp",
+  "component": {
+   "name": "block_reversal_2opt",
+   "slot": "neighborhood",
+   "params": {
+    "max_len": {
+     "type": "int",
+     "range": [
+      2,
+      500
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "swap_hamming_relink",
+  "slot": "relink",
+  "path": "generated/flowshop_native/relink/swap_hamming_relink_r1.hpp",
+  "component": {
+   "name": "swap_hamming_relink",
+   "slot": "relink",
+   "params": {
+    "pair_bias": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "lcs_insertion_relink",
+  "slot": "relink",
+  "path": "generated/flowshop_native/relink/lcs_insertion_relink_r1.hpp",
+  "component": {
+   "name": "lcs_insertion_relink",
+   "slot": "relink",
+   "params": {
+    "random_gap_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "kendall_tau_shift_relink",
+  "slot": "relink",
+  "path": "generated/flowshop_native/relink/kendall_tau_shift_relink_r1.hpp",
+  "component": {
+   "name": "kendall_tau_shift_relink",
+   "slot": "relink",
+   "params": {
+    "max_shift": {
+     "type": "int",
+     "range": [
+      1,
+      64
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "ig_destruct_greedy_reinsert",
+  "slot": "perturbation",
+  "path": "generated/flowshop_native/perturbation/ig_destruct_greedy_reinsert_r2.hpp",
+  "component": {
+   "name": "ig_destruct_greedy_reinsert",
+   "slot": "perturbation",
+   "params": {
+    "d_base": {
+     "type": "int",
+     "range": [
+      1,
+      6
+     ]
+    },
+    "d_scale": {
+     "type": "float",
+     "range": [
+      0.0,
+      2.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "random_multi_insertion",
+  "slot": "perturbation",
+  "path": "generated/flowshop_native/perturbation/random_multi_insertion_r1.hpp",
+  "component": {
+   "name": "random_multi_insertion",
+   "slot": "perturbation",
+   "params": {
+    "scale": {
+     "type": "float",
+     "range": [
+      0.5,
+      3.0
+     ]
+    },
+    "extra": {
+     "type": "int",
+     "range": [
+      0,
+      3
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "segment_scramble",
+  "slot": "perturbation",
+  "path": "generated/flowshop_native/perturbation/segment_scramble_r1.hpp",
+  "component": {
+   "name": "segment_scramble",
+   "slot": "perturbation",
+   "params": {
+    "len_factor": {
+     "type": "float",
+     "range": [
+      1.0,
+      4.0
+     ]
+    },
+    "mode": {
+     "type": "cat",
+     "values": [
+      "shuffle",
+      "reverse",
+      "rotate",
+      "mixed"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "block_relocation_oropt_window",
+  "slot": "neighborhood",
+  "path": "generated/flowshop_native/neighborhood/block_relocation_oropt_window_r4.hpp",
+  "component": {
+   "name": "block_relocation_oropt_window",
+   "slot": "neighborhood",
+   "params": {
+    "max_block": {
+     "type": "int",
+     "range": [
+      2,
+      6
+     ]
+    },
+    "win_frac": {
+     "type": "float",
+     "range": [
+      0.01,
+      0.5
+     ]
+    },
+    "min_win": {
+     "type": "int",
+     "range": [
+      1,
+      50
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "window_priority_resort",
+  "slot": "neighborhood",
+  "path": "generated/flowshop_native/neighborhood/window_priority_resort_r4.hpp",
+  "component": {
+   "name": "window_priority_resort",
+   "slot": "neighborhood",
+   "params": {
+    "len_frac": {
+     "type": "float",
+     "range": [
+      0.02,
+      0.5
+     ]
+    },
+    "min_len": {
+     "type": "int",
+     "range": [
+      3,
+      10
+     ]
+    },
+    "growth": {
+     "type": "float",
+     "range": [
+      1.2,
+      2.5
+     ]
+    },
+    "n_rules": {
+     "type": "int",
+     "range": [
+      1,
+      3
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "nonadjacent_block_exchange",
+  "slot": "neighborhood",
+  "path": "generated/flowshop_native/neighborhood/nonadjacent_block_exchange_r4.hpp",
+  "component": {
+   "name": "nonadjacent_block_exchange",
+   "slot": "neighborhood",
+   "params": {
+    "max_block": {
+     "type": "int",
+     "range": [
+      2,
+      5
+     ]
+    },
+    "win_frac": {
+     "type": "float",
+     "range": [
+      0.01,
+      0.3
+     ]
+    },
+    "min_win": {
+     "type": "int",
+     "range": [
+      3,
+      40
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ }
+]

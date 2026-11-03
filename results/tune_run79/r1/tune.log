@@ -1,0 +1,13 @@
+
+=== catálogo `generated`: 35 parámetros, 0 opciones generadas por LLM ===
+  irace: 729 experimentos en 12347s; élite: HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=lot_shift_merge_swap_repair, destruction=period_window]; HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=window_wagner_whitin_rebuild, destruction=random_setups]; HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=lot_shift_merge_swap_repair, destruction=period_window]; HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=window_wagner_whitin_rebuild, destruction=random_setups]; HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=lot_shift_merge_swap_repair, destruction=period_window]; HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=lot_shift_merge_swap_repair, destruction=period_window]; HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=window_wagner_whitin_rebuild, destruction=random_setups]
+  mejor en train: 0.6339  HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=lot_shift_merge_swap_repair, destruction=period_window]
+
+=== TEST `generated` (partida trivial sin búsqueda = 355853.1; gap vs mejor conocido por instancia) ===
+    tuned                                            gap   0.63%       227546.1 ± 157889.1   (+36.1% vs partida)   HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=lot_shift_merge_swap_repair, destruction=period_window]
+    default:HYB                                      gap   0.00%       225316.9 ± 155494.6   (+36.7% vs partida)   HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=random_setup_flips_flow_repair, destruction=period_window]
+    default:ILS                                      gap   2.72%       234239.3 ± 164472.6   (+34.2% vs partida)   ILS[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=random_setup_flips_flow_repair]
+  ganancia del afinado vs mejor default: -0.99%; gana en 0/3 instancias
+  afinado vs default:HYB: gap -0.63% a favor del afinado, IC95 [-1.29%, +0.00%] (no se distingue del ruido)
+
+Escenario irace escrito en tuning_out/irace/scenario.txt (correr: irace --scenario tuning_out/irace/scenario.txt)

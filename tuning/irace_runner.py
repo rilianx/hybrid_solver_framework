@@ -84,13 +84,16 @@ class IraceResult:
 
 
 def tune_with_irace(assembler, scenario: Path, train, budget: float, max_experiments: int, seed: int = 0,
-                    normalizers: list[float] | None = None, timeout: float | None = None) -> IraceResult:
+                    normalizers: list[float] | None = None, timeout: float | None = None,
+                    parallel: int = 1) -> IraceResult:
     from tuning.irace_scenario import parse_irace_params
 
     space = assembler.config_space()
     scenario = Path(scenario).resolve()  # irace corre desde el directorio del escenario
     t0 = time.monotonic()
     cmd = [irace_executable(), "--scenario", str(scenario), "--seed", str(seed), "--max-experiments", str(max_experiments)]
+    if parallel > 1:  # experimentos simultáneos (cada uno es un proceso del target-runner)
+        cmd[-2:-2] = ["--parallel", str(parallel)]
     proc = subprocess.run(cmd, cwd=scenario.parent, capture_output=True, text=True, timeout=timeout)
     need = re.search(r"maxExperiments' of at least '(\d+)'", proc.stdout + proc.stderr)
     if proc.returncode != 0 and need:  # irace pide un mínimo según el espacio: se usa ese mínimo

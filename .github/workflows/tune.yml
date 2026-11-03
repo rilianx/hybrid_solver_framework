@@ -10,7 +10,7 @@ on:
         description: "Problema"
         default: clsp
         type: choice
-        options: [clsp, cvrp, jobshop]
+        options: [clsp, cvrp, jobshop, flowshop, flowshop_cmax]
       trials:
         description: "Trials de Optuna por catálogo (los 8 defaults van incluidos)"
         default: "40"
@@ -81,6 +81,9 @@ on:
         default: optuna
         type: choice
         options: [optuna, irace]
+      extra_args:
+        description: "Opciones extra del tuning (p.ej. --scale-budget --baselines defaults)"
+        default: ""
       native:
         description: "Correr las configuraciones en C++ (backend nativo; job shop, catálogo handwritten; SA, ILS, VNS, TS)"
         default: false
@@ -145,7 +148,7 @@ jobs:
           CATALOG: ${{ inputs.catalog }}
           SKELETONS: ${{ inputs.skeletons }}
           SIZE: ${{ inputs.size }}
-          PKG: ${{ inputs.problem == 'cvrp' && 'cvrp' || inputs.problem == 'jobshop' && 'jobshop' || 'lotsizing' }}
+          PKG: ${{ inputs.problem == 'cvrp' && 'cvrp' || inputs.problem == 'jobshop' && 'jobshop' || inputs.problem == 'flowshop' && 'flowshop' || inputs.problem == 'flowshop_cmax' && 'flowshop_cmax' || 'lotsizing' }}
           REF_TIME: ${{ inputs.ref_time }}
           GEN_DIR: ${{ inputs.generated_dir }}
           REEVAL: ${{ inputs.reeval_top }}
@@ -157,6 +160,8 @@ jobs:
           VARIANT: ${{ inputs.variant }}
           REFERENCE: ${{ inputs.reference && 'true' || 'false' }}
           PROBLEM: ${{ inputs.problem }}
+          EXTRA: ${{ inputs.extra_args }}
+          PYTHONUNBUFFERED: "1"
         run: |
           set -o pipefail
           SK_ARGS=()
@@ -165,6 +170,7 @@ jobs:
           GEN_ARGS=(); if [ -n "$GEN_DIR" ]; then GEN_ARGS=(--generated "$GEN_DIR"); fi
           [ "$NATIVE" = "true" ] && SK_ARGS+=(--native)
           SK_ARGS+=(--tuner "${TUNER:-optuna}")
+          if [ -n "$EXTRA" ]; then read -ra EX <<< "$EXTRA"; SK_ARGS+=("${EX[@]}"); fi
           CMD=(-m "examples.$PKG.tune")
           if [ -n "$VARIANT" ]; then
             CARGS=(--problem "$PROBLEM" --variant "$VARIANT" --workspace "$GEN_DIR")

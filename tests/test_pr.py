@@ -1,5 +1,6 @@
 """PR (path relinking) y el slot relink: el esqueleto corre en Python y en C++ y el validador revisa el contrato."""
 
+import pytest
 from random import Random
 
 from core.validation.base import ValidationContext
@@ -30,6 +31,7 @@ def test_relink_contract():
 
 
 def test_pr_runs_python_and_native():
+    pytest.importorskip("pybind11")
     inst = PACK.make_instances(1, 3, PACK.parse_size("6x5"))[0]
     for native in (False, True):
         A, _ = make_assembler(PACK, "handwritten", None, native=native)
@@ -42,6 +44,7 @@ def test_pr_runs_python_and_native():
 
 
 def test_ils_annealing_acceptance_runs_python_and_native():
+    pytest.importorskip("pybind11")
     inst = PACK.make_instances(1, 3, PACK.parse_size("6x5"))[0]
     for native in (False, True):
         A, _ = make_assembler(PACK, "handwritten", None, native=native)
@@ -52,6 +55,7 @@ def test_ils_annealing_acceptance_runs_python_and_native():
 
 
 def test_pr_with_ils_improvement_python_and_native():
+    pytest.importorskip("pybind11")
     inst = PACK.make_instances(1, 3, PACK.parse_size("6x5"))[0]
     for native in (False, True):
         A, _ = make_assembler(PACK, "handwritten", None, native=native)
@@ -63,6 +67,7 @@ def test_pr_with_ils_improvement_python_and_native():
 
 
 def test_adaptive_penalty_returns_the_best_feasible_solution():
+    pytest.importorskip("pybind11")
     """Con un peso bajo de las violaciones la búsqueda pasa por infactibles, pero devuelve la mejor factible."""
     inst = PACK.make_instances(1, 3, PACK.parse_size("6x5"))[0]
     A, _ = make_assembler(PACK, "handwritten", None, native=True)

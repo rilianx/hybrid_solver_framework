@@ -47,6 +47,9 @@ class ProblemPack:
     variants: dict[str, tuple[Callable[[], Any], str]] = field(default_factory=dict)
     # backend nativo (C++), opcional: módulo con `native` (bindings) y `model(inst)` (ver `core.native_runner`)
     native_module: str = ""
+    # factor del presupuesto por instancia (con `--scale-budget`): el tiempo crece con el tamaño, como en los protocolos
+    # de la literatura (p.ej. n·m/2·t ms en el flow shop); 1 en el tamaño de referencia
+    budget_scale: Callable[[Any], float] | None = None
     bench_size: str = ""  # tamaño de las instancias donde se mide la velocidad de los componentes (vacío = default_size)
     # esqueletos que puede usar un constructor (los greedy_<puntaje> se registran con estos)
     constructor_skeletons: list[str] = field(

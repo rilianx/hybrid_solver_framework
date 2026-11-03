@@ -1,0 +1,333 @@
+[
+ {
+  "name": "neh_taillard_noisy",
+  "slot": "constructor",
+  "path": "generated/flowshop_cmax_native/constructor/neh_taillard_noisy_r1.hpp",
+  "component": {
+   "name": "neh_taillard_noisy",
+   "slot": "constructor",
+   "params": {
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.3
+     ]
+    },
+    "tie_break": {
+     "type": "cat",
+     "values": [
+      "first",
+      "last",
+      "random"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "grasp_liu_reeves_append",
+  "slot": "constructor",
+  "path": "generated/flowshop_cmax_native/constructor/grasp_liu_reeves_append_r1.hpp",
+  "component": {
+   "name": "grasp_liu_reeves_append",
+   "slot": "constructor",
+   "params": {
+    "alpha": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.5
+     ]
+    },
+    "starts": {
+     "type": "int",
+     "range": [
+      1,
+      8
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "cds_johnson_palmer",
+  "slot": "constructor",
+  "path": "generated/flowshop_cmax_native/constructor/cds_johnson_palmer_r1.hpp",
+  "component": {
+   "name": "cds_johnson_palmer",
+   "slot": "constructor",
+   "params": {
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.2
+     ]
+    },
+    "include_palmer": {
+     "type": "int",
+     "range": [
+      0,
+      1
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "taillard_job_insertion",
+  "slot": "neighborhood",
+  "path": "generated/flowshop_cmax_native/neighborhood/taillard_job_insertion_r4.hpp",
+  "component": {
+   "name": "taillard_job_insertion",
+   "slot": "neighborhood",
+   "params": {
+    "max_dist": {
+     "type": "int",
+     "range": [
+      2,
+      500
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "head_tail_pair_swap",
+  "slot": "neighborhood",
+  "path": "generated/flowshop_cmax_native/neighborhood/head_tail_pair_swap_r4.hpp",
+  "component": {
+   "name": "head_tail_pair_swap",
+   "slot": "neighborhood",
+   "params": {
+    "max_dist": {
+     "type": "int",
+     "range": [
+      1,
+      500
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "segment_reversal_2opt",
+  "slot": "neighborhood",
+  "path": "generated/flowshop_cmax_native/neighborhood/segment_reversal_2opt_r4.hpp",
+  "component": {
+   "name": "segment_reversal_2opt",
+   "slot": "neighborhood",
+   "params": {
+    "max_len": {
+     "type": "int",
+     "range": [
+      2,
+      500
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "ig_destroy_rebuild_taillard",
+  "slot": "perturbation",
+  "path": "generated/flowshop_cmax_native/perturbation/ig_destroy_rebuild_taillard_r2.hpp",
+  "component": {
+   "name": "ig_destroy_rebuild_taillard",
+   "slot": "perturbation",
+   "params": {
+    "d_base": {
+     "type": "int",
+     "range": [
+      1,
+      8
+     ]
+    },
+    "d_max_frac": {
+     "type": "float",
+     "range": [
+      0.05,
+      0.5
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "random_insert_swap_chain",
+  "slot": "perturbation",
+  "path": "generated/flowshop_cmax_native/perturbation/random_insert_swap_chain_r1.hpp",
+  "component": {
+   "name": "random_insert_swap_chain",
+   "slot": "perturbation",
+   "params": {
+    "k_base": {
+     "type": "int",
+     "range": [
+      1,
+      10
+     ]
+    },
+    "p_insert": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "max_dist_frac": {
+     "type": "float",
+     "range": [
+      0.05,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "cayley_cycle_swap_relink",
+  "slot": "relink",
+  "path": "generated/flowshop_cmax_native/relink/cayley_cycle_swap_relink_r1.hpp",
+  "component": {
+   "name": "cayley_cycle_swap_relink",
+   "slot": "relink",
+   "params": {
+    "max_swaps": {
+     "type": "int",
+     "range": [
+      1,
+      4
+     ]
+    },
+    "multi_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "ulam_lis_insertion_relink",
+  "slot": "relink",
+  "path": "generated/flowshop_cmax_native/relink/ulam_lis_insertion_relink_r1.hpp",
+  "component": {
+   "name": "ulam_lis_insertion_relink",
+   "slot": "relink",
+   "params": {
+    "placement": {
+     "type": "cat",
+     "values": [
+      "random",
+      "after_pred",
+      "before_succ"
+     ]
+    },
+    "greedy_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "kendall_inversion_bubble_relink",
+  "slot": "relink",
+  "path": "generated/flowshop_cmax_native/relink/kendall_inversion_bubble_relink_r1.hpp",
+  "component": {
+   "name": "kendall_inversion_bubble_relink",
+   "slot": "relink",
+   "params": {
+    "max_jump": {
+     "type": "int",
+     "range": [
+      1,
+      16
+     ]
+    },
+    "direction": {
+     "type": "cat",
+     "values": [
+      "both",
+      "left",
+      "right"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ }
+]

@@ -1267,3 +1267,249 @@ escrita a mano, sin una línea de código del problema escrita por una persona.
 
 Las runs 62–64 y 67–70 fallaron en el target-runner de irace: R cambia `LD_LIBRARY_PATH` y el intérprete de Python
 del CI cargaba otra libpython (al importar `ctypes`, que usa `pulp`). Arreglado pasándole el entorno del tuner.
+
+## Flow shop de permutación con flowtime total (Taillard), todo generado en C++
+
+Problema nuevo, elegido porque el estado del arte todavía se mueve (ALGirtct, IBS, MRSILS). Instancias de Taillard
+(120, `examples/flowshop/taillard/`, de librallu/dogs-pfsp); mejor conocida = mínimo entre la literatura, ALGirtct e
+IBS. Protocolo de la literatura: n·m/2·t ms por instancia (`scripts/pfsp_eval.py`). Gap (RPD) contra esa mejor
+conocida, que es más exigente que la usada en los papers (sus ARPD están medidos contra la anterior).
+
+- Corrida 120 (0,05 USD): el LLM escribe el modelo C++ (contrato genérico), aceptado a la primera.
+- Corrida 121 (1,09 USD): 3 constructores (entre ellos un NEH para flowtime), 3 vecindarios, 3 relinks y 3
+  perturbaciones (iterated greedy, inserciones múltiples, mezclar un segmento; revalidadas tras arreglar el validador
+  sin vista MIP).
+- Corrida 122 (3,64 USD): optimización C++. Los tres vecindarios ×3–4 en pasos de trayectoria (125→495, 251→748,
+  246→937); la perturbación iterated greedy ×3,5. Las otras dos perturbaciones no llegaron a 1,5×.
+- Tune 73 falló (faltaba `PFSPInstance.save`). Tune 74: irace en 50×10, 10 s, SA/ILS/TS/PR/VNS, 3 réplicas; llegó a
+  ~1000 experimentos por réplica pero el job se cortó a las 5 h antes de evaluar en test (cada experimento de 10 s
+  tomó ~18 s). Las élites se sacaron de `irace.Rdata` (`pfsp_tune74_elites.json`): todas ILS + iterated greedy +
+  recocido con T_rel ≈ 0,03, un solo vecindario (intercambio o inserción con ventana), constructor por prioridades.
+
+t = 60, una semilla, 50_10 / 100_20 (`pfsp_tune74_elites_t60.json`):
+
+| | 50_10 | 100_20 |
+|---|---|---|
+| r2_83 (irace) | **0,42 %** | **0,98 %** |
+| r2_126 (irace) | 0,43 % | 1,03 % |
+| ILS_IG sin afinar (NEH, compuesto, T_rel 0,001) | 0,68 % | 1,23 % |
+| IGA60 (lit., contra la BKS anterior) | 1,1 % | 1,54 % |
+| ALGirtct60 (lit.) | 0,51 % | 1,15 % |
+| MRSILS (lit.) | 0,47 % | 0,83 % |
+
+Las 120 instancias, t = 60, una semilla (`pfsp_tune74_full_t60.json`, `pfsp_ils_untuned_full_t60.json`):
+
+| clase | r2_83 | r2_126 | ILS_IG sin afinar |
+|---|---|---|---|
+| 20_5 / 20_10 / 20_20 | 0,00 % | 0,00 % | 0,00 % |
+| 50_5 | **0,36 %** | 0,38 % | 0,45 % |
+| 50_10 | **0,39 %** | 0,42 % | 0,61 % |
+| 50_20 | **0,27 %** | 0,32 % | 0,79 % |
+| 100_5 | 1,10 % | 0,91 % | **0,86 %** |
+| 100_10 | 1,29 % | **1,22 %** | 1,38 % |
+| 100_20 | 1,10 % | **0,99 %** | 1,13 % |
+| 200_10 | 2,12 % | 1,88 % | **1,87 %** |
+| 200_20 | 2,61 % | **2,04 %** | 2,10 % |
+| 500_20 | 3,71 % | 3,42 % | **2,85 %** |
+| media | 1,08 % | **0,97 %** | 1,00 % |
+
+Sin mejores soluciones nuevas. Afinado en 50×10, el algoritmo queda al nivel del estado del arte en las clases de 50
+trabajos y empeora en las grandes: los parámetros absolutos (ventana del vecindario, muestra de la búsqueda local) no
+escalan con n. Falta afinar en tamaños mezclados (o con parámetros relativos a n) y con más semillas.
+
+### Tune 75: afinar en tamaños mezclados con tiempo proporcional a n·m
+
+irace en 50×10, 100×20 y 200×20 (4+4+4 instancias), `--scale-budget` (2,5 s en 50×10, 10 s en 100×20, 20 s en
+200×20, como n·m/2·t), solo ILS, 84×12 experimentos por réplica, 3 réplicas; test con `--baselines defaults` (el tune
+74 se había cortado por evaluar ~40 variantes en test). Las tres réplicas eligen ILS + iterated greedy + recocido
+(dos con NEH e inserción, una con GRASP por LR e intercambio); 0,33 % en test contra 1,34 % del default.
+
+Las 120 instancias de Taillard, t = 60, una semilla (`pfsp_tune75_full_t60.json`). Para comparar con la tabla de
+Libralesso et al. (github.com/librallu/dogs-pfsp, `flowtime_taillard_ARPD.csv`) el gap se mide aquí contra SU
+referencia (la mejor conocida de la literatura antes de 2022), no contra la mejor conocida actual:
+
+| clase | r2 (t=60) | r1 | IGA60 | ALGirtct60 | ALGirtct240 | MRSILS (t≈60) |
+|---|---|---|---|---|---|---|
+| 20_* | 0,00 | 0,00 | 0,00–0,15 | 0,00 | 0,00 | 0,00 |
+| 50_5 | **0,21** | 0,31 | 0,64 | 0,47 | 0,31 | 0,28 |
+| 50_10 | 0,40 | 0,44 | 1,10 | 0,51 | **0,35** | 0,47 |
+| 50_20 | 0,32 | 0,32 | 0,72 | 0,45 | **0,29** | 0,63 |
+| 100_5 | 0,49 | 0,78 | 1,17 | 0,99 | 0,81 | **0,22** |
+| 100_10 | 0,68 | 0,81 | 1,49 | 1,03 | 0,79 | **0,27** |
+| 100_20 | **0,70** | 0,73 | 1,54 | 1,15 | 0,83 | 0,83 |
+| 200_10 | 1,07 | 1,33 | 1,27 | 0,86 | 0,64 | **−0,71** |
+| 200_20 | 1,13 | 1,10 | 1,09 | 0,70 | 0,39 | **−0,83** |
+| 500_20 | 2,33 | 2,44 | 0,49 | 0,63 | 0,24 | **−1,90** |
+
+Con el mismo tiempo (t = 60) el algoritmo generado le gana a ALGirtct60 en todas las clases de 50 y 100 trabajos
+(100_20: 0,70 contra 1,15; mejor también que MRSILS ahí) y queda al nivel de ALGirtct con 4 veces más tiempo. En 200
+y 500 trabajos sigue lejos: MRSILS y ALGirtct mejoran bastante la referencia y nosotros no. Media contra la mejor
+conocida actual: r2 0,82 % (tune 74: 0,97 %; sin afinar: 1,00 %). Sin mejores soluciones nuevas.
+
+## Flow shop con makespan (Taillard): el objetivo de los generadores con LLM
+
+`examples/flowshop_cmax`: mismas 120 instancias, makespan. Mejores conocidas e IGirms (el iterated greedy de Ruiz,
+t = 60/120/240) de github.com/librallu/dogs-pfsp. Todo generado como en el flowtime:
+
+- Corrida 123 (0,05 USD): modelo C++ a la primera.
+- Corrida 124 (0,83 USD): 11 de 12 componentes. El LLM usó por su cuenta la aceleración de Taillard (NEH con
+  aceleración, inserción con aceleración, iterated greedy de destruir y reconstruir con aceleración).
+- Corrida 125 (5,03 USD): optimización C++; inserción ×3,8 en delta/s (17,5 → 67 M/s), intercambio ×4, 2-opt ×4,6, el
+  iterated greedy ×1,9.
+- Framework: `ILS.ls_scope = full` (búsqueda local sobre el vecindario completo en orden, cíclica con primera mejora).
+  Con la muestra de 256 movimientos la búsqueda local paraba demasiado pronto y el orden al azar deshacía la
+  aceleración (50_10: 1,01 % → 0,35 %; 100_20: 2,36 % → ~1,0 %, sin afinar).
+- Tune 76: irace en 50×10, 100×20 y 200×20 con tiempo ∝ n·m (como el tune 75). Las réplicas eligen ILS + iterated
+  greedy con aceleración; dos con la inserción con aceleración y `ls_scope = full`.
+
+Las 120 instancias, n·m/2·60 ms, una semilla (`pfsp_cmax_tune76_full_t60.json`), gap contra la mejor conocida:
+
+| clase | r0 | **r1** | r2 | IGirms60 | IGirms120 | IGirms240 |
+|---|---|---|---|---|---|---|
+| 20_5 / 20_10 / 20_20 | 0,00 | 0,00 | 0,00 | 0,03 / 0,01 / 0,01 | 0,02 / 0,01 / 0,01 | 0,01 / 0,01 / 0,01 |
+| 50_5 | 0,00 | 0,00 | 0,00 | 0 | 0 | 0 |
+| 50_10 | 0,26 | **0,24** | 0,33 | 0,30 | 0,28 | 0,25 |
+| 50_20 | 0,34 | **0,34** | 0,54 | 0,47 | 0,39 | 0,34 |
+| 100_5 | 0,00 | 0,00 | 0,00 | 0 | 0 | 0 |
+| 100_10 | 0,05 | **0,02** | 0,07 | 0,03 | 0,03 | 0,02 |
+| 100_20 | 0,57 | **0,46** | 0,73 | 0,62 | 0,52 | 0,44 |
+| 200_10 | 0,04 | 0,04 | 0,04 | 0,03 | 0,03 | 0,03 |
+| 200_20 | 0,69 | **0,53** | 0,77 | 0,66 | 0,57 | 0,51 |
+| 500_20 | 0,36 | 0,36 | 0,37 | 0,29 | 0,26 | 0,24 |
+| media | 0,19 | **0,17** | 0,24 | 0,20 | 0,18 | 0,16 |
+
+Con el mismo tiempo, r1 le gana al iterated greedy de Ruiz en 50_10, 50_20, 100_20 y 200_20 y queda al nivel de
+IGirms con el doble de tiempo (media 0,17 contra 0,18); solo en 500_20 queda detrás. Ojo: IGirms se corrió en otra
+máquina (la de Libralesso et al.); falta repetir con varias semillas.
+
+Contra EoH (Liu et al., ICML 2024, apéndice D.3): su gap es contra las cotas de los encabezados de sus instancias
+(`eoh_upper_bounds.json`, 0,30 % por encima de la mejor conocida actual en promedio) con 60 s por instancia. Contra
+esas mismas cotas, con n·m/2·60 ms (3 s en 20×5, 15 s en 50×10, 60 s en 100×20):
+
+| clase | r1 | EoH |
+|---|---|---|
+| 20_5 / 20_10 / 20_20 | −0,05 / −0,01 / 0,00 | 0,09 / 0,30 / 0,10 |
+| 50_5 / 50_10 / 50_20 | 0,00 / −0,24 / −0,22 | 0,02 / 0,19 / 0,60 |
+| 100_5 / 100_10 / 100_20 | −0,05 / −0,02 / −0,56 | −0,04 / 0,14 / 0,41 |
+| 200_10 / 200_20 | 0,02 / −0,51 | 0,12 / 0,61 |
+| media (110 instancias) | **−0,15** | 0,23 |
+
+Mejor en las 11 clases, con menos tiempo en casi todas. Sin mejores soluciones nuevas.
+
+Tune 76 r1 con 3 semillas (`pfsp_cmax_tune76_full_t60.json` semilla 0, `pfsp_cmax_tune76r1_seed1.json`,
+`pfsp_cmax_tune76r1_seed2.json`), media por clase de las tres (entre paréntesis, cada semilla):
+
+| clase | r1 (3 semillas) | IGirms60 | IGirms120 | IGirms240 |
+|---|---|---|---|---|
+| 50_10 | **0,24** (0,24 0,27 0,23) | 0,30 | 0,28 | 0,25 |
+| 50_20 | **0,29** (0,34 0,29 0,25) | 0,47 | 0,39 | 0,34 |
+| 100_10 | 0,02 (0,02 0,03 0,02) | 0,03 | 0,03 | 0,02 |
+| 100_20 | **0,39** (0,46 0,40 0,32) | 0,62 | 0,52 | 0,44 |
+| 200_10 | 0,04 (0,04 0,04 0,04) | 0,03 | 0,03 | 0,03 |
+| 200_20 | **0,55** (0,53 0,56 0,56) | 0,66 | 0,57 | 0,51 |
+| 500_20 | 0,31 (0,36 0,27 0,30) | 0,29 | 0,26 | 0,24 |
+| media (120) | **0,155** (0,166 0,156 0,143) | 0,204 | 0,177 | 0,155 |
+
+Con el mismo tiempo que IGirms60, el algoritmo generado iguala a IGirms con 4 veces más tiempo; las tres semillas
+quedan por debajo de IGirms60 y de IGirms120.
+
+### Flowtime en instancias grandes: vecindarios acotados (corridas 126–127, tune 77)
+
+Con una indicación explícita del investigador (`--hint`, registrada en `stats_neighborhood.json`): en flowtime una
+inserción cuesta O(n·m) y no hay aceleración de Taillard, así que se pidieron vecindarios acotados con anchos
+relativos a n. Corrida 126 (0,44 USD): 3 de 3 aceptados (reubicación de bloques en ventana, reordenar una ventana por
+reglas, intercambio de bloques no contiguos), con parámetros relativos (`win_frac`, `len_frac`). Corrida 127 (3,89
+USD, medida en 500×20 con `bench_size`): ×8–13 en pasos de trayectoria. Tune 77 (50×10, 200×20, 500×20, base 1 s):
+ninguna réplica elige los vecindarios acotados; todas eligen `ls_scope = full` acotada por tiempo. En t = 60
+(`pfsp_large_t77_r0.json`): 100_20 0,84 % (tune 75: 1,00 %), 200_20 1,95 % (1,92 %), 500_20 2,78 % (2,86 %). Acotar
+reduce cuántos movimientos se miran pero no el costo de cada uno; en 200 y 500 trabajos sigue la distancia con
+MRSILS y ALGirtct.
+
+### Cierre del flow shop
+
+- Makespan: todo generado (modelo, componentes con la aceleración de Taillard y su optimización). Con 3 semillas y el
+  tiempo de IGirms60, 0,155 % medio en las 120 instancias: igual que IGirms con 4 veces más tiempo, por delante en
+  50_10, 50_20, 100_20 y 200_20. Contra las cotas de EoH, −0,15 % frente a su 0,23 %, mejor en las 11 clases con
+  menos tiempo.
+- Flowtime: competitivo hasta 100 trabajos (por delante de ALGirtct60 en todas esas clases, al nivel de ALGirtct240);
+  en 200 y 500 trabajos queda 2–4 puntos detrás de MRSILS: el costo por movimiento y la falta de aceleraciones
+  específicas, que el LLM no encontró ni con la indicación explícita.
+- Lo que aportó el framework: `ls_scope = full` (búsqueda local completa en orden), tuning en tamaños mezclados con
+  tiempo ∝ n·m (`--size a,b,c --scale-budget`), baselines de test baratos, `--hint` y `bench_size`.
+
+## CLSP en instancias de la literatura: Trigeiro, Thomas y McClain (1989)
+
+Instancias de strIPlib (`lotsizing/single-level/trigeiro/textbook`, LP de Zimpl) convertidas al formato del CLSP
+(`examples/lotsizing/trigeiro_convert.py`): 68 F (6×15; F19N viene dañada) y las G30, G30b, G53, G57, G62, G69, G72.
+Es el mismo modelo; en las G el tiempo por unidad ≠ 1 se absorbe midiendo cada ítem en unidades de tiempo (validado:
+G30 da el mismo óptimo, 37 809, desde el LP original y desde la conversión). Referencias: CBC 600 s sobre los LP
+originales (`trigeiro/cbc.json`: óptimo probado en 66 F, G30 y G30b) y, para las G, la tabla 9 de Degraeve y Jans
+(ERS-2003-010-LIS, versión de trabajo de Operations Research 2007) con el branch-and-cut de Belvaux y Wolsey (2000,
+900 s) y su branch-and-price (`trigeiro/reference.json`). Configuraciones: las 3 réplicas del tune 71 (HYB con todo
+generado, afinado en instancias al azar de 10×15 con 10 s), sin re-afinar; 60 s por instancia, una semilla
+(`scripts/clsp_trigeiro_eval.py`).
+
+Instancias G, gap contra la mejor conocida (%):
+
+| | G30 | G30b | G53 | G57 | G62 | G69 | G72 | media sin G30 |
+|---|---|---|---|---|---|---|---|---|
+| Belvaux y Wolsey (B&C, 900 s, 200 MHz) | – | 0,00 | 0,00 | 0,01 | 0,00 | 1,08 | 0,01 | 0,18 |
+| Degraeve y Jans (B&P, 750 MHz) | 0,00 | 1,17 | 0,32 | 0,00 | 1,36 | 0,00 | 0,00 | 0,47 |
+| CBC 600 s (hoy) | 0,00 | 0,00 | 0,72 | 1,65 | 1,59 | 4,31 | 5,13 | 2,23 |
+| HYB generado r0 (60 s) | 0,64 | 0,12 | 0,99 | 0,68 | 0,15 | 0,47 | 1,66 | 0,68 |
+| HYB generado, mejor de 3 réplicas | 0,33 | 0,00 | **−0,09** | 0,68 | 0,15 | 0,47 | 1,66 | 0,48 |
+
+En G53 la réplica r2 encuentra 74 729, mejor que lo publicado por Belvaux y Wolsey (74 799) y Degraeve y Jans
+(75 035).
+
+Instancias F (68, contra el óptimo de CBC; `clsp_trigeiro_F_run71_60s.json`): r1 0,10 % medio y el óptimo en 49 de
+68; r2 0,19 % (34 óptimos); r0 1,13 % (22 óptimos; una corrida infactible en F3N); la mejor de las 3, 0,04 % (52
+óptimos).
+
+Sin re-afinar para estas instancias ni tamaños, el HYB generado queda a la altura de los métodos exactos de los 2000
+con el mejor de 3, muy por delante de CBC actual con 10 veces menos tiempo, pero detrás del branch-and-cut de Belvaux
+y Wolsey; la variación entre réplicas es grande (r0 falla en F3N), así que falta afinar en tamaños de Trigeiro.
+
+### Tune 78: afinar en tamaños de Trigeiro
+
+irace en instancias al azar tipo Trigeiro de 6×15, 12×30 y 24×30 (4+4+4), 10 s, todos los esqueletos, 3 réplicas.
+Ninguna elige HYB (con 10 s en 24×30 los sub-MIP avanzan poco): r0 y r2 ILS con la reconstrucción por Wagner-Whitin,
+r1 TS. En Trigeiro, 60 s, una semilla (`clsp_trigeiro_{G,F}_run78_60s.json`), media del gap sin G30 / en las F:
+
+| | G (6) | F (68) | óptimo en F |
+|---|---|---|---|
+| tune 78 r0 (ILS) | **0,46** | 0,31 | 16 |
+| tune 78 r1 (TS) | 1,34 | 1,77 (F3N infactible) | 3 |
+| tune 78 r2 (ILS) | 0,72 | F3N infactible | 6 |
+| tune 71 r1 (HYB) | 1,44 | **0,09** | **49** |
+| Degraeve y Jans (B&P) | 0,47 | – | – |
+| Belvaux y Wolsey (B&C) | 0,18 | – | – |
+
+Afinar en esos tamaños mejora las G grandes (G69 0,19 %, G72 1,12 %; con el HYB del tune 71, 3,27 % y 2,97 %) y deja
+a r0 al nivel del branch-and-price de Degraeve y Jans, pero empeora las F, donde el HYB con sub-MIP sigue siendo el
+mejor (y el único que siempre encuentra factible en F3N, una instancia muy ajustada). Ninguna configuración domina en
+todo: la comparación con el estado del arte del CLSP queda en "al nivel de los métodos exactos de los 2000, detrás del
+branch-and-cut de Belvaux y Wolsey".
+
+### Tune 79: afinar con 60 s (irace en paralelo)
+
+irace en tamaños de Trigeiro (6×15, 12×30, 24×30; 3+3+3), **60 s** por corrida, solo HYB e ILS (mínimo de irace 728
+experimentos), `--irace-parallel 4`, 3 réplicas. Elige ILS (r0, vecindario compuesto + reconstrucción por
+Wagner-Whitin) y HYB (r1, r2). En Trigeiro, 60 s, una semilla (`clsp_trigeiro_G_run79_60s.json`,
+`clsp_trigeiro_F_{hyb_default,t79_r0,t79_r1,t79_r2}.json`):
+
+| | G (6, sin G30) | F (68) | óptimos en F |
+|---|---|---|---|
+| tune 79 r0 (ILS) | **0,40** | 0,26 | 29 |
+| tune 79 r1 (HYB) | 0,74 | 0,23 | 27 |
+| tune 79 r2 (HYB) | 0,61 | 0,31 | 24 |
+| HYB por defecto | 0,45 | 0,54 | 12 |
+| tune 78 r0 (ILS, 10 s) | 0,46 | 0,31 | 16 |
+| tune 71 r1 (HYB, 10×15) | 1,62 | **0,09** | **49** |
+| Degraeve y Jans (B&P) | 0,47 | – | – |
+| Belvaux y Wolsey (B&C, 900 s) | 0,18 | – | – |
+
+El HYB por defecto mejora la mejor conocida publicada en G69 (131 208 < 131 234); con G53 (74 729 < 74 799) son dos
+instancias G por debajo de la literatura de los métodos exactos. La configuración más pareja es la r0 del tune 79:
+mejor que el branch-and-price de Degraeve y Jans en las G (0,40 % contra 0,47 %) y 0,26 % en las F; el
+branch-and-cut de Belvaux y Wolsey (0,18 %) sigue por delante, y en las F el HYB del tune 71 es mejor.

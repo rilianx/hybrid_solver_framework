@@ -9,7 +9,7 @@ on:
         description: "Problema"
         default: clsp
         type: choice
-        options: [clsp, cvrp, jobshop]
+        options: [clsp, cvrp, jobshop, flowshop, flowshop_cmax]
       target:
         description: "Qué generar: componentes (slots), el ProblemModel completo (§6.1), optimize, native_components (componentes C++ sobre el modelo nativo; slots por defecto greedy_score neighborhood perturbation) o native_optimize (versiones más rápidas de los C++ aceptados; slots de opt_slots, por defecto neighborhood)"
         default: components
@@ -89,6 +89,14 @@ on:
         description: "Con target=optimize: slots cuyos componentes se aceleran (none = solo el modelo)"
         default: "neighborhood greedy_score"
         type: string
+      hint:
+        description: "Con target=native_components: indicación del investigador que se agrega al pedido al LLM"
+        default: ""
+        type: string
+      bench_size:
+        description: "Tamaño donde se mide la velocidad de los componentes (vacío = bench_size del problema), p.ej. 500x20"
+        default: ""
+        type: string
       workspace:
         description: "Directorio de salida (vacío = según from_scratch/planner); úsalo para no pisar una corrida anterior"
         default: ""
@@ -106,12 +114,14 @@ jobs:
       WS: ${{ inputs.workspace || ((inputs.target == 'native_model' || inputs.target == 'native_model_optimize' || inputs.target == 'native_components' || inputs.target == 'native_optimize') && format('generated/{0}_native', inputs.problem)) || (inputs.variant != '' && format('generated/{0}_{1}_cycle{2}', inputs.problem, inputs.variant, inputs.reference && '_ref' || '')) || (inputs.target == 'problem_model' && format('generated/{0}_model{1}', inputs.problem, inputs.model_mode == 'parts' && '_parts' || '')) || format('generated/{0}{1}{2}', inputs.problem, inputs.from_scratch && '_scratch' || '', inputs.planner && '_planner' || '') }}
       TARGET: ${{ inputs.target }}
       MODEL_MODE: ${{ inputs.model_mode }}
-      PKG: ${{ inputs.problem == 'cvrp' && 'cvrp' || inputs.problem == 'jobshop' && 'jobshop' || 'lotsizing' }}
+      PKG: ${{ inputs.problem == 'cvrp' && 'cvrp' || inputs.problem == 'jobshop' && 'jobshop' || inputs.problem == 'flowshop' && 'flowshop' || inputs.problem == 'flowshop_cmax' && 'flowshop_cmax' || 'lotsizing' }}
       SCRATCH: ${{ inputs.from_scratch && 'true' || 'false' }}
       PLANNER: ${{ inputs.planner && 'true' || 'false' }}
       VARIANT: ${{ inputs.variant }}
       REFERENCE: ${{ inputs.reference && 'true' || 'false' }}
       CONSTRUCTION_ONLY: ${{ inputs.construction_only && 'true' || 'false' }}
+      HINT: ${{ inputs.hint }}
+      HSF_BENCH_SIZE: ${{ inputs.bench_size }}
     steps:
       - uses: actions/checkout@v4
 
@@ -237,8 +247,9 @@ jobs:
             NSLOTS="$SLOTS"; [ "$NSLOTS" = "neighborhood destruction constructor perturbation" ] && NSLOTS="greedy_score neighborhood perturbation"
             ARGS="--problem $PROBLEM --workspace $WS --slots $NSLOTS --n $N --rounds $ROUNDS --provider $PROVIDER"
             if [ -n "$MODEL" ]; then ARGS="$ARGS --model $MODEL"; fi
-            echo "python -m llm.native_generator $ARGS"
-            python -u -W ignore -m llm.native_generator $ARGS 2>&1 | tee generate.log
+            HINT_ARGS=(); [ -n "$HINT" ] && HINT_ARGS=(--hint "$HINT")
+            echo "python -m llm.native_generator $ARGS ${HINT:+--hint ...}"
+            python -u -W ignore -m llm.native_generator $ARGS "${HINT_ARGS[@]}" 2>&1 | tee generate.log
             exit 0
           fi
           if [ "$TARGET" = "problem_model" ]; then

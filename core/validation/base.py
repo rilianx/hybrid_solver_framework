@@ -175,3 +175,24 @@ def guard(layer: str, name: str, fn: Callable[[], CheckResult | list[CheckResult
         return result if isinstance(result, list) else [result]
     except Exception as exc:  # noqa: BLE001 — queremos capturar cualquier error del componente
         return [fail(layer, name, f"excepción {type(exc).__name__}: {exc}")]
+
+
+def assignment_of(problem, sol) -> dict:
+    """La solución como {variable: valor}: la vista MIP (`to_assignment`) si el problema la tiene; si no, cada posición de
+    la solución (una permutación del flow shop, las rutas de un CVRP) es una variable. Es lo que usan las medidas de forma
+    y distancia de la calidad y la diversidad, que así no exigen una vista MIP."""
+    try:
+        return problem.to_assignment(sol)
+    except (AttributeError, NotImplementedError):
+        pass
+    out: dict = {}
+
+    def walk(x, key):
+        if isinstance(x, (list, tuple)):
+            for i, y in enumerate(x):
+                walk(y, f"{key}_{i}" if key else str(i))
+        else:
+            out[key or "v"] = float(x) if isinstance(x, (int, float, bool)) else float(hash(x) % 1_000_003)
+
+    walk(sol, "")
+    return out

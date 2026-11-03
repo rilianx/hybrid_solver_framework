@@ -1,0 +1,43 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("ILS")
+constructor "--constructor=" c ("trivial", "random", "grasp_lr_index_append", "neh_flowtime_prefix_insertion", "weighted_priority_sort_adjacent_sweep") | skeleton %in% c("ILS")
+grasp_lr_index_append.alpha "--grasp_lr_index_append.alpha=" r (0.0, 0.4) | skeleton %in% c("ILS") & constructor == "grasp_lr_index_append"
+grasp_lr_index_append.idle_weight "--grasp_lr_index_append.idle_weight=" r (0.2, 3.0) | skeleton %in% c("ILS") & constructor == "grasp_lr_index_append"
+neh_flowtime_prefix_insertion.noise "--neh_flowtime_prefix_insertion.noise=" r (0.0, 0.5) | skeleton %in% c("ILS") & constructor == "neh_flowtime_prefix_insertion"
+neh_flowtime_prefix_insertion.max_pos "--neh_flowtime_prefix_insertion.max_pos=" i (10, 300) | skeleton %in% c("ILS") & constructor == "neh_flowtime_prefix_insertion"
+neh_flowtime_prefix_insertion.order "--neh_flowtime_prefix_insertion.order=" c ("sum_asc", "sum_desc", "random") | skeleton %in% c("ILS") & constructor == "neh_flowtime_prefix_insertion"
+weighted_priority_sort_adjacent_sweep.slope "--weighted_priority_sort_adjacent_sweep.slope=" r (-1.0, 3.0) | skeleton %in% c("ILS") & constructor == "weighted_priority_sort_adjacent_sweep"
+weighted_priority_sort_adjacent_sweep.noise "--weighted_priority_sort_adjacent_sweep.noise=" r (0.0, 0.5) | skeleton %in% c("ILS") & constructor == "weighted_priority_sort_adjacent_sweep"
+weighted_priority_sort_adjacent_sweep.sweeps "--weighted_priority_sort_adjacent_sweep.sweeps=" i (0, 6) | skeleton %in% c("ILS") & constructor == "weighted_priority_sort_adjacent_sweep"
+neighborhood "--neighborhood=" c ("job_insertion_shift", "pairwise_job_swap", "block_reversal_2opt", "block_relocation_oropt_window", "window_priority_resort", "nonadjacent_block_exchange", "composite") | skeleton %in% c("ILS")
+job_insertion_shift.window "--job_insertion_shift.window=" i (0, 500) | skeleton %in% c("ILS") & neighborhood == "job_insertion_shift"
+pairwise_job_swap.window "--pairwise_job_swap.window=" i (0, 500) | skeleton %in% c("ILS") & neighborhood == "pairwise_job_swap"
+block_reversal_2opt.max_len "--block_reversal_2opt.max_len=" i (2, 500) | skeleton %in% c("ILS") & neighborhood == "block_reversal_2opt"
+block_relocation_oropt_window.max_block "--block_relocation_oropt_window.max_block=" i (2, 6) | skeleton %in% c("ILS") & neighborhood == "block_relocation_oropt_window"
+block_relocation_oropt_window.win_frac "--block_relocation_oropt_window.win_frac=" r (0.01, 0.5) | skeleton %in% c("ILS") & neighborhood == "block_relocation_oropt_window"
+block_relocation_oropt_window.min_win "--block_relocation_oropt_window.min_win=" i (1, 50) | skeleton %in% c("ILS") & neighborhood == "block_relocation_oropt_window"
+window_priority_resort.len_frac "--window_priority_resort.len_frac=" r (0.02, 0.5) | skeleton %in% c("ILS") & neighborhood == "window_priority_resort"
+window_priority_resort.min_len "--window_priority_resort.min_len=" i (3, 10) | skeleton %in% c("ILS") & neighborhood == "window_priority_resort"
+window_priority_resort.growth "--window_priority_resort.growth=" r (1.2, 2.5) | skeleton %in% c("ILS") & neighborhood == "window_priority_resort"
+window_priority_resort.n_rules "--window_priority_resort.n_rules=" i (1, 3) | skeleton %in% c("ILS") & neighborhood == "window_priority_resort"
+nonadjacent_block_exchange.max_block "--nonadjacent_block_exchange.max_block=" i (2, 5) | skeleton %in% c("ILS") & neighborhood == "nonadjacent_block_exchange"
+nonadjacent_block_exchange.win_frac "--nonadjacent_block_exchange.win_frac=" r (0.01, 0.3) | skeleton %in% c("ILS") & neighborhood == "nonadjacent_block_exchange"
+nonadjacent_block_exchange.min_win "--nonadjacent_block_exchange.min_win=" i (3, 40) | skeleton %in% c("ILS") & neighborhood == "nonadjacent_block_exchange"
+perturbation "--perturbation=" c ("ig_destruct_greedy_reinsert", "random_multi_insertion", "segment_scramble") | skeleton %in% c("ILS")
+ig_destruct_greedy_reinsert.d_base "--ig_destruct_greedy_reinsert.d_base=" i (1, 6) | skeleton %in% c("ILS") & perturbation == "ig_destruct_greedy_reinsert"
+ig_destruct_greedy_reinsert.d_scale "--ig_destruct_greedy_reinsert.d_scale=" r (0.0, 2.0) | skeleton %in% c("ILS") & perturbation == "ig_destruct_greedy_reinsert"
+random_multi_insertion.scale "--random_multi_insertion.scale=" r (0.5, 3.0) | skeleton %in% c("ILS") & perturbation == "random_multi_insertion"
+random_multi_insertion.extra "--random_multi_insertion.extra=" i (0, 3) | skeleton %in% c("ILS") & perturbation == "random_multi_insertion"
+segment_scramble.len_factor "--segment_scramble.len_factor=" r (1.0, 4.0) | skeleton %in% c("ILS") & perturbation == "segment_scramble"
+segment_scramble.mode "--segment_scramble.mode=" c ("shuffle", "reverse", "rotate", "mixed") | skeleton %in% c("ILS") & perturbation == "segment_scramble"
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+ILS.ls_sample "--ILS.ls_sample=" i (4, 256) | skeleton == "ILS"  # log-scale
+ILS.ls_scope "--ILS.ls_scope=" c ("sample", "full") | skeleton == "ILS"
+ILS.accept "--ILS.accept=" c ("better", "anneal") | skeleton == "ILS"
+ILS.T_rel "--ILS.T_rel=" r (0.0001, 0.05) | skeleton == "ILS"  # log-scale
+ILS.pen_scale "--ILS.pen_scale=" r (0.0001, 1.0) | skeleton == "ILS"  # log-scale
+ILS.pen_adapt "--ILS.pen_adapt=" c ("no", "yes") | skeleton == "ILS"
+ILS.pen_target "--ILS.pen_target=" r (0.05, 0.5) | skeleton == "ILS"

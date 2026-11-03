@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import os
 import signal
 import subprocess
 import sys
@@ -75,7 +76,7 @@ def bench_solutions(pack, n: int = 6, seed: int = 4242):
 
     gen = importlib.import_module(pack.native_module).GENERATION
     mip = importlib.import_module(gen["mip_parts"])
-    inst = pack.make_instances(1, seed, pack.parse_size(pack.bench_size or pack.default_size))[0]
+    inst = pack.make_instances(1, seed, pack.parse_size(os.environ.get("HSF_BENCH_SIZE") or pack.bench_size or pack.default_size))[0]
     return inst, [mip.random_solution(inst, Random(s)) for s in range(n)]
 
 

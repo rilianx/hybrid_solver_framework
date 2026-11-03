@@ -394,11 +394,36 @@ Result<M> trajectory(const M& model, typename M::Solution sol, double budget, Ge
 }
 
 // `skeletons.ils.hill_climb`: mejora (primera o mejor) sobre una muestra de hasta `sample` movimientos.
+// Con `sample` < 0, el vecindario completo en el orden de `moves`; si además es primera mejora, el recorrido sigue
+// desde donde encontró la mejora (cíclico) y termina tras una vuelta completa sin mejorar: como la búsqueda local por
+// inserción del iterated greedy, que pasa por los trabajos en orden. Así un vecindario que guarda cálculos entre
+// movimientos consecutivos (la aceleración de Taillard en el flow shop) los aprovecha.
 template <class M>
 typename M::Solution hill_climb(Neighborhood<M>& nbh, typename M::Solution cur, bool first, int sample,
                                 double max_seconds, Rng& rng) {
     Clock clock;
     std::vector<Move> mv;
+    if (sample < 0 && first) {
+        size_t pos = 0, since = 0;  // índice donde seguir y movimientos revisados desde la última mejora
+        while (clock.elapsed() < max_seconds) {
+            mv.clear();
+            nbh.moves(cur, mv);
+            if (mv.empty()) break;
+            if (pos >= mv.size()) pos = 0;
+            bool improved = false;
+            for (; since < mv.size(); ++since, pos = (pos + 1) % mv.size()) {
+                if ((since & 63) == 0 && clock.elapsed() >= max_seconds) return cur;
+                if (nbh.delta(cur, mv[pos]) < 0.0) {
+                    cur = nbh.apply(cur, mv[pos]);
+                    improved = true;
+                    break;
+                }
+            }
+            if (!improved) break;
+            since = 0;
+        }
+        return cur;
+    }
     while (true) {
         nbh.sample(cur, sample, rng, mv);
         const Move* best = nullptr;
@@ -659,7 +684,7 @@ Result<M> solve_with(const Catalog<M>& cat, const M& model, const Config& cfg, c
                 pert = cat.perturbation(cfg.text("perturbation"), model, cfg);
             };
         bool first = cfg.text("ILS.ls_strategy") == "first";
-        int sample = (int)cfg.get("ILS.ls_sample");
+        int sample = cfg.text("ILS.ls_scope", "sample") == "full" ? -1 : (int)cfg.get("ILS.ls_sample");
         double ls_s = budget * cfg.get("ILS.ls_time_share"), strength = cfg.get("ILS.strength");
         bool started = false;
         auto gen = [&](const auto& s, double, double, double, auto& cand, double&) {

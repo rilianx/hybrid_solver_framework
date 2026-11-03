@@ -1,0 +1,30 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("ILS")
+constructor "--constructor=" c ("trivial", "random", "neh_taillard_noisy", "grasp_liu_reeves_append", "cds_johnson_palmer") | skeleton %in% c("ILS")
+neh_taillard_noisy.noise "--neh_taillard_noisy.noise=" r (0.0, 0.3) | skeleton %in% c("ILS") & constructor == "neh_taillard_noisy"
+neh_taillard_noisy.tie_break "--neh_taillard_noisy.tie_break=" c ("first", "last", "random") | skeleton %in% c("ILS") & constructor == "neh_taillard_noisy"
+grasp_liu_reeves_append.alpha "--grasp_liu_reeves_append.alpha=" r (0.0, 0.5) | skeleton %in% c("ILS") & constructor == "grasp_liu_reeves_append"
+grasp_liu_reeves_append.starts "--grasp_liu_reeves_append.starts=" i (1, 8) | skeleton %in% c("ILS") & constructor == "grasp_liu_reeves_append"
+cds_johnson_palmer.noise "--cds_johnson_palmer.noise=" r (0.0, 0.2) | skeleton %in% c("ILS") & constructor == "cds_johnson_palmer"
+cds_johnson_palmer.include_palmer "--cds_johnson_palmer.include_palmer=" i (0, 1) | skeleton %in% c("ILS") & constructor == "cds_johnson_palmer"
+neighborhood "--neighborhood=" c ("taillard_job_insertion", "head_tail_pair_swap", "segment_reversal_2opt", "composite") | skeleton %in% c("ILS")
+taillard_job_insertion.max_dist "--taillard_job_insertion.max_dist=" i (2, 500) | skeleton %in% c("ILS") & neighborhood == "taillard_job_insertion"
+head_tail_pair_swap.max_dist "--head_tail_pair_swap.max_dist=" i (1, 500) | skeleton %in% c("ILS") & neighborhood == "head_tail_pair_swap"
+segment_reversal_2opt.max_len "--segment_reversal_2opt.max_len=" i (2, 500) | skeleton %in% c("ILS") & neighborhood == "segment_reversal_2opt"
+perturbation "--perturbation=" c ("ig_destroy_rebuild_taillard", "random_insert_swap_chain") | skeleton %in% c("ILS")
+ig_destroy_rebuild_taillard.d_base "--ig_destroy_rebuild_taillard.d_base=" i (1, 8) | skeleton %in% c("ILS") & perturbation == "ig_destroy_rebuild_taillard"
+ig_destroy_rebuild_taillard.d_max_frac "--ig_destroy_rebuild_taillard.d_max_frac=" r (0.05, 0.5) | skeleton %in% c("ILS") & perturbation == "ig_destroy_rebuild_taillard"
+random_insert_swap_chain.k_base "--random_insert_swap_chain.k_base=" i (1, 10) | skeleton %in% c("ILS") & perturbation == "random_insert_swap_chain"
+random_insert_swap_chain.p_insert "--random_insert_swap_chain.p_insert=" r (0.0, 1.0) | skeleton %in% c("ILS") & perturbation == "random_insert_swap_chain"
+random_insert_swap_chain.max_dist_frac "--random_insert_swap_chain.max_dist_frac=" r (0.05, 1.0) | skeleton %in% c("ILS") & perturbation == "random_insert_swap_chain"
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+ILS.ls_sample "--ILS.ls_sample=" i (4, 256) | skeleton == "ILS"  # log-scale
+ILS.ls_scope "--ILS.ls_scope=" c ("sample", "full") | skeleton == "ILS"
+ILS.accept "--ILS.accept=" c ("better", "anneal") | skeleton == "ILS"
+ILS.T_rel "--ILS.T_rel=" r (0.0001, 0.05) | skeleton == "ILS"  # log-scale
+ILS.pen_scale "--ILS.pen_scale=" r (0.0001, 1.0) | skeleton == "ILS"  # log-scale
+ILS.pen_adapt "--ILS.pen_adapt=" c ("no", "yes") | skeleton == "ILS"
+ILS.pen_target "--ILS.pen_target=" r (0.05, 0.5) | skeleton == "ILS"

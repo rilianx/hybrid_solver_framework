@@ -1,0 +1,46 @@
+{
+  "neighborhood": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 1,
+    "llm_seconds": 157.6,
+    "rejections_by_layer": {},
+    "rounds_per_accepted": {
+      "block_relocation_oropt_window": 1,
+      "window_priority_resort": 1,
+      "nonadjacent_block_exchange": 1
+    },
+    "abandoned": [],
+    "patches": 0,
+    "accepted_files": [
+      "generated/flowshop_native/neighborhood/block_relocation_oropt_window_r1.hpp",
+      "generated/flowshop_native/neighborhood/window_priority_resort_r1.hpp",
+      "generated/flowshop_native/neighborhood/nonadjacent_block_exchange_r1.hpp"
+    ],
+    "tokens": {
+      "calls": 1,
+      "input_tokens": 17411,
+      "output_tokens": 18296,
+      "total_tokens": 35707,
+      "cost_usd": 0.4356
+    }
+  },
+  "_run": {
+    "problem": "flowshop",
+    "model": "claude-opus-5-5",
+    "provider": "anthropic",
+    "language": "cpp",
+    "from_scratch": true,
+    "wall_seconds": 188.8,
+    "tokens": {
+      "calls": 1,
+      "input_tokens": 17411,
+      "output_tokens": 18296,
+      "total_tokens": 35707,
+      "cost_usd": 0.4356
+    },
+    "hint": "Los vecindarios se usan en instancias de hasta 500 trabajos y 20 máquinas. Con flowtime total, evaluar exactamente una inserción o un intercambio cuesta O(n·m), porque cambian los instantes de término de todos los trabajos posteriores, y no hay un atajo como la aceleración de Taillard del makespan. Un vecindario de O(n²) movimientos hace que una búsqueda local no alcance a terminar en el tiempo disponible. Diseña vecindarios ACOTADOS cuyo número de movimientos crezca poco con n: por ejemplo, reinsertar cada trabajo solo en una ventana de posiciones cercanas cuyo ancho sea una FRACCIÓN de n (parámetro relativo, no absoluto), o restringir los movimientos a trabajos o posiciones candidatos elegidos por una regla barata. Aprovecha que la búsqueda local revisa los movimientos en el orden en que los genera moves(): reutiliza los cálculos entre movimientos consecutivos (prefijos, sumas parciales) para que el delta sea lo más barato posible.",
+    "bench_size": "500x20"
+  }
+}

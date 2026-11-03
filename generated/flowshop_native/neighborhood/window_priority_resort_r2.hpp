@@ -1,0 +1,232 @@
+// COMPONENT: {"name": "window_priority_resort", "slot": "neighborhood", "params": {"len_frac": {"type": "float", "range": [0.02, 0.5]}, "min_len": {"type": "int", "range": [3, 10]}, "growth": {"type": "float", "range": [1.2, 2.5]}, "n_rules": {"type": "int", "range": [1, 3]}}}
+using Solution = Model::Solution;
+
+struct EvW {
+    const Model& md; int m;
+    std::vector<int> seq; bool has = false, feas = false;
+    std::vector<long long> F, pre, cur, cur2;
+    explicit EvW(const Model& x) : md(x), m(x.m) { cur.resize(x.m > 0 ? x.m : 1); cur2.resize(x.m > 0 ? x.m : 1); }
+    bool prepare(const Solution& s) {
+        if (s.empty() || m == 0) return false;
+        const auto& v = s[0];
+        if (has && v == seq) return feas;
+        seq = v; has = true;
+        feas = md.perm_violation(s) == 0.0 && v.size() >= 2;
+        if (!feas) return false;
+        int L = (int)v.size();
+        F.assign((size_t)(L + 1) * m, 0); pre.assign(L + 1, 0);
+        for (int k = 0; k < L; ++k) {
+            long long* r = &F[(size_t)(k + 1) * m]; const long long* q = &F[(size_t)k * m];
+            const long long* p = &md.pj[(size_t)v[k] * m];
+            long long acc = q[0] + p[0]; r[0] = acc;
+            for (int i = 1; i < m; ++i) { long long x = q[i]; acc = (x > acc ? x : acc) + p[i]; r[i] = acc; }
+            pre[k + 1] = pre[k] + acc;
+        }
+        return true;
+    }
+    // Filas k0..k1-1 de a dos. Invariante: para j < lo (lo >= 1), la fila actual vale F[fila][j].
+    template <int M>
+    inline long long run(long long*& c, long long*& e, int& lo, int k0, int k1, long long sum) {
+        const int mc = M > 0 ? M : m;
+        const int* q = seq.data();
+        const long long* pj = md.pj.data();
+        const long long* Fd = F.data();
+        int k = k0;
+        for (; k + 1 < k1; k += 2) {
+            const long long* p1 = pj + (size_t)q[k] * mc;
+            const long long* p2 = pj + (size_t)q[k + 1] * mc;
+            const long long* F1 = Fd + (size_t)(k + 1) * mc;
+            const long long* F2 = F1 + mc;
+            long long* A = c; long long* B = e;
+            const int i0 = lo;
+            long long a, b;
+            { long long x = A[i0], y = F1[i0 - 1]; a = (x > y ? x : y) + p1[i0]; A[i0] = a; }
+            { long long y = F2[i0 - 1]; b = (a > y ? a : y) + p2[i0]; B[i0] = b; }
+            for (int j = i0 + 1; j < mc; ++j) {
+                long long x = A[j]; a = (x > a ? x : a) + p1[j]; A[j] = a;
+                b = (a > b ? a : b) + p2[j]; B[j] = b;
+            }
+            sum += a;
+            while (lo < mc && A[lo] == F1[lo]) ++lo;
+            if (lo == mc) return sum + pre[k1] - pre[k + 1];
+            sum += b;
+            while (lo < mc && B[lo] == F2[lo]) ++lo;
+            c = B; e = A;
+            if (lo == mc) return sum + pre[k1] - pre[k + 2];
+        }
+        if (k < k1) {
+            const long long* p = pj + (size_t)q[k] * mc;
+            const long long* Fn = Fd + (size_t)(k + 1) * mc;
+            const int i0 = lo;
+            { long long x = c[i0], y = Fn[i0 - 1]; c[i0] = (x > y ? x : y) + p[i0]; }
+            for (int j = i0 + 1; j < mc; ++j) { long long x = c[j], y = c[j - 1]; c[j] = (x > y ? x : y) + p[j]; }
+            sum += c[mc - 1];
+            while (lo < mc && c[lo] == Fn[lo]) ++lo;
+            if (lo == mc) return sum + pre[k1] - pre[k + 1];
+        }
+        return sum;
+    }
+    template <int M>
+    long long win(int i, int l, const int* buf, bool est) {
+        const int mc = M > 0 ? M : m;
+        const int L = (int)seq.size();
+        const int* q = seq.data();
+        const long long* pj = md.pj.data();
+        const long long* Fd = F.data();
+        int p = 0;
+        while (p < l && buf[p] == q[i + p]) ++p;
+        if (p == l) return pre[L];
+        long long loc[M > 0 ? M : 1], loc2[M > 0 ? M : 1];
+        long long* c = M > 0 ? loc : cur.data();
+        long long* e = M > 0 ? loc2 : cur2.data();
+        const long long* st = Fd + (size_t)(i + p) * mc;
+        for (int j = 0; j < mc; ++j) c[j] = st[j];
+        long long sum = pre[i + p];
+        for (int t = p; t < l; ++t) {
+            const long long* pp = pj + (size_t)buf[t] * mc;
+            long long r = c[0] + pp[0]; c[0] = r;
+            for (int j = 1; j < mc; ++j) { long long x = c[j]; r = (x > r ? x : r) + pp[j]; c[j] = r; }
+            sum += r;
+        }
+        const int k0 = i + l;
+        const long long* Fn = Fd + (size_t)k0 * mc;
+        int lo = 0;
+        while (lo < mc && c[lo] == Fn[lo]) ++lo;
+        if (lo == mc) return sum + pre[L] - pre[k0];
+        if (lo == 0) {  // no debería ocurrir (máquina 0 coincide), por seguridad
+            long long r;
+            if (k0 >= L) return sum;
+            const long long* pp = pj + (size_t)q[k0] * mc;
+            r = c[0] + pp[0]; c[0] = r;
+            for (int j = 1; j < mc; ++j) { long long x = c[j]; r = (x > r ? x : r) + pp[j]; c[j] = r; }
+            sum += r;
+            const long long* Fm = Fd + (size_t)(k0 + 1) * mc;
+            while (lo < mc && c[lo] == Fm[lo]) ++lo;
+            if (lo == mc) return sum + pre[L] - pre[k0 + 1];
+            if (lo == 0) {
+                for (int k = k0 + 1; k < L; ++k) {
+                    const long long* p2 = pj + (size_t)q[k] * mc;
+                    r = c[0] + p2[0]; c[0] = r;
+                    for (int j = 1; j < mc; ++j) { long long x = c[j]; r = (x > r ? x : r) + p2[j]; c[j] = r; }
+                    sum += r;
+                }
+                return sum;
+            }
+            if (!est) return run<M>(c, e, lo, k0 + 1, L, sum);
+            const int kend = std::min(L, k0 + 6);
+            sum = run<M>(c, e, lo, k0 + 1, kend, sum);
+            sum += pre[L] - pre[kend];
+            if (lo < mc && kend < L) sum += (c[mc - 1] - Fd[(size_t)kend * mc + mc - 1]) * (long long)(L - kend);
+            return sum;
+        }
+        if (!est) return run<M>(c, e, lo, k0, L, sum);
+        const int kend = std::min(L, k0 + 5);
+        sum = run<M>(c, e, lo, k0, kend, sum);
+        sum += pre[L] - pre[kend];
+        if (lo < mc && kend < L) sum += (c[mc - 1] - Fd[(size_t)kend * mc + mc - 1]) * (long long)(L - kend);
+        return sum;
+    }
+    long long winEval(int i, int l, const int* buf, bool est) {
+        switch (m) {
+            case 5: return win<5>(i, l, buf, est);
+            case 10: return win<10>(i, l, buf, est);
+            case 15: return win<15>(i, l, buf, est);
+            case 20: return win<20>(i, l, buf, est);
+            default: return win<0>(i, l, buf, est);
+        }
+    }
+};
+
+class WindowResort : public hsf::Neighborhood<Model> {
+    const Model& md; double frac; int minl; double growth; int nr; EvW ev;
+    std::vector<long long> key[3];
+    std::vector<int> rank[3], inv[3];
+    std::vector<int> run, lens, wbuf, wtmp;
+    inline long long kof(int r, int j) const {
+        return (j < 0 || j >= md.n) ? std::numeric_limits<long long>::max() : key[r][j];
+    }
+    void sortRange(int r, std::vector<int>::iterator b, std::vector<int>::iterator e) const {
+        std::stable_sort(b, e, [&](int x, int y) { return kof(r, x) < kof(r, y); });
+    }
+    double eval(const Solution& s, const Move& mv, bool est) {
+        if (!ev.prepare(s)) return md.objective(apply(s, mv)) - md.objective(s);
+        int i = mv[0], l = mv[1], r = mv[2];
+        const int* q = ev.seq.data();
+        const int* R = rank[r].data();
+        const int* I = inv[r].data();
+        int* t = wtmp.data();
+        int* b = wbuf.data();
+        for (int a = 0; a < l; ++a) t[a] = R[q[i + a]];
+        std::sort(t, t + l);
+        for (int a = 0; a < l; ++a) b[a] = I[t[a]];
+        long long nf = ev.winEval(i, l, b, est);
+        return (double)(nf - ev.pre[ev.seq.size()]);
+    }
+public:
+    WindowResort(const Model& x, double f, int ml, double g, int k) : md(x), frac(f), minl(ml), growth(g), nr(k), ev(x) {
+        int n = x.n, m = x.m;
+        for (int r = 0; r < 3; ++r) key[r].assign(n, 0);
+        for (int j = 0; j < n; ++j) {
+            long long tot = 0, wf = 0;
+            for (int i = 0; i < m; ++i) {
+                long long p = x.pj[(size_t)j * m + i];
+                tot += p; wf += (long long)(m - i) * p;
+            }
+            long long p0 = m > 0 ? x.pj[(size_t)j * m] : 0;
+            key[0][j] = tot * (n + 1) + j;
+            key[1][j] = wf * (n + 1) + j;
+            key[2][j] = (p0 * (tot + 1) + tot) * (long long)(n + 1) + j;
+        }
+        for (int r = 0; r < 3; ++r) {
+            inv[r].resize(n); rank[r].assign(n, 0);
+            std::iota(inv[r].begin(), inv[r].end(), 0);
+            const auto& K = key[r];
+            std::stable_sort(inv[r].begin(), inv[r].end(), [&](int a, int b) { return K[a] < K[b]; });
+            for (int t = 0; t < n; ++t) rank[r][inv[r][t]] = t;
+        }
+        wbuf.assign(n > 0 ? n : 1, 0);
+        wtmp.assign(n > 0 ? n : 1, 0);
+    }
+    void moves(const Solution& s, std::vector<Move>& out) override {
+        if (s.empty()) return;
+        const auto& q = s[0];
+        int L = (int)q.size();
+        if (L < 2) return;
+        int maxl = std::max(std::min(minl, L), std::min(L, (int)std::ceil(frac * L)));
+        lens.clear();
+        for (int l = std::min(minl, L); l <= maxl;) {
+            lens.push_back(l);
+            int nl = (int)std::ceil(l * growth);
+            l = std::max(l + 1, nl);
+        }
+        run.assign((size_t)nr * L, 1);
+        for (int r = 0; r < nr; ++r) {
+            int* R = &run[(size_t)r * L];
+            for (int i = L - 2; i >= 0; --i)
+                R[i] = kof(r, q[i]) < kof(r, q[i + 1]) ? R[i + 1] + 1 : 1;
+        }
+        for (int i = 0; i < L; ++i)
+            for (int l : lens) {
+                if (i + l > L) break;
+                for (int r = 0; r < nr; ++r)
+                    if (run[(size_t)r * L + i] < l) out.push_back(Move{i, l, r, 0, 0, 0, 0});
+            }
+    }
+    Solution apply(const Solution& s, const Move& mv) override {
+        Solution r = s;
+        auto& v = r[0];
+        sortRange(mv[2], v.begin() + mv[0], v.begin() + mv[0] + mv[1]);
+        return r;
+    }
+    double delta(const Solution& s, const Move& mv) override { return eval(s, mv, false); }
+    bool has_estimate() const override { return true; }
+    double estimate(const Solution& s, const Move& mv) override { return eval(s, mv, true); }
+};
+
+std::unique_ptr<hsf::Neighborhood<Model>> make_component(const Model& model, const hsf::Config& params) {
+    double f = params.get("len_frac", 0.1);
+    int ml = (int)params.get("min_len", 3.0); if (ml < 2) ml = 2;
+    double g = params.get("growth", 1.5); if (g < 1.05) g = 1.05;
+    int k = (int)params.get("n_rules", 3.0); k = std::max(1, std::min(3, k));
+    return std::make_unique<WindowResort>(model, f, ml, g, k);
+}

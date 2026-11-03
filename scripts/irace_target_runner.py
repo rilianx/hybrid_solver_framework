@@ -37,7 +37,8 @@ def main(argv: list[str]) -> int:
     catalog = os.environ.get("HSF_CATALOG") or ("all" if generated_dir else "handwritten")
     skeletons = os.environ.get("HSF_SKELETONS", "").split() or None
     assembler, _ = make_assembler(pack, catalog, generated_dir or None, skeletons=skeletons,
-                                  native=os.environ.get("HSF_NATIVE") == "1")
+                                  native=os.environ.get("HSF_NATIVE") == "1",
+                                  scale_budget=os.environ.get("HSF_SCALE_BUDGET") == "1")
     config = parse_irace_params(assembler.config_space(), params)
     inst = pack.load_instance(instance_path)
     budget = float(os.environ.get("HSF_BUDGET", "5"))

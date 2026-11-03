@@ -40,7 +40,8 @@ from .optuna_tuner import tune_with_optuna
 
 
 def make_assembler(pack: ProblemPack, catalog: str, generated_dir: str | None = None, verbose: bool = False,
-                   skeletons: list[str] | None = None, native: bool = False) -> tuple[Assembler, list[str]]:
+                   skeletons: list[str] | None = None, native: bool = False,
+                   scale_budget: bool = False) -> tuple[Assembler, list[str]]:
     """Con `native=True` las configuraciones corren en C++ (`core.native_runner`): el catálogo se reduce a
     los componentes que existen en C++ y el espacio a los esqueletos nativos."""
     mod = model_of = None
@@ -78,12 +79,29 @@ def make_assembler(pack: ProblemPack, catalog: str, generated_dir: str | None = 
                                     native=mod, model_of=model_of)
     else:
         assembler = Assembler(problem_factory=pack.problem_factory, registry=registry, skeletons=sks)
+    if scale_budget:
+        if pack.budget_scale is None:
+            raise SystemExit(f"--scale-budget: el problema {pack.name} no define budget_scale")
+        assembler.budget_scale = pack.budget_scale
     return assembler, [c.name for c in generated]
+
+
+def mixed_instances(pack: ProblemPack, sizes: str, n: int, seed0: int) -> list:
+    """`n` instancias repartidas entre los tamaños de `sizes` ("50x10" o "50x10,100x20,200x20"), en orden de tamaño;
+    con un solo tamaño, lo mismo que `pack.make_instances`."""
+    parts = [s.strip() for s in sizes.split(",") if s.strip()]
+    if len(parts) == 1:
+        return pack.make_instances(n, seed0, pack.parse_size(parts[0]))
+    out = []
+    for j, s in enumerate(parts):
+        k = n // len(parts) + (1 if j < n % len(parts) else 0)
+        out += pack.make_instances(k, seed0 + 10_000 * j, pack.parse_size(s))
+    return out
 
 
 def run_experiment(pack: ProblemPack, catalog: str, args, train, test, out_dir: Path):
     assembler, gen_names = make_assembler(pack, catalog, args.generated, verbose=True, skeletons=args.skeletons,
-                                          native=args.native)
+                                          native=args.native, scale_budget=args.scale_budget)
     space = assembler.config_space()
     n_gen_in_space = sum(1 for n in space.nodes if n.type == "cat" for v in n.values if v in gen_names)
     print(f"\n=== catálogo `{catalog}`: {len(space.nodes)} parámetros, {n_gen_in_space} opciones generadas por LLM ===")
@@ -114,7 +132,7 @@ def run_experiment(pack: ProblemPack, catalog: str, args, train, test, out_dir: 
         print(f"  mejor en train: {result.best_cost:.4f}  {describe(result.best_config)}  ({result.seconds:.0f}s, {result.n_failed} fallidas)")
 
     reference = mean(pack.baseline_cost(i) for i in test)
-    baselines = one_slot_baselines(assembler) if args.skeletons else None
+    baselines = one_slot_baselines(assembler) if args.skeletons and args.baselines == "variants" else None
     report = evaluate_on_test(assembler, result.best_config, test, args.budget, seeds=tuple(range(args.seeds)),
                               baselines=baselines, reference=reference)
     payload = {
@@ -147,9 +165,9 @@ def _run_irace(pack: ProblemPack, catalog: str, args, assembler, train, normaliz
     scenario = write_irace_scenario(assembler.config_space(), root, paths, args.budget, max_experiments=experiments,
                                     generated_dir=args.generated if catalog != "handwritten" else None,
                                     problem_module=pack.module, catalog=catalog, skeletons=args.skeletons,
-                                    native=args.native, objective=args.objective)
+                                    native=args.native, objective=args.objective, scale_budget=args.scale_budget)
     return tune_with_irace(assembler, scenario, train, args.budget, experiments, seed=args.tuner_seed,
-                           normalizers=normalizers)
+                           normalizers=normalizers, parallel=args.irace_parallel)
 
 
 def print_test(catalog: str, report, reference: float, n_test: int) -> None:
@@ -200,14 +218,20 @@ def main(pack: ProblemPack, argv: list[str] | None = None) -> None:
                     help="irace necesita R con el paquete irace (Ubuntu: apt install r-cran-irace)")
     ap.add_argument("--native", action="store_true",
                     help="correr las configuraciones en C++ (backend nativo del problema; solo SA, ILS, VNS y TS)")
+    ap.add_argument("--scale-budget", action="store_true",
+                    help="presupuesto por instancia = --budget × el factor de tamaño del problema (budget_scale del pack)")
+    ap.add_argument("--baselines", choices=["variants", "defaults"], default="variants",
+                    help="baselines de test con --skeletons: una variante por componente (variants) o solo el default "
+                         "de cada esqueleto (defaults, mucho más barato)")
+    ap.add_argument("--irace-parallel", type=int, default=1,
+                    help="experimentos de irace a la vez (los runners de GitHub tienen 4 núcleos)")
     ap.add_argument("--irace", default=None, help="directorio donde escribir un escenario irace (opcional)")
     args = ap.parse_args(argv)
     if args.tuner_seed is None:
         args.tuner_seed = args.seed
 
-    size = pack.parse_size(args.size)
-    train = pack.make_instances(args.train, 100 + args.seed * 1000, size)
-    test = pack.make_instances(args.test, 500 + args.seed * 1000, size)
+    train = mixed_instances(pack, args.size, args.train, 100 + args.seed * 1000)
+    test = mixed_instances(pack, args.size, args.test, 500 + args.seed * 1000)
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
     catalogs = {"both": ["handwritten", "all"], "three": ["handwritten", "generated", "all"]}.get(args.catalog, [args.catalog])
