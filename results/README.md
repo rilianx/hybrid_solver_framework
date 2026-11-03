@@ -1469,3 +1469,24 @@ Instancias F (68, contra el óptimo de CBC; `clsp_trigeiro_F_run71_60s.json`): r
 Sin re-afinar para estas instancias ni tamaños, el HYB generado queda a la altura de los métodos exactos de los 2000
 con el mejor de 3, muy por delante de CBC actual con 10 veces menos tiempo, pero detrás del branch-and-cut de Belvaux
 y Wolsey; la variación entre réplicas es grande (r0 falla en F3N), así que falta afinar en tamaños de Trigeiro.
+
+### Tune 78: afinar en tamaños de Trigeiro
+
+irace en instancias al azar tipo Trigeiro de 6×15, 12×30 y 24×30 (4+4+4), 10 s, todos los esqueletos, 3 réplicas.
+Ninguna elige HYB (con 10 s en 24×30 los sub-MIP avanzan poco): r0 y r2 ILS con la reconstrucción por Wagner-Whitin,
+r1 TS. En Trigeiro, 60 s, una semilla (`clsp_trigeiro_{G,F}_run78_60s.json`), media del gap sin G30 / en las F:
+
+| | G (6) | F (68) | óptimo en F |
+|---|---|---|---|
+| tune 78 r0 (ILS) | **0,46** | 0,31 | 16 |
+| tune 78 r1 (TS) | 1,34 | 1,77 (F3N infactible) | 3 |
+| tune 78 r2 (ILS) | 0,72 | F3N infactible | 6 |
+| tune 71 r1 (HYB) | 1,44 | **0,09** | **49** |
+| Degraeve y Jans (B&P) | 0,47 | – | – |
+| Belvaux y Wolsey (B&C) | 0,18 | – | – |
+
+Afinar en esos tamaños mejora las G grandes (G69 0,19 %, G72 1,12 %; con el HYB del tune 71, 3,27 % y 2,97 %) y deja
+a r0 al nivel del branch-and-price de Degraeve y Jans, pero empeora las F, donde el HYB con sub-MIP sigue siendo el
+mejor (y el único que siempre encuentra factible en F3N, una instancia muy ajustada). Ninguna configuración domina en
+todo: la comparación con el estado del arte del CLSP queda en "al nivel de los métodos exactos de los 2000, detrás del
+branch-and-cut de Belvaux y Wolsey".
