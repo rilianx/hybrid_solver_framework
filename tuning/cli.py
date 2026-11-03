@@ -167,7 +167,7 @@ def _run_irace(pack: ProblemPack, catalog: str, args, assembler, train, normaliz
                                     problem_module=pack.module, catalog=catalog, skeletons=args.skeletons,
                                     native=args.native, objective=args.objective, scale_budget=args.scale_budget)
     return tune_with_irace(assembler, scenario, train, args.budget, experiments, seed=args.tuner_seed,
-                           normalizers=normalizers)
+                           normalizers=normalizers, parallel=args.irace_parallel)
 
 
 def print_test(catalog: str, report, reference: float, n_test: int) -> None:
@@ -223,6 +223,8 @@ def main(pack: ProblemPack, argv: list[str] | None = None) -> None:
     ap.add_argument("--baselines", choices=["variants", "defaults"], default="variants",
                     help="baselines de test con --skeletons: una variante por componente (variants) o solo el default "
                          "de cada esqueleto (defaults, mucho más barato)")
+    ap.add_argument("--irace-parallel", type=int, default=1,
+                    help="experimentos de irace a la vez (los runners de GitHub tienen 4 núcleos)")
     ap.add_argument("--irace", default=None, help="directorio donde escribir un escenario irace (opcional)")
     args = ap.parse_args(argv)
     if args.tuner_seed is None:
