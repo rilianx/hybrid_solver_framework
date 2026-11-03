@@ -34,6 +34,9 @@ def test_instance_save_roundtrip(tmp_path):
 
 
 def test_mixed_sizes_and_budget_scale(tmp_path):
+    import pytest
+
+    pytest.importorskip("pybind11")
     from examples.flowshop.pack import PACK
     from tuning.cli import mixed_instances
     from tuning.irace_scenario import write_irace_scenario
