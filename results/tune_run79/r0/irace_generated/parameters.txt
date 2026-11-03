@@ -1,0 +1,37 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("HYB", "ILS")
+constructor "--constructor=" c ("trivial", "random") | skeleton %in% c("HYB", "ILS")
+neighborhood "--neighborhood=" c ("setup_toggle_flip", "lot_consolidation_window", "composite") | skeleton %in% c("HYB", "ILS")
+setup_toggle_flip.sweep_items_first "--setup_toggle_flip.sweep_items_first=" c ("yes", "no") | skeleton %in% c("HYB", "ILS") & neighborhood == "setup_toggle_flip"
+lot_consolidation_window.max_len "--lot_consolidation_window.max_len=" i (1, 10) | skeleton %in% c("HYB", "ILS") & neighborhood == "lot_consolidation_window"
+perturbation "--perturbation=" c ("random_setup_flips_flow_repair", "lot_shift_merge_swap_repair", "window_wagner_whitin_rebuild") | skeleton %in% c("HYB", "ILS")
+random_setup_flips_flow_repair.flips_per_strength "--random_setup_flips_flow_repair.flips_per_strength=" r (0.5, 4.0) | skeleton %in% c("HYB", "ILS") & perturbation == "random_setup_flips_flow_repair"
+random_setup_flips_flow_repair.off_bias "--random_setup_flips_flow_repair.off_bias=" r (0.0, 1.0) | skeleton %in% c("HYB", "ILS") & perturbation == "random_setup_flips_flow_repair"
+random_setup_flips_flow_repair.repair_iters "--random_setup_flips_flow_repair.repair_iters=" i (20, 400) | skeleton %in% c("HYB", "ILS") & perturbation == "random_setup_flips_flow_repair"
+lot_shift_merge_swap_repair.moves_per_strength "--lot_shift_merge_swap_repair.moves_per_strength=" r (0.5, 4.0) | skeleton %in% c("HYB", "ILS") & perturbation == "lot_shift_merge_swap_repair"
+lot_shift_merge_swap_repair.p_shift "--lot_shift_merge_swap_repair.p_shift=" r (0.0, 1.0) | skeleton %in% c("HYB", "ILS") & perturbation == "lot_shift_merge_swap_repair"
+lot_shift_merge_swap_repair.p_merge "--lot_shift_merge_swap_repair.p_merge=" r (0.0, 1.0) | skeleton %in% c("HYB", "ILS") & perturbation == "lot_shift_merge_swap_repair"
+lot_shift_merge_swap_repair.repair_iters "--lot_shift_merge_swap_repair.repair_iters=" i (20, 400) | skeleton %in% c("HYB", "ILS") & perturbation == "lot_shift_merge_swap_repair"
+window_wagner_whitin_rebuild.window_base "--window_wagner_whitin_rebuild.window_base=" i (2, 12) | skeleton %in% c("HYB", "ILS") & perturbation == "window_wagner_whitin_rebuild"
+window_wagner_whitin_rebuild.window_per_strength "--window_wagner_whitin_rebuild.window_per_strength=" r (0.5, 4.0) | skeleton %in% c("HYB", "ILS") & perturbation == "window_wagner_whitin_rebuild"
+window_wagner_whitin_rebuild.item_frac "--window_wagner_whitin_rebuild.item_frac=" r (0.05, 1.0) | skeleton %in% c("HYB", "ILS") & perturbation == "window_wagner_whitin_rebuild"
+window_wagner_whitin_rebuild.cost_noise "--window_wagner_whitin_rebuild.cost_noise=" r (0.0, 0.9) | skeleton %in% c("HYB", "ILS") & perturbation == "window_wagner_whitin_rebuild"
+window_wagner_whitin_rebuild.repair_iters "--window_wagner_whitin_rebuild.repair_iters=" i (20, 400) | skeleton %in% c("HYB", "ILS") & perturbation == "window_wagner_whitin_rebuild"
+destruction "--destruction=" c ("period_window", "random_setups") | skeleton %in% c("HYB")
+HYB.ls_share "--HYB.ls_share=" r (0.02, 0.5) | skeleton == "HYB"  # log-scale
+HYB.mip_share "--HYB.mip_share=" r (0.01, 0.3) | skeleton == "HYB"  # log-scale
+HYB.destroy_ratio "--HYB.destroy_ratio=" r (0.05, 0.6) | skeleton == "HYB"
+HYB.strength "--HYB.strength=" i (1, 6) | skeleton == "HYB"
+HYB.ls_sample "--HYB.ls_sample=" i (4, 256) | skeleton == "HYB"  # log-scale
+HYB.T_rel "--HYB.T_rel=" r (0.0001, 0.05) | skeleton == "HYB"  # log-scale
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+ILS.ls_sample "--ILS.ls_sample=" i (4, 256) | skeleton == "ILS"  # log-scale
+ILS.ls_scope "--ILS.ls_scope=" c ("sample", "full") | skeleton == "ILS"
+ILS.accept "--ILS.accept=" c ("better", "anneal") | skeleton == "ILS"
+ILS.T_rel "--ILS.T_rel=" r (0.0001, 0.05) | skeleton == "ILS"  # log-scale
+ILS.pen_scale "--ILS.pen_scale=" r (0.0001, 1.0) | skeleton == "ILS"  # log-scale
+ILS.pen_adapt "--ILS.pen_adapt=" c ("no", "yes") | skeleton == "ILS"
+ILS.pen_target "--ILS.pen_target=" r (0.05, 0.5) | skeleton == "ILS"
