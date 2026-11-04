@@ -80,7 +80,7 @@ on:
         description: "Tuner: optuna (TPE + carrera final) o irace (R; mismo espacio, instancias y evaluación en test; experimentos = trials × train, o el mínimo que pida irace)"
         default: optuna
         type: choice
-        options: [optuna, irace]
+        options: [optuna, irace, staged]
       extra_args:
         description: "Opciones extra del tuning (p.ej. --scale-budget --baselines defaults)"
         default: ""
@@ -133,7 +133,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       - name: Instalar irace (R)
-        if: inputs.tuner == 'irace'
+        if: inputs.tuner == 'irace' || inputs.tuner == 'staged'
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q --no-install-recommends r-cran-irace
