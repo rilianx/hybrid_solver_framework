@@ -1,0 +1,43 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("HYB")
+constructor "--constructor=" c ("trivial", "random", "randomized_clarke_wright_savings", "polar_sweep_2opt", "sequential_cheapest_insertion") | skeleton %in% c("HYB")
+randomized_clarke_wright_savings.lambda "--randomized_clarke_wright_savings.lambda=" r (0.6, 1.8) | skeleton %in% c("HYB") & constructor == "randomized_clarke_wright_savings"
+randomized_clarke_wright_savings.noise "--randomized_clarke_wright_savings.noise=" r (0.0, 0.3) | skeleton %in% c("HYB") & constructor == "randomized_clarke_wright_savings"
+randomized_clarke_wright_savings.neighbors "--randomized_clarke_wright_savings.neighbors=" i (10, 120) | skeleton %in% c("HYB") & constructor == "randomized_clarke_wright_savings"
+polar_sweep_2opt.tries "--polar_sweep_2opt.tries=" i (1, 8) | skeleton %in% c("HYB") & constructor == "polar_sweep_2opt"
+polar_sweep_2opt.opt_passes "--polar_sweep_2opt.opt_passes=" i (0, 20) | skeleton %in% c("HYB") & constructor == "polar_sweep_2opt"
+sequential_cheapest_insertion.seed_rcl "--sequential_cheapest_insertion.seed_rcl=" i (1, 10) | skeleton %in% c("HYB") & constructor == "sequential_cheapest_insertion"
+sequential_cheapest_insertion.mu "--sequential_cheapest_insertion.mu=" r (0.0, 1.0) | skeleton %in% c("HYB") & constructor == "sequential_cheapest_insertion"
+sequential_cheapest_insertion.noise "--sequential_cheapest_insertion.noise=" r (0.0, 0.2) | skeleton %in% c("HYB") & constructor == "sequential_cheapest_insertion"
+neighborhood "--neighborhood=" c ("granular_relocate", "granular_two_opt_star", "granular_cross_exchange", "granular_intra_or_opt", "granular_swap_star", "route_dissolve_reinsert", "composite") | skeleton %in% c("HYB")
+granular_relocate.k "--granular_relocate.k=" i (3, 40) | skeleton %in% c("HYB") & neighborhood == "granular_relocate"
+granular_relocate.new_route "--granular_relocate.new_route=" i (0, 1) | skeleton %in% c("HYB") & neighborhood == "granular_relocate"
+granular_two_opt_star.k "--granular_two_opt_star.k=" i (3, 40) | skeleton %in% c("HYB") & neighborhood == "granular_two_opt_star"
+granular_two_opt_star.use_reversed "--granular_two_opt_star.use_reversed=" i (0, 1) | skeleton %in% c("HYB") & neighborhood == "granular_two_opt_star"
+granular_cross_exchange.k "--granular_cross_exchange.k=" i (3, 30) | skeleton %in% c("HYB") & neighborhood == "granular_cross_exchange"
+granular_cross_exchange.max_seg "--granular_cross_exchange.max_seg=" i (1, 4) | skeleton %in% c("HYB") & neighborhood == "granular_cross_exchange"
+granular_intra_or_opt.k "--granular_intra_or_opt.k=" i (3, 30) | skeleton %in% c("HYB") & neighborhood == "granular_intra_or_opt"
+granular_intra_or_opt.max_seg "--granular_intra_or_opt.max_seg=" i (2, 5) | skeleton %in% c("HYB") & neighborhood == "granular_intra_or_opt"
+granular_intra_or_opt.use_reversed "--granular_intra_or_opt.use_reversed=" i (0, 1) | skeleton %in% c("HYB") & neighborhood == "granular_intra_or_opt"
+granular_swap_star.k "--granular_swap_star.k=" i (3, 30) | skeleton %in% c("HYB") & neighborhood == "granular_swap_star"
+route_dissolve_reinsert.k "--route_dissolve_reinsert.k=" i (3, 30) | skeleton %in% c("HYB") & neighborhood == "route_dissolve_reinsert"
+route_dissolve_reinsert.max_len "--route_dissolve_reinsert.max_len=" i (1, 50) | skeleton %in% c("HYB") & neighborhood == "route_dissolve_reinsert"
+perturbation "--perturbation=" c ("radial_ruin_cheapest_blink_insert", "random_feasible_move_chain_kick") | skeleton %in% c("HYB")
+radial_ruin_cheapest_blink_insert.ruin_base "--radial_ruin_cheapest_blink_insert.ruin_base=" i (2, 30) | skeleton %in% c("HYB") & perturbation == "radial_ruin_cheapest_blink_insert"
+radial_ruin_cheapest_blink_insert.ruin_per_strength "--radial_ruin_cheapest_blink_insert.ruin_per_strength=" r (0.5, 6.0) | skeleton %in% c("HYB") & perturbation == "radial_ruin_cheapest_blink_insert"
+radial_ruin_cheapest_blink_insert.blink "--radial_ruin_cheapest_blink_insert.blink=" r (0.0, 0.15) | skeleton %in% c("HYB") & perturbation == "radial_ruin_cheapest_blink_insert"
+radial_ruin_cheapest_blink_insert.far_first_prob "--radial_ruin_cheapest_blink_insert.far_first_prob=" r (0.0, 1.0) | skeleton %in% c("HYB") & perturbation == "radial_ruin_cheapest_blink_insert"
+random_feasible_move_chain_kick.moves_base "--random_feasible_move_chain_kick.moves_base=" i (1, 10) | skeleton %in% c("HYB") & perturbation == "random_feasible_move_chain_kick"
+random_feasible_move_chain_kick.moves_per_strength "--random_feasible_move_chain_kick.moves_per_strength=" r (0.5, 5.0) | skeleton %in% c("HYB") & perturbation == "random_feasible_move_chain_kick"
+random_feasible_move_chain_kick.w_relocate "--random_feasible_move_chain_kick.w_relocate=" r (0.0, 1.0) | skeleton %in% c("HYB") & perturbation == "random_feasible_move_chain_kick"
+random_feasible_move_chain_kick.w_swap "--random_feasible_move_chain_kick.w_swap=" r (0.0, 1.0) | skeleton %in% c("HYB") & perturbation == "random_feasible_move_chain_kick"
+random_feasible_move_chain_kick.w_twoopt_star "--random_feasible_move_chain_kick.w_twoopt_star=" r (0.0, 1.0) | skeleton %in% c("HYB") & perturbation == "random_feasible_move_chain_kick"
+random_feasible_move_chain_kick.w_reverse "--random_feasible_move_chain_kick.w_reverse=" r (0.0, 1.0) | skeleton %in% c("HYB") & perturbation == "random_feasible_move_chain_kick"
+destruction "--destruction=" c ("group_window", "random_variables") | skeleton %in% c("HYB")
+HYB.ls_share "--HYB.ls_share=" r (0.02, 0.5) | skeleton == "HYB"  # log-scale
+HYB.mip_share "--HYB.mip_share=" r (0.01, 0.3) | skeleton == "HYB"  # log-scale
+HYB.destroy_ratio "--HYB.destroy_ratio=" r (0.05, 0.6) | skeleton == "HYB"
+HYB.strength "--HYB.strength=" i (1, 6) | skeleton == "HYB"
+HYB.ls_sample "--HYB.ls_sample=" i (4, 256) | skeleton == "HYB"  # log-scale
+HYB.T_rel "--HYB.T_rel=" r (0.0001, 0.05) | skeleton == "HYB"  # log-scale
