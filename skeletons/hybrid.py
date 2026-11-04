@@ -33,11 +33,11 @@ def run_hybrid(problem, local_search: LocalSearch, destruction, repair_mip, inst
     sol, _, iters = local_search(None, min(left(), budget * ls_share), rng)
     f = problem.objective(sol)  # el objetivo del ProblemModel (la búsqueda puede ponderar distinto las violaciones)
     best, f_best = (sol, f) if problem.is_feasible(sol) else (None, float("inf"))
-    while left() > 0.05:
+    while left() > 0.3:  # un sub-MIP necesita al menos unas décimas (CBC, `MIN_MIP_SECONDS`)
         _partial, free = destruction.destroy(sol, destroy_ratio, rng)
         full = problem.to_assignment(sol)
         fixed = {v: x for v, x in full.items() if v not in free}
-        cand = repair_mip.repair_mip(mip, fixed, free, time_limit=max(0.1, min(left(), budget * mip_share)), warm_start=full)
+        cand = repair_mip.repair_mip(mip, fixed, free, time_limit=max(0.2, min(left(), budget * mip_share)), warm_start=full)
         if cand is not None:
             fc = problem.objective(cand)
             if fc <= f:
