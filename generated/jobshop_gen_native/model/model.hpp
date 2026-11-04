@@ -7,6 +7,7 @@
 #include <numeric>
 #include <utility>
 #include <climits>
+#include <cstdlib>
 
 namespace gen {
 
@@ -20,7 +21,10 @@ struct Model {
     std::vector<int> op_proc, op_next, op_k;    // per op
     std::vector<std::vector<int>> machine_jobs; // jobs visiting each machine (ascending)
 
-    mutable std::vector<int> mpred, msucc, indeg, qbuf, mark;
+    std::vector<int> opflat;    // opflat[i*n + j] = op of job j on machine i (i < m), or -1
+    std::vector<int> base_in;   // 1 if op has job predecessor
+
+    mutable std::vector<int> mpred, msucc, indeg, qbuf, opmark;
     mutable std::vector<long long> st;
     mutable int stamp = 1;
 
@@ -57,8 +61,13 @@ struct Model {
             }
         }
         md.total_ops = id;
+        md.opflat.assign((size_t)md.m * md.n, -1);
+        for (int i = 0; i < md.m; ++i)
+            for (int j = 0; j < md.n; ++j) md.opflat[(size_t)i * md.n + j] = md.op_of[j][i];
+        md.base_in.assign(id, 0);
+        for (int o = 0; o < id; ++o) md.base_in[o] = md.op_k[o] > 0 ? 1 : 0;
         md.mpred.assign(id, -1); md.msucc.assign(id, -1); md.indeg.assign(id, 0);
-        md.qbuf.assign(id, 0); md.st.assign(id, 0); md.mark.assign(md.n, 0);
+        md.qbuf.assign(id, 0); md.st.assign(id, 0); md.opmark.assign(id, 0);
         double triv = md.evaluate(md.trivial(), nullptr, nullptr);
         md.penalty = 10.0 * (std::abs(triv) + 1.0);
         return md;
@@ -76,43 +85,60 @@ struct Model {
     // returns makespan; fills seq / ord violations
     double evaluate(const Solution& s, double* seqv_out, double* ordv_out) const {
         long long seqv = 0;
-        for (int o = 0; o < total_ops; ++o) { mpred[o] = -1; msucc[o] = -1; }
+        if (stamp >= INT_MAX - 2) { std::fill(opmark.begin(), opmark.end(), 0); stamp = 1; }
+        const int stp = ++stamp;
+        int* MP = mpred.data();
+        int* MS = msucc.data();
+        int* MK = opmark.data();
+        const int* OF = opflat.data();
+        const int nn = n;
         int ms = (int)s.size();
-        for (int i = 0; i < ms; ++i) {
-            if (i >= m) { seqv += (long long)s[i].size(); continue; }
-            if (stamp >= INT_MAX - 2) { std::fill(mark.begin(), mark.end(), 0); stamp = 1; }
-            ++stamp;
+        int lim = ms < m ? ms : m;
+        for (int i = 0; i < lim; ++i) {
+            const int* row = OF + (size_t)i * nn;
             int prev = -1, present = 0;
             for (int j : s[i]) {
-                if (j < 0 || j >= n || i >= (int)op_of[j].size() || op_of[j][i] < 0) { ++seqv; continue; }
-                if (mark[j] == stamp) { ++seqv; continue; }
-                mark[j] = stamp;
-                int op = op_of[j][i];
-                if (prev >= 0) { msucc[prev] = op; mpred[op] = prev; }
+                if ((unsigned)j >= (unsigned)nn) { ++seqv; continue; }
+                int op = row[j];
+                if (op < 0 || MK[op] == stp) { ++seqv; continue; }
+                MK[op] = stp;
+                MP[op] = prev; MS[op] = -1;
+                if (prev >= 0) MS[prev] = op;
                 prev = op; ++present;
             }
             seqv += (long long)machine_jobs[i].size() - present;
         }
+        for (int i = m; i < ms; ++i) seqv += (long long)s[i].size();
         for (int i = ms; i < m; ++i) seqv += (long long)machine_jobs[i].size();
 
+        const int T = total_ops;
+        int* ID = indeg.data();
+        int* Q = qbuf.data();
+        long long* ST = st.data();
+        const int* BI = base_in.data();
+        const int* PR = op_proc.data();
+        const int* NX = op_next.data();
         int qh = 0, qt = 0;
-        for (int o = 0; o < total_ops; ++o) {
-            indeg[o] = (op_k[o] > 0 ? 1 : 0) + (mpred[o] >= 0 ? 1 : 0);
-            st[o] = 0;
-            if (indeg[o] == 0) qbuf[qt++] = o;
+        for (int o = 0; o < T; ++o) {
+            int d = BI[o];
+            if (MK[o] == stp) { d += (MP[o] >= 0); }
+            else { MP[o] = -1; MS[o] = -1; }
+            ID[o] = d;
+            ST[o] = 0;
+            if (d == 0) Q[qt++] = o;
         }
         long long mk = 0;
         while (qh < qt) {
-            int o = qbuf[qh++];
-            long long e = st[o] + op_proc[o];
+            int o = Q[qh++];
+            long long e = ST[o] + PR[o];
             if (e > mk) mk = e;
-            int a = op_next[o];
-            if (a >= 0) { if (st[a] < e) st[a] = e; if (--indeg[a] == 0) qbuf[qt++] = a; }
-            int b = msucc[o];
-            if (b >= 0) { if (st[b] < e) st[b] = e; if (--indeg[b] == 0) qbuf[qt++] = b; }
+            int a = NX[o];
+            if (a >= 0) { if (ST[a] < e) ST[a] = e; if (--ID[a] == 0) Q[qt++] = a; }
+            int b = MS[o];
+            if (b >= 0) { if (ST[b] < e) ST[b] = e; if (--ID[b] == 0) Q[qt++] = b; }
         }
         if (seqv_out) *seqv_out = (double)seqv;
-        if (ordv_out) *ordv_out = (double)(total_ops - qt);
+        if (ordv_out) *ordv_out = (double)(T - qt);
         return (double)mk;
     }
 
