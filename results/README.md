@@ -1584,3 +1584,48 @@ componentes buenos entre sí. El filtro "no peor que el default" pasó a irace u
 `disjunctive_arc_flip_relink`, el que eligió el tune 82 en dos réplicas; la etapa 1 consumió ~400 de los ~1500
 experimentos, y la validación final repite las instancias de entrenamiento. Pendiente: no podar componentes con una
 semilla (podar solo esqueletos) y una selección final con más instancias/semillas o una prueba estadística.
+
+## HYB: destrucciones y vista MIP escritas por el LLM (tunings 87–97)
+
+Todos con solo HYB, irace con 60 experimentos, 10 s por corrida, 6 instancias de entrenamiento y 6 de test, 2
+semillas (`--baselines variants`: además del afinado, el default de HYB y cada variante de un componente sobre él).
+CLSP 20×20, job shop 15×15, CVRP X-100. Una réplica por tuning.
+
+### Destrucciones generadas contra las genéricas (tunings 87, 88 y 90)
+
+El LLM escribió tres destrucciones por problema (corridas 138–140, slot `destruction`) y se compararon con las dos
+genéricas de `core.packs` sobre `variable_groups` (`group_window`, `random_variables`). Gap en test contra la mejor
+corrida de cada instancia; las filas de una destrucción son el default de HYB con solo esa destrucción cambiada:
+
+| | CLSP (87) | job shop (88) | CVRP (90) |
+|---|---|---|---|
+| genéricas | `group_window` 0,83 % · `random_variables` 2,90 % | `group_window` 12,5 % · `random_variables` 14,7 % | `random_variables` 1,05 % · `group_window` 1,31 % |
+| generadas | 0,69 % · 1,47 % · 2,77 % | 15,3 % · 15,5 % · 16,1 % | 1,31 % · 1,55 % · 1,60 % |
+| afinado por irace | 0,83 % (generada) | 0,64 % (generada) | **0,11 %** (generada) |
+
+Con el resto en su default, una genérica es la mejor o casi la mejor en los tres problemas (en el CLSP la mejor es
+`clsp_time_window_block`, una ventana de períodos como `group_window`). irace eligió siempre una generada, pero con
+diferencias chicas y una réplica. Lo que mueve el resultado de HYB es la búsqueda local en C++: en el job shop
+cambiar la perturbación o el constructor baja el default de 15 % a 4–5 %, cambiar la destrucción casi no lo mueve
+(el MIP disyuntivo con big-M es débil). Por eso el tuning usa por defecto solo las genéricas
+(`--generated-destructions` para incluir las del LLM). El run 89 (CVRP) se descartó: CBC con 0,1 s terminaba con
+error y penalizaba semillas (corregido: el sub-MIP usa al menos 0,2 s).
+
+### Vista MIP generada contra la de referencia (tunings 92–97)
+
+El LLM escribió la vista MIP de los tres problemas (corridas 141–143, aceptadas en la primera ronda, 1,09 USD en
+total). En el CLSP agregó por su cuenta las desigualdades (l,S) (`enlace.ls`, ~4 200 restricciones más que la de
+referencia); la del job shop es algo más grande y la del CVRP casi igual. Mismas instancias y semillas, costo medio en
+test:
+
+| | afinado, generada | afinado, referencia | default, generada | default, referencia |
+|---|---|---|---|---|
+| CLSP (92 / 93) | 231 803 | 234 295 | 232 707 | 232 577 |
+| job shop (94 / 95) | 1 233,0 | 1 232,2 | 1 389,8 | 1 380,7 |
+| CVRP (96 / 97) | 13 511,8 | 13 528,8 | 13 707,6 | 13 692,3 |
+
+Las diferencias están dentro del ruido de una réplica (a veces a favor de una, a veces de la otra; los cortes (l,S)
+no se notan con sub-MIPs chicos de 10 s). La vista generada rinde igual, así que la de referencia se sacó: de cada
+problema lo humano es la instancia, la descripción, los casos y el oráculo (violaciones y costo); la vista MIP la
+escribe el LLM (`generated/<problema>_native/mip/mip.py`).
+
