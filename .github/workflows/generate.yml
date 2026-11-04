@@ -11,10 +11,10 @@ on:
         type: choice
         options: [flowshop, flowshop_cmax, clsp, jobshop, cvrp]
       target:
-        description: "Qué generar: model (el modelo C++ del problema), model_optimize (una versión más rápida del modelo aceptado), components (componentes C++ sobre el modelo; slots por defecto greedy_score neighborhood perturbation) u optimize (versiones más rápidas de los componentes aceptados; slots de opt_slots)"
+        description: "Qué generar: model (el modelo C++ del problema), model_optimize (una versión más rápida del modelo aceptado), components (componentes C++ sobre el modelo; slots por defecto greedy_score neighborhood perturbation), optimize (versiones más rápidas de los componentes aceptados; slots de opt_slots) o mip (la vista MIP en Python para el sub-MIP de HYB)"
         default: components
         type: choice
-        options: [model, model_optimize, components, optimize]
+        options: [model, model_optimize, components, optimize, mip]
       slots:
         description: "Con target=components: slots a generar, separados por espacio (greedy_score, constructor, neighborhood, perturbation, relink, destruction)"
         default: "greedy_score neighborhood perturbation"
@@ -138,7 +138,7 @@ jobs:
           if [ "$TARGET" = "model" ]; then
             rm -rf "$WS"
           elif [ "$TARGET" = "components" ] && [ -d "$WS" ]; then
-            find "$WS" -mindepth 1 -maxdepth 1 ! -name model ! -name 'model_*stats.json' -exec rm -rf {} +
+            find "$WS" -mindepth 1 -maxdepth 1 ! -name model ! -name 'model_*stats.json' ! -name mip ! -name mip_stats.json -exec rm -rf {} +
           else
             echo "$TARGET trabaja sobre lo aceptado en el workspace: no se limpia"
           fi
@@ -167,6 +167,7 @@ jobs:
           case "$TARGET" in
             model) MOD=llm.native_model_generator ;;
             model_optimize) MOD=llm.native_model_optimizer ;;
+            mip) MOD=llm.native_mip_generator ;;
             components)
               MOD=llm.native_generator
               ARGS+=(--slots $SLOTS --n "$N")
@@ -196,7 +197,7 @@ jobs:
             echo ""
             case "$TARGET" in
               model) F="$WS/model_stats.json" ;; model_optimize) F="$WS/model_optimize_stats.json" ;;
-              optimize) F="$WS/optimize_stats.json" ;; *) F="$WS/stats.json" ;;
+              optimize) F="$WS/optimize_stats.json" ;; mip) F="$WS/mip_stats.json" ;; *) F="$WS/stats.json" ;;
             esac
             if [ -f "$F" ]; then echo '```json'; cat "$F"; echo '```'; fi
             echo ""

@@ -126,7 +126,7 @@ def _model_type(gen: dict) -> str:
 
 
 def generation_prompt(pack, gen: dict, slot: str, n: int, avoid: list[str],
-                      existing: list[NativeComponent] | None = None, hint: str = "") -> str:
+                      existing: list[NativeComponent] | None = None, hint: str = "", workspace: Path | None = None) -> str:
     spec = pack.make_model_spec()
     model = (Path(gen["dir"]) / gen["model_header"]).read_text()
     T = _model_type(gen)
@@ -140,7 +140,7 @@ def generation_prompt(pack, gen: dict, slot: str, n: int, avoid: list[str],
         f"\n## El modelo C++ (`{gen['model_type']}`; tu componente recibe una referencia const a él)\n```cpp\n{model}\n```",
     ]
     if slot == "destruction":
-        parts.append(_mip_view_block(gen))
+        parts.append(_mip_view_block(gen, workspace))
     if existing:
         parts.append("\n# Componentes que YA están en el catálogo para este slot\nEl tuner los combina con los tuyos. Aporta ideas "
                      "que cubran lo que estos no cubren (por ejemplo, partes o aspectos de la solución que ninguno cambia), "
@@ -154,11 +154,18 @@ def generation_prompt(pack, gen: dict, slot: str, n: int, avoid: list[str],
     return "\n".join(parts)
 
 
-def _mip_view_block(gen: dict) -> str:
-    """Las variables estructurales de la vista MIP (piezas de referencia en Python): qué variable es cada índice."""
+def _mip_view_block(gen: dict, workspace: Path | None = None) -> str:
+    """Las variables estructurales de la vista MIP que usa HYB (la generada por el LLM en `<workspace>/mip/mip.py` si
+    existe, si no la de referencia): qué variable es cada índice."""
     import inspect
 
-    mip = importlib.import_module(gen["mip_parts"])
+    generated = Path(workspace) / "mip" / "mip.py" if workspace else None
+    if generated is not None and generated.exists():
+        from core.packs import load_mip
+
+        mip = load_mip(generated)
+    else:
+        mip = importlib.import_module(gen["mip_parts"])
     main = [f for f in ("structural_variables", "to_assignment", "variable_groups") if hasattr(mip, f)]
     bodies = {f: inspect.getsource(getattr(mip, f)) for f in main}
     used = set(re.findall(r"\b([A-Za-z_]\w*)\(", "".join(bodies.values()))) - set(main)  # las auxiliares del módulo
@@ -250,7 +257,7 @@ def generate_native_slot(client, pack, slot: str, n: int, workspace: str | Path,
         return text
 
     existing = _existing(ws, slot)  # lo que ya está en el catálogo del workspace: se muestra y cuenta para la diversidad
-    comps, errors = parse_response(ask(generation_prompt(pack, gen, slot, n, [], existing, hint)))
+    comps, errors = parse_response(ask(generation_prompt(pack, gen, slot, n, [], existing, hint, ws)))
     comps = [c for c in comps if c.slot == slot and c.name not in {e.name for e in existing}]
     stats.parsed = len(comps)
     if verbose:

@@ -71,6 +71,7 @@ def write_irace_scenario(
     skeletons: list[str] | None = None,
     objective: str = "raw",
     scale_budget: bool = False,
+    mip: str = "auto",
 ) -> Path:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -89,6 +90,7 @@ def write_irace_scenario(
            + (f"export HSF_SKELETONS={shlex.quote(' '.join(skeletons))}\n" if skeletons else "")
            + (f"export HSF_OBJECTIVE={objective}\n" if objective != "raw" else "")
            + ("export HSF_SCALE_BUDGET=1\n" if scale_budget else "")
+           + (f"export HSF_MIP={mip}\n" if mip != "auto" else "")
            # el entorno del tuner: irace (R) cambia LD_LIBRARY_PATH y el intérprete cargaba otra libpython (en el CI,
            # `_ctypes: undefined symbol`, y por eso 'No module named pulp'); y las mismas rutas de módulos
            + (f"export LD_LIBRARY_PATH={shlex.quote(os.environ['LD_LIBRARY_PATH'])}${{LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}}\n"
