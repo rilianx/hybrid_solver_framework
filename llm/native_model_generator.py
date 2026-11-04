@@ -51,9 +51,22 @@ def contract_text() -> str:
     return f"{contract}\n\n// en <hsf/core.hpp>:\nnamespace hsf {{\n{rng}\n}}"
 
 
-def model_prompt(spec, cases) -> str:
-    from .parts_generator import _cases_block
+def _cases_block(cases) -> str:
+    """Los casos visibles con sus respuestas (factible/infactible, costo, familias violadas)."""
+    visible = [c for c in cases if c.visible]
+    if not visible:
+        return ""
+    parts = [f"\n# Casos de ejemplo ({len(visible)} visibles; el validador usa además {len(cases) - len(visible)} ocultos)"]
+    for c in visible:
+        parts.append(f"\n## {c.name}\nEntrada (formato de la instancia):\n```\n{c.text.strip()}\n```")
+        for s in c.solutions:
+            extra = f", costo {s['cost']:g}" if s.get("cost") is not None else ""
+            extra += f", viola {s['violates']}" if s.get("violates") else ""
+            parts.append(f"- respuesta `{json.dumps(s['answer'])}`: {'factible' if s['feasible'] else 'INFACTIBLE'}{extra}")
+    return "\n".join(parts)
 
+
+def model_prompt(spec, cases) -> str:
     return "\n".join([
         f"# Tarea\nEscribe en C++ el modelo del problema **{spec.name}**.",
         f"\n# El problema\n{spec.description}",
@@ -63,7 +76,7 @@ def model_prompt(spec, cases) -> str:
         f"{spec.answer_format}",
         f"\n# Familias de restricciones y términos del costo\n{spec.families}",
         f"\n# Contrato (native/include/hsf/generic.hpp)\n```cpp\n{contract_text()}\n```",
-        _cases_block(spec, cases),
+        _cases_block(cases),
         "\nDevuelve UN solo bloque ```cpp``` con `model.hpp` completo.",
     ])
 
@@ -141,7 +154,7 @@ def generate_native_model(client, pack, workspace: str | Path, rounds: int = 4, 
 
 def main(argv: list[str] | None = None) -> None:
     from .client import make_client
-    from .cycle import base_pack
+    from core.packs import base_pack
 
     ap = argparse.ArgumentParser(prog="python -m llm.native_model_generator")
     ap.add_argument("--problem", required=True)

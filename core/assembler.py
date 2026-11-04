@@ -1,7 +1,7 @@
 """Ensamblador (§2, §8): configuración → variante ejecutable → costo.
 
-    config = {"skeleton": "LNS_MIP", "constructor": "lot_for_lot", "destruction": "period_window",
-              "period_window.ratio": 0.3, "LNS_MIP.mip_time_limit": 2.0, ...}
+    config = {"skeleton": "ILS", "constructor": "trivial", "neighborhood": "swap", "perturbation": "kick",
+              "ILS.strength": 2, ...}
     runner = assembler.assemble(config)          # (inst, rng, budget) -> RunResult
     cost   = assembler.evaluate(config, instances, budget, seed)   # lo que llama el tuner
 
@@ -23,12 +23,7 @@ from config_space.space import ConfigSpace, build_config_space
 from core.common_components import BetterAcceptance, MIPModelRepair, MaxTimeStop
 from core.component import ComponentRegistry, ComponentSpec
 from core.skeleton import RunResult
-from skeletons.fix_and_optimize import build_fix_and_optimize, run_fix_and_optimize
-from skeletons.grasp import build_grasp, run_grasp
 from skeletons.ils import RelativeAnnealingAcceptance, build_ils, hill_climb
-from skeletons.lns_mip import build_lns_mip, run_lns_mip
-from skeletons.local_branching import build_local_branching, run_local_branching
-from skeletons.mip_perturbation import build_mip_perturbation, run_mip_perturbation
 from skeletons.hybrid import run_hybrid
 from skeletons.pr import _Given, run_pr
 from skeletons.sa import MetropolisAcceptance, build_sa, make_run
@@ -36,14 +31,6 @@ from skeletons.ts import build_ts
 from skeletons.vns import build_vns
 
 VariantRunner = Callable[[Any, Random, float], RunResult]
-
-# `mip_time_share` es la fracción del presupuesto que recibe cada sub-MIP. Antes había un
-# piso de 1 s (y CBC redondeaba a segundos enteros): con 5 s de presupuesto todo el rango
-# caía en 1–2 s y el parámetro era inerte. CBC respeta límites fraccionarios; el piso
-# solo evita llamadas que no alcanzan a arrancar el solver. Los rangos (log, [0.04, 1])
-# tienen default 0.2: 1 s con 5 s de presupuesto, lo mismo que se usaba de hecho antes.
-MIN_MIP_SECONDS = 0.2
-
 
 @dataclass(frozen=True)
 class SkeletonDef:
@@ -91,21 +78,6 @@ SKELETONS: dict[str, SkeletonDef] = {
             "accept": {"type": "cat", "values": ["better", "anneal"]},
             "T_rel": {"type": "float", "range": [1e-4, 0.05], "log": True, "default": 0.005},
             **PENALTY_PARAMS,
-        },
-    ),
-    "LNS_MIP": SkeletonDef(
-        "LNS_MIP", ("constructor", "destruction"), optional_slots=("repair_mip",),
-        params={
-            "destroy_ratio": {"type": "float", "range": [0.05, 0.6]},
-            "mip_time_share": {"type": "float", "range": [0.04, 1.0], "log": True},
-        },
-    ),
-    "FIX_OPT": SkeletonDef(
-        "FIX_OPT", ("constructor", "fixing_policy"),
-        params={
-            "block_size": {"type": "int", "range": [1, 4]},
-            "mip_time_share": {"type": "float", "range": [0.04, 1.0], "log": True},
-            "order": {"type": "cat", "values": ["sequential", "random"]},
         },
     ),
     "TS": SkeletonDef(
@@ -160,34 +132,6 @@ SKELETONS: dict[str, SkeletonDef] = {
             "ls_time_share": {"type": "float", "range": [0.02, 0.3]},
             "ls_sample": {"type": "int", "range": [4, 256], "log": True, "default": 32},
             **PENALTY_PARAMS,
-        },
-    ),
-    "GRASP": SkeletonDef(
-        "GRASP", ("constructor", "neighborhood"),
-        params={
-            "ls_strategy": {"type": "cat", "values": ["first", "best"]},
-            "ls_time_share": {"type": "float", "range": [0.02, 0.3]},
-            "ls_sample": {"type": "int", "range": [4, 256], "log": True, "default": 32},
-        },
-    ),
-    "LOCAL_BRANCH": SkeletonDef(
-        "LOCAL_BRANCH", ("constructor",),
-        params={
-            "k": {"type": "int", "range": [2, 20]},
-            "k_step": {"type": "int", "range": [1, 10]},
-            "mip_time_share": {"type": "float", "range": [0.04, 1.0], "log": True},
-        },
-    ),
-    "MIP_PERTURB": SkeletonDef(
-        # ILS con perturbación resuelta por el MIP: la destrucción elige la zona, se fuerzan
-        # `flips` cambios y el sub-MIP acomoda el resto; el vecindario hace la búsqueda local.
-        "MIP_PERTURB", ("constructor", "destruction", "neighborhood"),
-        params={
-            "destroy_ratio": {"type": "float", "range": [0.05, 0.6]},
-            "flips": {"type": "int", "range": [1, 3], "default": 1},
-            "mip_time_share": {"type": "float", "range": [0.04, 1.0], "log": True},
-            "ls_time_share": {"type": "float", "range": [0.02, 0.3]},
-            "ls_sample": {"type": "int", "range": [4, 256], "log": True, "default": 32},
         },
     ),
 }
@@ -298,19 +242,6 @@ class Assembler:
                        else BetterAcceptance())
                 sk = build_ils(P, constructor, ls, pert, acc, MaxTimeStop(budget), strength=sp("strength"))
                 return sk.run(inst, rng)
-            if skeleton == "LNS_MIP":
-                destr = self._component(config, "destruction", skeleton, P)
-                repair = self._component(config, "repair_mip", skeleton, P, required=False) or MIPModelRepair(P)
-                ratio = sp("destroy_ratio")
-                sk = build_lns_mip(P, constructor, destr, repair, BetterAcceptance(), MaxTimeStop(budget),
-                                   destroy_ratio=ratio, mip_time_limit=max(MIN_MIP_SECONDS, budget * sp("mip_time_share")))
-                return run_lns_mip(sk, inst, rng, ratio)
-            if skeleton == "FIX_OPT":
-                policy = self._component(config, "fixing_policy", skeleton, P)
-                sk = build_fix_and_optimize(P, constructor, policy, BetterAcceptance(), MaxTimeStop(budget),
-                                            block_size=sp("block_size"), time_limit=max(MIN_MIP_SECONDS, budget * sp("mip_time_share")),
-                                            order=sp("order"))
-                return run_fix_and_optimize(sk, inst, rng)
             if skeleton == "TS":
                 nbh = self._component(config, "neighborhood", skeleton, P)
                 sk = build_ts(P, constructor, nbh, MaxTimeStop(budget), tenure=sp("tenure"), candidate_size=sp("candidate_size"),
@@ -350,22 +281,6 @@ class Assembler:
                                shake_strength=sp("shake_strength"), ls_max_seconds=budget * sp("ls_time_share"),
                                ls_sample=sp("ls_sample"))
                 return sk.run(inst, rng)
-            if skeleton == "GRASP":
-                nbh = self._component(config, "neighborhood", skeleton, P)
-                sk = build_grasp(P, constructor, nbh, MaxTimeStop(budget), ls_strategy=sp("ls_strategy"),
-                                 ls_max_seconds=budget * sp("ls_time_share"), ls_sample=sp("ls_sample"))
-                return run_grasp(sk, inst, rng)
-            if skeleton == "LOCAL_BRANCH":
-                sk = build_local_branching(P, constructor, MaxTimeStop(budget), k=sp("k"), k_step=sp("k_step"),
-                                           time_limit=max(MIN_MIP_SECONDS, budget * sp("mip_time_share")))
-                return run_local_branching(sk, inst, rng)
-            if skeleton == "MIP_PERTURB":
-                destr = self._component(config, "destruction", skeleton, P)
-                nbh = self._component(config, "neighborhood", skeleton, P)
-                ls = hill_climb(P, nbh, strategy="first", max_seconds=budget * sp("ls_time_share"), sample_size=sp("ls_sample"))
-                sk = build_mip_perturbation(P, constructor, destr, ls, MaxTimeStop(budget), destroy_ratio=sp("destroy_ratio"),
-                                            flips=sp("flips"), mip_time_limit=max(MIN_MIP_SECONDS, budget * sp("mip_time_share")))
-                return run_mip_perturbation(sk, inst, rng)
             raise AssemblyError(f"esqueleto {skeleton} declarado pero sin constructor de variante")
 
         return run
@@ -404,6 +319,5 @@ class Assembler:
 def describe(config: dict[str, Any]) -> str:
     """Resumen legible de una configuración: esqueleto + componentes elegidos."""
     sk = config.get("skeleton", "?")
-    slots = [f"{k}={v}" for k, v in config.items() if k in {"constructor", "neighborhood", "perturbation", "destruction", "repair_mip", "fixing_policy",
-                                                        "relink"}]
+    slots = [f"{k}={v}" for k, v in config.items() if k in {"constructor", "neighborhood", "perturbation", "destruction", "relink"}]
     return f"{sk}[{', '.join(slots)}]"

@@ -1,4 +1,4 @@
-"""Tuner (§8): Optuna sobre el espacio condicional, evaluación en test e irace."""
+"""Tuner (§8): evaluación en test, escenario y target-runner de irace."""
 
 from __future__ import annotations
 
@@ -7,17 +7,18 @@ from random import Random
 import pytest
 
 from core.assembler import Assembler
-from examples.lotsizing.catalog import build_registry
+from core.catalog import build_registry
+from examples.lotsizing.pack import PACK
 from examples.lotsizing.problem_model import CLSPInstance, LotSizingModel
-from tuning import evaluate_on_test, tune_with_optuna
+from tuning import evaluate_on_test
 from tuning.irace_scenario import parse_irace_params, write_irace_scenario
 
-pytest.importorskip("optuna")
+pytest.importorskip("pulp")
 
 
 @pytest.fixture(scope="module")
 def assembler():
-    return Assembler(problem_factory=LotSizingModel, registry=build_registry())
+    return Assembler(problem_factory=LotSizingModel, registry=build_registry(PACK))
 
 
 @pytest.fixture(scope="module")
@@ -25,33 +26,13 @@ def tiny():
     return [CLSPInstance.trigeiro(3, 5, Random(s), utilization=0.9, tbo=2.0) for s in (1, 2)]
 
 
-def test_optuna_tunes_conditional_space_and_enqueues_defaults(assembler, tiny):
-    n_sk = len(assembler.available_skeletons())
-    result = tune_with_optuna(assembler, tiny, budget=0.2, n_trials=n_sk + 3, seed=1)
-    assert len(result.trials) == n_sk + 3
-    # los primeros trials son los defaults de cada esqueleto, uno por esqueleto
-    assert [t.enqueued for t in result.trials[:n_sk]] == [True] * n_sk
-    assert {t.config["skeleton"] for t in result.trials[:n_sk]} == set(assembler.available_skeletons())
-    # los muestreados respetan la condicionalidad: solo parámetros del esqueleto elegido
-    for t in result.trials[n_sk:]:
-        sk = t.config["skeleton"]
-        assert all(k.split(".")[0] == sk for k in t.config if k.split(".")[0] in assembler.skeletons), t.config
-        if sk != "ILS":
-            assert "perturbation" not in t.config
-    assert result.best_cost == min(t.cost for t in result.trials) < assembler.penalty_cost
-    curve = result.incumbent_curve()
-    assert curve == sorted(curve, reverse=True) and curve[-1] == result.best_cost
-    d = result.to_dict()
-    assert d["n_trials"] == n_sk + 3 and d["best_default_cost"] is not None and d["skeleton_usage"]
-
-
 def test_evaluate_on_test_compares_against_defaults(assembler, tiny):
     tuned = assembler.default_config("SA")
     report = evaluate_on_test(assembler, tuned, tiny, budget=0.2, seeds=(0, 1),
-                              baselines={"default:SA": assembler.default_config("SA"), "default:LNS_MIP": assembler.default_config("LNS_MIP")},
+                              baselines={"default:SA": assembler.default_config("SA"), "default:HYB": assembler.default_config("HYB")},
                               reference=1e6)
     assert len(report.tuned.per_run) == 4 and len(report.tuned.per_instance) == 2
-    assert {b.label for b in report.baselines} == {"default:SA", "default:LNS_MIP"}
+    assert {b.label for b in report.baselines} == {"default:SA", "default:HYB"}
     assert report.best_baseline().mean <= max(b.mean for b in report.baselines)
     d = report.to_dict()
     assert d["wins_per_instance"].endswith("/2") and "gain_vs_best_baseline" in d
@@ -66,7 +47,7 @@ def test_irace_params_are_typed_from_the_space(assembler):
     assert isinstance(cfg["SA.T0"], float) and cfg["SA.T0"] == 12.5
     with pytest.raises(ValueError):
         parse_irace_params(space, ["--no_existe=1"])
-    # y la config parseada es ejecutable por el mismo target runner que usa Optuna
+    # y la config parseada es ejecutable por el ensamblador
     inst = CLSPInstance.trigeiro(3, 5, Random(1), utilization=0.9, tbo=2.0)
     assert assembler.evaluate(cfg, [inst], 0.2) < assembler.penalty_cost
 
@@ -95,14 +76,14 @@ def test_target_runner_prints_a_single_cost(tmp_path, monkeypatch, capsys):
     inst.save(str(p))
     monkeypatch.setenv("HSF_BUDGET", "0.2")
     monkeypatch.delenv("HSF_GENERATED", raising=False)
-    rc = main(["7", "1", "123", str(p), "--skeleton=LNS_MIP", "--constructor=lot_for_lot", "--destruction=random_setups"])
+    rc = main(["7", "1", "123", str(p), "--skeleton=SA", "--constructor=lot_for_lot", "--neighborhood=setup_flip"])
     out = capsys.readouterr().out.strip().splitlines()
     assert rc == 0 and len(out) == 1
     assert float(out[0]) < 1e12
 
 
 def test_evaluate_with_normalizers_averages_cost_ratios(assembler, tiny):
-    cfg = assembler.default_config("LNS_MIP")
+    cfg = assembler.default_config("ILS")
     raw = [assembler.evaluate(cfg, [inst], 0.2, seed=k) for k, inst in enumerate(tiny)]
     refs = [2.0 * raw[0], 4.0 * raw[1]]
     ratio = assembler.evaluate(cfg, tiny, 0.2, seed=0, normalizers=refs)
@@ -132,7 +113,7 @@ def test_one_slot_baselines_vary_one_slot_at_a_time():
     from core.assembler import SKELETONS
     from tuning import one_slot_baselines
 
-    a = Assembler(problem_factory=LotSizingModel, registry=build_registry(), skeletons={"ILS": SKELETONS["ILS"]})
+    a = Assembler(problem_factory=LotSizingModel, registry=build_registry(PACK), skeletons={"ILS": SKELETONS["ILS"]})
     base = one_slot_baselines(a)
     default = a.default_config("ILS")
     assert base["default:ILS"] == default
@@ -143,90 +124,6 @@ def test_one_slot_baselines_vary_one_slot_at_a_time():
         assert cfg[slot] == name != default[slot]
         others = {s for s in ("constructor", "neighborhood", "perturbation") if s != slot}
         assert all(cfg[s] == default[s] for s in others), label
-
-
-def test_optuna_with_restricted_skeletons_only_samples_those(tiny):
-    from core.assembler import SKELETONS
-
-    a = Assembler(problem_factory=LotSizingModel, registry=build_registry(),
-                  skeletons={k: SKELETONS[k] for k in ("SA", "VNS")})
-    result = tune_with_optuna(a, tiny, budget=0.2, n_trials=5, seed=0, normalizers=[1e5, 1e5])
-    assert {t.config["skeleton"] for t in result.trials} <= {"SA", "VNS"}
-    assert result.best_cost < 1.0  # costos normalizados, no en bruto
-
-
-def test_mip_time_share_is_not_floored_to_one_second(assembler, tiny, monkeypatch):
-    import core.assembler as asm
-
-    seen = []
-    real = asm.build_lns_mip
-    monkeypatch.setattr(asm, "build_lns_mip", lambda *a, **kw: seen.append(kw["mip_time_limit"]) or real(*a, **kw))
-    for share in (0.1, 0.5):
-        cfg = dict(assembler.default_config("LNS_MIP"), **{"LNS_MIP.mip_time_share": share})
-        assembler.evaluate(cfg, tiny[:1], budget=4.0)
-    assert seen == pytest.approx([0.4, 2.0])  # antes: max(1.0, ·) → 1.0 y 2.0, y CBC redondeaba
-    assert asm.MIN_MIP_SECONDS < 1.0
-    assert assembler.default_config("LNS_MIP")["LNS_MIP.mip_time_share"] == pytest.approx(0.2)
-
-
-def test_generated_only_catalog_drops_handwritten_in_generated_slots():
-    from examples.lotsizing.catalog import load_generated
-
-    gen = load_generated("generated/clsp", revalidate=False, verbose=False)
-    assert gen, "se espera el catálogo de la corrida 8 en generated/clsp"
-    only = build_registry(gen, handwritten=False)
-    gen_slots = {c.slot for c in gen}
-    for slot in gen_slots:
-        names = {s.name for s in only.for_slot(slot)}
-        assert names and names <= {c.name for c in gen} | {"composite"}, slot  # composite: la unión de los generados
-    # slots que el LLM no genera conservan el de mano, así FIX_OPT sigue existiendo
-    assert {s.name for s in only.for_slot("fixing_policy")} == {"sliding_window"}
-    assert {s.name for s in build_registry(gen).for_slot("neighborhood")} >= {"setup_flip"}
-
-
-def test_catalog_admission_checks_constructor_feasibility_at_realistic_size():
-    """La admisión leniente relaja solo `improves_from_start`: la sonda 10×15 sigue ahí.
-    Corrida 9: `batch_covering_merge` (abandonado por la generación) entraba sin ella y es
-    infactible en instancias reales; el tuner perdió 12 de 40 trials en él."""
-    from examples.lotsizing.catalog import load_generated
-    from examples.lotsizing.llm_spec import make_contexts
-
-    assert all(c.diversity_probe is not None for c in make_contexts(n_contexts=1, strict=False))
-    names = {c.name for c in load_generated("generated/clsp_scratch", verbose=False, combination=False)}
-    assert "batch_covering_merge" not in names and "prefix_capacity_earliest_feasible" in names
-
-
-def test_final_selection_reevaluates_top_trials_with_more_seeds(assembler, tiny):
-    """Con reeval_top, el elegido es el de mejor media re-evaluada (no el mínimo de una semilla)."""
-    result = tune_with_optuna(assembler, tiny, budget=0.1, n_trials=len(assembler.available_skeletons()) + 2,
-                              seed=3, reeval_top=2, reeval_seeds=1)
-    rows = result.reevaluated
-    tuned = [r for r in rows if not r["twin"]]
-    assert 2 <= len(tuned) <= 3  # los 2 mejores (+ el mejor default si no estaba)
-    assert len(rows) <= 5  # + a lo sumo un gemelo con numéricos por defecto por cada uno de los 2
-    assert all(len(r["costs"]) == 2 for r in rows)
-    chosen = next((r for r in rows if r.get("preferred_defaults")), None) or min(rows, key=lambda r: r["mean"])
-    assert result.best_trial_number == chosen["number"] and result.best_cost == chosen["mean"]
-    assert result.best_is_twin == chosen["twin"]
-    if not chosen["twin"]:
-        assert result.best_config == next(t.config for t in result.trials if t.number == chosen["number"])
-    assert any(r["enqueued"] for r in rows)
-    assert result.to_dict()["reevaluated"] == rows
-
-
-def test_defaults_twin_keeps_the_components_and_resets_the_numeric_parameters(assembler):
-    """Runs 19 y 22: los componentes correctos con numéricos afinados peores que sus defaults."""
-    from tuning.optuna_tuner import Trial, defaults_twin
-
-    sk = assembler.available_skeletons()[0]
-    base = assembler.default_config(sk)
-    tuned = dict(base)
-    numeric = [k for k, v in base.items() if isinstance(v, (int, float)) and not isinstance(v, bool)]
-    assert numeric
-    for k in numeric:
-        tuned[k] = base[k] * 2 + 1
-    twin = defaults_twin(assembler, Trial(7, tuned, 0.5, 1.0))
-    assert twin.defaults_of == 7 and twin.config == base
 
 
 def test_paired_comparison_separates_real_differences_from_noise():
@@ -269,87 +166,6 @@ def test_replica_summary_uses_a_common_best_known_and_averages_the_untuned_basel
                                                                 round((30 / 100 + 2 / 98 + 0) / 3, 4)]
     assert a["best_untuned"] == "default:SA" and "Réplicas del tuning (2)" in md
     assert a["tuned_vs_best_untuned"]["replicas_ahead"] == 2  # 12,6 y 10,7 % contra 19,1 %
-
-
-def test_screening_enqueues_one_slot_variants_interleaved_across_skeletons(assembler, tiny):
-    """Run 23: dos réplicas nunca probaron bien el mejor constructor; el sondeo lo prueba al inicio."""
-    from tuning.evaluation import one_slot_baselines
-    from tuning.optuna_tuner import screening_configs
-
-    cfgs = screening_configs(assembler)
-    variants = [c for k, c in one_slot_baselines(assembler).items() if not k.startswith("default:")]
-    assert sorted(map(repr, cfgs)) == sorted(map(repr, variants))
-    n_sk = len(assembler.available_skeletons())
-    assert len({c["skeleton"] for c in cfgs[:n_sk]}) == min(n_sk, len({c["skeleton"] for c in cfgs}))
-    k = min(3, len(cfgs))
-    result = tune_with_optuna(assembler, tiny, budget=0.05, n_trials=n_sk + k, seed=0, screen=k)
-    for c in cfgs[:k]:
-        assert any(all((kk, vv) in t.config.items() for kk, vv in c.items() if kk in t.config) for t in result.trials[n_sk:])
-
-
-def test_final_selection_reevaluates_distinct_component_choices(assembler, tiny):
-    """Run 25: la elección que ganaba en test quedaba 5.ª en train, fuera de los 5 mejores trials."""
-    from tuning.optuna_tuner import SLOT_KEYS
-
-    result = tune_with_optuna(assembler, tiny, budget=0.05, n_trials=len(assembler.available_skeletons()) + 6,
-                              seed=1, reeval_top=3, reeval_seeds=1)
-    by_number = {t.number: t for t in result.trials}
-    tuned = [r for r in result.reevaluated if not r["twin"] and not r["enqueued"]]
-    choices = [repr(sorted((k, v) for k, v in by_number[r["number"]].config.items() if k == "skeleton" or k in SLOT_KEYS))
-               for r in tuned]
-    assert len(choices) == len(set(choices))
-
-
-def test_defaults_are_preferred_when_the_tuned_gain_is_within_noise():
-    """Run 26, réplica 1: el afinado ganaba en train por 0.0008 y perdía 1.3 puntos en test."""
-    from tuning.optuna_tuner import prefer_defaults
-
-    assert prefer_defaults([0.6845, 0.6840, 0.6850], [0.6853, 0.6848, 0.6858])  # 0.1 %: dentro del margen
-    assert not prefer_defaults([0.60, 0.61, 0.60], [0.70, 0.71, 0.70])  # 15 %, consistente: gana el afinado
-    assert prefer_defaults([0.60, 0.75, 0.62], [0.70, 0.62, 0.71])  # gana en media pero con mucho ruido
-
-
-def test_clearly_worse_needs_a_paired_difference_beyond_noise():
-    from tuning.optuna_tuner import clearly_worse
-
-    leader = [1.0, 1.1, 0.9, 1.0, 1.05, 0.95]
-    assert clearly_worse([x + 0.2 for x in leader], leader)
-    assert not clearly_worse([x + (0.2 if k % 2 else -0.2) for k, x in enumerate(leader)], leader)
-    assert not clearly_worse(leader, [x + 0.2 for x in leader])  # es mejor, no peor
-
-
-def test_final_selection_races_the_candidates_that_noise_cannot_separate():
-    """Run 35: con 2 semillas extra, dos de tres réplicas eligieron SA y perdían 0,8–1,2 puntos en test
-    contra el VNS de la tercera. La carrera sigue evaluando solo a los que no se separan del líder."""
-    import random
-
-    from tuning.optuna_tuner import Trial, _reevaluate
-
-    means = {"A": 1.00, "B": 1.01, "C": 1.50}
-    calls: list[str] = []
-
-    class Stub:
-        penalty_cost = 1e12
-
-        def evaluate(self, config, instances, budget, seed=0, normalizers=None):
-            name = config["skeleton"]
-            calls.append(name)
-            return means[name] + random.Random(f"{name}-{seed}").gauss(0, 0.05)
-
-    stub, insts = Stub(), [0, 1, 2, 3]
-    trials = []
-    for k, name in enumerate("ABC"):
-        blocks = [stub.evaluate({"skeleton": name}, [i], 1.0, seed=j) for j, i in enumerate(insts)]
-        trials.append(Trial(k, {"skeleton": name}, sum(blocks) / len(blocks), 0.0, enqueued=True, per_instance=blocks))
-    calls.clear()
-    best, _, rows = _reevaluate(stub, trials, insts, 1.0, 0, top=3, n_seeds=2, normalizers=None, race_seeds=6)
-    row = {trials[r["number"]].config["skeleton"]: r for r in rows}
-    assert row["C"]["seeds"] == 3 and row["C"]["eliminated_after"] == 2  # base + 2: fuera
-    assert calls.count("C") == 2 * len(insts)  # no recibe semillas de la carrera
-    assert row["A"]["seeds"] > 3 and best.config["skeleton"] in ("A", "B")
-    # sin carrera (race_seeds = reeval_seeds) todos reciben lo mismo, como antes
-    _, _, rows = _reevaluate(stub, trials, insts, 1.0, 0, top=3, n_seeds=2, normalizers=None, race_seeds=2)
-    assert {r["seeds"] for r in rows} == {3}
 
 
 def test_sa_time_cooling_follows_the_budget_and_old_configs_keep_iteration_cooling():

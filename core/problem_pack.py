@@ -6,17 +6,16 @@ problema necesita solo esto:
 - `problem_factory(inst)`: el `ProblemModel` ligado a una instancia (con `build_mip`,
   `variable_groups` y, si hay constructor modular, `construction_view`);
 - `handwritten`: el catálogo de referencia, pares `(COMPONENT, fábrica)`; puede ser mínimo
-  (una partida trivial y una política de fijación) si se genera desde cero;
-- `make_spec()`: la descripción para el LLM (`llm.prompts.ProblemSpec`);
-- `make_contexts(...)`: los micro-contextos de validación;
+  (las partidas trivial y al azar) si los componentes los escribe el LLM;
+- `make_contexts(...)`: los micro-contextos de validación (`core.packs.parts_contexts`);
 - `make_instances(n, seed0, size)` y `parse_size(texto)`: el generador de instancias;
 - `baseline_constructor()`: la partida trivial, que normaliza el objetivo del tuner
   (costo / costo de la partida) para que ninguna instancia domine por escala;
 - `load_instance(path)`: para irace.
 
-`examples/lotsizing/pack.py` y `examples/cvrp/pack.py` son los dos que hay. Los módulos
-genéricos (`llm.catalog`, `llm.cli`, `tuning.cli`) reciben un `ProblemPack` y no conocen
-el problema.
+Los packs están en `examples/*/pack.py` (registro en `core.packs.PACKS`). Los módulos genéricos
+(`core.catalog`, `native/check*.py`, `llm.native_*`, `tuning.cli`) reciben un `ProblemPack` y no
+conocen el problema.
 """
 
 from __future__ import annotations
@@ -31,19 +30,18 @@ class ProblemPack:
     module: str  # paquete Python del problema: "examples.lotsizing"
     problem_factory: Callable[[Any], Any]
     handwritten: list[tuple[dict, Callable]]
-    make_spec: Callable[[], Any]
-    make_contexts: Callable[..., list]
     make_instances: Callable[[int, int, dict], list]  # (n, seed0, size) -> instancias
     parse_size: Callable[[str], dict]
     default_size: str
     baseline_constructor: Callable[[], Any]
     load_instance: Callable[[str], Any]
+    make_contexts: Callable[..., list] | None = None
     # generación del ProblemModel con LLM (§6.1): descripción para el LLM y tamaño de las micro-instancias
     make_model_spec: Callable[[], Any] | None = None
     micro_size: str = ""
     load_cases: Callable[[], list] | None = None  # casos de prueba al estilo Codeforces (core.model_parts.TestCase)
-    # representaciones del problema para el ciclo completo (`llm.cycle`): {nombre: (make_model_spec, piezas de
-    # referencia importables)}. Cada una es un problema distinto con las mismas instancias y casos.
+    # representaciones del problema: {nombre: (make_model_spec, piezas de referencia importables)}; la primera es la que
+    # usa la generación nativa (`llm.native_model_generator`) como oráculo y vista MIP.
     variants: dict[str, tuple[Callable[[], Any], str]] = field(default_factory=dict)
     # backend nativo (C++), opcional: módulo con `native` (bindings) y `model(inst)` (ver `core.native_runner`)
     native_module: str = ""
@@ -53,7 +51,7 @@ class ProblemPack:
     bench_size: str = ""  # tamaño de las instancias donde se mide la velocidad de los componentes (vacío = default_size)
     # esqueletos que puede usar un constructor (los greedy_<puntaje> se registran con estos)
     constructor_skeletons: list[str] = field(
-        default_factory=lambda: ["SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH", "MIP_PERTURB"])
+        default_factory=lambda: ["SA", "ILS", "TS", "VNS", "PR", "HYB"])
 
     @property
     def default_workspace(self) -> str:

@@ -1,9 +1,8 @@
 """`ProblemPack` del job shop (makespan): lo que el framework recibe de este problema.
 
 Es el primer problema que entra directamente por piezas: el `ProblemModel` del pack base es el de
-las piezas de referencia por secuencias (`model_parts`), armado con `llm.cycle.parts_pack`, más el
-catálogo escrito a mano (`catalog.HANDWRITTEN`). Las variantes del ciclo completo son `sequences`
-(la misma representación) y `operations` (permutación con repetición, `ops_parts`).
+las piezas de referencia por secuencias (`model_parts`), armado con `core.packs.parts_pack`, más el
+catálogo escrito a mano (`catalog.HANDWRITTEN`).
 """
 
 from __future__ import annotations
@@ -11,13 +10,13 @@ from __future__ import annotations
 from random import Random
 
 from core.problem_pack import ProblemPack
-from llm.cycle import parts_pack
+from core.packs import parts_pack
 
 from . import model_parts
 from .catalog import CONSTRUCTOR_SKELETONS, HANDWRITTEN
 from .components import JobOrder
 from .instance import JSSPInstance
-from .llm_spec import make_model_spec, make_ops_model_spec
+from .llm_spec import make_model_spec
 
 
 def parse_size(text: str) -> dict:
@@ -41,8 +40,6 @@ _BASE = ProblemPack(
     module="examples.jobshop",
     problem_factory=None,
     handwritten=[],
-    make_spec=None,
-    make_contexts=None,
     make_instances=make_instances,
     parse_size=parse_size,
     default_size="10x10",
@@ -59,5 +56,4 @@ PACK.module = "examples.jobshop"
 PACK.handwritten = HANDWRITTEN
 PACK.baseline_constructor = JobOrder
 PACK.native_module = "examples.jobshop.native_parts"
-PACK.variants = {"sequences": (make_model_spec, "examples.jobshop.model_parts"),
-                 "operations": (make_ops_model_spec, "examples.jobshop.ops_parts")}
+PACK.variants = {"sequences": (make_model_spec, "examples.jobshop.model_parts")}

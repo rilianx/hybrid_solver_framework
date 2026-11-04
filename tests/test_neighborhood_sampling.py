@@ -5,9 +5,7 @@ from __future__ import annotations
 from random import Random
 
 from core.neighborhood import random_move, sample_moves
-from core.validation import ValidationContext, validate_component
-from examples.knapsack.components import COMPONENT_BIT_FLIP_NEIGHBORHOOD, BitFlipNeighborhood, GreedyRandomizedConstructor
-from examples.knapsack.problem_model import KnapsackInstance, KnapsackModel, KnapsackObjective, bound_problem_model
+from core.validation import validate_component
 from skeletons.ils import hill_climb
 
 
@@ -58,24 +56,23 @@ def test_sampled_hill_climb_evaluates_fewer_moves_per_step():
 
 
 def test_validator_checks_the_optional_sample_method():
-    inst = KnapsackInstance.random(8, Random(5))
-    evaluator = KnapsackObjective(KnapsackModel(), inst)
-    ctx = ValidationContext(problem=bound_problem_model(inst), instances=[inst],
-                            trivial_solutions=[tuple(False for _ in range(inst.n))],
-                            baseline_constructor=GreedyRandomizedConstructor(alpha=1.0))
+    from examples.lotsizing.components import COMPONENT_SETUP_FLIP, SetupFlipNeighborhood
+    from tests.contexts import clsp_contexts
 
-    class GoodSample(BitFlipNeighborhood):
+    ctx = clsp_contexts(n_contexts=1, strict=False)[0]
+
+    class GoodSample(SetupFlipNeighborhood):
         def sample(self, sol, k, rng):
             ms = list(self.moves(sol))
             return rng.sample(ms, min(k, len(ms)))
 
-    class BadSample(BitFlipNeighborhood):
+    class BadSample(SetupFlipNeighborhood):
         def sample(self, sol, k, rng):
-            return [(99, True)] * k
+            return [(99, 99)] * k
 
-    good = validate_component(COMPONENT_BIT_FLIP_NEIGHBORHOOD, GoodSample(evaluator), ctx)
+    good = validate_component(COMPONENT_SETUP_FLIP, GoodSample(ctx.problem), ctx)
     assert "neighborhood.sample" not in {c.name for c in good.failures()}
-    bad = validate_component(COMPONENT_BIT_FLIP_NEIGHBORHOOD, BadSample(evaluator), ctx)
+    bad = validate_component(COMPONENT_SETUP_FLIP, BadSample(ctx.problem), ctx)
     assert bad.failed_layer == "contractual" and any(c.name == "neighborhood.sample" for c in bad.failures())
 
 
@@ -83,6 +80,6 @@ def test_ls_sample_is_a_skeleton_param_with_explicit_default():
     from core.assembler import SKELETONS
     from core.component import ComponentSpec
 
-    for sk in ("ILS", "VNS", "GRASP"):
+    for sk in ("ILS", "VNS"):
         spec = SKELETONS[sk].params["ls_sample"]
         assert ComponentSpec("_", "stop", (), (), {"ls_sample": spec}, None).default_params() == {"ls_sample": 32}

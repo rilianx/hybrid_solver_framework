@@ -1,9 +1,8 @@
 """Catálogo de referencia del job shop (`HANDWRITTEN`), sobre la representación por secuencias.
-Registrar, envolver puntajes y cargar generados es genérico (`llm.catalog`)."""
+El registro es genérico (`core.catalog`)."""
 
 from __future__ import annotations
 
-from core.fixing_policies import SlidingWindowPolicy
 
 from .components import (
     CriticalInsert,
@@ -17,8 +16,8 @@ from .components import (
     TimeWindowRemoval,
 )
 
-CONSTRUCTOR_SKELETONS = ["SA", "ILS", "LNS_MIP", "FIX_OPT", "TS", "VNS", "GRASP", "LOCAL_BRANCH", "MIP_PERTURB", "PR", "HYB"]
-LOCAL_SEARCH_SKELETONS = ["SA", "ILS", "TS", "VNS", "GRASP", "MIP_PERTURB", "PR", "HYB"]
+CONSTRUCTOR_SKELETONS = ["SA", "ILS", "TS", "VNS", "PR", "HYB"]
+LOCAL_SEARCH_SKELETONS = ["SA", "ILS", "TS", "VNS", "PR", "HYB"]
 
 HANDWRITTEN = [
     ({"name": "job_order", "slot": "constructor", "compatible_skeletons": CONSTRUCTOR_SKELETONS, "params": {}},
@@ -35,11 +34,8 @@ HANDWRITTEN = [
      lambda problem: CriticalKick(problem)),
     ({"name": "machine_order", "slot": "relink", "compatible_skeletons": ["PR"], "params": {}},
      lambda problem: OrderRelink(problem)),
-    ({"name": "time_window_removal", "slot": "destruction", "compatible_skeletons": ["LNS_MIP", "MIP_PERTURB", "HYB"], "params": {}},
+    ({"name": "time_window_removal", "slot": "destruction", "compatible_skeletons": ["HYB"], "params": {}},
      lambda problem: TimeWindowRemoval(problem)),
-    ({"name": "machine_removal", "slot": "destruction", "compatible_skeletons": ["LNS_MIP", "MIP_PERTURB", "HYB"], "params": {}},
+    ({"name": "machine_removal", "slot": "destruction", "compatible_skeletons": ["HYB"], "params": {}},
      lambda problem: MachineRemoval(problem)),
-    ({"name": "sliding_window", "slot": "fixing_policy", "compatible_skeletons": ["FIX_OPT"],
-      "params": {"window_size": {"type": "int", "range": [1, 4]}, "overlap": {"type": "int", "range": [0, 2]}}},
-     lambda problem, window_size=2, overlap=1: SlidingWindowPolicy(window_size, min(overlap, window_size - 1))),
 ]

@@ -157,7 +157,7 @@ def optimize_model(client, pack, workspace: str | Path, rounds: int = 3, min_spe
 
 def main(argv: list[str] | None = None) -> None:
     from .client import make_client
-    from .cycle import base_pack
+    from core.packs import base_pack
 
     ap = argparse.ArgumentParser(prog="python -m llm.native_model_optimizer")
     ap.add_argument("--problem", required=True)

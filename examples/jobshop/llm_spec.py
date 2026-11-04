@@ -1,17 +1,16 @@
-"""Descripción del job shop para la generación del modelo con LLM (§6.1), en sus dos representaciones."""
+"""Descripción del job shop para la generación del modelo con LLM (`ModelSpec`)."""
 
 from __future__ import annotations
 
 import inspect
-from dataclasses import replace
 
-FORBIDDEN = ["examples.jobshop.model_parts", "examples.jobshop.ops_parts", "examples.jobshop.components",
+FORBIDDEN = ["examples.jobshop.model_parts", "examples.jobshop.components",
              "examples.jobshop.cases", "examples.jobshop.catalog"]
 
 
 def make_model_spec():
     """La variante `sequences`: una secuencia de trabajos por máquina."""
-    from llm.model_generator import ModelSpec
+    from core.model_spec import ModelSpec
 
     from . import instance
 
@@ -47,19 +46,3 @@ def make_model_spec():
                "vez las precedencias de las rutas y las disyuntivas de esas binarias (todo tiempo de proceso es >= 1)."],
     )
 
-
-def make_ops_model_spec():
-    """La variante `operations`: permutación con repetición (decodificador)."""
-    return replace(
-        make_model_spec(),
-        name="Job shop scheduling (makespan) con permutación con repetición",
-        representation=(
-            "PERMUTACIÓN CON REPETICIÓN (Bierwirth): una tupla de trabajos en la que cada trabajo j aparece "
-            "len(inst.routes[j]) veces; la k-ésima aparición de j es su operación k. Se decodifica recorriéndola y "
-            "agregando cada operación al final de la secuencia de su máquina; las secuencias que resultan nunca forman un "
-            "ciclo. violations y cost_terms se evalúan sobre esas secuencias. from_answer devuelve un orden de despacho "
-            "de las secuencias de la respuesta (p.ej. sus operaciones ordenadas por inicio en el plan semiactivo); "
-            "from_assignment, lo mismo con las secuencias que describen las binarias."
-        ),
-        decoder=True,
-    )

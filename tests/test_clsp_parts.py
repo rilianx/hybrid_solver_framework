@@ -47,12 +47,13 @@ def test_cases_mix_feasible_and_infeasible_plans(cases):
 
 def test_skeletons_run_on_the_assembled_model_with_the_clsp_components():
     from core.assembler import Assembler
-    from examples.lotsizing.catalog import build_registry
+    from core.catalog import build_registry
+    from examples.lotsizing.pack import PACK as BASE
 
     inst = PACK.make_instances(1, 5, PACK.parse_size("5x6"))[0]
     P = PartsModel(ref, inst)
-    A = Assembler(problem_factory=lambda i: PartsModel(ref, i), registry=build_registry())
-    for sk in ("SA", "FIX_OPT"):
+    A = Assembler(problem_factory=lambda i: PartsModel(ref, i), registry=build_registry(BASE))
+    for sk in ("SA", "HYB"):
         r = A.assemble(A.default_config(sk))(inst, Random(0), 0.5)
         assert P.is_feasible(r.best_solution) and r.best_objective <= P.objective(ref.trivial_solution(inst)) + 1e-6
 

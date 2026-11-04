@@ -152,7 +152,7 @@ def test_a_generated_model_is_validated_corrected_and_used(tmp_path):
     from dataclasses import replace
 
     from llm import ScriptedClient
-    from llm.cycle import base_pack
+    from core.packs import base_pack
     from llm.native_generator import generate_native_slot, write_catalog
     from llm.native_model_generator import generate_native_model
     from native.generic_model import generation
@@ -191,7 +191,7 @@ def test_a_generated_model_is_validated_corrected_and_used(tmp_path):
 
 def test_model_optimizer_rejects_changed_outputs_and_no_speedup(tmp_path):
     from llm import ScriptedClient
-    from llm.cycle import base_pack
+    from core.packs import base_pack
     from llm.native_model_generator import generate_native_model
     from llm.native_model_optimizer import optimize_model
 

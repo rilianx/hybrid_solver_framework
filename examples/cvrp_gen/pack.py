@@ -6,11 +6,11 @@ from __future__ import annotations
 from core.problem_pack import ProblemPack
 from examples.cvrp import model_parts
 from examples.cvrp.pack import PACK as _CVRP
-from llm.cycle import TrivialConstructor, parts_pack
+from core.packs import TrivialConstructor, parts_pack
 
 _BASE = ProblemPack(
-    name="cvrp_gen", module="examples.cvrp_gen", problem_factory=None, handwritten=[], make_spec=None,
-    make_contexts=None, make_instances=_CVRP.make_instances, parse_size=_CVRP.parse_size,
+    name="cvrp_gen", module="examples.cvrp_gen", problem_factory=None, handwritten=[],
+    make_instances=_CVRP.make_instances, parse_size=_CVRP.parse_size,
     default_size=_CVRP.default_size, baseline_constructor=None, load_instance=_CVRP.load_instance,
     make_model_spec=_CVRP.make_model_spec, micro_size=_CVRP.micro_size, load_cases=_CVRP.load_cases,
     constructor_skeletons=list(_CVRP.constructor_skeletons),

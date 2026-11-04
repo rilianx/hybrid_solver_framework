@@ -3,7 +3,7 @@
 import pytest
 
 from core.validation.model_parts import check_heuristic_view
-from llm.cycle import base_pack
+from core.packs import base_pack
 
 
 @pytest.mark.parametrize("name, ref", [("jobshop_gen", "examples.jobshop.model_parts"),

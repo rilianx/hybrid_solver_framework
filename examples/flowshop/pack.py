@@ -8,7 +8,7 @@ from __future__ import annotations
 from random import Random
 
 from core.problem_pack import ProblemPack
-from llm.cycle import TrivialConstructor, parts_pack
+from core.packs import TrivialConstructor, parts_pack
 
 from . import model_parts
 from .instance import PFSPInstance
@@ -34,7 +34,7 @@ def _load_cases():
 
 
 _BASE = ProblemPack(
-    name="flowshop", module="examples.flowshop", problem_factory=None, handwritten=[], make_spec=None, make_contexts=None,
+    name="flowshop", module="examples.flowshop", problem_factory=None, handwritten=[],
     make_instances=make_instances, parse_size=parse_size, default_size="50x10", baseline_constructor=None,
     load_instance=PFSPInstance.load, make_model_spec=make_model_spec, micro_size="6x3", load_cases=_load_cases,
     constructor_skeletons=SKELETONS,

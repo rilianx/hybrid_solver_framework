@@ -1,27 +1,21 @@
-"""Tuning con Optuna sobre el catálogo de un problema (§8) y la pregunta de §10: ¿el catálogo
-ampliado con componentes generados por LLM **ayuda o diluye**? Genérico: recibe un
-`ProblemPack` (`python -m examples.lotsizing.tune …`, `python -m examples.cvrp.tune …`).
+"""Configuración automática sobre el catálogo de un problema (§8). Genérico: recibe un `ProblemPack`
+(`python -m examples.flowshop.tune …`).
 
-Para cada catálogo (`handwritten` = solo componentes a mano, `all` = + generados,
-`generated` = solo generados; `--catalog both` corre los dos primeros y `three` los tres):
-1. Optuna (TPE) sobre el espacio completo, con los defaults de cada esqueleto encolados
-   como primeros trials. El costo de un trial es la media, por instancia de
-   entrenamiento, de `costo / costo de la partida trivial` (`--objective ratio`): así
-   ninguna instancia domina por escala. `--objective raw` usa el costo medio en bruto.
-   Con `--reeval-top k`, selección final por re-evaluación con más semillas.
-2. La mejor configuración se evalúa en instancias de TEST (no vistas), con 3 semillas,
-   contra el default de cada esqueleto (o, con `--skeletons`, contra una variante por
-   componente de cada slot).
+Catálogos: `handwritten` (componentes a mano del pack, en Python o, con `--native`, en C++), `generated`
+(componentes C++ del LLM, `llm.native_generator`; siempre en C++) y `both` (los dos, por separado, y la comparación).
+
+Para cada catálogo:
+1. irace (`--tuner irace`) o la configuración en tres etapas (`--tuner staged`, `tuning.staged`) sobre el espacio de
+   esqueletos, componentes y parámetros. El costo de una corrida es `costo / costo de la partida trivial` por
+   instancia (`--objective ratio`), así ninguna instancia domina por escala; `--objective raw` usa el costo en bruto.
+   Presupuesto: `--trials × --train` experimentos.
+2. La mejor configuración se evalúa en instancias de TEST (no vistas), con `--seeds` semillas, contra el default de
+   cada esqueleto (o, con `--skeletons` y `--baselines variants`, contra una variante por componente de cada slot).
 3. Se guarda `tuning_out/<catalog>.json` y se imprime la comparación.
 
-En test, cada configuración se resume como **gap relativo por instancia** contra la mejor
-solución conocida (el mínimo entre todas las corridas y, con `--ref-time S`, el MIP
-completo con S segundos), y el afinado se compara con el mejor default con un IC95.
-
-Con `--tuner irace` el tuner es irace (R, `tuning.irace_runner`) en vez de Optuna: mismo espacio,
-mismas instancias de entrenamiento y misma evaluación en test. Con `--native` las configuraciones
-corren en C++ (`core.native_runner`). Con `--irace DIR` además escribe un escenario irace listo para
-correr afuera.
+En test, cada configuración se resume como **gap relativo por instancia** contra la mejor solución conocida (el
+mínimo entre todas las corridas y, con `--ref-time S`, el MIP completo con S segundos), y el afinado se compara con
+el mejor default con un IC95. Con `--irace DIR` además escribe un escenario irace listo para correr afuera.
 """
 
 from __future__ import annotations
@@ -33,18 +27,24 @@ from statistics import mean
 
 from core.assembler import SKELETONS, Assembler, describe
 from core.problem_pack import ProblemPack
-from llm.catalog import build_registry, load_generated
+from core.catalog import build_registry
 
 from .evaluation import best_known_costs, evaluate_on_test, one_slot_baselines
-from .optuna_tuner import tune_with_optuna
+
+CATALOGS = ("handwritten", "generated")
 
 
 def make_assembler(pack: ProblemPack, catalog: str, generated_dir: str | None = None, verbose: bool = False,
                    skeletons: list[str] | None = None, native: bool = False,
                    scale_budget: bool = False) -> tuple[Assembler, list[str]]:
     """Con `native=True` las configuraciones corren en C++ (`core.native_runner`): el catálogo se reduce a
-    los componentes que existen en C++ y el espacio a los esqueletos nativos."""
+    los componentes que existen en C++ y el espacio a los esqueletos nativos. El catálogo `generated` es siempre
+    nativo. Devuelve el ensamblador y los nombres de los componentes generados."""
+    if catalog not in CATALOGS:
+        raise SystemExit(f"catálogo desconocido {catalog!r}: {', '.join(CATALOGS)}")
+    native = native or catalog == "generated"
     mod = model_of = None
+    gen_names: list[str] = []
     if native:
         from core.native_runner import NATIVE_SKELETONS, native_pack
 
@@ -61,16 +61,13 @@ def make_assembler(pack: ProblemPack, catalog: str, generated_dir: str | None = 
             from native.generated import factory
 
             mod, model_of, entries = load_native_catalog(pack, generated_dir)
+            gen_names = [c["name"] for c, _ in entries]
             base = [({"name": n, "slot": "constructor", "compatible_skeletons": NATIVE_SKELETONS_FOR_SLOT["constructor"],
                       "params": {}}, factory(mod, model_of, "constructor", n)) for n in ("trivial", "random")]
-            # las destrucciones son de Python (el sub-MIP también): las del catálogo a mano, para HYB y LNS
+            # las destrucciones son de Python (el sub-MIP también): las del catálogo a mano, para HYB
             mip = [(c, f) for c, f in pack.handwritten if c["slot"] == "destruction"]
             pack = replace(pack, handwritten=base + entries + mip)
-            catalog = "handwritten"  # el registro se arma con esa lista; no se cargan generados de Python
-        else:
-            raise SystemExit("--native: catálogo handwritten (a mano, en C++) o generated (C++ del LLM)")
-    generated = load_generated(pack, generated_dir, verbose=verbose) if catalog in ("all", "generated") else []
-    registry = build_registry(pack, generated, handwritten=catalog != "generated")
+    registry = build_registry(pack)
     sks = {k: SKELETONS[k] for k in skeletons} if skeletons else dict(SKELETONS)
     if mod is not None:
         from core.native_runner import NativeAssembler
@@ -83,7 +80,7 @@ def make_assembler(pack: ProblemPack, catalog: str, generated_dir: str | None = 
         if pack.budget_scale is None:
             raise SystemExit(f"--scale-budget: el problema {pack.name} no define budget_scale")
         assembler.budget_scale = pack.budget_scale
-    return assembler, [c.name for c in generated]
+    return assembler, gen_names
 
 
 def mixed_instances(pack: ProblemPack, sizes: str, n: int, seed0: int) -> list:
@@ -106,30 +103,11 @@ def run_experiment(pack: ProblemPack, catalog: str, args, train, test, out_dir: 
     n_gen_in_space = sum(1 for n in space.nodes if n.type == "cat" for v in n.values if v in gen_names)
     print(f"\n=== catálogo `{catalog}`: {len(space.nodes)} parámetros, {n_gen_in_space} opciones generadas por LLM ===")
 
-    def on_trial(t):
-        mark = "*" if t.enqueued else " "
-        print(f"  trial {t.number:>3}{mark} {t.cost:>12.4f}  {t.summary}")
-
     normalizers = [pack.baseline_cost(i) for i in train] if args.objective == "ratio" else None
-    if args.tuner in ("irace", "staged"):
-        result = _run_irace(pack, catalog, args, assembler, train, normalizers, out_dir)
-        print(f"  {args.tuner}: {result.experiments} experimentos en {result.seconds:.0f}s; élite: "
-              + "; ".join(describe(e) for e in result.elites))
-        print(f"  mejor en train: {result.best_cost:.4f}  {describe(result.best_config)}")
-    else:
-        result = None
-    result = result or tune_with_optuna(assembler, train, args.budget, args.trials, seed=args.tuner_seed, space=space,
-                              on_trial=on_trial, normalizers=normalizers,
-                              reeval_top=args.reeval_top, reeval_seeds=args.reeval_seeds, race_seeds=args.race_seeds,
-                              screen=args.trials // 3 if args.screen < 0 else args.screen,
-                              defaults_margin=args.defaults_margin)
-    for r in getattr(result, "reevaluated", []):
-        mark = "d" if r.get("twin") else "*" if r["enqueued"] else " "
-        print(f"  re-evaluado #{r['number']:>3}{mark} media {r['mean']:.4f} "
-              f"({', '.join(f'{c:.4f}' for c in r['costs'])})  {r['summary']}"
-              + (f"  [descartado tras {r['eliminated_after']} semillas extra]" if "eliminated_after" in r else ""))
-    if args.tuner == "optuna":
-        print(f"  mejor en train: {result.best_cost:.4f}  {describe(result.best_config)}  ({result.seconds:.0f}s, {result.n_failed} fallidas)")
+    result = _run_irace(pack, catalog, args, assembler, train, normalizers, out_dir)
+    print(f"  {args.tuner}: {result.experiments} experimentos en {result.seconds:.0f}s; élite: "
+          + "; ".join(describe(e) for e in result.elites))
+    print(f"  mejor en train: {result.best_cost:.4f}  {describe(result.best_config)}")
 
     reference = mean(pack.baseline_cost(i) for i in test)
     baselines = one_slot_baselines(assembler) if args.skeletons and args.baselines == "variants" else None
@@ -140,16 +118,15 @@ def run_experiment(pack: ProblemPack, catalog: str, args, train, test, out_dir: 
         "settings": {"trials": args.trials, "budget": args.budget, "train": len(train), "test": len(test),
                      "problem": pack.name, "size": args.size, "seed": args.seed, "tuner_seed": args.tuner_seed, "seeds_test": args.seeds,
                      "objective": args.objective, "skeletons": args.skeletons or "all", "ref_time": args.ref_time,
-                     "reeval_top": args.reeval_top, "reeval_seeds": args.reeval_seeds, "race_seeds": args.race_seeds, "screen": args.screen, "defaults_margin": args.defaults_margin,
-                     "native": args.native, "tuner": args.tuner},
+                     "native": args.native or catalog == "generated", "tuner": args.tuner},
         "tuning": result.to_dict(),
     }
     return payload, report, assembler.penalty_cost
 
 
 def _run_irace(pack: ProblemPack, catalog: str, args, assembler, train, normalizers, out_dir: Path):
-    """irace con el mismo espacio y las mismas instancias de entrenamiento; tantos experimentos como
-    evaluaciones de instancia haría Optuna (trials × instancias de train)."""
+    """irace (o la configuración en etapas) sobre las instancias de entrenamiento, con trials × instancias de train
+    experimentos."""
     from tuning.irace_runner import tune_with_irace
     from tuning.irace_scenario import write_irace_scenario
 
@@ -163,9 +140,10 @@ def _run_irace(pack: ProblemPack, catalog: str, args, assembler, train, normaliz
         paths.append(p)
     experiments = args.trials * len(train)
     scenario = write_irace_scenario(assembler.config_space(), root, paths, args.budget, max_experiments=experiments,
-                                    generated_dir=args.generated if catalog != "handwritten" else None,
+                                    generated_dir=args.generated if catalog == "generated" else None,
                                     problem_module=pack.module, catalog=catalog, skeletons=args.skeletons,
-                                    native=args.native, objective=args.objective, scale_budget=args.scale_budget)
+                                    native=args.native or catalog == "generated", objective=args.objective,
+                                    scale_budget=args.scale_budget)
     if args.tuner == "staged":
         from tuning.staged import run_staged
 
@@ -192,7 +170,8 @@ def print_test(catalog: str, report, reference: float, n_test: int) -> None:
 
 def main(pack: ProblemPack, argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(prog=f"python -m {pack.module}.tune")
-    ap.add_argument("--trials", type=int, default=30)
+    ap.add_argument("--trials", type=int, default=30,
+                    help="presupuesto del tuner: trials × instancias de train experimentos")
     ap.add_argument("--budget", type=float, default=5.0, help="segundos por corrida (tuning y test)")
     ap.add_argument("--train", type=int, default=3)
     ap.add_argument("--test", type=int, default=3)
@@ -201,29 +180,21 @@ def main(pack: ProblemPack, argv: list[str] | None = None) -> None:
     ap.add_argument("--seed", type=int, default=0, help="semilla de las instancias (y del tuner si no se da --tuner-seed)")
     ap.add_argument("--tuner-seed", type=int, default=None,
                     help="semilla del tuner y de las corridas de train, sin cambiar las instancias (réplicas del tuning)")
-    ap.add_argument("--catalog", choices=["handwritten", "all", "generated", "both", "three"], default="both")
+    ap.add_argument("--catalog", choices=["handwritten", "generated", "both"], default="generated",
+                    help="componentes a mano, generados por el LLM en C++ (implica --native) o los dos por separado")
     ap.add_argument("--skeletons", nargs="*", choices=sorted(SKELETONS), default=None,
                     help="restringe el espacio a estos esqueletos (baselines de test: uno por componente)")
     ap.add_argument("--objective", choices=["ratio", "raw"], default="ratio",
                     help="costo de un trial: media de costo/partida trivial por instancia (ratio) o costo medio (raw)")
     ap.add_argument("--ref-time", type=float, default=0.0,
                     help="segundos del MIP completo por instancia de test como referencia del gap (0 = sin MIP)")
-    ap.add_argument("--reeval-top", type=int, default=0,
-                    help="selección final: re-evaluar en train los k mejores trials (y el mejor default) con más semillas")
-    ap.add_argument("--reeval-seeds", type=int, default=2, help="semillas extra por configuración re-evaluada")
-    ap.add_argument("--race-seeds", type=int, default=6,
-                    help="selección final en carrera: hasta cuántas semillas extra reciben los candidatos que siguen sin "
-                         "separarse del líder (= --reeval-seeds: sin carrera)")
-    ap.add_argument("--defaults-margin", type=float, default=0.005,
-                    help="en la selección final, el afinado tiene que ganarle a sus numéricos por defecto por más que esto (relativo) y que el ruido")
-    ap.add_argument("--screen", type=int, default=-1,
-                    help="variantes de un solo componente encoladas tras los defaults (-1 = un tercio de los trials; 0 = no)")
     ap.add_argument("--generated", default=pack.default_workspace)
     ap.add_argument("--out", default="tuning_out")
-    ap.add_argument("--tuner", choices=["optuna", "irace", "staged"], default="optuna",
-                    help="irace necesita R con el paquete irace (Ubuntu: apt install r-cran-irace)")
+    ap.add_argument("--tuner", choices=["irace", "staged"], default="irace",
+                    help="irace o la configuración en tres etapas (tuning.staged); los dos necesitan R con el paquete "
+                         "irace (Ubuntu: apt install r-cran-irace)")
     ap.add_argument("--native", action="store_true",
-                    help="correr las configuraciones en C++ (backend nativo del problema; solo SA, ILS, VNS y TS)")
+                    help="correr las configuraciones en C++ (backend nativo del problema; SA, ILS, VNS, TS, PR y HYB)")
     ap.add_argument("--scale-budget", action="store_true",
                     help="presupuesto por instancia = --budget × el factor de tamaño del problema (budget_scale del pack)")
     ap.add_argument("--baselines", choices=["variants", "defaults"], default="variants",
@@ -242,7 +213,7 @@ def main(pack: ProblemPack, argv: list[str] | None = None) -> None:
     test = mixed_instances(pack, args.size, args.test, 500 + args.seed * 1000)
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
-    catalogs = {"both": ["handwritten", "all"], "three": ["handwritten", "generated", "all"]}.get(args.catalog, [args.catalog])
+    catalogs = list(CATALOGS) if args.catalog == "both" else [args.catalog]
     runs = {c: run_experiment(pack, c, args, train, test, out_dir) for c in catalogs}
 
     # mejor conocido por instancia de test: todas las corridas de ambos catálogos (+ MIP completo)
@@ -264,21 +235,15 @@ def main(pack: ProblemPack, argv: list[str] | None = None) -> None:
         (out_dir / f"{c}.json").write_text(json.dumps(payload, indent=2, ensure_ascii=False))
         results[c] = payload
 
-    if "handwritten" in results and len(results) > 1:
-        h = results["handwritten"]["test"]
+    if len(results) > 1:
+        h, g = results["handwritten"]["test"], results["generated"]["test"]
+        diff = (h["tuned"]["mean"] - g["tuned"]["mean"]) / h["tuned"]["mean"]
+        print(f"\n=== a mano vs LLM: test afinado {h['tuned']['mean']:.1f} (gap {h['tuned']['mean_gap']:.2%}) "
+              f"vs {g['tuned']['mean']:.1f} (gap {g['tuned']['mean_gap']:.2%}) ({diff:+.2%}) ===")
         comparison = {"handwritten_tuned_test": h["tuned"]["mean"], "handwritten_tuned_gap": h["tuned"]["mean_gap"],
-                      "handwritten_best": h["tuned"]["summary"]}
-        for other in ("all", "generated"):
-            if other not in results:
-                continue
-            o = results[other]["test"]
-            diff = (h["tuned"]["mean"] - o["tuned"]["mean"]) / h["tuned"]["mean"]
-            label = "con LLM" if other == "all" else "solo LLM"
-            print(f"\n=== a mano vs {label}: test afinado {h['tuned']['mean']:.1f} (gap {h['tuned']['mean_gap']:.2%}) "
-                  f"vs {o['tuned']['mean']:.1f} (gap {o['tuned']['mean_gap']:.2%}) ({diff:+.2%}) ===")
-            comparison.update({f"{other}_tuned_test": o["tuned"]["mean"], f"{other}_tuned_gap": o["tuned"]["mean_gap"],
-                               f"{other}_best": o["tuned"]["summary"],
-                               "relative_gain_from_llm_catalog" if other == "all" else "relative_gain_generated_only": diff})
+                      "handwritten_best": h["tuned"]["summary"], "generated_tuned_test": g["tuned"]["mean"],
+                      "generated_tuned_gap": g["tuned"]["mean_gap"], "generated_best": g["tuned"]["summary"],
+                      "relative_gain_generated_only": diff}
         (out_dir / "comparison.json").write_text(json.dumps(comparison, indent=2, ensure_ascii=False))
 
     if args.irace:
@@ -294,8 +259,8 @@ def main(pack: ProblemPack, argv: list[str] | None = None) -> None:
         assembler, _ = make_assembler(pack, catalogs[-1], args.generated, skeletons=args.skeletons, native=args.native)
         scenario = write_irace_scenario(assembler.config_space(), args.irace, paths, args.budget,
                                         max_experiments=args.trials * len(train),
-                                        generated_dir=args.generated if catalogs[-1] != "handwritten" else None,
+                                        generated_dir=args.generated if catalogs[-1] == "generated" else None,
                                         problem_module=pack.module, catalog=catalogs[-1], skeletons=args.skeletons,
-                                        native=args.native, objective=args.objective)
+                                        native=args.native or catalogs[-1] == "generated", objective=args.objective)
         print(f"\nEscenario irace escrito en {scenario} (correr: irace --scenario {scenario})")
 
