@@ -6,11 +6,10 @@ irace lo invoca así (ver `tuning/irace_scenario.py`):
 
 y espera en stdout un único número: el costo. Variables de entorno:
 `HSF_BUDGET` (segundos por corrida, default 5), `HSF_PROBLEM` (paquete del problema, con
-su `pack.PACK`; default `examples.lotsizing`), `HSF_GENERATED` (directorio de componentes
-LLM a incluir en el catálogo; vacío = solo componentes a mano), `HSF_CATALOG` (como
-`tuning.cli --catalog`; vacío = a mano + generados si hay), `HSF_SKELETONS` (separados por
-espacio), `HSF_NATIVE=1` (correr en C++) y `HSF_OBJECTIVE=ratio` (costo / partida trivial, como
-el objetivo de Optuna).
+su `pack.PACK`; default `examples.lotsizing`), `HSF_GENERATED` (workspace de los componentes
+C++ del LLM), `HSF_CATALOG` (como `tuning.cli --catalog`; vacío = `generated` si hay workspace,
+si no `handwritten`), `HSF_SKELETONS` (separados por espacio), `HSF_NATIVE=1` (correr en C++) y
+`HSF_OBJECTIVE=ratio` (costo / partida trivial).
 """
 
 from __future__ import annotations
@@ -34,7 +33,7 @@ def main(argv: list[str]) -> int:
 
     pack = importlib.import_module(os.environ.get("HSF_PROBLEM", "examples.lotsizing") + ".pack").PACK
     generated_dir = os.environ.get("HSF_GENERATED", "")
-    catalog = os.environ.get("HSF_CATALOG") or ("all" if generated_dir else "handwritten")
+    catalog = os.environ.get("HSF_CATALOG") or ("generated" if generated_dir else "handwritten")
     skeletons = os.environ.get("HSF_SKELETONS", "").split() or None
     assembler, _ = make_assembler(pack, catalog, generated_dir or None, skeletons=skeletons,
                                   native=os.environ.get("HSF_NATIVE") == "1",

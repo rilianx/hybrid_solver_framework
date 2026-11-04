@@ -1,5 +1,4 @@
-"""Integración del piloto CLSP: puente heurístico↔MIP, Relax-and-Fix,
-Fix-and-Optimize y el híbrido Relax-and-Fix → Fix-and-Optimize (§5.2)."""
+"""Integración del piloto CLSP: puente heurístico↔MIP y el sub-MIP de HYB (destrucción + reparación)."""
 
 from random import Random
 
@@ -7,15 +6,11 @@ import pytest
 
 pytest.importorskip("pulp")
 
-from core.common_components import AlwaysAccept, BetterAcceptance, MIPModelRepair, MaxIterationsStop
+from core.common_components import MIPModelRepair
 from core.contracts import ProblemModel
-from core.fixing_policies import SlidingWindowPolicy
 from core.mip import MIPModel
 from examples.lotsizing.components import LotForLotConstructor, PeriodWindowDestruction, SetupFlipNeighborhood
 from examples.lotsizing.problem_model import CLSPInstance, LotSizingModel
-from skeletons.fix_and_optimize import build_fix_and_optimize, run_fix_and_optimize
-from skeletons.lns_mip import build_lns_mip, run_lns_mip
-from skeletons.relax_and_fix import RelaxAndFixConstructor
 
 
 @pytest.fixture(scope="module")
@@ -57,37 +52,32 @@ def test_neighborhood_undo_apply_identity_and_delta_consistency(problem):
         assert nbh.delta(sol, m) == pytest.approx(problem.objective(applied) - problem.objective(sol))
 
 
-def test_relax_and_fix_builds_feasible_solution_not_worse_than_lot_for_lot(problem):
-    lfl = LotForLotConstructor()
-    rf = RelaxAndFixConstructor(problem, SlidingWindowPolicy(2, 1), time_limit_per_window=5, fallback=lfl)
-    sol = rf.build(problem.inst, Random(0))
-    assert rf.last_failed_window is None
+def test_destruction_and_mip_repair_never_worsen_a_feasible_solution(problem):
+    """El paso de sub-MIP de HYB: liberar una ventana de períodos y resolver el resto fijo, con la incumbente de
+    partida."""
+    sol = LotForLotConstructor().build(problem.inst, Random(0))
     assert problem.is_feasible(sol)
-    assert problem.objective(sol) <= problem.objective(lfl.build(problem.inst, Random(0))) + 1e-6
+    destr, repair, mip = PeriodWindowDestruction(problem.inst), MIPModelRepair(problem), problem.build_mip(problem.inst)
+    rng = Random(0)
+    for _ in range(3):
+        _partial, free = destr.destroy(sol, 0.5, rng)
+        full = problem.to_assignment(sol)
+        cand = repair.repair_mip(mip, {v: x for v, x in full.items() if v not in free}, free, time_limit=5, warm_start=full)
+        assert cand is not None and problem.is_feasible(cand)
+        assert problem.objective(cand) <= problem.objective(sol) + 1e-6
+        sol = cand
 
 
-def test_fix_and_optimize_never_worsens_with_better_acceptance(problem):
-    rf = RelaxAndFixConstructor(problem, SlidingWindowPolicy(2, 1), 5, fallback=LotForLotConstructor())
-    start_cost = problem.objective(rf.build(problem.inst, Random(0)))
-    fo = build_fix_and_optimize(problem, rf, SlidingWindowPolicy(2, 1), BetterAcceptance(), MaxIterationsStop(4), block_size=2, time_limit=5)
-    result = run_fix_and_optimize(fo, problem.inst, Random(0))
-    assert result.best_objective <= start_cost + 1e-6
-    assert problem.is_feasible(result.best_solution)
+def test_hybrid_reaches_the_full_mip_optimum_on_a_small_instance(problem):
+    from core.assembler import Assembler
+    from core.catalog import build_registry
+    from examples.lotsizing.pack import PACK
 
-
-def test_lns_mip_with_period_window_destruction(problem):
-    lns = build_lns_mip(
-        problem, LotForLotConstructor(), PeriodWindowDestruction(problem.inst), MIPModelRepair(problem),
-        AlwaysAccept(), MaxIterationsStop(3), destroy_ratio=0.5, mip_time_limit=5,
-    )
-    result = run_lns_mip(lns, problem.inst, Random(0), destroy_ratio=0.5)
-    assert problem.is_feasible(result.best_solution)
-
-
-def test_matheuristics_reach_full_mip_optimum_on_small_instance(problem):
     x = problem.mip.solve(fixed={}, integer=set(problem.mip.variables()), relaxed=set(), time_limit=20)
     opt = problem.objective(problem.from_assignment(x))
-    rf = RelaxAndFixConstructor(problem, SlidingWindowPolicy(2, 1), 5, fallback=LotForLotConstructor())
-    fo = build_fix_and_optimize(problem, rf, SlidingWindowPolicy(2, 1), BetterAcceptance(), MaxIterationsStop(6), block_size=2, time_limit=5)
-    result = run_fix_and_optimize(fo, problem.inst, Random(0))
+    A = Assembler(problem_factory=LotSizingModel, registry=build_registry(PACK))
+    cfg = A.default_config("HYB", {"constructor": "lot_for_lot", "destruction": "period_window"})
+    cfg["HYB.destroy_ratio"] = 0.6
+    result = A.assemble(cfg)(problem.inst, Random(0), 3.0)
+    assert problem.is_feasible(result.best_solution)
     assert result.best_objective == pytest.approx(opt, rel=0.02)

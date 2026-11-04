@@ -9,7 +9,7 @@ from examples.jobshop import model_parts
 from examples.jobshop.instance import JSSPInstance
 from examples.jobshop.llm_spec import make_model_spec
 from examples.jobshop.pack import _BASE
-from llm.cycle import TrivialConstructor, parts_pack
+from core.packs import TrivialConstructor, parts_pack
 
 _GEN = replace(_BASE, name="jobshop_gen", module="examples.jobshop_gen", handwritten=[], baseline_constructor=None)
 PACK = parts_pack(_GEN, model_parts, "examples.jobshop.model_parts", make_model_spec(), "jobshop_gen")

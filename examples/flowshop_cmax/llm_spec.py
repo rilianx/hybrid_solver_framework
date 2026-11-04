@@ -6,7 +6,7 @@ import inspect
 
 
 def make_model_spec():
-    from llm.model_generator import ModelSpec
+    from core.model_spec import ModelSpec
 
     from examples.flowshop import instance
 

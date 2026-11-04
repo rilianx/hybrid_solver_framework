@@ -8,7 +8,7 @@ from core.problem_pack import ProblemPack
 
 from .catalog import CONSTRUCTOR_SKELETONS, HANDWRITTEN
 from .components import SingletonRoutes
-from .llm_spec import make_contexts, make_model_spec, make_spec, make_tour_model_spec
+from .llm_spec import make_model_spec
 from .problem_model import CVRPInstance, CVRPModel
 
 
@@ -38,8 +38,6 @@ PACK = ProblemPack(
     module="examples.cvrp",
     problem_factory=CVRPModel,
     handwritten=HANDWRITTEN,
-    make_spec=make_spec,
-    make_contexts=make_contexts,
     make_instances=make_instances,
     parse_size=parse_size,
     default_size="30",
@@ -51,6 +49,5 @@ PACK = ProblemPack(
     load_cases=_load_cases,
     native_module="examples.cvrp.native_parts",
     bench_size="x150",
-    variants={"routes": (make_model_spec, "examples.cvrp.model_parts"),
-              "tour": (make_tour_model_spec, "examples.cvrp.tour_parts")},
+    variants={"routes": (make_model_spec, "examples.cvrp.model_parts")},
 )

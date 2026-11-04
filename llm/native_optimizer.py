@@ -213,7 +213,7 @@ def _write_catalog(ws: Path, comps: list[NativeComponent]) -> None:
 
 def main(argv: list[str] | None = None) -> None:
     from .client import make_client
-    from .cycle import base_pack
+    from core.packs import base_pack
 
     ap = argparse.ArgumentParser(prog="python -m llm.native_optimizer")
     ap.add_argument("--problem", required=True)

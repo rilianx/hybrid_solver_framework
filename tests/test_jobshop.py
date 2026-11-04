@@ -1,6 +1,5 @@
-"""Tercer problema (job shop, makespan): entra directamente por piezas. Las piezas de referencia de
-sus dos representaciones pasan el validador de modelos con los casos, y el catálogo escrito a mano
-pasa el validador de componentes y corre en todos los esqueletos."""
+"""Job shop (makespan): entra directamente por piezas. Las piezas de referencia pasan el validador de modelos con
+los casos, y el catálogo escrito a mano pasa el validador de componentes y corre en todos los esqueletos."""
 
 from __future__ import annotations
 
@@ -11,7 +10,7 @@ import pytest
 from core.model_parts import PartsModel
 from core.validation import validate_component
 from core.validation.model_parts import check_construction_view, validate_parts
-from examples.jobshop import model_parts, ops_parts
+from examples.jobshop import model_parts
 from examples.jobshop.cases import brute_force_optimum, load_cases
 from examples.jobshop.components import CriticalInsert, CriticalSwap
 from examples.jobshop.instance import JSSPInstance
@@ -38,13 +37,12 @@ def test_a_cycle_is_an_order_violation_and_a_missing_job_a_sequence_violation():
     assert model_parts.violations(inst, ((0,), (1, 0)))["secuencia"] == 1.0
 
 
-@pytest.mark.parametrize("parts,decoder", [(model_parts, False), (ops_parts, True)])
-def test_the_reference_parts_pass_the_model_validator(parts, decoder):
+def test_the_reference_parts_pass_the_model_validator():
     cases = load_cases()
     scale = [JSSPInstance.random(10, 10, Random(777))]
-    report = validate_parts(parts, cases, scale_instances=scale, decoder=decoder)
+    report = validate_parts(model_parts, cases, scale_instances=scale)
     assert report.passed, report.feedback()
-    report = check_construction_view(parts, cases, scale_instances=scale)
+    report = check_construction_view(model_parts, cases, scale_instances=scale)
     assert report.passed, report.feedback()
 
 
@@ -75,7 +73,7 @@ def test_the_handwritten_components_pass_the_validator(pack):
     ctx = pack.make_contexts()[0]
     failed = {}
     for comp, factory in pack.handwritten:
-        if comp["slot"] in ("greedy_score", "fixing_policy"):
+        if comp["slot"] == "greedy_score":
             continue
         report = validate_component(comp, factory(ctx.problem), ctx)
         if not report.passed:
@@ -93,16 +91,6 @@ def test_every_skeleton_runs_on_the_job_shop(pack):
     for sk in A.available_skeletons():
         r = A.assemble(A.default_config(sk))(inst, Random(0), 0.5)
         assert P.is_feasible(r.best_solution) and r.best_objective <= start, sk
-
-
-def test_the_cycle_loads_both_job_shop_variants():
-    from llm.cycle import load_variant
-
-    for variant in ("sequences", "operations"):
-        pack = load_variant("jobshop", variant, None, reference=True)
-        inst = pack.make_instances(1, 1, pack.parse_size(pack.default_size))[0]
-        P = pack.problem_factory(inst)
-        assert P.is_feasible(pack.baseline_constructor().build(inst, Random(0)))
 
 
 def test_the_swap_estimate_is_a_lower_bound_that_the_validator_accepts_and_a_bad_one_is_rejected(pack):

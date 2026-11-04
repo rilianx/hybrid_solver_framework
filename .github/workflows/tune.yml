@@ -1,8 +1,7 @@
-name: tuning (Optuna o irace) sobre el catálogo
+name: tuning (irace) sobre el catálogo
 
-# Manual: cada corrida son minutos de CPU. Responde la pregunta de §10: ¿el catálogo
-# ampliado con componentes LLM ayuda o diluye? Afina con el catálogo a mano y con el
-# ampliado, evalúa ambos ganadores en instancias de TEST y compara.
+# Manual: cada corrida son minutos de CPU. Afina con irace (o en etapas) el catálogo a mano, el generado por el LLM
+# en C++ o los dos, y evalúa los ganadores en instancias de TEST.
 on:
   workflow_dispatch:
     inputs:
@@ -12,7 +11,7 @@ on:
         type: choice
         options: [clsp, cvrp, jobshop, flowshop, flowshop_cmax, jobshop_gen, cvrp_gen]
       trials:
-        description: "Trials de Optuna por catálogo (los 8 defaults van incluidos)"
+        description: "Presupuesto del tuner: trials × instancias de train experimentos"
         default: "40"
         type: string
       budget:
@@ -28,12 +27,12 @@ on:
         default: "3"
         type: string
       catalog:
-        description: "Catálogo"
-        default: both
+        description: "Catálogo: generated (C++ del LLM), handwritten (a mano) o los dos por separado"
+        default: generated
         type: choice
-        options: [both, three, handwritten, generated, all]
+        options: [generated, handwritten, both]
       generated_dir:
-        description: "Directorio de los componentes generados (vacío = generated/<problema>; p.ej. generated/clsp_scratch)"
+        description: "Workspace de los componentes generados (vacío = generated/<problema>_native)"
         default: ""
         type: string
       skeletons:
@@ -49,24 +48,8 @@ on:
         default: "60"
         type: string
       generated_ref:
-        description: "Rama/tag con generated/clsp (vacío = la rama actual)"
+        description: "Rama/tag con el workspace generado (vacío = la rama actual)"
         default: ""
-        type: string
-      reeval_top:
-        description: "Selección final: re-evaluar en train los k mejores trials y el mejor default (0 = no)"
-        default: "0"
-        type: string
-      variant:
-        description: "Ciclo completo (llm.cycle): representación (cvrp: routes | tour; clsp: setups; jobshop: sequences | operations); generated_dir es el workspace del ciclo"
-        default: ""
-        type: string
-      reference:
-        description: "Ciclo completo: modelo de referencia de la variante en vez del generado"
-        default: false
-        type: boolean
-      screen:
-        description: "Sondeo inicial: variantes de un solo componente encoladas tras los defaults (-1 = un tercio de los trials; 0 = no)"
-        default: "-1"
         type: string
       replicas:
         description: "Réplicas del tuning: semillas del tuner seed, seed+1, ... en paralelo, mismas instancias (el ruido entre semillas es de 3-4.5 puntos de gap)"
@@ -77,15 +60,15 @@ on:
         default: "0"
         type: string
       tuner:
-        description: "Tuner: optuna (TPE + carrera final) o irace (R; mismo espacio, instancias y evaluación en test; experimentos = trials × train, o el mínimo que pida irace)"
-        default: optuna
+        description: "Tuner: irace o staged (primero la estructura, después irace en el espacio reducido)"
+        default: irace
         type: choice
-        options: [optuna, irace, staged]
+        options: [irace, staged]
       extra_args:
         description: "Opciones extra del tuning (p.ej. --scale-budget --baselines defaults)"
         default: ""
       native:
-        description: "Correr las configuraciones en C++ (backend nativo; job shop, catálogo handwritten; SA, ILS, VNS, TS)"
+        description: "Catálogo handwritten en C++ (backend nativo del problema); el generado corre siempre en C++"
         default: false
         type: boolean
 
@@ -133,7 +116,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       - name: Instalar irace (R)
-        if: inputs.tuner == 'irace' || inputs.tuner == 'staged'
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q --no-install-recommends r-cran-irace
@@ -151,14 +133,10 @@ jobs:
           PKG: ${{ inputs.problem == 'cvrp' && 'cvrp' || inputs.problem == 'jobshop' && 'jobshop' || inputs.problem == 'flowshop' && 'flowshop' || inputs.problem == 'flowshop_cmax' && 'flowshop_cmax' || inputs.problem == 'jobshop_gen' && 'jobshop_gen' || inputs.problem == 'cvrp_gen' && 'cvrp_gen' || 'lotsizing' }}
           REF_TIME: ${{ inputs.ref_time }}
           GEN_DIR: ${{ inputs.generated_dir }}
-          REEVAL: ${{ inputs.reeval_top }}
           SEED: ${{ inputs.seed }}
           REPLICA: ${{ matrix.replica }}
-          SCREEN: ${{ inputs.screen }}
           NATIVE: ${{ inputs.native && 'true' || 'false' }}
           TUNER: ${{ inputs.tuner }}
-          VARIANT: ${{ inputs.variant }}
-          REFERENCE: ${{ inputs.reference && 'true' || 'false' }}
           PROBLEM: ${{ inputs.problem }}
           EXTRA: ${{ inputs.extra_args }}
           PYTHONUNBUFFERED: "1"
@@ -167,20 +145,13 @@ jobs:
           SK_ARGS=()
           if [ -n "$SKELETONS" ]; then read -ra SK <<< "$SKELETONS"; SK_ARGS=(--skeletons "${SK[@]}"); fi
           SIZE_ARGS=(); if [ -n "$SIZE" ]; then SIZE_ARGS=(--size "$SIZE"); fi
-          GEN_ARGS=(); if [ -n "$GEN_DIR" ]; then GEN_ARGS=(--generated "$GEN_DIR"); fi
+          GEN_ARGS=(--generated "${GEN_DIR:-generated/${PROBLEM}_native}")
           [ "$NATIVE" = "true" ] && SK_ARGS+=(--native)
-          SK_ARGS+=(--tuner "${TUNER:-optuna}")
+          SK_ARGS+=(--tuner "${TUNER:-irace}")
           if [ -n "$EXTRA" ]; then read -ra EX <<< "$EXTRA"; SK_ARGS+=("${EX[@]}"); fi
-          CMD=(-m "examples.$PKG.tune")
-          if [ -n "$VARIANT" ]; then
-            CARGS=(--problem "$PROBLEM" --variant "$VARIANT" --workspace "$GEN_DIR")
-            [ "$REFERENCE" = "true" ] && CARGS+=(--reference)
-            CMD=(-m llm.cycle tune "${CARGS[@]}" --)
-            GEN_ARGS=()
-          fi
-          python -W ignore "${CMD[@]}" --trials "$TRIALS" --budget "$BUDGET" \
+          python -W ignore -m "examples.$PKG.tune" --trials "$TRIALS" --budget "$BUDGET" \
             --train "$TRAIN" --test "$TEST" --catalog "$CATALOG" "${SIZE_ARGS[@]}" \
-            --ref-time "$REF_TIME" "${GEN_ARGS[@]}" --reeval-top "$REEVAL" --tuner-seed "$((SEED + REPLICA))" --screen "${SCREEN:--1}" \
+            --ref-time "$REF_TIME" "${GEN_ARGS[@]}" --tuner-seed "$((SEED + REPLICA))" \
             "${SK_ARGS[@]}" --out tuning_out --irace tuning_out/irace 2>&1 | tee tune.log
 
       - name: Resumen
@@ -188,7 +159,7 @@ jobs:
         working-directory: ${{ env.ROOT }}
         run: |
           {
-            echo "## Tuning con Optuna"
+            echo "## Tuning (${{ inputs.tuner }})"
             echo ""
             python -m scripts.tuning_summary tuning_out
             echo ""

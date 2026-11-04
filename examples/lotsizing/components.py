@@ -1,6 +1,6 @@
 """Componentes heurísticos para el CLSP (lo que generaría el LLM, §6).
 
-Lo relevante frente a knapsack: la **destrucción por ventana de períodos**
+Lo relevante: la **destrucción por ventana de períodos**
 usa la estructura temporal (`variable_groups`), que es exactamente el tipo
 de componente "matemático específico del problema" que la propuesta
 espera del LLM (destruir períodos consecutivos, §6.3).
@@ -23,7 +23,7 @@ class LotForLotConstructor:
 COMPONENT_LOT_FOR_LOT = {
     "name": "lot_for_lot",
     "slot": "constructor",
-    "compatible_skeletons": ["SA", "ILS", "LNS_MIP", "FIX_OPT"],
+    "compatible_skeletons": ["SA", "ILS"],
     "params": {},
 }
 
@@ -110,7 +110,7 @@ class PeriodWindowDestruction:
 COMPONENT_PERIOD_WINDOW_DESTRUCTION = {
     "name": "period_window_destruction",
     "slot": "destruction",
-    "compatible_skeletons": ["LNS_MIP"],
+    "compatible_skeletons": ["HYB"],
     "requires": ["ProblemModel.variable_groups"],
     "params": {"ratio": {"type": "float", "range": [0.1, 0.6]}},
 }
@@ -136,6 +136,6 @@ class RandomSetupDestruction:
 COMPONENT_RANDOM_SETUP_DESTRUCTION = {
     "name": "random_setup_destruction",
     "slot": "destruction",
-    "compatible_skeletons": ["LNS_MIP"],
+    "compatible_skeletons": ["HYB"],
     "params": {"ratio": {"type": "float", "range": [0.05, 0.5]}},
 }

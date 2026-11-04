@@ -175,7 +175,7 @@ def optimize_check(request: dict) -> dict:
     """Una versión más rápida del modelo aceptado: los mismos chequeos, las mismas salidas y al menos `min_speedup`
     veces más rápida en alguna medida (la trayectoria pide el 40 % de esa mejora; ninguna empeora más de un 10 %)."""
     from core.validation.model_parts import check_heuristic_view
-    from llm.cycle import base_pack
+    from core.packs import base_pack
     from native.check import thresholds
     from native.generated import load
     from native.generic_model import model_parts
@@ -205,7 +205,7 @@ def optimize_check(request: dict) -> dict:
 
 def main(path: str) -> None:
     from core.validation.model_parts import check_heuristic_view
-    from llm.cycle import base_pack
+    from core.packs import base_pack
     from native.generated import load
     from native.generic_model import model_parts
 

@@ -1,6 +1,6 @@
 from random import Random
 
-from config_space import build_config_space, suggest_from_space, to_irace_parameters
+from config_space import build_config_space, to_irace_parameters
 from core.component import ComponentRegistry, ComponentSpec
 
 
@@ -84,30 +84,11 @@ def test_irace_export_contains_conditions_and_log_comment():
     assert '| skeleton %in% c("SA")' in text
 
 
-class _RecordingTrial:
-    def __init__(self, rng: Random):
-        self.rng = rng
-
-    def suggest_int(self, name, low, high, *, log=False):
-        return self.rng.randint(low, high)
-
-    def suggest_float(self, name, low, high, *, log=False):
-        return self.rng.uniform(low, high)
-
-    def suggest_categorical(self, name, choices):
-        return self.rng.choice(choices)
-
-
-def test_optuna_suggest_only_activates_relevant_branch():
+def test_sample_only_activates_relevant_branch():
     space = _toy_space()
-    rng = Random(0)
-    # Forzamos ILS fijando la primera categórica que muestreará el "trial":
-    # como el trial es determinístico dado el rng, comprobamos ambas ramas
-    # posibles corriendo varias semillas.
     saw_sa, saw_ils = False, False
     for seed in range(30):
-        trial = _RecordingTrial(Random(seed))
-        assignment = suggest_from_space(space, trial)
+        assignment = space.sample(Random(seed))
         assert "skeleton" in assignment
         if assignment["skeleton"] == "SA":
             saw_sa = True
@@ -119,11 +100,10 @@ def test_optuna_suggest_only_activates_relevant_branch():
     assert saw_sa and saw_ils
 
 
-def test_optuna_suggest_never_activates_param_of_inactive_branch():
+def test_sample_never_activates_param_of_inactive_branch():
     space = _toy_space()
     for seed in range(30):
-        trial = _RecordingTrial(Random(seed))
-        assignment = suggest_from_space(space, trial)
+        assignment = space.sample(Random(seed))
         if assignment["skeleton"] == "ILS":
             assert not any(k.startswith("two_opt") or k.startswith("or_opt") for k in assignment)
             assert "SA.T0" not in assignment
@@ -133,7 +113,6 @@ def test_slot_is_split_by_skeleton_group_when_compatibility_differs():
     """La validación por combinación poda `compatible_skeletons` por componente. Con un solo
     parámetro `neighborhood` para SA e ILS, el tuner podía elegir un vecindario que ILS no
     admite (runs 9–14: trials perdidos por AssemblyError)."""
-    from examples.lotsizing.random_search import RandomTrial
     from tuning.irace_scenario import parse_irace_params
 
     registry = _toy_registry()
@@ -149,7 +128,7 @@ def test_slot_is_split_by_skeleton_group_when_compatibility_differs():
     assert set(nodes["neighborhood__ILS"].values) == {"swap"}
     allowed = {"SA": {"two_opt", "or_opt", "swap"}, "ILS": {"swap"}}
     for seed in range(200):
-        config = suggest_from_space(space, RandomTrial(Random(seed)))
+        config = space.sample(Random(seed))
         assert config["neighborhood"] in allowed[config["skeleton"]]
         assert not any("__" in k for k in config)  # plegado a las claves del ensamblador
         if config["neighborhood"] == "swap":

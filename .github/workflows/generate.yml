@@ -1,4 +1,4 @@
-name: generar componentes con LLM
+name: generar con LLM
 
 # Solo manual: cada corrida gasta llamadas de API, así que nunca se dispara
 # por push ni por schedule.
@@ -11,18 +11,13 @@ on:
         type: choice
         options: [clsp, cvrp, jobshop, flowshop, flowshop_cmax, jobshop_gen, cvrp_gen]
       target:
-        description: "Qué generar: componentes (slots), el ProblemModel completo (§6.1), optimize, native_components (componentes C++ sobre el modelo nativo; slots por defecto greedy_score neighborhood perturbation) o native_optimize (versiones más rápidas de los C++ aceptados; slots de opt_slots, por defecto neighborhood)"
+        description: "Qué generar: model (el modelo C++ del problema), model_optimize (una versión más rápida del modelo aceptado), components (componentes C++ sobre el modelo; slots por defecto greedy_score neighborhood perturbation) u optimize (versiones más rápidas de los componentes aceptados; slots de opt_slots)"
         default: components
         type: choice
-        options: [components, problem_model, optimize, native_model, native_model_optimize, native_components, native_optimize]
-      model_mode:
-        description: "Con target=problem_model: por piezas validadas con casos de prueba, o en un solo módulo"
-        default: parts
-        type: choice
-        options: [parts, monolithic]
+        options: [model, model_optimize, components, optimize]
       slots:
-        description: "Slots a generar (separados por espacio)"
-        default: "neighborhood destruction constructor perturbation"
+        description: "Con target=components: slots a generar (separados por espacio)"
+        default: "greedy_score neighborhood perturbation"
         type: string
       n:
         description: "Variantes por slot"
@@ -54,43 +49,23 @@ on:
         default: ""
         type: string
       fresh:
-        description: "Borrar generated/ antes de correr"
-        default: true
+        description: "Con target=model o components: borrar lo generado antes (model borra el workspace; components, solo los componentes)"
+        default: false
         type: boolean
       open_pr:
-        description: "Abrir un PR con los módulos generados"
+        description: "Abrir un PR con lo generado"
         default: true
         type: boolean
-      from_scratch:
-        description: "Desde cero: sin componentes de referencia (escribe en generated/<problema>_scratch)"
-        default: false
-        type: boolean
-      planner:
-        description: "Planificador de ideas + implementación en paralelo (escribe en <dir>_planner)"
-        default: false
-        type: boolean
-      variant:
-        description: "Ciclo completo (llm.cycle): representación (cvrp: routes | tour; clsp: setups; jobshop: sequences | operations). Con target=problem_model genera el modelo por piezas del ciclo; con target=components, los componentes desde cero sobre ese modelo"
-        default: ""
-        type: string
-      reference:
-        description: "Ciclo completo, target=components: usar las piezas de referencia de la variante en vez del modelo generado"
-        default: false
-        type: boolean
-      construction_only:
-        description: "Ciclo, target=problem_model: solo la vista constructiva, sobre el modelo ya aceptado del workspace"
-        default: false
-        type: boolean
       opt_new_only:
-        description: "Con target=native_optimize: solo los componentes C++ que nunca se optimizaron"
+        description: "Con target=optimize: solo los componentes C++ que nunca se optimizaron"
         default: false
         type: boolean
       opt_slots:
-        description: "Con target=optimize: slots cuyos componentes se aceleran (none = solo el modelo)"
-        default: "neighborhood greedy_score"
+        description: "Con target=optimize: slots cuyos componentes se aceleran"
+        default: "neighborhood"
         type: string
       hint:
-        description: "Con target=native_components: indicación del investigador que se agrega al pedido al LLM"
+        description: "Con target=components: indicación del investigador que se agrega al pedido al LLM"
         default: ""
         type: string
       bench_size:
@@ -98,7 +73,7 @@ on:
         default: ""
         type: string
       workspace:
-        description: "Directorio de salida (vacío = según from_scratch/planner); úsalo para no pisar una corrida anterior"
+        description: "Workspace (vacío = generated/<problema>_native); úsalo para no pisar una corrida anterior"
         default: ""
         type: string
 
@@ -111,15 +86,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      WS: ${{ inputs.workspace || ((inputs.target == 'native_model' || inputs.target == 'native_model_optimize' || inputs.target == 'native_components' || inputs.target == 'native_optimize') && format('generated/{0}_native', inputs.problem)) || (inputs.variant != '' && format('generated/{0}_{1}_cycle{2}', inputs.problem, inputs.variant, inputs.reference && '_ref' || '')) || (inputs.target == 'problem_model' && format('generated/{0}_model{1}', inputs.problem, inputs.model_mode == 'parts' && '_parts' || '')) || format('generated/{0}{1}{2}', inputs.problem, inputs.from_scratch && '_scratch' || '', inputs.planner && '_planner' || '') }}
+      WS: ${{ inputs.workspace || format('generated/{0}_native', inputs.problem) }}
       TARGET: ${{ inputs.target }}
-      MODEL_MODE: ${{ inputs.model_mode }}
-      PKG: ${{ inputs.problem == 'cvrp' && 'cvrp' || inputs.problem == 'jobshop' && 'jobshop' || inputs.problem == 'flowshop' && 'flowshop' || inputs.problem == 'flowshop_cmax' && 'flowshop_cmax' || inputs.problem == 'jobshop_gen' && 'jobshop_gen' || inputs.problem == 'cvrp_gen' && 'cvrp_gen' || 'lotsizing' }}
-      SCRATCH: ${{ inputs.from_scratch && 'true' || 'false' }}
-      PLANNER: ${{ inputs.planner && 'true' || 'false' }}
-      VARIANT: ${{ inputs.variant }}
-      REFERENCE: ${{ inputs.reference && 'true' || 'false' }}
-      CONSTRUCTION_ONLY: ${{ inputs.construction_only && 'true' || 'false' }}
       HINT: ${{ inputs.hint }}
       HSF_BENCH_SIZE: ${{ inputs.bench_size }}
     steps:
@@ -166,15 +134,13 @@ jobs:
         if: ${{ inputs.fresh }}
         working-directory: ${{ env.ROOT }}
         run: |
-          # en el ciclo, la etapa de componentes conserva el modelo que generó la etapa anterior
-          if [ "$TARGET" = "native_optimize" ] || [ "$TARGET" = "native_model_optimize" ]; then
-            echo "$TARGET trabaja sobre lo aceptado en el workspace: no se limpia"
-          elif [ -n "$VARIANT" ] && { [ "$TARGET" = "optimize" ] || [ "$CONSTRUCTION_ONLY" = "true" ]; }; then
-            echo "optimize y --construction-only trabajan sobre el workspace existente: no se limpia"
-          elif [ -n "$VARIANT" ] && [ "$TARGET" = "components" ] && [ -d "$WS" ]; then
-            find "$WS" -mindepth 1 -maxdepth 1 ! -name model ! -name model_stats.json -exec rm -rf {} +
-          else
+          # components conserva el modelo C++ del workspace; optimize y model_optimize trabajan sobre lo aceptado
+          if [ "$TARGET" = "model" ]; then
             rm -rf "$WS"
+          elif [ "$TARGET" = "components" ] && [ -d "$WS" ]; then
+            find "$WS" -mindepth 1 -maxdepth 1 ! -name model ! -name 'model_*stats.json' -exec rm -rf {} +
+          else
+            echo "$TARGET trabaja sobre lo aceptado en el workspace: no se limpia"
           fi
 
       - name: Generar y validar
@@ -196,76 +162,22 @@ jobs:
         working-directory: ${{ env.ROOT }}
         run: |
           set -o pipefail
-          if [ -n "$VARIANT" ]; then
-            STAGE=model; [ "$TARGET" = "components" ] && STAGE=components; [ "$TARGET" = "optimize" ] && STAGE=optimize
-            CARGS="--problem $PROBLEM --variant $VARIANT --workspace $WS"
-            # model y optimize llaman al LLM directo; components lo pasa a llm.cli en REST
-            [ "$STAGE" != "components" ] && CARGS="$CARGS --provider $PROVIDER"
-            [ "$REFERENCE" = "true" ] && CARGS="$CARGS --reference"
-            if [ "$STAGE" = "optimize" ]; then
-              [ -n "$MODEL" ] && CARGS="$CARGS --model $MODEL"
-              OPT="${OPT_SLOTS:-neighborhood greedy_score}"; [ "$OPT" = "none" ] && OPT=""
-              echo "python -m llm.cycle optimize $CARGS --rounds $ROUNDS --slots $OPT"
-              python -u -W ignore -m llm.cycle optimize $CARGS --rounds "$ROUNDS" --slots $OPT 2>&1 | tee generate.log
-            elif [ "$STAGE" = "model" ]; then
-              [ -n "$MODEL" ] && CARGS="$CARGS --model $MODEL"
-              [ "$CONSTRUCTION_ONLY" = "true" ] && CARGS="$CARGS --construction-only"
-              echo "python -m llm.cycle model $CARGS --rounds $ROUNDS"
-              python -W ignore -m llm.cycle model $CARGS --rounds "$ROUNDS" 2>&1 | tee generate.log
-            else
-              REST="--n $N --rounds $ROUNDS --provider $PROVIDER"
-              [ -n "$MODEL" ] && REST="$REST --model $MODEL"
-              echo "python -m llm.cycle components $CARGS -- $REST"
-              python -W ignore -m llm.cycle components $CARGS -- $REST 2>&1 | tee generate.log
-            fi
-            exit 0
-          fi
-          if [ "$TARGET" = "native_optimize" ]; then
-            OPT="${OPT_SLOTS:-neighborhood}"; [ "$OPT" = "none" ] && OPT="neighborhood"
-            ARGS="--problem $PROBLEM --workspace $WS --slots $OPT --rounds $ROUNDS --provider $PROVIDER --max-minutes 75"
-            [ "$OPT_NEW_ONLY" = "true" ] && ARGS="$ARGS --new-only"
-            if [ -n "$MODEL" ]; then ARGS="$ARGS --model $MODEL"; fi
-            echo "python -m llm.native_optimizer $ARGS"
-            python -u -W ignore -m llm.native_optimizer $ARGS 2>&1 | tee generate.log
-            exit 0
-          fi
-          if [ "$TARGET" = "native_model" ]; then
-            ARGS="--problem $PROBLEM --workspace $WS --rounds $ROUNDS --provider $PROVIDER"
-            if [ -n "$MODEL" ]; then ARGS="$ARGS --model $MODEL"; fi
-            echo "python -m llm.native_model_generator $ARGS"
-            python -u -W ignore -m llm.native_model_generator $ARGS 2>&1 | tee generate.log
-            exit 0
-          fi
-          if [ "$TARGET" = "native_model_optimize" ]; then
-            ARGS="--problem $PROBLEM --workspace $WS --rounds $ROUNDS --provider $PROVIDER"
-            if [ -n "$MODEL" ]; then ARGS="$ARGS --model $MODEL"; fi
-            echo "python -m llm.native_model_optimizer $ARGS"
-            python -u -W ignore -m llm.native_model_optimizer $ARGS 2>&1 | tee generate.log
-            exit 0
-          fi
-          if [ "$TARGET" = "native_components" ]; then
-            NSLOTS="$SLOTS"; [ "$NSLOTS" = "neighborhood destruction constructor perturbation" ] && NSLOTS="greedy_score neighborhood perturbation"
-            ARGS="--problem $PROBLEM --workspace $WS --slots $NSLOTS --n $N --rounds $ROUNDS --provider $PROVIDER"
-            if [ -n "$MODEL" ]; then ARGS="$ARGS --model $MODEL"; fi
-            HINT_ARGS=(); [ -n "$HINT" ] && HINT_ARGS=(--hint "$HINT")
-            echo "python -m llm.native_generator $ARGS ${HINT:+--hint ...}"
-            python -u -W ignore -m llm.native_generator $ARGS "${HINT_ARGS[@]}" 2>&1 | tee generate.log
-            exit 0
-          fi
-          if [ "$TARGET" = "problem_model" ]; then
-            ARGS="--rounds $ROUNDS --provider $PROVIDER --workspace $WS"
-            if [ -n "$MODEL" ]; then ARGS="$ARGS --model $MODEL"; fi
-            if [ "$MODEL_MODE" = "monolithic" ]; then ARGS="$ARGS --monolithic"; fi
-            echo "python -m examples.$PKG.generate_model $ARGS"
-            python -W ignore -m "examples.$PKG.generate_model" $ARGS 2>&1 | tee generate.log
-            exit 0
-          fi
-          ARGS="--slots $SLOTS --n $N --rounds $ROUNDS --provider $PROVIDER --workspace $WS"
-          if [ -n "$MODEL" ]; then ARGS="$ARGS --model $MODEL"; fi
-          if [ "$SCRATCH" = "true" ]; then ARGS="$ARGS --from-scratch"; fi
-          if [ "$PLANNER" = "true" ]; then ARGS="$ARGS --planner"; fi
-          echo "python -m examples.$PKG.generate $ARGS"
-          python -W ignore -m "examples.$PKG.generate" $ARGS 2>&1 | tee generate.log
+          ARGS=(--problem "$PROBLEM" --workspace "$WS" --rounds "$ROUNDS" --provider "$PROVIDER")
+          [ -n "$MODEL" ] && ARGS+=(--model "$MODEL")
+          case "$TARGET" in
+            model) MOD=llm.native_model_generator ;;
+            model_optimize) MOD=llm.native_model_optimizer ;;
+            components)
+              MOD=llm.native_generator
+              ARGS+=(--slots $SLOTS --n "$N")
+              [ -n "$HINT" ] && ARGS+=(--hint "$HINT") ;;
+            optimize)
+              MOD=llm.native_optimizer
+              ARGS+=(--slots ${OPT_SLOTS:-neighborhood} --max-minutes 75)
+              [ "$OPT_NEW_ONLY" = "true" ] && ARGS+=(--new-only) ;;
+          esac
+          echo "python -m $MOD ${ARGS[*]}"
+          python -u -W ignore -m "$MOD" "${ARGS[@]}" 2>&1 | tee generate.log
 
       - name: Resumen de la corrida
         if: always()
@@ -278,12 +190,15 @@ jobs:
         run: |
           MODEL="$MODEL_IN"; [ -z "$MODEL" ] && MODEL="(default de $PROVIDER)"
           {
-            echo "## Generación de componentes"
+            echo "## Generación con LLM (\`$TARGET\`)"
             echo ""
-            echo "Proveedor \`$PROVIDER\` · modelo \`$MODEL\` · \`$N\` variantes por slot · hasta \`$ROUNDS\` rondas"
-            if [ "$SCRATCH" = "true" ]; then echo ""; echo "**Desde cero**: sin componentes de referencia, en \`$WS\`."; fi
+            echo "Proveedor \`$PROVIDER\` · modelo \`$MODEL\` · \`$N\` variantes por slot · hasta \`$ROUNDS\` rondas · \`$WS\`"
             echo ""
-            if [ -f "$WS/model_stats.json" ] && [ "$TARGET" = "problem_model" ]; then echo '```json'; cat "$WS/model_stats.json"; echo '```'; elif [ "$TARGET" = "problem_model" ]; then echo '```json'; cat "$WS/stats.json" 2>/dev/null; echo '```'; else python -m scripts.stats_summary "$WS/stats.json"; fi
+            case "$TARGET" in
+              model) F="$WS/model_stats.json" ;; model_optimize) F="$WS/model_optimize_stats.json" ;;
+              optimize) F="$WS/optimize_stats.json" ;; *) F="$WS/stats.json" ;;
+            esac
+            if [ -f "$F" ]; then echo '```json'; cat "$F"; echo '```'; fi
             echo ""
             if [ -f generate.log ]; then
               echo "<details><summary>Log completo de la generación</summary>"
@@ -353,47 +268,24 @@ jobs:
           if [ -z "$(ls -A "$WS" 2>/dev/null)" ]; then
             echo "Nada que commitear."; exit 0
           fi
-          PFX="$PROVIDER"; [ "$PROBLEM" != "clsp" ] && PFX="$PROBLEM-$PROVIDER"
-          BRANCH="llm-generated/$PFX-run$RUN"
-          [ "$SCRATCH" = "true" ] && BRANCH="llm-generated/$PFX-scratch-run$RUN"
-          [ "$PLANNER" = "true" ] && BRANCH="$BRANCH-planner"
-          [ "$TARGET" = "problem_model" ] && BRANCH="llm-generated/$PROBLEM-$PROVIDER-model-run$RUN"
-          [ "$TARGET" = "native_model" ] && BRANCH="llm-generated/$PROBLEM-native-model-$PROVIDER-run$RUN"
-          [ "$TARGET" = "native_model_optimize" ] && BRANCH="llm-generated/$PROBLEM-native-model-optimize-$PROVIDER-run$RUN"
-          [ "$TARGET" = "native_components" ] && BRANCH="llm-generated/$PROBLEM-native-$PROVIDER-run$RUN"
-          [ "$TARGET" = "native_optimize" ] && BRANCH="llm-generated/$PROBLEM-native-optimize-$PROVIDER-run$RUN"
-          [ -n "$VARIANT" ] && BRANCH="llm-generated/$PROBLEM-$VARIANT-cycle-$TARGET-run$RUN"
+          BRANCH="llm-generated/$PROBLEM-$TARGET-$PROVIDER-run$RUN"
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
           # las transcripciones incluyen los prompts completos: útiles, pero pesadas
           find "$WS" -name __pycache__ -type d -prune -exec rm -rf {} +
           git add -f "$WS"
-          TAG=""; [ "$SCRATCH" = "true" ] && TAG=", desde cero"
-          [ "$PLANNER" = "true" ] && TAG="$TAG, con planificador"
-          [ "$PROBLEM" != "clsp" ] && TAG="$TAG, $PROBLEM"
-          [ "$TARGET" = "problem_model" ] && TAG="$TAG, ProblemModel"
-          [ "$TARGET" = "native_model" ] && TAG="$TAG, modelo C++"
-          [ "$TARGET" = "native_model_optimize" ] && TAG="$TAG, optimización del modelo C++"
-          [ "$TARGET" = "native_components" ] && TAG="$TAG, C++"
-          [ "$TARGET" = "native_optimize" ] && TAG="$TAG, optimización C++"
-          [ -n "$VARIANT" ] && TAG="$TAG, ciclo $VARIANT"
-          git commit -m "Componentes generados por $PROVIDER (corrida $RUN$TAG)" || { echo "Sin cambios."; exit 0; }
+          TAG=", $PROBLEM, $TARGET"
+          git commit -m "Generado por $PROVIDER (corrida $RUN$TAG)" || { echo "Sin cambios."; exit 0; }
           git push -u origin "$BRANCH"
           echo "Resultados en la rama \`$BRANCH\`." >> "$GITHUB_STEP_SUMMARY"
           # una corrida que falló se guarda para ver sus rechazos, pero no abre PR
           if [ "$OPEN_PR" != "true" ] || [ "$JOB_STATUS" != "success" ]; then exit 0; fi
           {
-            echo "Corrida manual del workflow \`generar componentes con LLM\`."
+            echo "Corrida manual del workflow \`generar con LLM\` (\`$TARGET\` sobre \`$WS\`)."
             echo ""
             echo "- Proveedor: \`$PROVIDER\`, modelo: \`$MODEL\`"
             echo "- Slots: \`$SLOTS\`, \`$N\` variantes, hasta \`$ROUNDS\` rondas"
-            if [ "$SCRATCH" = "true" ]; then echo "- **Desde cero**: sin componentes de referencia, en \`$WS\`"; fi
-            echo ""
-            if [ -f "$WS/model_stats.json" ] && [ "$TARGET" = "problem_model" ]; then echo '```json'; cat "$WS/model_stats.json"; echo '```'; elif [ "$TARGET" = "problem_model" ]; then echo '```json'; cat "$WS/stats.json"; echo '```'; else python -m scripts.stats_summary "$WS/stats.json"; fi
-            echo ""
-            echo "Antes de mezclar: corre \`benchmark_components\` para ver si estos componentes"
-            echo "además de válidos son útiles y distintos entre sí."
           } > pr-body.md
-          gh pr create --title "Componentes generados por LLM (corrida $RUN$TAG)" \
+          gh pr create --title "Generado por LLM (corrida $RUN$TAG)" \
                        --body-file pr-body.md --base "$BASE" --head "$BRANCH"

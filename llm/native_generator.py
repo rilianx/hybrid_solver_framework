@@ -280,7 +280,7 @@ def write_catalog(workspace: str | Path, accepted: list[NativeComponent]) -> Pat
 
 def main(argv: list[str] | None = None) -> None:
     from .client import make_client
-    from .cycle import base_pack
+    from core.packs import base_pack
 
     ap = argparse.ArgumentParser(prog="python -m llm.native_generator")
     ap.add_argument("--problem", required=True)

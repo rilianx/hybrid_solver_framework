@@ -64,7 +64,7 @@ def test_the_native_components_pass_the_component_validator(nat):
     from core.validation import validate_component
     from examples.jobshop.native_catalog import native_handwritten
     from examples.jobshop.pack import _BASE, make_model_spec
-    from llm.cycle import parts_pack
+    from core.packs import parts_pack
 
     pack = parts_pack(_BASE, nat, "examples.jobshop.native_parts", make_model_spec(), "jobshop_native")
     pack.handwritten = native_handwritten()
@@ -102,16 +102,3 @@ def test_a_compile_error_is_reported_with_the_compiler_output(tmp_path):
     src.write_text("int main( { return 0; }\n")
     with pytest.raises(NativeBuildError, match="broken.cpp"):
         build("broken", src)
-
-
-def test_the_tuner_runs_natively(tmp_path):
-    pytest.importorskip("optuna")
-    import json
-
-    from examples.jobshop.tune import main
-
-    main(["--native", "--catalog", "handwritten", "--size", "6x4", "--trials", "6", "--budget", "0.1", "--train", "1",
-          "--test", "1", "--seeds", "1", "--out", str(tmp_path)])
-    out = json.loads((tmp_path / "handwritten.json").read_text())
-    assert out["settings"]["native"] is True
-    assert out["test"]["tuned"]["summary"].split("[")[0] in ("SA", "ILS", "VNS", "TS")

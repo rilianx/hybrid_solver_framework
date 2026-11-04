@@ -3,15 +3,13 @@
 Construye, a partir del `ComponentRegistry` y de la declaración de qué
 slots usa cada esqueleto, un espacio de parámetros condicional:
 
-    skeleton      ∈ {SA, ILS, LNS_MIP}                              (raíz)
+    skeleton      ∈ {SA, ILS, TS}                                   (raíz)
     neighborhood  ∈ {two_opt, or_opt, swap}   | skeleton ∈ {SA, ILS}
     two_opt.sample_size ∈ [10, 500] log       | neighborhood == "two_opt"
     SA.T0 ∈ [0.1, 100] log                    | skeleton == "SA"
 
-Este `ConfigSpace` es intencionalmente neutro respecto al tuner: los
-exportadores en `irace_export.py` y `optuna_export.py` lo traducen a
-`parameters.txt` y a un espacio *define-by-run*, respectivamente,
-como pide la sección 8.
+Este `ConfigSpace` es intencionalmente neutro respecto al tuner: `irace_export.py` lo traduce a
+`parameters.txt`, y `sample` saca configuraciones al azar (pruebas y búsquedas de humo).
 """
 
 from __future__ import annotations
@@ -89,6 +87,28 @@ class ConfigSpace:
 
     def active_nodes(self, assignment: dict[str, Any]) -> list[ParamNode]:
         return [n for n in self.nodes if n.is_active(assignment)]
+
+    def sample(self, rng) -> dict[str, Any]:
+        """Una configuración al azar (para el ensamblador), respetando las condiciones: los nodos se agregan después
+        de sus padres, así que basta recorrerlos en orden."""
+        import math
+
+        out: dict[str, Any] = {}
+        for n in self.nodes:
+            if not n.is_active(out):
+                continue
+            if n.type == "int":
+                lo, hi = int(n.range[0]), int(n.range[1])
+                out[n.name] = (min(hi, int(math.exp(rng.uniform(math.log(lo), math.log(hi + 1)))))
+                               if n.log and lo > 0 else rng.randint(lo, hi))
+            elif n.type == "float":
+                lo, hi = float(n.range[0]), float(n.range[1])
+                out[n.name] = math.exp(rng.uniform(math.log(lo), math.log(hi))) if n.log and lo > 0 else rng.uniform(lo, hi)
+            elif n.type == "bool":
+                out[n.name] = rng.choice([True, False])
+            else:
+                out[n.name] = rng.choice(list(n.values))
+        return self.fold(out)
 
     def fold(self, assignment: dict[str, Any]) -> dict[str, Any]:
         """Asignación por nombre de nodo → configuración para el ensamblador: los nodos con

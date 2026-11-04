@@ -4,10 +4,6 @@ slot existe y la implementación expone los métodos del `Protocol` del slot.
 
 from __future__ import annotations
 
-import importlib.util
-import sys
-from pathlib import Path
-from types import ModuleType
 from typing import Any
 
 from core import contracts
@@ -29,26 +25,8 @@ PROTOCOL_FOR_SLOT = {
     "destruction": contracts.Destruction,
     "repair_heuristic": contracts.RepairHeuristic,
     "repair_mip": contracts.RepairMIP,
-    "fixing_policy": contracts.FixingPolicy,
     "stop": contracts.StopCriterion,
 }
-
-
-def load_module(path: str | Path) -> tuple[ModuleType | None, CheckResult]:
-    """Importa un archivo .py generado por el LLM. Errores de sintaxis/import -> FAIL."""
-    path = Path(path)
-    name = f"_llm_component_{path.stem}_{abs(hash(str(path)))}"
-    try:
-        spec = importlib.util.spec_from_file_location(name, path)
-        assert spec is not None and spec.loader is not None
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[name] = module
-        spec.loader.exec_module(module)
-        return module, ok(LAYER, "import", f"{path.name} importa correctamente")
-    except SyntaxError as exc:
-        return None, fail(LAYER, "import", f"error de sintaxis en {path.name} línea {exc.lineno}: {exc.msg}")
-    except Exception as exc:  # noqa: BLE001
-        return None, fail(LAYER, "import", f"{type(exc).__name__} al importar {path.name}: {exc}")
 
 
 def check_component_dict(component: dict[str, Any], impl: Any) -> tuple[ComponentSpec | None, list[CheckResult]]:
@@ -79,20 +57,3 @@ def _protocol_methods(protocol: type) -> set[str]:
         for name, value in vars(protocol).items()
         if callable(value) and not name.startswith("_")
     }
-
-
-def check_module(module: ModuleType) -> tuple[ComponentSpec | None, list[CheckResult]]:
-    results: list[CheckResult] = []
-    component = getattr(module, "COMPONENT", None)
-    impl = getattr(module, "IMPL", None)
-    if component is None:
-        results.append(fail(LAYER, "component_present", "el módulo no define COMPONENT"))
-    if impl is None:
-        results.append(fail(LAYER, "impl_present", "el módulo no define IMPL"))
-    if component is None or impl is None:
-        return None, results
-    spec, r = check_component_dict(component, impl)
-    results.extend(r)
-    if spec is not None:
-        results.append(check_protocol(spec.slot, impl))
-    return spec, results

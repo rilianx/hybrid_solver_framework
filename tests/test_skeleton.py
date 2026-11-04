@@ -1,7 +1,7 @@
 """Prueba el esqueleto genérico y las tres especializaciones sobre un
 problema de juguete minúsculo (minimizar (x - target)^2 sobre enteros),
-independiente de knapsack, para aislar bugs del núcleo de bugs del
-ejemplo de knapsack.
+independiente de los problemas de ejemplo, para aislar bugs del núcleo de bugs
+de un problema.
 """
 
 from random import Random
@@ -148,11 +148,3 @@ def test_vns_cycles_k_and_reaches_optimum():
     result = skeleton.run(None, Random(5))
     assert result.best_objective == 0
 
-
-def test_grasp_restarts_and_keeps_best():
-    from skeletons.grasp import build_grasp, run_grasp
-
-    problem = ToyProblem()
-    skeleton = build_grasp(problem, ToyConstructor(), ToyNeighborhood(problem), MaxIterationsStop(5))
-    result = run_grasp(skeleton, None, Random(1))
-    assert result.best_objective == 0  # cada reinicio termina en el óptimo con hill_climb

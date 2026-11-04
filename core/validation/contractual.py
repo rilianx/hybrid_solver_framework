@@ -368,37 +368,6 @@ def check_repair_mip(impl, ctx: ValidationContext) -> list[CheckResult]:
     return _collapse(results)
 
 
-def check_fixing_policy(impl, ctx: ValidationContext) -> list[CheckResult]:
-    results: list[CheckResult] = []
-    for k, inst in enumerate(ctx.instances):
-        groups = ctx.problem.variable_groups(inst)
-        all_vars = ctx.variables(inst)
-
-        def _schedule(k=k, groups=groups, all_vars=all_vars):
-            covered: set[str] = set()
-            for step, (fix, integer, relax) in enumerate(impl.schedule(groups, None)):
-                fix, integer, relax = set(fix), set(integer), set(relax)
-                if fix | integer | relax != all_vars or (fix & integer) or (fix & relax) or (integer & relax):
-                    return fail(LAYER, "fixing_policy.partition", f"paso {step} en inst_{k}: (fix, int, relax) no es partición de las variables")
-                if not integer:
-                    return fail(LAYER, "fixing_policy.partition", f"paso {step} en inst_{k}: integer_set vacío")
-                covered |= integer
-            if covered != all_vars:
-                return fail(LAYER, "fixing_policy.covers_all", f"la agenda nunca hace enteras a {sorted(all_vars - covered)[:5]} en inst_{k}")
-            return ok(LAYER, "fixing_policy.covers_all")
-
-        def _blocks(k=k, groups=groups, all_vars=all_vars):
-            blocks = [set(b) for b in impl.blocks(groups, 2)]
-            union = set().union(*blocks) if blocks else set()
-            if union != all_vars:
-                return fail(LAYER, "fixing_policy.blocks_cover_all", f"blocks() no cubre todas las variables en inst_{k}")
-            return ok(LAYER, "fixing_policy.blocks_cover_all")
-
-        results += guard(LAYER, "fixing_policy.schedule", _schedule)
-        results += guard(LAYER, "fixing_policy.blocks", _blocks)
-    return _collapse(results)
-
-
 def check_stop(impl, ctx: ValidationContext) -> list[CheckResult]:
     def _eventually():
         state = SearchState(iteration=10**9, elapsed_time=1e9, iters_without_improvement=10**9)
@@ -468,7 +437,6 @@ CHECKERS = {
     "destruction": check_destruction,
     "relink": check_relink,
     "repair_mip": check_repair_mip,
-    "fixing_policy": check_fixing_policy,
     "stop": check_stop,
 }
 

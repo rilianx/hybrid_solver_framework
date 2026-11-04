@@ -21,7 +21,6 @@ from .contracts import (
     Destruction,
     RepairHeuristic,
     RepairMIP,
-    FixingPolicy,
     StopCriterion,
 )
 from .component import ComponentSpec, ComponentRegistry
@@ -42,7 +41,6 @@ __all__ = [
     "Destruction",
     "RepairHeuristic",
     "RepairMIP",
-    "FixingPolicy",
     "StopCriterion",
     "ComponentSpec",
     "ComponentRegistry",

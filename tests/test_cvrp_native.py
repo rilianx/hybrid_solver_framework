@@ -101,7 +101,7 @@ std::unique_ptr<hsf::Neighborhood<CVRP>> make_component(const CVRP& model, const
 
 def test_a_generated_cvrp_neighborhood_is_validated_and_runs(tmp_path):
     from llm import ScriptedClient
-    from llm.cycle import base_pack
+    from core.packs import base_pack
     from llm.native_generator import generate_native_slot, write_catalog
     from tuning.cli import make_assembler
 

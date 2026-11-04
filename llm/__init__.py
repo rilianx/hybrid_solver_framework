@@ -1,28 +1,8 @@
-"""Generación de componentes con LLM (§6): cliente intercambiable, prompts por
-slot, parser de respuestas y ciclo generar → validar → corregir."""
+"""Generación con LLM del backend nativo: el modelo C++ del problema (`native_model_generator`,
+`native_model_optimizer`) y sus componentes C++ (`native_generator`, `native_optimizer`), sobre un cliente
+intercambiable (`client`)."""
 
 from .client import AnthropicClient, LLMClient, OpenAIClient, ScriptedClient, TokenUsage, TranscriptClient, price_per_mtok
-from .generator import GeneratedComponent, GenerationStats, generate_slot, register_generated, validate_generated_module
-from .planner import generate_slot_planned
-from .prompts import Idea, ProblemSpec, correction_prompt, generation_prompt, planning_prompt
 
-__all__ = [
-    "AnthropicClient",
-    "LLMClient",
-    "OpenAIClient",
-    "ScriptedClient",
-    "TranscriptClient",
-    "TokenUsage",
-    "price_per_mtok",
-    "GeneratedComponent",
-    "GenerationStats",
-    "generate_slot",
-    "generate_slot_planned",
-    "Idea",
-    "planning_prompt",
-    "register_generated",
-    "validate_generated_module",
-    "ProblemSpec",
-    "correction_prompt",
-    "generation_prompt",
-]
+__all__ = ["AnthropicClient", "LLMClient", "OpenAIClient", "ScriptedClient", "TranscriptClient", "TokenUsage",
+           "price_per_mtok"]

@@ -5,7 +5,7 @@ por un índice fuera de rango con `_GLIBCXX_ASSERTIONS`), el proceso que genera 
 
 El pedido trae el problema, el .so ya compilado (con el candidato y los aceptados del mismo slot, que son
 los pares de la diversidad) y el nombre del candidato. Las capas son las de Python
-(`llm.generator.validate_factory`), sobre los micro-contextos de las piezas nativas del problema.
+(`core.validation.factory.validate_factory`), sobre los micro-contextos de las piezas nativas del problema.
 """
 
 from __future__ import annotations
@@ -50,8 +50,8 @@ def main(path: str) -> None:
     request = json.loads(Path(path).read_text())
     if request.get("mode") == "optimize":
         return optimize_check(request)
-    from llm.cycle import base_pack, parts_contexts
-    from llm.generator import validate_factory
+    from core.packs import base_pack, parts_contexts
+    from core.validation.factory import validate_factory
     from native.generated import factory, load, parts_for
 
     pack = base_pack(request["problem"])
@@ -123,8 +123,8 @@ def optimize_check(request: dict) -> None:
     from random import Random
 
     from core.validation.equivalence import check_component_equivalent
-    from llm.cycle import base_pack, parts_contexts
-    from llm.generator import validate_factory
+    from core.packs import base_pack, parts_contexts
+    from core.validation.factory import validate_factory
     from native.generated import ModelCache, factory, load, parts_for
 
     pack = base_pack(request["problem"])

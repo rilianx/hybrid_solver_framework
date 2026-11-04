@@ -36,7 +36,8 @@ def test_reference_parts_pass_and_the_mip_matches_brute_force(cases):
 
 def test_assembled_model_is_a_problem_model_the_skeletons_can_use(cases):
     from core.assembler import Assembler
-    from examples.cvrp.catalog import build_registry
+    from core.catalog import build_registry
+    from examples.cvrp.pack import PACK as BASE
 
     inst = cases[3].instance
     P = PartsModel(ref, inst)
@@ -45,8 +46,8 @@ def test_assembled_model_is_a_problem_model_the_skeletons_can_use(cases):
     bad = ref.from_answer(inst, [list(inst.customers)[1:]])
     assert not P.is_feasible(bad) and P.objective(bad) > P.objective(triv)
     # los componentes del CVRP usan la misma representación canónica: corren sobre el modelo ensamblado
-    A = Assembler(problem_factory=lambda i: PartsModel(ref, i), registry=build_registry())
-    for sk in ("SA", "LNS_MIP"):
+    A = Assembler(problem_factory=lambda i: PartsModel(ref, i), registry=build_registry(BASE))
+    for sk in ("SA", "HYB"):
         r = A.assemble(A.default_config(sk))(inst, Random(0), 0.5)
         assert P.is_feasible(r.best_solution) and r.best_objective <= P.objective(triv) + 1e-6
 
@@ -135,35 +136,6 @@ def _ref_sources():
     return head, header + mip
 
 
-def test_parts_generation_runs_both_stages_with_localized_feedback(tmp_path):
-    from examples.cvrp.pack import PACK
-    from llm import ScriptedClient
-    from llm.parts_generator import generate_problem_model_parts
-
-    heur, mip = _ref_sources()
-    broken = heur.replace('return {"visita": float(visit), "capacidad": float(cap)}', 'return {"visita": float(visit)}')
-    client = ScriptedClient(responses=[f"```python\n{broken}\n```", f"```python\n{heur}\n```", f"```python\n{mip}\n```"])
-    res = generate_problem_model_parts(client, PACK.make_model_spec(), load_cases(), tmp_path, verbose=False,
-                                       construction=False)
-    assert res.path is not None and res.heuristic.rounds == 2 and res.mip.rounds == 1 and res.llm_calls == 3
-    assert "capacidad" in res.heuristic.reports[0]
-    # el prompt de la etapa MIP trae la vista heurística aprobada, no la rota
-    assert heur.strip()[:200] in client.calls[2][1] and "Casos de ejemplo" in client.calls[2][1]
-    # el prompt de corrección de la etapa 1 trae el reporte con la familia esperada
-    assert "RECHAZADA" in client.calls[1][1] and "capacidad" in client.calls[1][1]
-
-
-def test_parts_generation_forbids_importing_the_reference_parts(tmp_path):
-    from examples.cvrp.pack import PACK
-    from llm import ScriptedClient
-    from llm.parts_generator import generate_problem_model_parts
-
-    cheat = "from examples.cvrp.model_parts import *\n"
-    client = ScriptedClient(responses=[f"```python\n{cheat}\n```"] * 2)
-    res = generate_problem_model_parts(client, PACK.make_model_spec(), load_cases(), tmp_path, max_rounds=2, verbose=False)
-    assert res.path is None and "no_forbidden_imports" in res.heuristic.reports[0]
-
-
 def test_a_single_variable_group_is_rejected(cases):
     """Corrida 21: variable_groups con un solo grupo (partición válida) dejaba inútil a FIX_OPT."""
     report = check_mip_view(mutant(variable_groups=lambda inst: {"todo": ref.structural_variables(inst)}), cases)
@@ -181,30 +153,12 @@ def test_two_halves_of_the_variable_list_are_rejected(cases):
     assert not report.passed and "groups_split_the_problem" in report.feedback()
 
 
-def test_mip_stage_may_not_redefine_heuristic_names():
-    """Corrida 25: la vista MIP redefinió un auxiliar de la heurística y rompió violations."""
-    from llm.parts_generator import redefined_names
-
-    heur = "def _flow(g):\n    return 1, 2\n\ndef violations(inst, sol):\n    return {}\n"
-    mip = "import math\n\ndef _flow(g):\n    return 1, 2, 3\n\ndef variables(inst):\n    return {}\n"
-    assert redefined_names(heur, mip) == ["_flow"]
-    assert redefined_names(heur, "def _flow2(g):\n    return 0\n") == []
-
-
 def test_an_exception_in_the_generated_parts_is_a_rejection_not_a_crash(cases):
     def violations(inst, sol):
         raise ValueError("too many values to unpack (expected 2)")
 
     report = check_mip_view(mutant(violations=violations), cases)
     assert not report.passed and "ValueError" in report.feedback()
-
-
-def test_identical_copies_are_not_redefinitions():
-    from llm.parts_generator import redefined_names
-
-    heur = "def canonical(sol):\n    return tuple(sol)\n"
-    assert redefined_names(heur, "def canonical(sol):\n    return tuple(sol)\n") == []
-    assert redefined_names(heur, "def canonical(sol):\n    return sorted(sol)\n") == ["canonical"]
 
 
 def test_assignment_that_includes_auxiliaries_is_named_precisely(cases):

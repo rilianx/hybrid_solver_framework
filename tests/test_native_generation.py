@@ -37,7 +37,7 @@ std::unique_ptr<hsf::Neighborhood<JobShop>> make_component(const JobShop& model,
 
 @pytest.fixture(scope="module")
 def pack():
-    from llm.cycle import base_pack
+    from core.packs import base_pack
 
     return base_pack("jobshop")
 
@@ -74,9 +74,13 @@ def test_the_prompt_has_no_hints_from_the_handwritten_catalog(pack):
             assert word not in text, (slot, word)
 
 
-def test_the_tuner_runs_the_generated_cpp_catalog(pack, tmp_path):
-    pytest.importorskip("optuna")
+def test_the_staged_tuner_runs_the_generated_cpp_catalog(pack, tmp_path):
+    from tests.test_irace import _has_irace
+
+    if not _has_irace():
+        pytest.skip("sin R/irace")
     import json
+    import os
 
     from examples.jobshop.tune import main
     from llm import ScriptedClient
@@ -85,10 +89,15 @@ def test_the_tuner_runs_the_generated_cpp_catalog(pack, tmp_path):
     ws = tmp_path / "ws"
     accepted, _ = generate_native_slot(ScriptedClient(responses=[SWAP]), pack, "neighborhood", 1, ws, verbose=False)
     write_catalog(ws, accepted)
-    main(["--native", "--catalog", "generated", "--generated", str(ws), "--size", "6x4", "--trials", "4", "--budget", "0.1",
-          "--train", "1", "--test", "1", "--seeds", "1", "--skeletons", "SA", "TS", "--out", str(tmp_path / "out")])
-    out = json.loads((tmp_path / "out" / "generated.json").read_text())
-    assert "adjacent_swap" in out["test"]["tuned"]["summary"]
+    out = os.path.relpath(tmp_path / "out")  # relativo a la raíz del repo, como en CI
+    main(["--tuner", "staged", "--catalog", "generated", "--generated", os.path.relpath(ws), "--size", "6x4",
+          "--trials", "60", "--budget", "0.02", "--train", "5", "--test", "1", "--seeds", "1", "--final-seeds", "1",
+          "--skeletons", "SA", "TS", "--irace-parallel", "2", "--baselines", "defaults", "--out", out])
+    res = json.loads((tmp_path / "out" / "generated.json").read_text())
+    assert res["settings"]["native"] is True and res["settings"]["tuner"] == "staged"
+    assert "adjacent_swap" in res["test"]["tuned"]["summary"]
+    staged = json.loads((tmp_path / "out" / "irace_generated" / "staged.json").read_text())
+    assert staged["chosen"] and staged["best"] in staged["final"]
 
 
 def test_the_optimization_stage_accepts_a_faster_equivalent_version_and_rejects_a_different_one(pack, tmp_path):

@@ -8,7 +8,7 @@ from core.problem_pack import ProblemPack
 
 from .catalog import CONSTRUCTOR_SKELETONS, HANDWRITTEN
 from .components import LotForLotConstructor
-from .llm_spec import make_contexts, make_model_spec, make_spec
+from .llm_spec import make_model_spec
 from .problem_model import CLSPInstance, LotSizingModel
 
 
@@ -33,8 +33,6 @@ PACK = ProblemPack(
     module="examples.lotsizing",
     problem_factory=LotSizingModel,
     handwritten=HANDWRITTEN,
-    make_spec=make_spec,
-    make_contexts=make_contexts,
     make_instances=make_instances,
     parse_size=parse_size,
     default_size="10x15",

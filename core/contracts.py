@@ -3,7 +3,7 @@
 Estos son los tipos que el LLM debe respetar al generar componentes
 (sección 4 de la propuesta) y el `ProblemModel` que actúa de puente
 heurístico/matemático (sección 3). Son intencionalmente genéricos:
-cada problema concreto (ver `examples/knapsack`) instancia `Solution`,
+cada problema concreto (ver `examples/`) instancia `Solution`,
 `Instance`, `Move` y `MIPModel` con sus propios tipos.
 
 No hay lógica de negocio aquí: solo la forma que el validador (capa
@@ -202,19 +202,6 @@ class RepairMIP(Protocol):
         time_limit: float,
         warm_start: dict[str, float] | None = None,
     ) -> Solution | None: ...
-
-
-@runtime_checkable
-class FixingPolicy(Protocol):
-    """Slot `fixing_policy`: agenda de fijación/relajación (Relax-and-Fix, Fix-and-Optimize)."""
-
-    def schedule(
-        self, groups: dict[str, list[str]], params: Any
-    ) -> Iterable[tuple[set[str], set[str], set[str]]]:
-        """Itera (fix_set, integer_set, relax_set); debe cubrir todas las variables."""
-        ...
-
-    def blocks(self, groups: dict[str, list[str]], block_size: int) -> list[set[str]]: ...
 
 
 @runtime_checkable
