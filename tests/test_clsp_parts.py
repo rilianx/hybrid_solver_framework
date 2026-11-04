@@ -10,9 +10,11 @@ import pytest
 
 from core.model_parts import PartsModel
 from core.validation.model_parts import check_heuristic_view, check_mip_optimum, check_mip_view, validate_parts
-from examples.lotsizing import model_parts as ref
-from examples.lotsizing.cases import brute_force_optimum, mip_optimum, load_cases
+from examples.lotsizing.cases import brute_force_optimum, load_cases
 from examples.lotsizing.pack import PACK
+from tests.mip_views import full_parts
+
+ref = full_parts("clsp")  # el oráculo con la vista MIP que escribió el LLM (ya validada)
 
 
 @pytest.fixture(scope="module")
@@ -26,7 +28,7 @@ def scale():
 
 
 def mutant(**overrides):
-    m = types.SimpleNamespace(**{k: getattr(ref, k) for k in dir(ref) if not k.startswith("_")})
+    m = types.SimpleNamespace(**{k: getattr(ref, k) for k in dir(ref) if not k.startswith("__")})
     for k, v in overrides.items():
         setattr(m, k, v)
     return m
@@ -37,7 +39,6 @@ def test_reference_parts_pass_and_brute_force_matches_the_mip_view(cases, scale)
     assert report.passed, report.feedback()
     inst = cases[0].instance
     assert brute_force_optimum(inst)[0] == pytest.approx(cases[0].optimum, abs=1e-5)
-    assert mip_optimum(inst) == pytest.approx(cases[0].optimum, abs=1e-4)
 
 
 def test_cases_mix_feasible_and_infeasible_plans(cases):
@@ -51,7 +52,7 @@ def test_skeletons_run_on_the_assembled_model_with_the_clsp_components():
 
     inst = PACK.make_instances(1, 5, PACK.parse_size("5x6"))[0]
     P = PartsModel(ref, inst)
-    A = Assembler(problem_factory=lambda i: PartsModel(ref, i), registry=clsp_registry())
+    A = Assembler(problem_factory=lambda i: PartsModel(ref, i), registry=clsp_registry())  # noqa: E731
     for sk in ("SA", "HYB"):
         r = A.assemble(A.default_config(sk))(inst, Random(0), 0.5)
         assert P.is_feasible(r.best_solution) and r.best_objective <= P.objective(ref.trivial_solution(inst)) + 1e-6
@@ -71,13 +72,13 @@ def test_balance_without_previous_inventory_is_named_by_family(cases):
     def constraint_families(inst):
         fams = ref.constraint_families(inst)
         # sin el término +s_{t-1}: el inventario no pasa de un período al siguiente
-        fams["demanda.balance"] = [({v: c for v, c in coefs.items() if not (v.startswith("s_") and c == 1.0)}, sense, rhs)
-                                   for coefs, sense, rhs in fams["demanda.balance"]]
+        fams["demanda"] = [({v: c for v, c in coefs.items() if not (v.startswith("s_") and c == 1.0)}, sense, rhs)
+                           for coefs, sense, rhs in fams["demanda"]]
         return fams
 
     report = check_mip_view(mutant(constraint_families=constraint_families), cases)
     msg = report.feedback()
-    assert not report.passed and "families_agree" in msg and "demanda.balance" in msg
+    assert not report.passed and "families_agree" in msg and "demanda" in msg
 
 
 def test_a_mip_without_capacity_is_caught_by_the_expected_optimum(cases, scale):
@@ -94,8 +95,11 @@ def test_a_mip_without_capacity_is_caught_by_the_expected_optimum(cases, scale):
 def test_group_granularity_is_measured_at_realistic_size(cases, scale):
     """En una micro-instancia de 3 períodos, 3 grupos por período es lo correcto; la lista partida en
     mitades se sigue rechazando en la instancia de tamaño realista."""
-    assert check_mip_view(ref, cases, scale_instances=scale).passed
-    assert "groups_split_the_problem" in check_mip_view(ref, cases).feedback()  # sin instancia realista: la regla en los casos
+    def per_period(inst):  # un grupo por período: correcto en tamaño realista, demasiado grueso en 3 períodos
+        return {f"t{t}": [f"y_{i}_{t}" for i in range(inst.n_items)] for t in range(inst.n_periods)}
+
+    assert check_mip_view(mutant(variable_groups=per_period), cases, scale_instances=scale).passed
+    assert "groups_split_the_problem" in check_mip_view(mutant(variable_groups=per_period), cases).feedback()
 
     def halves(inst):
         ys = ref.structural_variables(inst)
@@ -105,7 +109,7 @@ def test_group_granularity_is_measured_at_realistic_size(cases, scale):
     assert not report.passed and "tamaño realista" in report.feedback()
 
 
-def test_model_spec_forbids_the_reference_parts():
+def test_model_spec_forbids_the_oracle():
     spec = PACK.make_model_spec()
     assert "examples.lotsizing.model_parts" in spec.forbidden_modules
     assert spec.instance_import == "examples.lotsizing.instance" and "demanda" in spec.families
@@ -129,8 +133,8 @@ def test_a_free_shortage_variable_is_named_in_the_report(cases, scale):
 
     def constraint_families(inst):
         fams = ref.constraint_families(inst)
-        fams["demanda.balance"] = [({**coefs, f"u_{k // inst.n_periods}_{k % inst.n_periods}": 1.0}, sense, rhs)
-                                   for k, (coefs, sense, rhs) in enumerate(fams["demanda.balance"])]
+        fams["demanda"] = [({**coefs, f"u_{k // inst.n_periods}_{k % inst.n_periods}": 1.0}, sense, rhs)
+                           for k, (coefs, sense, rhs) in enumerate(fams["demanda"])]
         return fams
 
     m = mutant(variables=variables, aux_values=aux_values, constraint_families=constraint_families)

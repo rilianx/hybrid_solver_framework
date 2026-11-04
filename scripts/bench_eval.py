@@ -82,13 +82,13 @@ BENCHES = {
 
 
 def _run(job):
-    problem, label, config, name, seed, seconds, generated, mip = job
+    problem, label, config, name, seed, seconds, generated = job
     from core.packs import base_pack
     from tuning.cli import make_assembler
 
     b = BENCHES[problem]
     pack = base_pack(b.pack)
-    assembler, _ = make_assembler(pack, generated, mip=mip, generated_destructions=True)  # las configuraciones pueden usarlas
+    assembler, _ = make_assembler(pack, generated, generated_destructions=True)  # las configuraciones pueden usarlas
     inst = pack.load_instance(str(b.dir / f"{name}{b.ext}"))
     res = assembler.assemble(config)(inst, Random(seed), seconds)
     P = pack.problem_factory(inst)
@@ -108,7 +108,6 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--instances", nargs="*", default=None, help="prefijos de los nombres (p.ej. G, tai50_10, X-n1); default todas")
     ap.add_argument("--extra", nargs="*", default=[], help="nombre='{config JSON}'")
     ap.add_argument("--best-known", default=None, help="otra referencia del gap (JSON {instancia: costo})")
-    ap.add_argument("--mip", choices=["auto", "generated", "reference"], default="auto", help="vista MIP de HYB")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--out")
     args = ap.parse_args(argv)
@@ -119,7 +118,7 @@ def main(argv: list[str] | None = None) -> None:
 
     b = BENCHES[args.problem]
     generated = args.generated or f"generated/{b.pack}_native"
-    make_assembler(base_pack(b.pack), generated, mip=args.mip, generated_destructions=True)  # compila una vez antes de repartir
+    make_assembler(base_pack(b.pack), generated, generated_destructions=True)  # compila una vez antes de repartir
     configs: dict[str, tuple[dict, str]] = {}
     for run in args.runs:
         for rep, path in load_replicas(Path(run)):
@@ -139,7 +138,7 @@ def main(argv: list[str] | None = None) -> None:
     else:
         seconds, when = (lambda n: args.budget or 30.0), f"{args.budget or 30.0:g} s"
     seeds = range(args.first_seed, args.first_seed + args.seeds)
-    jobs = [(args.problem, label, cfg, n, s, seconds(n), generated, args.mip) for label, (cfg, _) in configs.items() for n in names for s in seeds]
+    jobs = [(args.problem, label, cfg, n, s, seconds(n), generated) for label, (cfg, _) in configs.items() for n in names for s in seeds]
     jobs.sort(key=lambda j: -j[5])  # las largas primero
     with ProcessPoolExecutor(args.workers) as pool:
         rows = list(pool.map(_run, jobs))

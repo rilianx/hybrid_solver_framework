@@ -6,7 +6,7 @@ conocidas, para validar un modelo generado (`core.validation.model_parts`).
 Cada caso trae la instancia en el formato de entrada (`JSSPInstance.to_text`), soluciones en el
 formato neutral (una secuencia de trabajos por máquina) con su factibilidad, la familia violada o el
 makespan, y el óptimo calculado por FUERZA BRUTA (todas las combinaciones de permutaciones por
-máquina), contrastado con el MIP de referencia.
+máquina).
 """
 
 from __future__ import annotations

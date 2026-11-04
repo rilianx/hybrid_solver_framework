@@ -5,8 +5,7 @@ conocidas, para validar un `ProblemModel` generado (`core.validation.model_parts
 
 Cada caso trae la instancia en el formato de entrada (`CVRPInstance.to_text`), soluciones en el
 formato neutral (lista de rutas) con su factibilidad, la familia violada o el costo, y el óptimo
-calculado por FUERZA BRUTA (todas las particiones de los clientes en rutas, todos los órdenes),
-contrastado con el MIP de referencia. En un problema nuevo, estos casos los escribe quien plantea
+calculado por FUERZA BRUTA (todas las particiones de los clientes en rutas, todos los órdenes). En un problema nuevo, estos casos los escribe quien plantea
 el problema; aquí se generan para tener un banco de prueba del mecanismo.
 """
 

@@ -37,7 +37,12 @@ def test_the_generated_model_passes_the_model_validator_with_the_same_cases(nat)
     from core.validation.model_parts import validate_parts
     from examples.jobshop.cases import load_cases
 
-    assert validate_parts(nat, load_cases(), scale_instances=[JSSPInstance.random(10, 10, Random(777))]).passed
+    from pathlib import Path
+
+    from core.packs import load_mip, with_mip
+
+    parts = with_mip(nat, load_mip(Path("generated/jobshop_native/mip/mip.py")))  # con la vista MIP generada
+    assert validate_parts(parts, load_cases(), scale_instances=[JSSPInstance.random(10, 10, Random(777))]).passed
 
 
 def test_the_generated_model_and_python_agree_on_cost_and_violations(nat):

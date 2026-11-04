@@ -298,7 +298,17 @@ std::unique_ptr<hsf::Destruction<Model>> make_component(const Model& model, cons
 ```'''
 
 
+def _with_mip_view(ws):
+    """Las destrucciones liberan variables de la vista MIP: el workspace de prueba lleva la del job shop."""
+    import shutil
+    from pathlib import Path
+
+    (ws / "mip").mkdir(parents=True, exist_ok=True)
+    shutil.copy(Path("generated/jobshop_native/mip/mip.py"), ws / "mip" / "mip.py")
+
+
 def test_a_generated_destruction_is_validated_and_used_by_hyb(pack, tmp_path):
+    _with_mip_view(tmp_path)
     from random import Random
 
     from llm import ScriptedClient
@@ -315,7 +325,7 @@ def test_a_generated_destruction_is_validated_and_used_by_hyb(pack, tmp_path):
     acc, stats = generate_native_slot(client, pack, "destruction", 1, tmp_path, verbose=False)
     assert [c.name for c in acc] == ["machine_window"], stats.rejections_by_layer
     prompt = client.calls[0][1]
-    assert "structural_variables" in prompt and "def _y(" in prompt and "def jobs_on(" in prompt
+    assert "structural_variables" in prompt and "def jobs_on(" in prompt
     write_catalog(tmp_path, nb)
     write_catalog(tmp_path, pert)
     write_catalog(tmp_path, acc)
@@ -330,6 +340,7 @@ def test_a_generated_destruction_is_validated_and_used_by_hyb(pack, tmp_path):
 
 
 def test_a_destruction_with_indices_out_of_range_is_rejected(pack, tmp_path):
+    _with_mip_view(tmp_path)
     from llm import ScriptedClient
     from llm.native_generator import generate_native_slot
 

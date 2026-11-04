@@ -1,5 +1,6 @@
-"""El modelo del CLSP escrito como piezas (`core.model_parts`): la referencia contra la que se
-prueba el mecanismo y con la que se generan los casos de prueba (`cases.py`).
+"""El oráculo del CLSP (`core.model_parts`, vista heurística): qué es una solución, qué viola y cuánto cuesta. Es la
+referencia contra la que se valida lo que escribe el LLM (el modelo C++ y la vista MIP) y con la que se generan los
+casos de prueba (`cases.py`).
 
 Solución: la matriz de setups `y[i][t]` (tupla de tuplas de bool), la misma representación que
 los componentes del CLSP. Dados los setups, el plan de producción sale de un LP: producir lo más
@@ -10,10 +11,7 @@ entre esos planes, el de menor inventario. De ese plan salen las familias y los 
   porque el LP la respeta). Términos: `setup` (costo de los setups encendidos) e `inventario`
   (costo de mantener el inventario de fin de período).
 
-MIP: `y_i_t` binarias (estructurales), producción `x_i_t` e inventario `s_i_t` continuas
-(auxiliares, su valor en el punto de una solución es el del plan del LP). Familias
-`demanda.balance` (s_{t-1} + x_t − s_t = d_t), `capacidad` (Σ x + st·y <= cap) y `enlace`
-(x <= M·y). Grupos: uno por período (Relax-and-Fix y Fix-and-Optimize recorren el horizonte).
+La vista MIP la escribe el LLM (`llm.native_mip_generator`, `generated/clsp_native/mip/mip.py`).
 """
 
 from __future__ import annotations
@@ -76,63 +74,6 @@ def cost_terms(inst: CLSPInstance, sol) -> dict[str, float]:
     _, s, _ = _plan(inst, canonical(sol))
     setup = sum(inst.setup_cost[i] for i in range(inst.n_items) for t in range(inst.n_periods) if sol[i][t])
     return {"setup": float(setup), "inventario": sum(inst.holding_cost[i] * v for (i, _t), v in s.items())}
-
-
-# ---------------------------------------------------------------- vista MIP
-def _y(i, t):
-    return f"y_{i}_{t}"
-
-
-def structural_variables(inst: CLSPInstance):
-    return [_y(i, t) for i in range(inst.n_items) for t in range(inst.n_periods)]
-
-
-def variables(inst: CLSPInstance):
-    out = {v: (0.0, 1.0, "binary") for v in structural_variables(inst)}
-    for i in range(inst.n_items):
-        total = float(sum(inst.demand[i]))
-        for t in range(inst.n_periods):
-            out[f"x_{i}_{t}"] = (0.0, total, "continuous")
-            out[f"s_{i}_{t}"] = (0.0, total, "continuous")
-    return out
-
-
-def to_assignment(inst: CLSPInstance, sol):
-    return {_y(i, t): float(sol[i][t]) for i in range(inst.n_items) for t in range(inst.n_periods)}
-
-
-def aux_values(inst: CLSPInstance, sol):
-    x, s, _ = _plan(inst, canonical(sol))
-    return {**{f"x_{i}_{t}": v for (i, t), v in x.items()}, **{f"s_{i}_{t}": v for (i, t), v in s.items()}}
-
-
-def from_assignment(inst: CLSPInstance, x):
-    return tuple(tuple((x.get(_y(i, t)) or 0.0) >= 0.5 for t in range(inst.n_periods)) for i in range(inst.n_items))
-
-
-def constraint_families(inst: CLSPInstance):
-    I, T = range(inst.n_items), range(inst.n_periods)
-    balance = []
-    for i in I:
-        for t in T:
-            coefs = {f"x_{i}_{t}": 1.0, f"s_{i}_{t}": -1.0}
-            if t > 0:
-                coefs[f"s_{i}_{t - 1}"] = 1.0
-            balance.append((coefs, "==", float(inst.demand[i][t])))
-    capacity = [({**{f"x_{i}_{t}": 1.0 for i in I}, **{_y(i, t): float(inst.setup_time[i]) for i in I}}, "<=", float(inst.capacity[t]))
-                for t in T]
-    link = [({f"x_{i}_{t}": 1.0, _y(i, t): -float(sum(inst.demand[i]))}, "<=", 0.0) for i in I for t in T]
-    return {"demanda.balance": balance, "capacidad": capacity, "enlace": link}
-
-
-def objective_terms(inst: CLSPInstance):
-    I, T = range(inst.n_items), range(inst.n_periods)
-    return {"setup": ({_y(i, t): float(inst.setup_cost[i]) for i in I for t in T}, 0.0),
-            "inventario": ({f"s_{i}_{t}": float(inst.holding_cost[i]) for i in I for t in T}, 0.0)}
-
-
-def variable_groups(inst: CLSPInstance):
-    return {f"t{t}": [_y(i, t) for i in range(inst.n_items)] for t in range(inst.n_periods)}
 
 
 # ---------------------------------------------------------------- vista constructiva

@@ -1,5 +1,5 @@
-"""El job shop (makespan) escrito como piezas (`core.model_parts`): la referencia de la variante
-`sequences` y con la que se generan los casos de prueba (`cases.py`).
+"""El oráculo del job shop (makespan) (`core.model_parts`, vista heurística): la referencia contra la que se valida lo
+que escribe el LLM y con la que se generan los casos de prueba (`cases.py`).
 
 Representación y formato neutral de respuesta (el de los casos): una secuencia por máquina, la
 lista de trabajos en el orden en que esa máquina los procesa. El plan es el semiactivo: cada
@@ -8,9 +8,7 @@ operación empieza apenas terminan la anterior de su trabajo y la anterior de su
 (las secuencias no forman un ciclo con las rutas de los trabajos; si lo forman no hay plan). Término
 del objetivo: `makespan`.
 
-MIP disyuntivo: binarias `y_m_i_j` (estructurales; i antes que j en la máquina m), inicios `s_j_k` y
-makespan `C` continuos. Familias `secuencia.par` (y_mij + y_mji = 1), `orden.ruta` (precedencias de
-cada trabajo), `orden.maquina` (big-M con M = suma de tiempos) y `orden.fin` (C >= fin de cada trabajo).
+La vista MIP la escribe el LLM (`llm.native_mip_generator`, `generated/jobshop_native/mip/mip.py`).
 """
 
 from __future__ import annotations
@@ -166,90 +164,6 @@ def critical_blocks(inst: JSSPInstance, sol, start=None) -> list[tuple[int, list
         else:
             blocks.append((m, [j]))
     return [b for b in blocks if len(b[1]) > 1]
-
-
-# ---------------------------------------------------------------- vista MIP
-def _y(m, i, j):
-    return f"y_{m}_{i}_{j}"
-
-
-def _s(j, k):
-    return f"s_{j}_{k}"
-
-
-def structural_variables(inst: JSSPInstance):
-    out = []
-    for m in inst.machines:
-        js = jobs_on(inst, m)
-        out += [_y(m, i, j) for i in js for j in js if i != j]
-    return out
-
-
-def variables(inst: JSSPInstance):
-    H = float(inst.horizon())
-    out = {v: (0.0, 1.0, "binary") for v in structural_variables(inst)}
-    out.update({_s(j, k): (0.0, H, "continuous") for j in inst.jobs for k in range(len(inst.routes[j]))})
-    out["C"] = (0.0, H, "continuous")
-    return out
-
-
-def to_assignment(inst: JSSPInstance, sol):
-    x = {v: 0.0 for v in structural_variables(inst)}
-    for m, seq in enumerate(sol[:inst.n_machines]):
-        first: list[int] = []
-        for j in seq:
-            if j not in first and inst.op_index(j, m) is not None:
-                first.append(j)
-        for a, i in enumerate(first):
-            for j in first[a + 1:]:
-                x[_y(m, i, j)] = 1.0
-    return x
-
-
-def aux_values(inst: JSSPInstance, sol):
-    start, makespan, _ = schedule(inst, sol)
-    out = {_s(j, k): float(start[j][k]) for j in inst.jobs for k in range(len(inst.routes[j]))}
-    out["C"] = float(makespan)
-    return out
-
-
-def from_assignment(inst: JSSPInstance, x):
-    seqs = []
-    for m in inst.machines:
-        js = jobs_on(inst, m)
-        before = {j: sum(1 for i in js if i != j and round(x.get(_y(m, i, j)) or 0.0) >= 1) for j in js}
-        seqs.append(sorted(js, key=lambda j: (before[j], j)))
-    return canonical(seqs)
-
-
-def constraint_families(inst: JSSPInstance):
-    H = float(inst.horizon())
-    par, ruta, maq, fin = [], [], [], []
-    for m in inst.machines:
-        js = jobs_on(inst, m)
-        for a, i in enumerate(js):
-            for j in js[a + 1:]:
-                par.append(({_y(m, i, j): 1.0, _y(m, j, i): 1.0}, "==", 1.0))
-        for i in js:
-            for j in js:
-                if i != j:  # i antes que j en m: s_j >= s_i + p_i
-                    ki, kj = inst.op_index(i, m), inst.op_index(j, m)
-                    maq.append(({_s(j, kj): 1.0, _s(i, ki): -1.0, _y(m, i, j): -H}, ">=", inst.proc(i, ki) - H))
-    for j in inst.jobs:
-        for k in range(len(inst.routes[j]) - 1):
-            ruta.append(({_s(j, k + 1): 1.0, _s(j, k): -1.0}, ">=", float(inst.proc(j, k))))
-        last = len(inst.routes[j]) - 1
-        fin.append(({"C": 1.0, _s(j, last): -1.0}, ">=", float(inst.proc(j, last))))
-    return {"secuencia.par": par, "orden.ruta": ruta, "orden.maquina": maq, "orden.fin": fin}
-
-
-def objective_terms(inst: JSSPInstance):
-    return {"makespan": ({"C": 1.0}, 0.0)}
-
-
-def variable_groups(inst: JSSPInstance):
-    """Una por máquina: Fix-and-Optimize reordena unas máquinas con las demás fijas."""
-    return {f"m{m}": [_y(m, i, j) for i in jobs_on(inst, m) for j in jobs_on(inst, m) if i != j] for m in inst.machines}
 
 
 # ---------------------------------------------------------------- vista constructiva

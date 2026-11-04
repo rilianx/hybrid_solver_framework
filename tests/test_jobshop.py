@@ -30,7 +30,9 @@ def test_a_cycle_is_an_order_violation_and_a_missing_job_a_sequence_violation():
 def test_the_reference_parts_pass_the_model_validator():
     cases = load_cases()
     scale = [JSSPInstance.random(10, 10, Random(777))]
-    report = validate_parts(model_parts, cases, scale_instances=scale)
+    from tests.mip_views import full_parts
+
+    report = validate_parts(full_parts("jobshop"), cases, scale_instances=scale)  # el oráculo con la vista MIP generada
     assert report.passed, report.feedback()
     report = check_construction_view(model_parts, cases, scale_instances=scale)
     assert report.passed, report.feedback()
