@@ -141,6 +141,69 @@ def _combination_probe(pack: ProblemPack, probe):
     return CombinationProbe(instance=probe.problem.inst, assembler_for=assembler_for, starts=["trivial", "random"], budget=1.0)
 
 
+# ------------------------------------------------------------------ vista MIP generada
+def oracle_module(pack: ProblemPack):
+    """Las piezas de referencia del problema (el oráculo humano: violaciones y costo)."""
+    return importlib.import_module(pack.variants[next(iter(pack.variants))][1])
+
+
+def mip_path(pack: ProblemPack, workspace: str | None = None):
+    """El archivo de la vista MIP que escribió el LLM (`llm.native_mip_generator`), si existe."""
+    from pathlib import Path
+
+    path = Path(workspace or pack.default_workspace) / "mip" / "mip.py"
+    return path if path.exists() else None
+
+
+def load_mip(path) -> Any:
+    """Importa una vista MIP generada desde su archivo (un nombre de módulo por contenido: dos versiones conviven)."""
+    import hashlib
+    import importlib.util
+    import sys
+    from pathlib import Path
+
+    path = Path(path)
+    name = "hsf_mip_" + hashlib.sha256(path.read_bytes()).hexdigest()[:12]
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.spec_from_file_location(name, path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    try:
+        spec.loader.exec_module(mod)
+    except BaseException:
+        del sys.modules[name]
+        raise
+    return mod
+
+
+def with_mip(oracle, mip):
+    """Las piezas del oráculo con la vista MIP de `mip` (las funciones de `core.model_parts.MIP_PARTS`)."""
+    from types import SimpleNamespace
+
+    from core.model_parts import MIP_PARTS
+
+    ns = SimpleNamespace(**{k: getattr(oracle, k) for k in dir(oracle) if not k.startswith("__")})
+    for name in MIP_PARTS:
+        if hasattr(ns, name):
+            delattr(ns, name)
+        if hasattr(mip, name):
+            setattr(ns, name, getattr(mip, name))
+    ns.__name__ = f"{oracle.__name__}+{getattr(mip, '__name__', 'mip')}"
+    return ns
+
+
+def with_generated_mip(pack: ProblemPack, mip_file) -> ProblemPack:
+    """El pack con la vista MIP generada en lugar de la de referencia: el modelo de Python (el sub-MIP de HYB) y las
+    destrucciones genéricas la usan; el oráculo sigue siendo el de referencia."""
+    from dataclasses import replace
+
+    parts = with_mip(oracle_module(pack), load_mip(mip_file))
+    base = [(c, f) for c, f in pack.base_components if c["slot"] != "destruction"]
+    base += [(c, f) for c, f in base_components(parts, list(pack.constructor_skeletons)) if c["slot"] == "destruction"]
+    return replace(pack, problem_factory=lambda inst: PartsModel(parts, inst), base_components=base)
+
+
 def parts_pack(base: ProblemPack, parts, parts_import: str, model_spec, name: str) -> ProblemPack:
     """El pack de una representación: instancias y casos del pack base; modelo, catálogo mínimo y
     especificación para los componentes, de las piezas."""

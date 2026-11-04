@@ -28,7 +28,11 @@ piezas de referencia en Python       └ más rápidos    native_optimizer      
    `native/edits.py`). `native/check.py` aplica las capas de `core/validation/` (contractual, calidad, diversidad
    contra los aceptados, aporte en combinación con cada esqueleto) en un proceso aparte. `native_optimizer` acelera
    los aceptados con pruebas diferenciales (`core/validation/equivalence.py`).
-3. **Configuración** (`tuning/cli.py`): el espacio condicional (esqueleto → componentes de cada slot → parámetros,
+3. **Vista MIP** (`llm/native_mip_generator.py`, opcional): la formulación en Python que usa HYB en sus sub-MIPs
+   (variables, restricciones por familia, términos del objetivo y grupos de variables), validada contra el oráculo y
+   los casos (`check_mip_view`, `check_mip_optimum`). Queda en `<workspace>/mip/mip.py` y el tuning la usa en lugar de
+   la de referencia (`--mip auto|generated|reference`).
+4. **Configuración** (`tuning/cli.py`): el espacio condicional (esqueleto → componentes de cada slot → parámetros,
    `config_space/`) se afina con irace (`--tuner irace`) o en tres etapas (`--tuner staged`, `tuning/staged.py`:
    primero la estructura, después irace en el espacio reducido). La configuración ganadora se mide en instancias
    de test contra los defaults de cada esqueleto. Las corridas son enteras en C++ (`core/native_runner.py`).
