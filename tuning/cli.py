@@ -111,9 +111,9 @@ def run_experiment(pack: ProblemPack, catalog: str, args, train, test, out_dir: 
         print(f"  trial {t.number:>3}{mark} {t.cost:>12.4f}  {t.summary}")
 
     normalizers = [pack.baseline_cost(i) for i in train] if args.objective == "ratio" else None
-    if args.tuner == "irace":
+    if args.tuner in ("irace", "staged"):
         result = _run_irace(pack, catalog, args, assembler, train, normalizers, out_dir)
-        print(f"  irace: {result.experiments} experimentos en {result.seconds:.0f}s; élite: "
+        print(f"  {args.tuner}: {result.experiments} experimentos en {result.seconds:.0f}s; élite: "
               + "; ".join(describe(e) for e in result.elites))
         print(f"  mejor en train: {result.best_cost:.4f}  {describe(result.best_config)}")
     else:
@@ -166,6 +166,12 @@ def _run_irace(pack: ProblemPack, catalog: str, args, assembler, train, normaliz
                                     generated_dir=args.generated if catalog != "handwritten" else None,
                                     problem_module=pack.module, catalog=catalog, skeletons=args.skeletons,
                                     native=args.native, objective=args.objective, scale_budget=args.scale_budget)
+    if args.tuner == "staged":
+        from tuning.staged import run_staged
+
+        return run_staged(assembler, scenario, paths, args.budget, experiments, seed=args.tuner_seed, top=args.stage_top,
+                          parallel=args.irace_parallel, final_seeds=args.final_seeds, normalizers=normalizers,
+                          skeletons=args.skeletons)
     return tune_with_irace(assembler, scenario, train, args.budget, experiments, seed=args.tuner_seed,
                            normalizers=normalizers, parallel=args.irace_parallel)
 
@@ -214,7 +220,7 @@ def main(pack: ProblemPack, argv: list[str] | None = None) -> None:
                     help="variantes de un solo componente encoladas tras los defaults (-1 = un tercio de los trials; 0 = no)")
     ap.add_argument("--generated", default=pack.default_workspace)
     ap.add_argument("--out", default="tuning_out")
-    ap.add_argument("--tuner", choices=["optuna", "irace"], default="optuna",
+    ap.add_argument("--tuner", choices=["optuna", "irace", "staged"], default="optuna",
                     help="irace necesita R con el paquete irace (Ubuntu: apt install r-cran-irace)")
     ap.add_argument("--native", action="store_true",
                     help="correr las configuraciones en C++ (backend nativo del problema; solo SA, ILS, VNS y TS)")
@@ -223,6 +229,8 @@ def main(pack: ProblemPack, argv: list[str] | None = None) -> None:
     ap.add_argument("--baselines", choices=["variants", "defaults"], default="variants",
                     help="baselines de test con --skeletons: una variante por componente (variants) o solo el default "
                          "de cada esqueleto (defaults, mucho más barato)")
+    ap.add_argument("--stage-top", type=int, default=2, help="staged: estructuras que pasan de la etapa 1 a irace")
+    ap.add_argument("--final-seeds", type=int, default=3, help="staged: semillas nuevas de la validación final")
     ap.add_argument("--irace-parallel", type=int, default=1,
                     help="experimentos de irace a la vez (los runners de GitHub tienen 4 núcleos)")
     ap.add_argument("--irace", default=None, help="directorio donde escribir un escenario irace (opcional)")

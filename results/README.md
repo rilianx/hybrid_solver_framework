@@ -1554,3 +1554,33 @@ X de Uchoa, 43 instancias, 30 s, 3 semillas (`uchoa_cvrp_gen_run81.json`):
 En el CVRP, con todo generado, el gap baja de 1,65 % a 1,04 % (0,32 % en 101–149 clientes); HGS sigue mejor
 (~0,1–0,3 %). En el job shop queda algo por detrás del pipeline anterior (que tenía el modelo a mano y PR con mejoras
 tabú largas, afinado con 3 h por réplica); irace no eligió PR esta vez.
+
+### Job shop generado: afinar con PR y TS (tune 82) y con el tuner por etapas (tune 83)
+
+Las dos con 30 s por corrida, 15×15 y 20×15 (6+6), 3 réplicas, `--irace-parallel 4`. Tune 82: irace restringido a
+mano a PR y TS; elige PR en las tres. Tune 83: `--tuner staged` con todos los esqueletos (`tuning/staged.py`): la
+carrera estructural pone a PR primero y TS segundo en las tres réplicas sin restringir nada; irace parte de esas
+estructuras y en la validación final (3 semillas nuevas) sus élites ganan siempre a las estructuras de partida; r0 y
+r1 terminan en PR y r2 en TS (por 0,2 %, menos que el ruido). Taillard, 30 s, 3 semillas
+(`taillard_jobshop_gen_run{82,83}.json`):
+
+| | 15×15 | 20×15 |
+|---|---|---|
+| tune 80 (irace, todo en un espacio → ILS), media | 0,56 % | 1,67 % |
+| tune 82 (irace con PR y TS a mano), media | **0,36 %** | 1,73 % |
+| tune 83 (por etapas), media | 0,49 % | 1,67 % |
+| tune 83 r0 (PR) | 0,42 % | **1,39 %** |
+| antes: modelo a mano (run 61, PR afinado en 20×15) | 0,36 % | 1,29 % |
+
+Diferencias por instancia (IC95 bootstrap): en 15×15, 80 − 82 = +0,20 [+0,02, +0,36] y 82 − 83 = −0,13 [−0,30,
+−0,01]; en 20×15 ninguna se distingue (|Δ| ≤ 0,06). El tuner por etapas encuentra solo la estructura que había que
+imponer a mano (PR), pero no le gana a imponerla: la etapa final elige entre configuraciones que difieren menos que el
+ruido (r2 se queda con TS). Lo que falta es una selección final más robusta (más instancias y semillas, o una
+prueba estadística antes de dejar la estructura de la etapa 1).
+
+Diagnóstico (`tune_run83/r*/irace_generated/staged.json`): en la etapa 1 todas las variantes de PR y TS quedan entre
+0,1269 y 0,1275 de costo relativo (las malas, 0,92): una semilla separa los esqueletos buenos de los malos, pero no los
+componentes buenos entre sí. El filtro "no peor que el default" pasó a irace un solo relink en r1 y r2 y dejó fuera
+`disjunctive_arc_flip_relink`, el que eligió el tune 82 en dos réplicas; la etapa 1 consumió ~400 de los ~1500
+experimentos, y la validación final repite las instancias de entrenamiento. Pendiente: no podar componentes con una
+semilla (podar solo esqueletos) y una selección final con más instancias/semillas o una prueba estadística.

@@ -85,7 +85,7 @@ class IraceResult:
 
 def tune_with_irace(assembler, scenario: Path, train, budget: float, max_experiments: int, seed: int = 0,
                     normalizers: list[float] | None = None, timeout: float | None = None,
-                    parallel: int = 1) -> IraceResult:
+                    parallel: int = 1, evaluate_best: bool = True) -> IraceResult:
     from tuning.irace_scenario import parse_irace_params
 
     space = assembler.config_space()
@@ -105,7 +105,7 @@ def tune_with_irace(assembler, scenario: Path, train, budget: float, max_experim
         raise RuntimeError(f"irace terminó con código {proc.returncode}:\n{(proc.stdout + proc.stderr)[-4000:]}")
     elites = [parse_irace_params(space, args) for args in parse_elites(proc.stdout)]
     best = elites[0]
-    cost = assembler.evaluate(best, train, budget, seed=seed, normalizers=normalizers)
+    cost = assembler.evaluate(best, train, budget, seed=seed, normalizers=normalizers) if evaluate_best else float("nan")
     return IraceResult(best, elites, cost, seconds, max_experiments, proc.stdout.splitlines()[-30:])
 
 
