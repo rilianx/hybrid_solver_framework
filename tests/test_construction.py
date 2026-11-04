@@ -8,8 +8,8 @@ import pytest
 
 from core.construction import GreedyConstructor
 from core.validation import validate_component
-from examples.lotsizing.construction import LatestSource, UnitMarginalCost
-from examples.lotsizing.problem_model import CLSPInstance, LotSizingModel
+from examples.lotsizing.instance import CLSPInstance
+from tests.clsp_fixtures import LatestSource, LotSizingModel, UnitMarginalCost
 from tests.contexts import clsp_contexts, clsp_diversity_probe
 
 COMP = {"name": "s", "slot": "greedy_score", "compatible_skeletons": ["SA"], "params": {}}
@@ -33,7 +33,7 @@ def test_greedy_constructor_is_feasible_and_deterministic_per_seed(n, T, rule):
 
 
 def test_unit_cost_score_beats_lot_for_lot_start():
-    from examples.lotsizing.components import LotForLotConstructor
+    from tests.clsp_fixtures import LotForLotConstructor
 
     inst = CLSPInstance.trigeiro(10, 15, Random(3), utilization=0.95, tbo=3.0)
     P = LotSizingModel(inst)
@@ -99,20 +99,11 @@ def test_diversity_signature_separates_ideas_and_catches_copies():
 
 
 def test_catalog_wraps_scores_as_tunable_constructors():
-    from core.catalog import build_registry
-    from examples.lotsizing.pack import PACK
+    from tests.clsp_fixtures import clsp_registry
 
-    reg = build_registry(PACK)
+    reg = clsp_registry()
     spec = reg.get("constructor", "greedy_unit_marginal_cost")
     assert set(spec.params) == {"rule", "alpha"} and spec.params["rule"]["values"] == ["greedy", "rcl", "roulette"]
     inst = CLSPInstance.trigeiro(5, 6, Random(1), utilization=0.9, tbo=2.0)
     P = LotSizingModel(inst)
     assert P.is_feasible(spec.make(P, rule="rcl", alpha=0.5).build(inst, Random(0)))
-
-
-def test_construction_types_import_from_the_problem_module():
-    """Los tipos de la vista constructiva se importan también desde el módulo del problema."""
-    import examples.lotsizing.problem_model as pm
-    from examples.lotsizing import construction
-
-    assert pm.CoverAction is construction.CoverAction and pm.CLSPPartial is construction.CLSPPartial

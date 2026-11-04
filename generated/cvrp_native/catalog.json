@@ -1,24 +1,31 @@
 [
  {
-  "name": "demand_weighted_insertion_ratio",
-  "slot": "greedy_score",
-  "path": "generated/cvrp_native/greedy_score/demand_weighted_insertion_ratio_r1.hpp",
+  "name": "randomized_clarke_wright_savings",
+  "slot": "constructor",
+  "path": "generated/cvrp_native/constructor/randomized_clarke_wright_savings_r1.hpp",
   "component": {
-   "name": "demand_weighted_insertion_ratio",
-   "slot": "greedy_score",
+   "name": "randomized_clarke_wright_savings",
+   "slot": "constructor",
    "params": {
-    "alpha": {
+    "lambda": {
+     "type": "float",
+     "range": [
+      0.6,
+      1.8
+     ]
+    },
+    "noise": {
      "type": "float",
      "range": [
       0.0,
-      1.5
+      0.3
      ]
     },
-    "open_factor": {
-     "type": "float",
+    "neighbors": {
+     "type": "int",
      "range": [
-      1.0,
-      3.0
+      10,
+      120
      ]
     }
    },
@@ -27,55 +34,104 @@
     "ILS",
     "TS",
     "VNS",
-    "PR"
+    "PR",
+    "HYB"
    ]
   }
  },
  {
-  "name": "farthest_first_route_filling",
-  "slot": "greedy_score",
-  "path": "generated/cvrp_native/greedy_score/farthest_first_route_filling_r1.hpp",
+  "name": "polar_sweep_2opt",
+  "slot": "constructor",
+  "path": "generated/cvrp_native/constructor/polar_sweep_2opt_r1.hpp",
   "component": {
-   "name": "farthest_first_route_filling",
-   "slot": "greedy_score",
+   "name": "polar_sweep_2opt",
+   "slot": "constructor",
    "params": {
-    "beta": {
+    "tries": {
+     "type": "int",
+     "range": [
+      1,
+      8
+     ]
+    },
+    "opt_passes": {
+     "type": "int",
+     "range": [
+      0,
+      20
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "sequential_cheapest_insertion",
+  "slot": "constructor",
+  "path": "generated/cvrp_native/constructor/sequential_cheapest_insertion_r1.hpp",
+  "component": {
+   "name": "sequential_cheapest_insertion",
+   "slot": "constructor",
+   "params": {
+    "seed_rcl": {
+     "type": "int",
+     "range": [
+      1,
+      10
+     ]
+    },
+    "mu": {
      "type": "float",
      "range": [
       0.0,
       1.0
      ]
-    }
-   },
-   "compatible_skeletons": [
-    "SA",
-    "ILS",
-    "TS",
-    "VNS",
-    "PR"
-   ]
-  }
- },
- {
-  "name": "angular_cohesion_insertion",
-  "slot": "greedy_score",
-  "path": "generated/cvrp_native/greedy_score/angular_cohesion_insertion_r1.hpp",
-  "component": {
-   "name": "angular_cohesion_insertion",
-   "slot": "greedy_score",
-   "params": {
-    "ang_w": {
+    },
+    "noise": {
      "type": "float",
      "range": [
       0.0,
-      2.0
+      0.2
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "granular_relocate",
+  "slot": "neighborhood",
+  "path": "generated/cvrp_native/neighborhood/granular_relocate_r4.hpp",
+  "component": {
+   "name": "granular_relocate",
+   "slot": "neighborhood",
+   "params": {
+    "k": {
+     "type": "int",
+     "range": [
+      3,
+      40
      ]
     },
-    "open_factor": {
-     "type": "float",
+    "new_route": {
+     "type": "int",
      "range": [
-      1.0,
-      3.0
+      0,
+      1
      ]
     }
    },
@@ -84,73 +140,57 @@
     "ILS",
     "TS",
     "VNS",
-    "PR"
+    "PR",
+    "HYB"
    ]
   }
  },
  {
-  "name": "granular_relocate_customer",
+  "name": "granular_two_opt_star",
   "slot": "neighborhood",
-  "path": "generated/cvrp_native/neighborhood/granular_relocate_customer_r4.hpp",
+  "path": "generated/cvrp_native/neighborhood/granular_two_opt_star_r4.hpp",
   "component": {
-   "name": "granular_relocate_customer",
+   "name": "granular_two_opt_star",
    "slot": "neighborhood",
    "params": {
-    "k_neighbors": {
+    "k": {
+     "type": "int",
+     "range": [
+      3,
+      40
+     ]
+    },
+    "use_reversed": {
+     "type": "int",
+     "range": [
+      0,
+      1
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "granular_cross_exchange",
+  "slot": "neighborhood",
+  "path": "generated/cvrp_native/neighborhood/granular_cross_exchange_r4.hpp",
+  "component": {
+   "name": "granular_cross_exchange",
+   "slot": "neighborhood",
+   "params": {
+    "k": {
      "type": "int",
      "range": [
       3,
       30
-     ]
-    }
-   },
-   "compatible_skeletons": [
-    "SA",
-    "ILS",
-    "TS",
-    "VNS",
-    "PR"
-   ]
-  }
- },
- {
-  "name": "granular_two_opt_star_tail_exchange",
-  "slot": "neighborhood",
-  "path": "generated/cvrp_native/neighborhood/granular_two_opt_star_tail_exchange_r4.hpp",
-  "component": {
-   "name": "granular_two_opt_star_tail_exchange",
-   "slot": "neighborhood",
-   "params": {
-    "k_neighbors": {
-     "type": "int",
-     "range": [
-      3,
-      30
-     ]
-    }
-   },
-   "compatible_skeletons": [
-    "SA",
-    "ILS",
-    "TS",
-    "VNS",
-    "PR"
-   ]
-  }
- },
- {
-  "name": "granular_cross_exchange_segments",
-  "slot": "neighborhood",
-  "path": "generated/cvrp_native/neighborhood/granular_cross_exchange_segments_r3.hpp",
-  "component": {
-   "name": "granular_cross_exchange_segments",
-   "slot": "neighborhood",
-   "params": {
-    "k_neighbors": {
-     "type": "int",
-     "range": [
-      3,
-      20
      ]
     },
     "max_seg": {
@@ -166,98 +206,99 @@
     "ILS",
     "TS",
     "VNS",
-    "PR"
+    "PR",
+    "HYB"
    ]
   }
  },
  {
-  "name": "radial_ruin_greedy_blink_recreate",
+  "name": "radial_ruin_cheapest_blink_insert",
   "slot": "perturbation",
-  "path": "generated/cvrp_native/perturbation/radial_ruin_greedy_blink_recreate_r1.hpp",
+  "path": "generated/cvrp_native/perturbation/radial_ruin_cheapest_blink_insert_r1.hpp",
   "component": {
-   "name": "radial_ruin_greedy_blink_recreate",
+   "name": "radial_ruin_cheapest_blink_insert",
    "slot": "perturbation",
    "params": {
-    "remove_per_strength": {
-     "type": "float",
+    "ruin_base": {
+     "type": "int",
      "range": [
-      1.0,
-      12.0
+      2,
+      30
      ]
     },
-    "max_frac": {
+    "ruin_per_strength": {
      "type": "float",
      "range": [
-      0.05,
-      0.6
+      0.5,
+      6.0
      ]
     },
     "blink": {
      "type": "float",
      "range": [
       0.0,
-      0.2
+      0.15
      ]
     },
-    "order": {
-     "type": "cat",
-     "values": [
-      "random",
-      "demand",
-      "far",
-      "near"
+    "far_first_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
      ]
     }
    },
    "compatible_skeletons": [
-    "ILS"
+    "ILS",
+    "PR",
+    "HYB"
    ]
   }
  },
  {
-  "name": "neighbor_guided_random_move_walk",
+  "name": "random_feasible_move_chain_kick",
   "slot": "perturbation",
-  "path": "generated/cvrp_native/perturbation/neighbor_guided_random_move_walk_r2.hpp",
+  "path": "generated/cvrp_native/perturbation/random_feasible_move_chain_kick_r1.hpp",
   "component": {
-   "name": "neighbor_guided_random_move_walk",
+   "name": "random_feasible_move_chain_kick",
    "slot": "perturbation",
    "params": {
+    "moves_base": {
+     "type": "int",
+     "range": [
+      1,
+      10
+     ]
+    },
     "moves_per_strength": {
      "type": "float",
      "range": [
-      1.0,
+      0.5,
       5.0
      ]
     },
-    "neighbor_k": {
-     "type": "int",
-     "range": [
-      3,
-      30
-     ]
-    },
-    "max_seg": {
-     "type": "int",
-     "range": [
-      2,
-      6
-     ]
-    },
-    "p_relocate": {
+    "w_relocate": {
      "type": "float",
      "range": [
       0.0,
       1.0
      ]
     },
-    "p_swap": {
+    "w_swap": {
      "type": "float",
      "range": [
       0.0,
       1.0
      ]
     },
-    "p_cross": {
+    "w_twoopt_star": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "w_reverse": {
      "type": "float",
      "range": [
       0.0,
@@ -266,69 +307,42 @@
     }
    },
    "compatible_skeletons": [
-    "ILS"
+    "ILS",
+    "PR",
+    "HYB"
    ]
   }
  },
  {
-  "name": "route_cluster_merge_prins_resplit",
-  "slot": "perturbation",
-  "path": "generated/cvrp_native/perturbation/route_cluster_merge_prins_resplit_r2.hpp",
-  "component": {
-   "name": "route_cluster_merge_prins_resplit",
-   "slot": "perturbation",
-   "params": {
-    "routes_per_strength": {
-     "type": "float",
-     "range": [
-      0.5,
-      4.0
-     ]
-    },
-    "orient": {
-     "type": "cat",
-     "values": [
-      "nn",
-      "random",
-      "mixed"
-     ]
-    },
-    "cut_penalty": {
-     "type": "float",
-     "range": [
-      0.2,
-      3.0
-     ]
-    },
-    "split_noise": {
-     "type": "float",
-     "range": [
-      0.0,
-      0.5
-     ]
-    }
-   },
-   "compatible_skeletons": [
-    "ILS"
-   ]
-  }
- },
- {
-  "name": "successor_chain_relink",
+  "name": "route_copy_relink",
   "slot": "relink",
-  "path": "generated/cvrp_native/relink/successor_chain_relink_r1.hpp",
+  "path": "generated/cvrp_native/relink/route_copy_relink_r1.hpp",
   "component": {
-   "name": "successor_chain_relink",
+   "name": "route_copy_relink",
    "slot": "relink",
    "params": {
-    "link_weight": {
-     "type": "float",
-     "range": [
-      0.2,
-      5.0
+    "reinsert": {
+     "type": "cat",
+     "values": [
+      "cheapest",
+      "random_route"
      ]
-    },
-    "merge_prob": {
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "giant_tour_swap_relink",
+  "slot": "relink",
+  "path": "generated/cvrp_native/relink/giant_tour_swap_relink_r1.hpp",
+  "component": {
+   "name": "giant_tour_swap_relink",
+   "slot": "relink",
+   "params": {
+    "length_first": {
      "type": "float",
      "range": [
       0.0,
@@ -342,11 +356,11 @@
   }
  },
  {
-  "name": "route_transplant_relink",
+  "name": "route_prefix_growth_relink",
   "slot": "relink",
-  "path": "generated/cvrp_native/relink/route_transplant_relink_r1.hpp",
+  "path": "generated/cvrp_native/relink/route_prefix_growth_relink_r1.hpp",
   "component": {
-   "name": "route_transplant_relink",
+   "name": "route_prefix_growth_relink",
    "slot": "relink",
    "params": {
     "greedy_prob": {
@@ -363,67 +377,14 @@
   }
  },
  {
-  "name": "arc_relocate_relink",
-  "slot": "relink",
-  "path": "generated/cvrp_native/relink/arc_relocate_relink_r1.hpp",
-  "component": {
-   "name": "arc_relocate_relink",
-   "slot": "relink",
-   "params": {
-    "strong_prob": {
-     "type": "float",
-     "range": [
-      0.0,
-      1.0
-     ]
-    },
-    "allow_new_route": {
-     "type": "int",
-     "range": [
-      0,
-      1
-     ]
-    }
-   },
-   "compatible_skeletons": [
-    "PR"
-   ]
-  }
- },
- {
-  "name": "granular_route_endpoint_merge_and_split",
+  "name": "granular_intra_or_opt",
   "slot": "neighborhood",
-  "path": "generated/cvrp_native/neighborhood/granular_route_endpoint_merge_and_split_r4.hpp",
+  "path": "generated/cvrp_native/neighborhood/granular_intra_or_opt_r3.hpp",
   "component": {
-   "name": "granular_route_endpoint_merge_and_split",
+   "name": "granular_intra_or_opt",
    "slot": "neighborhood",
    "params": {
-    "k_neighbors": {
-     "type": "int",
-     "range": [
-      3,
-      30
-     ]
-    }
-   },
-   "compatible_skeletons": [
-    "SA",
-    "ILS",
-    "TS",
-    "VNS",
-    "PR"
-   ]
-  }
- },
- {
-  "name": "granular_intra_route_oropt_segment_with_reversal",
-  "slot": "neighborhood",
-  "path": "generated/cvrp_native/neighborhood/granular_intra_route_oropt_segment_with_reversal_r4.hpp",
-  "component": {
-   "name": "granular_intra_route_oropt_segment_with_reversal",
-   "slot": "neighborhood",
-   "params": {
-    "k_neighbors": {
+    "k": {
      "type": "int",
      "range": [
       3,
@@ -436,30 +397,12 @@
       2,
       5
      ]
-    }
-   },
-   "compatible_skeletons": [
-    "SA",
-    "ILS",
-    "TS",
-    "VNS",
-    "PR"
-   ]
-  }
- },
- {
-  "name": "granular_swap_star_best_reinsertion",
-  "slot": "neighborhood",
-  "path": "generated/cvrp_native/neighborhood/granular_swap_star_best_reinsertion_r4.hpp",
-  "component": {
-   "name": "granular_swap_star_best_reinsertion",
-   "slot": "neighborhood",
-   "params": {
-    "k_neighbors": {
+    },
+    "use_reversed": {
      "type": "int",
      "range": [
-      3,
-      25
+      0,
+      1
      ]
     }
    },
@@ -468,7 +411,67 @@
     "ILS",
     "TS",
     "VNS",
-    "PR"
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "granular_swap_star",
+  "slot": "neighborhood",
+  "path": "generated/cvrp_native/neighborhood/granular_swap_star_r2.hpp",
+  "component": {
+   "name": "granular_swap_star",
+   "slot": "neighborhood",
+   "params": {
+    "k": {
+     "type": "int",
+     "range": [
+      3,
+      30
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "route_dissolve_reinsert",
+  "slot": "neighborhood",
+  "path": "generated/cvrp_native/neighborhood/route_dissolve_reinsert_r4.hpp",
+  "component": {
+   "name": "route_dissolve_reinsert",
+   "slot": "neighborhood",
+   "params": {
+    "k": {
+     "type": "int",
+     "range": [
+      3,
+      30
+     ]
+    },
+    "max_len": {
+     "type": "int",
+     "range": [
+      1,
+      50
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
    ]
   }
  }

@@ -11,15 +11,16 @@ pytest.importorskip("pulp")
 from core.common_components import BetterAcceptance, MaxIterationsStop, MIPModelRepair
 from core.validation import ValidationContext, validate_component
 from core.validation.syntactic import check_protocol
-from examples.lotsizing.components import (
+from core.packs import GroupWindowDestruction, RandomVariableDestruction
+from examples.lotsizing.instance import CLSPInstance
+from tests.clsp_fixtures import (
     COMPONENT_LOT_FOR_LOT,
-    COMPONENT_PERIOD_WINDOW_DESTRUCTION,
+    COMPONENT_PERIOD_WINDOW,
     COMPONENT_SETUP_FLIP,
     LotForLotConstructor,
-    PeriodWindowDestruction,
+    LotSizingModel,
     SetupFlipNeighborhood,
 )
-from examples.lotsizing.problem_model import CLSPInstance, LotSizingModel
 from tests.contexts import clsp_contexts
 
 # --------------------------------------------------------------------------- fixtures
@@ -34,7 +35,7 @@ def clsp_ctx():
         instances=[inst],
         trivial_solutions=[LotForLotConstructor().build(inst, Random(0))],
         baseline_constructor=LotForLotConstructor(),
-        reference_destruction=PeriodWindowDestruction(inst),
+        reference_destruction=GroupWindowDestruction(problem),
         mip_time_limit=5.0,
     )
 
@@ -45,7 +46,7 @@ def clsp_ctx():
 def test_good_clsp_components_pass(clsp_ctx):
     for comp, impl in [
         (COMPONENT_SETUP_FLIP, SetupFlipNeighborhood(clsp_ctx.problem)),
-        (COMPONENT_PERIOD_WINDOW_DESTRUCTION, PeriodWindowDestruction(clsp_ctx.instances[0])),
+        (COMPONENT_PERIOD_WINDOW, GroupWindowDestruction(clsp_ctx.problem)),
         ({"name": "stop_iters", "slot": "stop"}, MaxIterationsStop(10)),
         ({"name": "better", "slot": "acceptance"}, BetterAcceptance()),
         ({"name": "mip_repair", "slot": "repair_mip"}, MIPModelRepair(clsp_ctx.problem)),
@@ -91,13 +92,13 @@ def test_contractual_detects_wrong_undo(clsp_ctx):
 
 
 def test_contractual_detects_destruction_leaking_unknown_variables(clsp_ctx):
-    class LeakyDestruction(PeriodWindowDestruction):
+    class LeakyDestruction(GroupWindowDestruction):
         def destroy(self, sol, ratio, rng):
             partial, free = super().destroy(sol, ratio, rng)
             free.add("x999")
             return partial, free
 
-    report = validate_component(COMPONENT_PERIOD_WINDOW_DESTRUCTION, LeakyDestruction(clsp_ctx.instances[0]), clsp_ctx)
+    report = validate_component(COMPONENT_PERIOD_WINDOW, LeakyDestruction(clsp_ctx.problem), clsp_ctx)
     assert any(c.name == "destruction.free_subset_of_variables" for c in report.failures())
     assert "x999" in report.feedback()
 
@@ -175,31 +176,6 @@ def test_quality_gate_rejects_destruction_ignoring_ratio(clsp_ctx):
     assert any(c.name == "destruction.ratio_monotone" for c in report.failures())
 
 
-def test_infeasibility_feedback_distinguishes_capacity_from_missing_setup():
-    """Corrida 5: tres constructores murieron por 1,67 unidades en un período saturado
-    teniendo el anterior libre, y el mensaje solo decía "faltante 2 unidades". El detalle
-    debe distinguir las causas, porque el arreglo es distinto en cada una: sin setup
-    (encender uno), un solo setup que no da abasto para el ítem (agregar OTRO), o período
-    saturado por varios ítems (adelantar producción)."""
-    ctxs = clsp_contexts(strict=True)
-
-    # (a) capacidad saturada: lot-for-lot en la micro-instancia donde el pico no cabe
-    ctx = next(c for c in ctxs if not c.problem.is_feasible(LotForLotConstructor().build(c.instances[0], Random(0))))
-    msg = ctx.problem.explain_infeasibility(LotForLotConstructor().build(ctx.instances[0], Random(0)))
-    # Corrida 8: el mensaje anterior ("ADELANTAR producción a t-1") hizo que el modelo MOVIERA el
-    # setup a t-1, que tampoco alcanza solo (33,3 útiles vs 35 de demanda). La causa real es que
-    # un solo período con setup no basta para ese ítem: hace falta OTRO setup, no otro lugar.
-    assert "OTRO setup" in msg and "no basta con mover" in msg and "libres" in msg
-    assert "33.3 unidades" in msg and "35 de demanda acumulada" in msg
-    assert "ENCENDER" not in msg  # sí hay setup: la causa no es esa
-
-    # (b) falta el setup: sin ningún setup, la causa es otra y el mensaje lo dice
-    ctx0 = ctxs[0]
-    empty = tuple(tuple(False for _ in range(ctx0.instances[0].n_periods)) for _ in range(ctx0.instances[0].n_items))
-    msg0 = ctx0.problem.explain_infeasibility(empty)
-    assert "no tiene ningún setup" in msg0 and "ENCENDER" in msg0 and "SATURADO" not in msg0
-
-
 def test_constructor_quality_gate_threshold_is_configurable():
     """El gate compara contra una referencia que puede ser mejor que un greedy cualquiera: umbral laxo y explícito."""
     from dataclasses import replace
@@ -228,20 +204,14 @@ def test_destruction_signature_ignores_rng_and_captures_shape():
     from random import Random
 
     from core.validation.diversity import destruction_signature, similarity
-    from examples.lotsizing.components import (
-        LotForLotConstructor,
-        PeriodWindowDestruction,
-        RandomSetupDestruction,
-    )
-    from examples.lotsizing.problem_model import CLSPInstance, LotSizingModel
 
     inst = CLSPInstance.trigeiro(8, 12, Random(100), utilization=0.95, tbo=3.0)
     problem = LotSizingModel(inst)
     sol = LotForLotConstructor().build(inst, Random(0))
 
-    a, b = RandomSetupDestruction(inst), RandomSetupDestruction(inst)
+    a, b = RandomVariableDestruction(problem), RandomVariableDestruction(problem)
     b.destroy(sol, 0.3, Random(999))  # desalinea cualquier estado interno
-    window = PeriodWindowDestruction(inst)
+    window = GroupWindowDestruction(problem)
     sig = lambda c: destruction_signature(c, sol, problem)  # noqa: E731
 
     assert similarity(sig(a), sig(b)) > 0.95, "la misma idea debe verse como la misma idea"
@@ -254,8 +224,6 @@ def test_diversity_probe_discriminates_better_than_micro_instance():
     from random import Random
 
     from core.validation.diversity import neighborhood_signature, similarity
-    from examples.lotsizing.components import LotForLotConstructor, SetupFlipNeighborhood
-    from examples.lotsizing.problem_model import CLSPInstance, LotSizingModel
 
     class FlipOrNoop:
         """Los mismos vecinos que setup_flip, más un movimiento nulo: idea duplicada."""
@@ -298,8 +266,7 @@ def test_perturbation_signature_is_a_shape_profile_too():
     from random import Random
 
     from core.validation.diversity import perturbation_signature, similarity
-    from examples.lotsizing.components import LotForLotConstructor, SetupFlipPerturbation
-    from examples.lotsizing.problem_model import CLSPInstance, LotSizingModel
+    from tests.clsp_fixtures import SetupFlipPerturbation
 
     inst = CLSPInstance.trigeiro(8, 12, Random(100), utilization=0.95, tbo=3.0)
     problem = LotSizingModel(inst)

@@ -7,8 +7,7 @@ irace lo invoca así (ver `tuning/irace_scenario.py`):
 y espera en stdout un único número: el costo. Variables de entorno:
 `HSF_BUDGET` (segundos por corrida, default 5), `HSF_PROBLEM` (paquete del problema, con
 su `pack.PACK`; default `examples.lotsizing`), `HSF_GENERATED` (workspace de los componentes
-C++ del LLM), `HSF_CATALOG` (como `tuning.cli --catalog`; vacío = `generated` si hay workspace,
-si no `handwritten`), `HSF_SKELETONS` (separados por espacio), `HSF_NATIVE=1` (correr en C++) y
+C++ del LLM; vacío = el del problema), `HSF_SKELETONS` (separados por espacio), `HSF_SCALE_BUDGET=1` y
 `HSF_OBJECTIVE=ratio` (costo / partida trivial).
 """
 
@@ -16,7 +15,6 @@ from __future__ import annotations
 
 import os
 import sys
-from random import Random
 
 
 def main(argv: list[str]) -> int:
@@ -32,11 +30,8 @@ def main(argv: list[str]) -> int:
     from tuning.irace_scenario import parse_irace_params
 
     pack = importlib.import_module(os.environ.get("HSF_PROBLEM", "examples.lotsizing") + ".pack").PACK
-    generated_dir = os.environ.get("HSF_GENERATED", "")
-    catalog = os.environ.get("HSF_CATALOG") or ("generated" if generated_dir else "handwritten")
     skeletons = os.environ.get("HSF_SKELETONS", "").split() or None
-    assembler, _ = make_assembler(pack, catalog, generated_dir or None, skeletons=skeletons,
-                                  native=os.environ.get("HSF_NATIVE") == "1",
+    assembler, _ = make_assembler(pack, os.environ.get("HSF_GENERATED") or None, skeletons=skeletons,
                                   scale_budget=os.environ.get("HSF_SCALE_BUDGET") == "1")
     config = parse_irace_params(assembler.config_space(), params)
     inst = pack.load_instance(instance_path)

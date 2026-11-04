@@ -101,23 +101,4 @@ class NativeAssembler(Assembler):
         return NativeRunner(self, self.native, self.model_of).assemble(config)
 
 
-def native_pack(pack):
-    """El pack con solo los componentes que existen en C++ (en los slots que corre C++) y los
-    esqueletos nativos; `(pack, módulo nativo)`."""
-    import importlib
-    from dataclasses import replace
-
-    if not pack.native_module:
-        raise SystemExit(f"el problema {pack.name} no tiene backend nativo (ProblemPack.native_module)")
-    mod = importlib.import_module(pack.native_module)
-    names = mod.native.names()
-    keep = []
-    for comp, factory in pack.handwritten:
-        slot = comp["slot"]
-        if slot in names and comp["name"] not in names[slot]:
-            continue
-        keep.append((comp, factory))
-    return replace(pack, handwritten=keep), mod
-
-
-__all__ = ["NATIVE_SKELETONS", "NativeAssembler", "NativeRunner", "native_pack"]
+__all__ = ["NATIVE_SKELETONS", "NativeAssembler", "NativeRunner"]

@@ -183,6 +183,12 @@ def _compile_feedback(err: str, name: str) -> str:
             + "\n".join(own[:40] or lines[-40:]))
 
 
+def _entry_path(ws: Path, e: dict) -> Path:
+    """El archivo de una entrada de `catalog.json`; si el workspace se movió o renombró, el mismo archivo dentro de él."""
+    path = Path(e["path"])
+    return path if path.exists() else ws / e["slot"] / path.name
+
+
 def _existing(ws: Path, slot: str) -> list[NativeComponent]:
     path = ws / "catalog.json"
     if not path.exists():
@@ -190,8 +196,9 @@ def _existing(ws: Path, slot: str) -> list[NativeComponent]:
     out = []
     for e in json.loads(path.read_text()):
         if e["slot"] == slot:
-            c = parse_component(Path(e["path"]).read_text())
-            c.name, c.slot, c.component, c.path = e["name"], e["slot"], dict(e["component"]), Path(e["path"])
+            src = _entry_path(ws, e)
+            c = parse_component(src.read_text())
+            c.name, c.slot, c.component, c.path = e["name"], e["slot"], dict(e["component"]), src
             out.append(c)
     return out
 
@@ -327,7 +334,7 @@ def load_native_catalog(pack, workspace: str | Path):
     entries = json.loads((Path(workspace) / "catalog.json").read_text())
     comps = []
     for e in entries:
-        c = parse_component(Path(e["path"]).read_text())
+        c = parse_component(_entry_path(Path(workspace), e).read_text())
         c.name, c.slot, c.component = e["name"], e["slot"], dict(e["component"])
         comps.append(c)
     so, name = build_components(gen, comps)

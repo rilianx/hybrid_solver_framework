@@ -1,6 +1,6 @@
 """Tuning sobre el CVRP: el CLI genérico `tuning.cli` con el pack del CVRP.
 
-    python -m examples.cvrp.tune --catalog handwritten --size 30 --trials 30 --ref-time 60
+    python -m examples.cvrp.tune --size 30 --trials 30 --tuner irace
 """
 
 from __future__ import annotations

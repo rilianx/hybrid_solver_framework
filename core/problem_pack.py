@@ -55,7 +55,7 @@ class ProblemPack:
 
     @property
     def default_workspace(self) -> str:
-        return f"generated/{self.name}"
+        return f"generated/{self.name}_native"
 
     def baseline_cost(self, inst) -> float:
         from random import Random

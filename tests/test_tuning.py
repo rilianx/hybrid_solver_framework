@@ -7,9 +7,8 @@ from random import Random
 import pytest
 
 from core.assembler import Assembler
-from core.catalog import build_registry
-from examples.lotsizing.pack import PACK
-from examples.lotsizing.problem_model import CLSPInstance, LotSizingModel
+from examples.lotsizing.instance import CLSPInstance
+from tests.clsp_fixtures import LotSizingModel, clsp_registry
 from tuning import evaluate_on_test
 from tuning.irace_scenario import parse_irace_params, write_irace_scenario
 
@@ -18,7 +17,7 @@ pytest.importorskip("pulp")
 
 @pytest.fixture(scope="module")
 def assembler():
-    return Assembler(problem_factory=LotSizingModel, registry=build_registry(PACK))
+    return Assembler(problem_factory=LotSizingModel, registry=clsp_registry())
 
 
 @pytest.fixture(scope="module")
@@ -69,14 +68,25 @@ def test_irace_scenario_files(assembler, tiny, tmp_path):
 
 
 def test_target_runner_prints_a_single_cost(tmp_path, monkeypatch, capsys):
-    from scripts.irace_target_runner import main
+    """Con el catálogo generado del flow shop que está en el repo (necesita g++ y pybind11)."""
+    import shutil
 
-    inst = CLSPInstance.trigeiro(3, 5, Random(1), utilization=0.9, tbo=2.0)
+    pytest.importorskip("pybind11")
+    if shutil.which("g++") is None:
+        pytest.skip("sin g++")
+    from examples.flowshop.pack import PACK
+    from scripts.irace_target_runner import main
+    from tuning.cli import make_assembler
+    from tuning.staged import irace_args
+
+    A, _ = make_assembler(PACK)
+    inst = PACK.make_instances(1, 3, PACK.parse_size("10x5"))[0]
     p = tmp_path / "i.txt"
     inst.save(str(p))
     monkeypatch.setenv("HSF_BUDGET", "0.2")
+    monkeypatch.setenv("HSF_PROBLEM", "examples.flowshop")
     monkeypatch.delenv("HSF_GENERATED", raising=False)
-    rc = main(["7", "1", "123", str(p), "--skeleton=SA", "--constructor=lot_for_lot", "--neighborhood=setup_flip"])
+    rc = main(["7", "1", "123", str(p), *irace_args(A.config_space(), A.default_config("SA"))])
     out = capsys.readouterr().out.strip().splitlines()
     assert rc == 0 and len(out) == 1
     assert float(out[0]) < 1e12
@@ -113,7 +123,7 @@ def test_one_slot_baselines_vary_one_slot_at_a_time():
     from core.assembler import SKELETONS
     from tuning import one_slot_baselines
 
-    a = Assembler(problem_factory=LotSizingModel, registry=build_registry(PACK), skeletons={"ILS": SKELETONS["ILS"]})
+    a = Assembler(problem_factory=LotSizingModel, registry=clsp_registry(), skeletons={"ILS": SKELETONS["ILS"]})
     base = one_slot_baselines(a)
     default = a.default_config("ILS")
     assert base["default:ILS"] == default

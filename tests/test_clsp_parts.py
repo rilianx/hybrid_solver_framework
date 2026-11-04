@@ -11,7 +11,7 @@ import pytest
 from core.model_parts import PartsModel
 from core.validation.model_parts import check_heuristic_view, check_mip_optimum, check_mip_view, validate_parts
 from examples.lotsizing import model_parts as ref
-from examples.lotsizing.cases import brute_force_optimum, handwritten_optimum, load_cases
+from examples.lotsizing.cases import brute_force_optimum, mip_optimum, load_cases
 from examples.lotsizing.pack import PACK
 
 
@@ -32,12 +32,12 @@ def mutant(**overrides):
     return m
 
 
-def test_reference_parts_pass_and_brute_force_matches_the_handwritten_mip(cases, scale):
+def test_reference_parts_pass_and_brute_force_matches_the_mip_view(cases, scale):
     report = validate_parts(ref, cases, scale_instances=scale)
     assert report.passed, report.feedback()
     inst = cases[0].instance
     assert brute_force_optimum(inst)[0] == pytest.approx(cases[0].optimum, abs=1e-5)
-    assert handwritten_optimum(inst) == pytest.approx(cases[0].optimum, abs=1e-4)
+    assert mip_optimum(inst) == pytest.approx(cases[0].optimum, abs=1e-4)
 
 
 def test_cases_mix_feasible_and_infeasible_plans(cases):
@@ -47,12 +47,11 @@ def test_cases_mix_feasible_and_infeasible_plans(cases):
 
 def test_skeletons_run_on_the_assembled_model_with_the_clsp_components():
     from core.assembler import Assembler
-    from core.catalog import build_registry
-    from examples.lotsizing.pack import PACK as BASE
+    from tests.clsp_fixtures import clsp_registry
 
     inst = PACK.make_instances(1, 5, PACK.parse_size("5x6"))[0]
     P = PartsModel(ref, inst)
-    A = Assembler(problem_factory=lambda i: PartsModel(ref, i), registry=build_registry(BASE))
+    A = Assembler(problem_factory=lambda i: PartsModel(ref, i), registry=clsp_registry())
     for sk in ("SA", "HYB"):
         r = A.assemble(A.default_config(sk))(inst, Random(0), 0.5)
         assert P.is_feasible(r.best_solution) and r.best_objective <= P.objective(ref.trivial_solution(inst)) + 1e-6
@@ -106,9 +105,9 @@ def test_group_granularity_is_measured_at_realistic_size(cases, scale):
     assert not report.passed and "tamaño realista" in report.feedback()
 
 
-def test_model_spec_forbids_the_handwritten_model():
+def test_model_spec_forbids_the_reference_parts():
     spec = PACK.make_model_spec()
-    assert "examples.lotsizing.problem_model" in spec.forbidden_modules
+    assert "examples.lotsizing.model_parts" in spec.forbidden_modules
     assert spec.instance_import == "examples.lotsizing.instance" and "demanda" in spec.families
 
 

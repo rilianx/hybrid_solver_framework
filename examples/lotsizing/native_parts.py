@@ -1,7 +1,7 @@
 """El CLSP en C++ con el modelo escrito por el LLM (`llm.native_model_generator`, contrato genérico en
 `native/include/hsf/generic.hpp`): no hay modelo C++ escrito a mano. `GENERATION` apunta al modelo generado del
 workspace (`generated/clsp_native/model/model.hpp`, o `HSF_CLSP_NATIVE_MODEL`); sobre él se generan los componentes
-C++ (`llm.native_generator`) y corren los esqueletos nativos (`--native --catalog generated`)."""
+C++ (`llm.native_generator`) y corren los esqueletos nativos (`examples.lotsizing.tune`)."""
 
 from __future__ import annotations
 

@@ -6,8 +6,7 @@ import inspect
 
 
 def make_model_spec():
-    """Para generar el `ProblemModel` con LLM (§6.1): la descripción y la instancia, sin el modelo
-    escrito a mano (`problem_model` queda prohibido; la instancia vive en `instance`)."""
+    """Para generar el modelo con LLM: la descripción y la instancia, sin las piezas de referencia."""
     from core.model_spec import ModelSpec
 
     from . import instance
@@ -34,8 +33,7 @@ def make_model_spec():
         instance_import="examples.lotsizing.instance",
         notes=["La producción óptima dada un plan de setups es un LP: puedes resolverlo con PuLP (`import pulp`, solver "
                "`pulp.PULP_CBC_CMD(msg=False)`); conviene memorizar el resultado por (instancia, plan)."],
-        forbidden_modules=["examples.lotsizing.problem_model", "examples.lotsizing.components", "examples.lotsizing.construction",
-                           "examples.lotsizing.model_parts", "examples.lotsizing.cases", "examples.lotsizing.catalog"],
+        forbidden_modules=["examples.lotsizing.construction", "examples.lotsizing.model_parts", "examples.lotsizing.cases"],
         construction=("Con tiempos de setup, decidir si un plan parcial se puede completar es difícil: filtra candidatos con una "
                       "condición necesaria barata (p.ej. que la capacidad libre acumulada hasta cada período alcance para la "
                       "demanda pendiente con deadline hasta ahí más los setups que faltan), y en un callejón sin salida "

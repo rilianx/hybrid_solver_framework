@@ -1,6 +1,6 @@
 """Compila e importa un módulo nativo (C++ con pybind11) de un pack.
 
-    mod = load_module("hsf_jobshop", "examples/jobshop/native/jobshop_py.cpp")
+    mod = load_module("hsf_x", "ruta/al/modulo_py.cpp")   # native.generated lo usa con el modelo y los componentes
 
 El .so queda en `native/_build/`, con un nombre que depende del código (el .cpp y los headers de
 su directorio y de `native/include`) y de las opciones: si nada cambió, no se recompila. Un error

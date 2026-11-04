@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import inspect
 
-FORBIDDEN = ["examples.jobshop.model_parts", "examples.jobshop.components",
-             "examples.jobshop.cases", "examples.jobshop.catalog"]
+FORBIDDEN = ["examples.jobshop.model_parts", "examples.jobshop.cases"]
 
 
 def make_model_spec():
