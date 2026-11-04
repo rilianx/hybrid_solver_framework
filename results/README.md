@@ -1577,3 +1577,10 @@ Diferencias por instancia (IC95 bootstrap): en 15×15, 80 − 82 = +0,20 [+0,02,
 imponer a mano (PR), pero no le gana a imponerla: la etapa final elige entre configuraciones que difieren menos que el
 ruido (r2 se queda con TS). Lo que falta es una selección final más robusta (más instancias y semillas, o una
 prueba estadística antes de dejar la estructura de la etapa 1).
+
+Diagnóstico (`tune_run83/r*/irace_generated/staged.json`): en la etapa 1 todas las variantes de PR y TS quedan entre
+0,1269 y 0,1275 de costo relativo (las malas, 0,92): una semilla separa los esqueletos buenos de los malos, pero no los
+componentes buenos entre sí. El filtro "no peor que el default" pasó a irace un solo relink en r1 y r2 y dejó fuera
+`disjunctive_arc_flip_relink`, el que eligió el tune 82 en dos réplicas; la etapa 1 consumió ~400 de los ~1500
+experimentos, y la validación final repite las instancias de entrenamiento. Pendiente: no podar componentes con una
+semilla (podar solo esqueletos) y una selección final con más instancias/semillas o una prueba estadística.
