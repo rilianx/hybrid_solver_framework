@@ -38,7 +38,7 @@ def parse_size(text: str) -> dict:
 
 
 _BASE = ProblemPack(
-    name="cvrp", module="examples.cvrp", problem_factory=None, handwritten=[],
+    name="cvrp", module="examples.cvrp", problem_factory=None,
     make_instances=make_instances, parse_size=parse_size, default_size="30", baseline_constructor=None,
     load_instance=CVRPInstance.load, make_model_spec=make_model_spec, micro_size="6", load_cases=_load_cases,
     constructor_skeletons=SKELETONS,

@@ -33,7 +33,7 @@ def _load_cases():
 
 
 _BASE = ProblemPack(
-    name="jobshop", module="examples.jobshop", problem_factory=None, handwritten=[],
+    name="jobshop", module="examples.jobshop", problem_factory=None,
     make_instances=make_instances, parse_size=parse_size, default_size="10x10", baseline_constructor=None,
     load_instance=JSSPInstance.load, make_model_spec=make_model_spec, micro_size="4x3", load_cases=_load_cases,
     constructor_skeletons=SKELETONS,

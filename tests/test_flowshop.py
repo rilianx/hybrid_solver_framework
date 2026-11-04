@@ -47,7 +47,7 @@ def test_mixed_sizes_and_budget_scale(tmp_path):
     assert mixed_instances(PACK, "8x3", 2, 0) == PACK.make_instances(2, 0, PACK.parse_size("8x3"))
     assert PACK.budget_scale(PACK.make_instances(1, 0, PACK.parse_size("100x20"))[0]) == 4.0
 
-    assembler, _ = make_assembler(PACK, "generated", "generated/flowshop_native", native=True, scale_budget=True)
+    assembler, _ = make_assembler(PACK, "generated/flowshop_native", scale_budget=True)
     seen = []
     assembler.assemble = lambda config: (lambda inst, rng, budget: seen.append(budget) or (_ for _ in ()).throw(RuntimeError()))
     assembler.evaluate({}, [insts[3]], 2.0)  # el runner falla a propósito: solo interesa el presupuesto

@@ -108,7 +108,7 @@ def test_a_generated_cvrp_neighborhood_is_validated_and_runs(tmp_path):
     assert [c.name for c in acc] == ["relocate_any"], stats.rejections_by_layer
     assert "struct Model" in client.calls[0][1]
     write_catalog(tmp_path, acc)
-    A, _ = make_assembler(pack, "generated", str(tmp_path), native=True)
+    A, _ = make_assembler(pack, str(tmp_path))
     cfg = A.default_config("SA", {"neighborhood": "relocate_any", "constructor": "random"})
     inst = pack.make_instances(1, 0, pack.parse_size("20"))[0]
     res = A.assemble(cfg)(inst, Random(0), 0.3)

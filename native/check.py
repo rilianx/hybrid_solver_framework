@@ -21,7 +21,7 @@ from pathlib import Path
 NATIVE_SKELETONS_FOR_SLOT = {"constructor": ["SA", "ILS", "TS", "VNS", "PR", "HYB"],
                              "greedy_score": ["SA", "ILS", "TS", "VNS", "PR", "HYB"],
                              "neighborhood": ["SA", "ILS", "TS", "VNS", "PR", "HYB"], "perturbation": ["ILS", "PR", "HYB"],
-                             "relink": ["PR"]}
+                             "relink": ["PR"], "destruction": ["HYB"]}
 
 
 def run_check(request: dict, timeout: float = 900.0) -> dict:

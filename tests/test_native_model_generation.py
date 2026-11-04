@@ -182,7 +182,7 @@ def test_a_generated_model_is_validated_corrected_and_used(tmp_path):
     write_catalog(tmp_path, acc)
     from tuning.cli import make_assembler
 
-    A, _ = make_assembler(gpack, "generated", str(tmp_path), native=True)
+    A, _ = make_assembler(gpack, str(tmp_path))
     cfg = A.default_config("SA", {"neighborhood": "relocate_any", "constructor": "random"})
     inst = pack.make_instances(1, 0, pack.parse_size("15"))[0]
     res = A.assemble(cfg)(inst, Random(0), 0.3)

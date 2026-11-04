@@ -68,7 +68,9 @@ class RandomVariableDestruction(_GroupDestruction):
         return self._split(sol, set(rng.sample(names, max(1, round(ratio * len(names))))))
 
 
-def _handwritten(parts, skeletons: list[str]) -> list[tuple[dict, Any]]:
+def base_components(parts, skeletons: list[str]) -> list[tuple[dict, Any]]:
+    """Los componentes genéricos del framework para unas piezas: partidas trivial y al azar y, si hay vista MIP, las
+    destrucciones del sub-MIP de HYB."""
     out = [
         ({"name": "trivial", "slot": "constructor", "compatible_skeletons": skeletons, "params": {}},
          lambda problem: TrivialConstructor(parts)),
@@ -146,7 +148,7 @@ def parts_pack(base: ProblemPack, parts, parts_import: str, model_spec, name: st
         name=name,
         module=base.module,
         problem_factory=lambda inst: PartsModel(parts, inst),
-        handwritten=_handwritten(parts, list(base.constructor_skeletons)),
+        base_components=base_components(parts, list(base.constructor_skeletons)),
         make_contexts=lambda **kw: None,  # se reemplaza abajo (necesita el pack para la sonda de combinación)
         make_instances=base.make_instances,
         parse_size=base.parse_size,

@@ -76,6 +76,16 @@ SLOT_HINTS = {
         "verificará que el constructor que arma produce soluciones factibles y no mucho peores que la de referencia."
     ),
     "constructor": "Se verificará: `build(rng)` devuelve una solución FACTIBLE y es determinista dada la semilla.",
+    "destruction": (
+        "Eliges qué parte de la solución reoptimiza el sub-MIP del esqueleto HYB: HYB alterna una búsqueda local en C++ con "
+        "sub-MIPs que fijan las variables de decisión de la solución actual salvo las que tu componente libera, y resuelven "
+        "el resto de forma exacta con CBC (con unos segundos de límite). `destroy(s, ratio, rng)` devuelve los ÍNDICES de las "
+        "variables estructurales de la vista MIP que quedan libres (ver abajo qué variable es cada índice), una fracción "
+        "aproximada `ratio` del total. Una buena destrucción libera variables que interactúan (las que un cambio coordinado "
+        "puede mejorar y que la búsqueda local no logra mover de a una), y no tantas que el sub-MIP no alcance a resolverse. "
+        "Se verificará: los índices están en rango, libera al menos una variable, libera más con `ratio` mayor y la idea "
+        "es distinta de las otras destrucciones."
+    ),
     "relink": (
         "Conectas dos soluciones para el esqueleto PR (path relinking): `distance(a, b)` dice cuántos pasos las separan y "
         "`step(cur, guide, rng)` da una solución más cerca de `guide`. PR mantiene una población de soluciones buenas; "
@@ -129,6 +139,8 @@ def generation_prompt(pack, gen: dict, slot: str, n: int, avoid: list[str],
         f"\n# Problema: {spec.name}\n{spec.description}",
         f"\n## El modelo C++ (`{gen['model_type']}`; tu componente recibe una referencia const a él)\n```cpp\n{model}\n```",
     ]
+    if slot == "destruction":
+        parts.append(_mip_view_block(gen))
     if existing:
         parts.append("\n# Componentes que YA están en el catálogo para este slot\nEl tuner los combina con los tuyos. Aporta ideas "
                      "que cubran lo que estos no cubren (por ejemplo, partes o aspectos de la solución que ninguno cambia), "
@@ -140,6 +152,22 @@ def generation_prompt(pack, gen: dict, slot: str, n: int, avoid: list[str],
         parts.append(f"\n# Indicación del investigador\n{hint}")
     parts.append(f"\nDevuelve exactamente {n} bloques ```cpp```.")
     return "\n".join(parts)
+
+
+def _mip_view_block(gen: dict) -> str:
+    """Las variables estructurales de la vista MIP (piezas de referencia en Python): qué variable es cada índice."""
+    import inspect
+
+    mip = importlib.import_module(gen["mip_parts"])
+    main = [f for f in ("structural_variables", "to_assignment", "variable_groups") if hasattr(mip, f)]
+    bodies = {f: inspect.getsource(getattr(mip, f)) for f in main}
+    used = set(re.findall(r"\b([A-Za-z_]\w*)\(", "".join(bodies.values()))) - set(main)  # las auxiliares del módulo
+    helpers = [f for f in sorted(used) if inspect.isfunction(getattr(mip, f, None)) and getattr(mip, f).__module__ == mip.__name__]
+    src = "\n\n".join([inspect.getsource(getattr(mip, f)) for f in helpers] + list(bodies.values()))
+    return ("\n# Las variables del sub-MIP (vista MIP en Python)\nEl índice k de `destroy` es la k-ésima variable de "
+            "`structural_variables(inst)`; `to_assignment` dice qué valor toma cada una en una solución (la forma de la "
+            "solución es la de tu modelo C++) y `variable_groups` es una partición natural de ellas:\n"
+            f"```python\n{src}\n```")
 
 
 def correction_prompt(gen: dict, slot: str, comp: NativeComponent, feedback: str) -> str:

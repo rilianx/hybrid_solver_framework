@@ -22,8 +22,9 @@ piezas de referencia en Python       └ más rápidos    native_optimizer      
    términos del costo). `native/check_model.py` lo valida en un proceso aparte contra los casos visibles y ocultos y
    contra las piezas de referencia en Python en instancias generadas (mismas violaciones y mismo costo), y lo corrige
    con el LLM hasta `--rounds` rondas. `native_model_optimizer` pide una versión más rápida con las mismas salidas.
-2. **Componentes** (`llm/native_generator.py`): constructores (`greedy_score`), vecindarios, perturbaciones y relinks
-   en C++ sobre ese modelo (`native/generated.py` los compila juntos; las respuestas de corrección son ediciones,
+2. **Componentes** (`llm/native_generator.py`): constructores (`greedy_score`), vecindarios, perturbaciones, relinks
+   y destrucciones (las variables estructurales de la vista MIP que libera el sub-MIP de HYB, como índices) en C++ sobre
+   ese modelo (`native/generated.py` los compila juntos; las respuestas de corrección son ediciones,
    `native/edits.py`). `native/check.py` aplica las capas de `core/validation/` (contractual, calidad, diversidad
    contra los aceptados, aporte en combinación con cada esqueleto) en un proceso aparte. `native_optimizer` acelera
    los aceptados con pruebas diferenciales (`core/validation/equivalence.py`).
@@ -63,8 +64,9 @@ en Python en `skeletons/` (misma semántica y parámetros, `core/assembler.py`; 
 En todos, el modelo C++ y los componentes los escribió el LLM (`generated/<problema>_native/`). Un problema nuevo
 necesita la instancia (`to_text`/`parse`, generador), la descripción para el LLM (`ModelSpec`), los casos de prueba y
 las piezas de referencia en Python (`model_parts.py`: oráculo de violaciones y costo y, opcional, la vista MIP);
-`core.packs.parts_pack` arma el pack. Con vista MIP, HYB queda disponible con dos destrucciones genéricas sobre
-`variable_groups` (una ventana de grupos consecutivos y variables al azar). Ver `examples/flowshop/`.
+`core.packs.parts_pack` arma el pack con los componentes base del framework (`base_components`): las partidas trivial
+y al azar y, con vista MIP, dos destrucciones genéricas sobre `variable_groups` (una ventana de grupos consecutivos y
+variables al azar), así HYB está disponible aunque el LLM no haya escrito destrucciones. Ver `examples/flowshop/`.
 
 ## Cómo correr
 

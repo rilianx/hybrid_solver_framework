@@ -90,11 +90,11 @@ def test_the_staged_tuner_runs_the_generated_cpp_catalog(pack, tmp_path):
     accepted, _ = generate_native_slot(ScriptedClient(responses=[SWAP]), pack, "neighborhood", 1, ws, verbose=False)
     write_catalog(ws, accepted)
     out = os.path.relpath(tmp_path / "out")  # relativo a la raíz del repo, como en CI
-    main(["--tuner", "staged", "--catalog", "generated", "--generated", os.path.relpath(ws), "--size", "6x4",
+    main(["--tuner", "staged", "--generated", os.path.relpath(ws), "--size", "6x4",
           "--trials", "60", "--budget", "0.02", "--train", "5", "--test", "1", "--seeds", "1", "--final-seeds", "1",
           "--skeletons", "SA", "TS", "--irace-parallel", "2", "--baselines", "defaults", "--out", out])
     res = json.loads((tmp_path / "out" / "generated.json").read_text())
-    assert res["settings"]["native"] is True and res["settings"]["tuner"] == "staged"
+    assert res["settings"]["tuner"] == "staged"
     assert "adjacent_swap" in res["test"]["tuned"]["summary"]
     staged = json.loads((tmp_path / "out" / "irace_generated" / "staged.json").read_text())
     assert staged["chosen"] and staged["best"] in staged["final"]
@@ -230,7 +230,7 @@ def test_a_generated_relink_runs_in_pr(pack, tmp_path):
     assert "Relink" in client.calls[-1][1] and "path relinking" in client.calls[-1][1]
     write_catalog(tmp_path, nb)
     write_catalog(tmp_path, rel)
-    A, _ = make_assembler(pack, "generated", str(tmp_path), native=True)
+    A, _ = make_assembler(pack, str(tmp_path))
     assert "PR" in A.available_skeletons()
     cfg = A.default_config("PR", {"neighborhood": "adjacent_swap", "relink": "adjacent_order_relink", "constructor": "random"})
     cfg.update({"PR.pop_size": 3, "PR.ts_iters": 50})
@@ -250,3 +250,88 @@ def test_generating_a_slot_again_shows_the_existing_catalog(pack, tmp_path):
     prompt = again.calls[0][1]
     assert "YA están en el catálogo" in prompt and "struct AdjacentSwap" in prompt
     assert acc2 == [] and stats.parsed == 0
+
+
+KICK = '''```cpp
+// COMPONENT: {"name": "random_swaps", "slot": "perturbation", "params": {}}
+struct RandomSwaps : hsf::Perturbation<Model> {
+    explicit RandomSwaps(const Model&) {}
+    Model::Solution perturb(const Model::Solution& s, double strength, Rng& rng) override {
+        auto t = s;
+        for (int r = 0; r < std::max(1, (int)strength); ++r) {
+            int m = rng.below((int)t.size());
+            if (t[m].size() < 2) continue;
+            int i = rng.below((int)t[m].size() - 1);
+            std::swap(t[m][i], t[m][i + 1]);
+        }
+        return t;
+    }
+};
+std::unique_ptr<hsf::Perturbation<Model>> make_component(const Model& model, const Config&) {
+    return std::make_unique<RandomSwaps>(model);
+}
+```'''
+
+
+MACHINE_WINDOW = '''```cpp
+// COMPONENT: {"name": "machine_window", "slot": "destruction", "params": {}}
+struct MachineWindow : hsf::Destruction<Model> {
+    const Model& M;
+    std::vector<int> start;  // primer índice de las variables de cada máquina en structural_variables
+    explicit MachineWindow(const Model& m) : M(m) {
+        int k = 0;
+        for (auto& js : M.machine_jobs) { start.push_back(k); k += (int)js.size() * ((int)js.size() - 1); }
+        start.push_back(k);
+    }
+    std::vector<int> destroy(const Model::Solution&, double ratio, Rng& rng) override {
+        int n = (int)M.machine_jobs.size();
+        int w = std::max(1, std::min(n, (int)std::lround(ratio * n)));
+        int a = rng.below(n - w + 1);
+        std::vector<int> out;
+        for (int k = start[a]; k < start[a + w]; ++k) out.push_back(k);
+        return out;
+    }
+};
+std::unique_ptr<hsf::Destruction<Model>> make_component(const Model& model, const Config&) {
+    return std::make_unique<MachineWindow>(model);
+}
+```'''
+
+
+def test_a_generated_destruction_is_validated_and_used_by_hyb(pack, tmp_path):
+    from random import Random
+
+    from llm import ScriptedClient
+    from llm.native_generator import generate_native_slot, write_catalog
+    from native.generated import parse_response
+    from tuning.cli import make_assembler
+
+    nb, _ = generate_native_slot(ScriptedClient(responses=[SWAP]), pack, "neighborhood", 1, tmp_path, verbose=False)
+    pert = [c for c in parse_response(KICK)[0]]  # la perturbación entra directo al catálogo (no es lo que se prueba)
+    for c in pert:
+        c.path = tmp_path / f"{c.name}.hpp"
+        c.path.write_text(c.source)
+    client = ScriptedClient(responses=[MACHINE_WINDOW])
+    acc, stats = generate_native_slot(client, pack, "destruction", 1, tmp_path, verbose=False)
+    assert [c.name for c in acc] == ["machine_window"], stats.rejections_by_layer
+    prompt = client.calls[0][1]
+    assert "structural_variables" in prompt and "def _y(" in prompt and "def jobs_on(" in prompt
+    write_catalog(tmp_path, nb)
+    write_catalog(tmp_path, pert)
+    write_catalog(tmp_path, acc)
+    A, _ = make_assembler(pack, str(tmp_path))
+    assert {s.name for s in A.registry.compatible("destruction", "HYB")} >= {"machine_window", "group_window"}
+    cfg = A.default_config("HYB", {"neighborhood": "adjacent_swap", "destruction": "machine_window"})
+    inst = pack.make_instances(1, 0, pack.parse_size("6x4"))[0]
+    res = A.assemble(cfg)(inst, Random(0), 1.0)
+    assert pack.problem_factory(inst).is_feasible(res.best_solution)
+
+
+def test_a_destruction_with_indices_out_of_range_is_rejected(pack, tmp_path):
+    from llm import ScriptedClient
+    from llm.native_generator import generate_native_slot
+
+    bad = MACHINE_WINDOW.replace("out.push_back(k);", "out.push_back(k + 100000);")
+    acc, stats = generate_native_slot(ScriptedClient(responses=[bad]), pack, "destruction", 1, tmp_path,
+                                      max_rounds=1, verbose=False)
+    assert acc == [] and stats.rejections_by_layer

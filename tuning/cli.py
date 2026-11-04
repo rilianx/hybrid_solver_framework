@@ -46,8 +46,8 @@ def make_assembler(pack: ProblemPack, generated_dir: str | None = None, skeleton
     mod, model_of, entries = load_native_catalog(pack, generated_dir or pack.default_workspace)
     base = [({"name": n, "slot": "constructor", "compatible_skeletons": NATIVE_SKELETONS_FOR_SLOT["constructor"],
               "params": {}}, factory(mod, model_of, "constructor", n)) for n in ("trivial", "random")]
-    mip = [(c, f) for c, f in pack.handwritten if c["slot"] == "destruction"]  # el sub-MIP de HYB es de Python
-    registry = build_registry(replace(pack, handwritten=base + entries + mip))
+    mip = [(c, f) for c, f in pack.base_components if c["slot"] == "destruction"]  # el sub-MIP de HYB es de Python
+    registry = build_registry(replace(pack, base_components=base + entries + mip))
     names = [s for s in (skeletons or NATIVE_SKELETONS) if s in NATIVE_SKELETONS]
     assembler = NativeAssembler(problem_factory=pack.problem_factory, registry=registry,
                                 skeletons={k: SKELETONS[k] for k in names}, native=mod, model_of=model_of)

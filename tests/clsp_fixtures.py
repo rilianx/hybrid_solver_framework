@@ -90,7 +90,7 @@ class LatestSource:
         return float(a.period - a.source)
 
 
-HANDWRITTEN = [
+COMPONENTS = [
     (COMPONENT_LOT_FOR_LOT, lambda problem: LotForLotConstructor()),
     ({"name": "unit_marginal_cost", "slot": "greedy_score", "compatible_skeletons": SKELETONS, "params": {}}, UnitMarginalCost),
     ({"name": "latest_source", "slot": "greedy_score", "compatible_skeletons": SKELETONS, "params": {}}, LatestSource),
@@ -107,7 +107,7 @@ def clsp_pack():
 
     from examples.lotsizing.pack import PACK
 
-    return replace(PACK, handwritten=HANDWRITTEN, constructor_skeletons=SKELETONS)
+    return replace(PACK, base_components=COMPONENTS, constructor_skeletons=SKELETONS)
 
 
 def clsp_registry(exclude_slots: set[str] | None = None) -> ComponentRegistry:
@@ -117,5 +117,5 @@ def clsp_registry(exclude_slots: set[str] | None = None) -> ComponentRegistry:
 
 
 __all__ = ["COMPONENT_LOT_FOR_LOT", "COMPONENT_PERIOD_WINDOW", "COMPONENT_SETUP_FLIP", "COMPONENT_SETUP_FLIP_PERTURBATION",
-           "ComponentSpec", "HANDWRITTEN", "LatestSource", "LotForLotConstructor", "LotSizingModel", "SetupFlipNeighborhood",
+           "ComponentSpec", "COMPONENTS", "LatestSource", "LotForLotConstructor", "LotSizingModel", "SetupFlipNeighborhood",
            "SetupFlipPerturbation", "UnitMarginalCost", "clsp_pack", "clsp_registry"]

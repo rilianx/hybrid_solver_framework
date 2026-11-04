@@ -35,7 +35,7 @@ def parse_size(text: str) -> dict:
 
 
 _BASE = ProblemPack(
-    name="clsp", module="examples.lotsizing", problem_factory=None, handwritten=[],
+    name="clsp", module="examples.lotsizing", problem_factory=None,
     make_instances=make_instances, parse_size=parse_size, default_size="10x15", baseline_constructor=None,
     load_instance=CLSPInstance.load, make_model_spec=make_model_spec, micro_size="3x4", load_cases=_load_cases,
     constructor_skeletons=SKELETONS,

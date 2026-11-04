@@ -15,7 +15,7 @@ def test_pack(name):
     assert pack.name == name and pack.native_module.endswith(".native_parts")
     assert pack.default_workspace == f"generated/{name}_native"
     by_slot = {}
-    for c, _ in pack.handwritten:
+    for c, _ in pack.base_components:
         by_slot.setdefault(c["slot"], []).append(c["name"])
     assert by_slot["constructor"] == ["trivial", "random"]
     parts = importlib.import_module(pack.variants[next(iter(pack.variants))][1])
