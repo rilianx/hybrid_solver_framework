@@ -1,0 +1,37 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("HYB")
+constructor "--constructor=" c ("trivial", "random", "giffler_thompson_grasp_active", "biased_job_repetition_sampling_best_of_k", "neh_operation_insertion_partial_makespan") | skeleton %in% c("HYB")
+giffler_thompson_grasp_active.rule "--giffler_thompson_grasp_active.rule=" c ("mwkr", "spt", "mopr", "random") | skeleton %in% c("HYB") & constructor == "giffler_thompson_grasp_active"
+giffler_thompson_grasp_active.alpha "--giffler_thompson_grasp_active.alpha=" r (0.0, 1.0) | skeleton %in% c("HYB") & constructor == "giffler_thompson_grasp_active"
+biased_job_repetition_sampling_best_of_k.samples "--biased_job_repetition_sampling_best_of_k.samples=" i (1, 30) | skeleton %in% c("HYB") & constructor == "biased_job_repetition_sampling_best_of_k"
+biased_job_repetition_sampling_best_of_k.beta "--biased_job_repetition_sampling_best_of_k.beta=" r (0.0, 3.0) | skeleton %in% c("HYB") & constructor == "biased_job_repetition_sampling_best_of_k"
+neh_operation_insertion_partial_makespan.noise "--neh_operation_insertion_partial_makespan.noise=" r (0.0, 1.0) | skeleton %in% c("HYB") & constructor == "neh_operation_insertion_partial_makespan"
+neh_operation_insertion_partial_makespan.max_positions "--neh_operation_insertion_partial_makespan.max_positions=" i (4, 200) | skeleton %in% c("HYB") & constructor == "neh_operation_insertion_partial_makespan"
+neighborhood "--neighborhood=" c ("critical_arc_adjacent_swap", "critical_block_insertion", "critical_segment_reversal", "composite") | skeleton %in% c("HYB")
+critical_arc_adjacent_swap.scope "--critical_arc_adjacent_swap.scope=" c ("critical", "all") | skeleton %in% c("HYB") & neighborhood == "critical_arc_adjacent_swap"
+critical_block_insertion.mode "--critical_block_insertion.mode=" c ("block_ends", "block_all") | skeleton %in% c("HYB") & neighborhood == "critical_block_insertion"
+critical_block_insertion.window "--critical_block_insertion.window=" i (2, 20) | skeleton %in% c("HYB") & neighborhood == "critical_block_insertion"
+critical_segment_reversal.max_len "--critical_segment_reversal.max_len=" i (3, 12) | skeleton %in% c("HYB") & neighborhood == "critical_segment_reversal"
+perturbation "--perturbation=" c ("jssp_critical_swap_walk", "jssp_noisy_start_redispatch", "jssp_critical_block_insertion") | skeleton %in% c("HYB")
+jssp_critical_swap_walk.steps_scale "--jssp_critical_swap_walk.steps_scale=" r (0.5, 3.0) | skeleton %in% c("HYB") & perturbation == "jssp_critical_swap_walk"
+jssp_critical_swap_walk.block_end_bias "--jssp_critical_swap_walk.block_end_bias=" r (0.0, 1.0) | skeleton %in% c("HYB") & perturbation == "jssp_critical_swap_walk"
+jssp_noisy_start_redispatch.op_fraction "--jssp_noisy_start_redispatch.op_fraction=" r (0.02, 0.3) | skeleton %in% c("HYB") & perturbation == "jssp_noisy_start_redispatch"
+jssp_noisy_start_redispatch.noise_scale "--jssp_noisy_start_redispatch.noise_scale=" r (0.5, 5.0) | skeleton %in% c("HYB") & perturbation == "jssp_noisy_start_redispatch"
+jssp_noisy_start_redispatch.focus "--jssp_noisy_start_redispatch.focus=" c ("all", "critical") | skeleton %in% c("HYB") & perturbation == "jssp_noisy_start_redispatch"
+jssp_critical_block_insertion.moves_scale "--jssp_critical_block_insertion.moves_scale=" r (0.5, 3.0) | skeleton %in% c("HYB") & perturbation == "jssp_critical_block_insertion"
+jssp_critical_block_insertion.endpoint_prob "--jssp_critical_block_insertion.endpoint_prob=" r (0.0, 1.0) | skeleton %in% c("HYB") & perturbation == "jssp_critical_block_insertion"
+jssp_critical_block_insertion.max_tries "--jssp_critical_block_insertion.max_tries=" i (3, 30) | skeleton %in% c("HYB") & perturbation == "jssp_critical_block_insertion"
+destruction "--destruction=" c ("critical_path_window_destruction", "time_window_cross_machine_destruction", "related_job_cluster_destruction", "group_window", "random_variables") | skeleton %in% c("HYB")
+critical_path_window_destruction.window "--critical_path_window_destruction.window=" i (1, 8) | skeleton %in% c("HYB") & destruction == "critical_path_window_destruction"
+critical_path_window_destruction.noise "--critical_path_window_destruction.noise=" r (0.0, 0.6) | skeleton %in% c("HYB") & destruction == "critical_path_window_destruction"
+time_window_cross_machine_destruction.center_critical_prob "--time_window_cross_machine_destruction.center_critical_prob=" r (0.0, 1.0) | skeleton %in% c("HYB") & destruction == "time_window_cross_machine_destruction"
+time_window_cross_machine_destruction.jitter "--time_window_cross_machine_destruction.jitter=" r (0.0, 3.0) | skeleton %in% c("HYB") & destruction == "time_window_cross_machine_destruction"
+related_job_cluster_destruction.adj_window "--related_job_cluster_destruction.adj_window=" i (1, 5) | skeleton %in% c("HYB") & destruction == "related_job_cluster_destruction"
+related_job_cluster_destruction.greed "--related_job_cluster_destruction.greed=" r (1.0, 8.0) | skeleton %in% c("HYB") & destruction == "related_job_cluster_destruction"
+HYB.ls_share "--HYB.ls_share=" r (0.02, 0.5) | skeleton == "HYB"  # log-scale
+HYB.mip_share "--HYB.mip_share=" r (0.01, 0.3) | skeleton == "HYB"  # log-scale
+HYB.destroy_ratio "--HYB.destroy_ratio=" r (0.05, 0.6) | skeleton == "HYB"
+HYB.strength "--HYB.strength=" i (1, 6) | skeleton == "HYB"
+HYB.ls_sample "--HYB.ls_sample=" i (4, 256) | skeleton == "HYB"  # log-scale
+HYB.T_rel "--HYB.T_rel=" r (0.0001, 0.05) | skeleton == "HYB"  # log-scale
