@@ -1,0 +1,34 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("HYB")
+constructor "--constructor=" c ("trivial", "random") | skeleton %in% c("HYB")
+neighborhood "--neighborhood=" c ("setup_toggle_flip", "lot_consolidation_window", "composite") | skeleton %in% c("HYB")
+setup_toggle_flip.sweep_items_first "--setup_toggle_flip.sweep_items_first=" c ("yes", "no") | skeleton %in% c("HYB") & neighborhood == "setup_toggle_flip"
+lot_consolidation_window.max_len "--lot_consolidation_window.max_len=" i (1, 10) | skeleton %in% c("HYB") & neighborhood == "lot_consolidation_window"
+perturbation "--perturbation=" c ("random_setup_flips_flow_repair", "lot_shift_merge_swap_repair", "window_wagner_whitin_rebuild") | skeleton %in% c("HYB")
+random_setup_flips_flow_repair.flips_per_strength "--random_setup_flips_flow_repair.flips_per_strength=" r (0.5, 4.0) | skeleton %in% c("HYB") & perturbation == "random_setup_flips_flow_repair"
+random_setup_flips_flow_repair.off_bias "--random_setup_flips_flow_repair.off_bias=" r (0.0, 1.0) | skeleton %in% c("HYB") & perturbation == "random_setup_flips_flow_repair"
+random_setup_flips_flow_repair.repair_iters "--random_setup_flips_flow_repair.repair_iters=" i (20, 400) | skeleton %in% c("HYB") & perturbation == "random_setup_flips_flow_repair"
+lot_shift_merge_swap_repair.moves_per_strength "--lot_shift_merge_swap_repair.moves_per_strength=" r (0.5, 4.0) | skeleton %in% c("HYB") & perturbation == "lot_shift_merge_swap_repair"
+lot_shift_merge_swap_repair.p_shift "--lot_shift_merge_swap_repair.p_shift=" r (0.0, 1.0) | skeleton %in% c("HYB") & perturbation == "lot_shift_merge_swap_repair"
+lot_shift_merge_swap_repair.p_merge "--lot_shift_merge_swap_repair.p_merge=" r (0.0, 1.0) | skeleton %in% c("HYB") & perturbation == "lot_shift_merge_swap_repair"
+lot_shift_merge_swap_repair.repair_iters "--lot_shift_merge_swap_repair.repair_iters=" i (20, 400) | skeleton %in% c("HYB") & perturbation == "lot_shift_merge_swap_repair"
+window_wagner_whitin_rebuild.window_base "--window_wagner_whitin_rebuild.window_base=" i (2, 12) | skeleton %in% c("HYB") & perturbation == "window_wagner_whitin_rebuild"
+window_wagner_whitin_rebuild.window_per_strength "--window_wagner_whitin_rebuild.window_per_strength=" r (0.5, 4.0) | skeleton %in% c("HYB") & perturbation == "window_wagner_whitin_rebuild"
+window_wagner_whitin_rebuild.item_frac "--window_wagner_whitin_rebuild.item_frac=" r (0.05, 1.0) | skeleton %in% c("HYB") & perturbation == "window_wagner_whitin_rebuild"
+window_wagner_whitin_rebuild.cost_noise "--window_wagner_whitin_rebuild.cost_noise=" r (0.0, 0.9) | skeleton %in% c("HYB") & perturbation == "window_wagner_whitin_rebuild"
+window_wagner_whitin_rebuild.repair_iters "--window_wagner_whitin_rebuild.repair_iters=" i (20, 400) | skeleton %in% c("HYB") & perturbation == "window_wagner_whitin_rebuild"
+destruction "--destruction=" c ("clsp_time_window_block", "clsp_related_items_horizon", "clsp_bottleneck_weighted_sampling", "group_window", "random_variables") | skeleton %in% c("HYB")
+clsp_time_window_block.partial_pick "--clsp_time_window_block.partial_pick=" c ("random", "setup_first") | skeleton %in% c("HYB") & destruction == "clsp_time_window_block"
+clsp_time_window_block.dense_start_prob "--clsp_time_window_block.dense_start_prob=" r (0.0, 1.0) | skeleton %in% c("HYB") & destruction == "clsp_time_window_block"
+clsp_related_items_horizon.alpha "--clsp_related_items_horizon.alpha=" r (0.0, 1.0) | skeleton %in% c("HYB") & destruction == "clsp_related_items_horizon"
+clsp_related_items_horizon.noise "--clsp_related_items_horizon.noise=" r (0.0, 1.0) | skeleton %in% c("HYB") & destruction == "clsp_related_items_horizon"
+clsp_bottleneck_weighted_sampling.greed "--clsp_bottleneck_weighted_sampling.greed=" r (0.5, 4.0) | skeleton %in% c("HYB") & destruction == "clsp_bottleneck_weighted_sampling"
+clsp_bottleneck_weighted_sampling.neighbor_weight "--clsp_bottleneck_weighted_sampling.neighbor_weight=" r (0.0, 1.0) | skeleton %in% c("HYB") & destruction == "clsp_bottleneck_weighted_sampling"
+clsp_bottleneck_weighted_sampling.idle_weight "--clsp_bottleneck_weighted_sampling.idle_weight=" r (0.02, 0.5) | skeleton %in% c("HYB") & destruction == "clsp_bottleneck_weighted_sampling"
+HYB.ls_share "--HYB.ls_share=" r (0.02, 0.5) | skeleton == "HYB"  # log-scale
+HYB.mip_share "--HYB.mip_share=" r (0.01, 0.3) | skeleton == "HYB"  # log-scale
+HYB.destroy_ratio "--HYB.destroy_ratio=" r (0.05, 0.6) | skeleton == "HYB"
+HYB.strength "--HYB.strength=" i (1, 6) | skeleton == "HYB"
+HYB.ls_sample "--HYB.ls_sample=" i (4, 256) | skeleton == "HYB"  # log-scale
+HYB.T_rel "--HYB.T_rel=" r (0.0001, 0.05) | skeleton == "HYB"  # log-scale
