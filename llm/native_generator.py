@@ -155,21 +155,21 @@ def generation_prompt(pack, gen: dict, slot: str, n: int, avoid: list[str],
 
 
 def _mip_view_block(gen: dict, workspace: Path | None = None) -> str:
-    """Las variables estructurales de la vista MIP que usa HYB (la generada por el LLM en `<workspace>/mip/mip.py` si
-    existe, si no la de referencia): qué variable es cada índice."""
+    """Las variables estructurales de la vista MIP que usa HYB (la que escribió el LLM en `<workspace>/mip/mip.py`): qué
+    variable es cada índice."""
     import inspect
 
-    generated = Path(workspace) / "mip" / "mip.py" if workspace else None
-    if generated is not None and generated.exists():
-        from core.packs import load_mip
+    from core.packs import load_mip
 
-        mip = load_mip(generated)
-    else:
-        mip = importlib.import_module(gen["mip_parts"])
+    generated = Path(workspace) / "mip" / "mip.py" if workspace else None
+    if generated is None or not generated.exists():
+        raise ValueError("las destrucciones liberan variables de la vista MIP: genera primero la vista MIP "
+                         "(`python -m llm.native_mip_generator`, target `mip` de generate.yml)")
+    mip = load_mip(generated)
     main = [f for f in ("structural_variables", "to_assignment", "variable_groups") if hasattr(mip, f)]
     bodies = {f: inspect.getsource(getattr(mip, f)) for f in main}
     used = set(re.findall(r"\b([A-Za-z_]\w*)\(", "".join(bodies.values()))) - set(main)  # las auxiliares del módulo
-    helpers = [f for f in sorted(used) if inspect.isfunction(getattr(mip, f, None)) and getattr(mip, f).__module__ == mip.__name__]
+    helpers = [f for f in sorted(used) if inspect.isfunction(getattr(mip, f, None))]  # propias o importadas del oráculo
     src = "\n\n".join([inspect.getsource(getattr(mip, f)) for f in helpers] + list(bodies.values()))
     return ("\n# Las variables del sub-MIP (vista MIP en Python)\nEl índice k de `destroy` es la k-ésima variable de "
             "`structural_variables(inst)`; `to_assignment` dice qué valor toma cada una en una solución (la forma de la "

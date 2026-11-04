@@ -1,7 +1,8 @@
 """Configuración automática del catálogo generado de un problema (§8). Genérico: recibe un `ProblemPack`
 (`python -m examples.flowshop.tune …`). El catálogo son los componentes C++ que escribió el LLM en el workspace
 (`--generated`, por defecto `generated/<problema>_native`; `llm.native_generator`) más las partidas trivial y al azar y,
-si el problema tiene vista MIP, las destrucciones genéricas de HYB (`core.packs`); las corridas son en C++.
+si el LLM escribió la vista MIP (`<workspace>/mip/mip.py`), las destrucciones genéricas del sub-MIP de HYB
+(`core.packs`); las corridas son en C++.
 
 1. irace (`--tuner irace`) o la configuración en tres etapas (`--tuner staged`, `tuning.staged`) sobre el espacio de
    esqueletos, componentes y parámetros. El costo de una corrida es `costo / costo de la partida trivial` por
@@ -32,29 +33,24 @@ from .evaluation import best_known_costs, evaluate_on_test, one_slot_baselines
 CATALOG = "generated"  # nombre de la salida (`tuning_out/generated.json`) que leen los resúmenes y scripts/bench_eval
 
 
-def resolve_mip(pack: ProblemPack, generated_dir: str | None, mip: str = "auto"):
-    """La vista MIP que usa HYB: `generated` (la que escribió el LLM en `<workspace>/mip/mip.py`), `reference` (la de
-    las piezas de referencia) o `auto` (la generada si existe). Devuelve (pack, cuál)."""
+def with_mip_of(pack: ProblemPack, generated_dir: str | None):
+    """El pack con la vista MIP que escribió el LLM (`<workspace>/mip/mip.py`) si existe; sin ella el problema no tiene
+    sub-MIP y HYB no está en el espacio. Devuelve (pack, "generated" | "none")."""
     from core.packs import mip_path, with_generated_mip
 
-    if mip not in ("auto", "generated", "reference"):
-        raise SystemExit(f"--mip: auto, generated o reference, no {mip!r}")
-    path = None if mip == "reference" else mip_path(pack, generated_dir)
-    if mip == "generated" and path is None:
-        raise SystemExit(f"--mip generated: no hay vista MIP generada en {generated_dir or pack.default_workspace}/mip/mip.py")
-    return (with_generated_mip(pack, path), "generated") if path else (pack, "reference")
+    path = mip_path(pack, generated_dir)
+    return (with_generated_mip(pack, path), "generated") if path else (pack, "none")
 
 
 def make_assembler(pack: ProblemPack, generated_dir: str | None = None, skeletons: list[str] | None = None,
-                   scale_budget: bool = False, mip: str = "auto",
-                   generated_destructions: bool = False) -> tuple[Assembler, list[str]]:
+                   scale_budget: bool = False, generated_destructions: bool = False) -> tuple[Assembler, list[str]]:
     """El ensamblador del catálogo generado del workspace, en C++ (`core.native_runner`), y los nombres de los
-    componentes generados. `mip`: la vista MIP del sub-MIP de HYB (ver `resolve_mip`). Las destrucciones que escribió
+    componentes generados. El sub-MIP de HYB usa la vista MIP del workspace (`with_mip_of`). Las destrucciones que escribió
     el LLM entran solo con `generated_destructions`: en CLSP, job shop y CVRP no le ganaron a las genéricas de
     `core.packs` (tunings 87, 88 y 90), que están siempre."""
     from dataclasses import replace
 
-    pack, _ = resolve_mip(pack, generated_dir, mip)
+    pack, _ = with_mip_of(pack, generated_dir)
     from core.native_runner import NATIVE_SKELETONS, NativeAssembler
     from llm.native_generator import load_native_catalog
     from native.check import NATIVE_SKELETONS_FOR_SLOT
@@ -93,8 +89,8 @@ def mixed_instances(pack: ProblemPack, sizes: str, n: int, seed0: int) -> list:
 def run_experiment(pack: ProblemPack, args, train, test, out_dir: Path):
     catalog = CATALOG
     assembler, gen_names = make_assembler(pack, args.generated, skeletons=args.skeletons, scale_budget=args.scale_budget,
-                                          mip=args.mip, generated_destructions=args.generated_destructions)
-    print(f"  vista MIP de HYB: {resolve_mip(pack, args.generated, args.mip)[1]}")
+                                          generated_destructions=args.generated_destructions)
+    print(f"  vista MIP de HYB: {with_mip_of(pack, args.generated)[1]}")
     space = assembler.config_space()
     n_gen_in_space = sum(1 for n in space.nodes if n.type == "cat" for v in n.values if v in gen_names)
     print(f"\n=== catálogo `{catalog}`: {len(space.nodes)} parámetros, {n_gen_in_space} opciones generadas por LLM ===")
@@ -114,7 +110,7 @@ def run_experiment(pack: ProblemPack, args, train, test, out_dir: Path):
         "settings": {"trials": args.trials, "budget": args.budget, "train": len(train), "test": len(test),
                      "problem": pack.name, "size": args.size, "seed": args.seed, "tuner_seed": args.tuner_seed, "seeds_test": args.seeds,
                      "objective": args.objective, "skeletons": args.skeletons or "all", "ref_time": args.ref_time,
-                     "generated": args.generated, "tuner": args.tuner, "mip": resolve_mip(pack, args.generated, args.mip)[1],
+                     "generated": args.generated, "tuner": args.tuner, "mip": with_mip_of(pack, args.generated)[1],
                      "generated_destructions": args.generated_destructions},
         "tuning": result.to_dict(),
     }
@@ -138,7 +134,7 @@ def _run_irace(pack: ProblemPack, catalog: str, args, assembler, train, normaliz
     experiments = args.trials * len(train)
     scenario = write_irace_scenario(assembler.config_space(), root, paths, args.budget, max_experiments=experiments,
                                     generated_dir=args.generated, problem_module=pack.module, skeletons=args.skeletons,
-                                    objective=args.objective, scale_budget=args.scale_budget, mip=args.mip,
+                                    objective=args.objective, scale_budget=args.scale_budget,
                                     generated_destructions=args.generated_destructions)
     if args.tuner == "staged":
         from tuning.staged import run_staged
@@ -183,9 +179,6 @@ def main(pack: ProblemPack, argv: list[str] | None = None) -> None:
     ap.add_argument("--ref-time", type=float, default=0.0,
                     help="segundos del MIP completo por instancia de test como referencia del gap (0 = sin MIP)")
     ap.add_argument("--generated", default=pack.default_workspace, help="workspace de los componentes generados")
-    ap.add_argument("--mip", choices=["auto", "generated", "reference"], default="auto",
-                    help="vista MIP del sub-MIP de HYB: la generada por el LLM (<workspace>/mip/mip.py), la de referencia "
-                         "o auto (la generada si existe)")
     ap.add_argument("--generated-destructions", action="store_true",
                     help="incluir las destrucciones que escribió el LLM (por defecto HYB usa solo las genéricas)")
     ap.add_argument("--out", default="tuning_out")
@@ -234,7 +227,7 @@ def main(pack: ProblemPack, argv: list[str] | None = None) -> None:
             p = inst_dir / f"train_{k}.txt"
             inst.save(str(p))
             paths.append(p)
-        assembler, _ = make_assembler(pack, args.generated, skeletons=args.skeletons, mip=args.mip,
+        assembler, _ = make_assembler(pack, args.generated, skeletons=args.skeletons,
                                       generated_destructions=args.generated_destructions)
         scenario = write_irace_scenario(assembler.config_space(), args.irace, paths, args.budget,
                                         max_experiments=args.trials * len(train), generated_dir=args.generated,

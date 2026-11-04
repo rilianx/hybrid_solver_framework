@@ -17,7 +17,10 @@ SKELETONS = ["SA", "ILS", "TS", "VNS", "HYB"]
 
 
 def LotSizingModel(inst: CLSPInstance) -> PartsModel:
-    return PartsModel(model_parts, inst)
+    """El oráculo del CLSP con la vista MIP que escribió el LLM (`generated/clsp_native/mip/mip.py`)."""
+    from tests.mip_views import full_parts
+
+    return PartsModel(full_parts("clsp"), inst)
 
 
 class LotForLotConstructor:
@@ -107,7 +110,7 @@ def clsp_pack():
 
     from examples.lotsizing.pack import PACK
 
-    return replace(PACK, base_components=COMPONENTS, constructor_skeletons=SKELETONS)
+    return replace(PACK, base_components=COMPONENTS, constructor_skeletons=SKELETONS, problem_factory=LotSizingModel)
 
 
 def clsp_registry(exclude_slots: set[str] | None = None) -> ComponentRegistry:

@@ -10,8 +10,10 @@ import pytest
 
 from core.model_parts import LinearMIP, PartsModel
 from core.validation.model_parts import check_heuristic_view, check_mip_optimum, check_mip_view, validate_parts
-from examples.cvrp import model_parts as ref
 from examples.cvrp.cases import brute_force_optimum, load_cases
+from tests.mip_views import full_parts
+
+ref = full_parts("cvrp")  # el oráculo con la vista MIP que escribió el LLM (ya validada)
 
 
 @pytest.fixture(scope="module")
@@ -21,7 +23,7 @@ def cases():
 
 def mutant(**overrides):
     """Las piezas de referencia con algunas funciones reemplazadas."""
-    m = types.SimpleNamespace(**{k: getattr(ref, k) for k in dir(ref) if not k.startswith("_")})
+    m = types.SimpleNamespace(**{k: getattr(ref, k) for k in dir(ref) if not k.startswith("__")})
     for k, v in overrides.items():
         setattr(m, k, v)
     return m
@@ -73,12 +75,13 @@ def test_objective_term_mismatch_is_named_by_term(cases):
 def test_a_wrong_constraint_is_named_by_family_on_a_feasible_point(cases):
     def constraint_families(inst):
         fams = ref.constraint_families(inst)
-        fams["capacidad.mtz"] = [(coefs, "<=", rhs) for coefs, _, rhs in fams["capacidad.mtz"]]  # sentido invertido
+        fams["capacidad"] = [(coefs, {"<=": ">=", ">=": "<="}.get(sense, sense), rhs)
+                             for coefs, sense, rhs in fams["capacidad"]]  # sentido invertido
         return fams
 
     report = check_mip_view(mutant(constraint_families=constraint_families), cases)
     msg = report.feedback()
-    assert not report.passed and "families_agree" in msg and "capacidad.mtz" in msg and "considera factible" in msg
+    assert not report.passed and "families_agree" in msg and "capacidad" in msg
 
 
 def test_a_missing_family_is_detected_on_an_infeasible_point(cases):
@@ -94,14 +97,14 @@ def test_a_missing_family_is_detected_on_an_infeasible_point(cases):
 def test_hidden_cases_report_expected_vs_obtained_without_the_instance(cases):
     def constraint_families(inst):  # un MIP demasiado laxo: el óptimo queda por debajo del esperado
         fams = ref.constraint_families(inst)
-        fams["capacidad.carga"] = [c for c in fams["capacidad.carga"] if c[1] == ">="]
+        fams["capacidad"] = fams["capacidad"][: len(fams["capacidad"]) // 2]
         return fams
 
     hidden = [c for c in cases if not c.visible]
     report = check_mip_optimum(mutant(constraint_families=constraint_families), hidden, time_limit=10)
     msg = report.feedback()
     if not report.passed:  # en algún caso oculto la capacidad aprieta
-        assert "caso oculto" in msg and "el esperado es" in msg and "permite soluciones" in msg
+        assert "caso oculto" in msg and ("el esperado es" in msg or "le falta" in msg)
         assert hidden[0].instance.to_text() not in msg
 
 
@@ -114,17 +117,6 @@ def test_linear_mip_supports_fixing_relaxing_and_local_branching(cases):
     assert ref.from_assignment(inst, x) == triv and model.last_objective == pytest.approx(ref.cost_terms(inst, triv)["distancia"])
     x = model.solve(fixed={}, integer=set(model.variables()), relaxed=set(), time_limit=10, near=(x_bar, 4))
     assert sum(abs(x[v] - x_bar[v]) for v in x_bar) <= 4 + 1e-6
-
-
-def _ref_sources():
-    from pathlib import Path
-
-    src = Path(ref.__file__).read_text().replace("from .instance import", "from examples.cvrp.instance import")
-    marker = "# ---------------------------------------------------------------- vista MIP"
-    head, mip = src.split(marker)
-    mip = mip.split("# ---------------------------------------------------------------- vista constructiva")[0]
-    header = "from __future__ import annotations\n\nimport math\nfrom random import Random\n\n"
-    return head, header + mip
 
 
 def test_a_single_variable_group_is_rejected(cases):

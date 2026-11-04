@@ -6,7 +6,7 @@ conocidas, para validar un `ProblemModel` generado (`core.validation.model_parts
 Cada caso trae la instancia en el formato de entrada (`CLSPInstance.to_text`), planes de setups
 en el formato neutral (matriz 0/1 ítem × período) con su factibilidad, la familia violada o el
 costo, y el óptimo calculado por FUERZA BRUTA (todos los planes de setups, cada uno con su LP de
-producción), contrastado con la vista MIP de las piezas.
+producción).
 """
 
 from __future__ import annotations
@@ -37,14 +37,6 @@ def brute_force_optimum(inst: CLSPInstance) -> tuple[float, tuple]:
     return best, best_sol
 
 
-def mip_optimum(inst: CLSPInstance) -> float:
-    from core.model_parts import LinearMIP
-
-    mip = LinearMIP(ref, inst)
-    x = mip.solve(fixed={}, integer=set(mip.variables()), relaxed=set(), time_limit=60)
-    return sum(ref.cost_terms(inst, ref.from_assignment(inst, x)).values())
-
-
 def _answer(sol) -> list[list[int]]:
     return [[int(v) for v in row] for row in sol]
 
@@ -61,8 +53,6 @@ def build_cases(sizes=((2, 3), (2, 4), (3, 3), (3, 4), (3, 4), (4, 3)), seed: in
     for k, (n, T) in enumerate(sizes):
         inst = CLSPInstance.trigeiro(n, T, Random(seed + k), utilization=0.9, tbo=3.0)
         opt, opt_sol = brute_force_optimum(inst)
-        hw = mip_optimum(inst)
-        assert abs(opt - hw) <= 1e-4 * max(1.0, abs(opt)), (k, opt, hw)
         lfl = tuple(tuple(d > 0 for d in row) for row in inst.demand)  # setup donde hay demanda
         first = tuple(tuple(t == 0 for t in range(T)) for _ in range(n))  # todo en el primer período
         off = tuple(tuple(False for _ in range(T)) for _ in range(n))

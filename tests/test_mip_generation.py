@@ -11,14 +11,15 @@ import pytest
 pytest.importorskip("pulp")
 
 from core.model_parts import MIP_PARTS  # noqa: E402
-from examples.lotsizing import model_parts as ref  # noqa: E402
+from examples.lotsizing import model_parts as ref  # noqa: E402  el oráculo
 from examples.lotsizing.pack import PACK  # noqa: E402
 
 
 def _reference_mip_module() -> str:
-    """La vista MIP de referencia del CLSP como la escribiría el LLM: importa del oráculo lo que usa."""
-    body = "\n\n".join(inspect.getsource(getattr(ref, n)) for n in ("_y",) + MIP_PARTS)
-    return f"from __future__ import annotations\n\nfrom examples.lotsizing.model_parts import canonical, _plan\n\n\n{body}"
+    """Una vista MIP correcta del CLSP: la que escribió el LLM (`generated/clsp_native/mip/mip.py`, ya validada)."""
+    from tests.mip_views import mip_source
+
+    return mip_source("clsp")
 
 
 def _reply(src: str) -> str:
@@ -30,16 +31,16 @@ def test_a_correct_mip_view_is_accepted_and_a_broken_one_is_corrected(tmp_path):
     from llm.native_mip_generator import generate_mip
 
     good = _reference_mip_module()
-    broken = good.replace('"capacidad": capacity, ', "")
+    broken = good.replace('"capacidad": capacidad, ', "")
     assert broken != good
-    fix = ('<<<<<<< BUSCAR\n    return {"demanda.balance": balance, "enlace": link}\n=======\n'
-           '    return {"demanda.balance": balance, "capacidad": capacity, "enlace": link}\n>>>>>>> REEMPLAZAR')
+    fix = ('<<<<<<< BUSCAR\n    return {"demanda": demanda, "enlace": enlace, "enlace.ls": ls}\n=======\n'
+           '    return {"demanda": demanda, "capacidad": capacidad, "enlace": enlace, "enlace.ls": ls}\n>>>>>>> REEMPLAZAR')
     client = ScriptedClient(responses=[_reply(broken), fix])
     stats = generate_mip(client, PACK, tmp_path, rounds=2, time_limit=10, verbose=False)
     assert stats["accepted"] and stats["rounds"] == 2 and stats["reply_modes"] == ["full", "edits"], stats["rejections"]
     assert (tmp_path / "mip" / "mip.py").read_text() == good
     prompt = client.calls[0][1]
-    assert "def _plan(" in prompt and "def constraint_families" in prompt and "def constraint_families(inst: CLSPInstance)" not in prompt
+    assert "def _plan(" in prompt and "def constraint_families" in prompt and "y_{i}_{t}" not in prompt
 
 
 def test_importing_the_reference_mip_view_is_rejected(tmp_path):

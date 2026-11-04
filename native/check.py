@@ -58,6 +58,11 @@ def main(path: str) -> None:
     gen = importlib.import_module(pack.native_module).GENERATION
     mod = load(request["so"], request["module"])
     parts = parts_for(mod, importlib.import_module(gen["mip_parts"]))
+    mip_file = Path(request["out_dir"]).parent / "mip" / "mip.py"  # la vista MIP generada del workspace, si hay
+    if mip_file.exists():
+        from core.packs import load_mip, with_mip
+
+        parts = with_mip(parts, load_mip(mip_file))
     contexts = parts_contexts(pack, parts, strict=request.get("strict", True), reference_free=True)
     cand = request["candidate"]
     comp = dict(request["component"])

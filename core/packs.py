@@ -189,7 +189,7 @@ def with_mip(oracle, mip):
             delattr(ns, name)
         if hasattr(mip, name):
             setattr(ns, name, getattr(mip, name))
-    ns.__name__ = f"{oracle.__name__}+{getattr(mip, '__name__', 'mip')}"
+    ns.__name__ = f"{getattr(oracle, '__name__', 'parts')}+{getattr(mip, '__name__', 'mip')}"
     return ns
 
 
@@ -201,7 +201,10 @@ def with_generated_mip(pack: ProblemPack, mip_file) -> ProblemPack:
     parts = with_mip(oracle_module(pack), load_mip(mip_file))
     base = [(c, f) for c, f in pack.base_components if c["slot"] != "destruction"]
     base += [(c, f) for c, f in base_components(parts, list(pack.constructor_skeletons)) if c["slot"] == "destruction"]
-    return replace(pack, problem_factory=lambda inst: PartsModel(parts, inst), base_components=base)
+    new = replace(pack, problem_factory=lambda inst: PartsModel(parts, inst), base_components=base)
+    new.make_contexts = lambda n_contexts=2, strict=True, reference_free=True, combination=False: parts_contexts(
+        new, parts, n_contexts, strict, reference_free, combination, new)
+    return new
 
 
 def parts_pack(base: ProblemPack, parts, parts_import: str, model_spec, name: str) -> ProblemPack:

@@ -13,7 +13,7 @@ cada T ≥ t*, la capacidad libre en los períodos ≤ T alcanza para la demanda
 con deadline ≤ T más un setup por cada ítem que todavía no tiene setup encendido en
 ningún período ≤ su primer deadline pendiente. Si igual se llega a un callejón sin
 salida (la capacidad libre quedó fragmentada en pedazos menores que un tiempo de
-setup), `complete` fija los setups ya decididos y resuelve el resto con el MIP.
+setup), `complete` enciende un setup en cada período con demanda pendiente.
 """
 
 from __future__ import annotations
@@ -146,16 +146,7 @@ class CLSPConstructionView:
         return tuple(tuple(row) for row in p.setup)
 
     def complete(self, p: CLSPPartial, rng: Random):
-        """Callejón sin salida: fija en 1 los setups ya encendidos y deja que el MIP decida
-        el resto (con tiempo límite). Si el MIP no encuentra nada, devuelve los setups
-        decididos más lot-for-lot para lo pendiente (puede quedar infactible)."""
-        from .model_parts import _y as var_name
-
+        """Callejón sin salida: los setups ya decididos más un setup en cada período con demanda pendiente (puede quedar
+        infactible si la capacidad quedó fragmentada)."""
         inst = self.inst
-        fixed = {var_name(i, t): 1.0 for i in range(inst.n_items) for t in range(inst.n_periods) if p.setup[i][t]}
-        model = self.problem.build_mip(inst)
-        free = [v for v in model.variables() if v not in fixed]
-        x = model.solve(fixed=fixed, integer=set(free), relaxed=set(), time_limit=self.mip_time_limit)
-        if x is not None:
-            return self.problem.from_assignment(x)
         return tuple(tuple(p.setup[i][t] or p.rem[i][t] > EPS for t in range(inst.n_periods)) for i in range(inst.n_items))

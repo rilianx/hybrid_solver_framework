@@ -1,5 +1,5 @@
-"""Los packs de todos los problemas tienen la misma forma: piezas de referencia que pasan sus casos, las partidas
-trivial y al azar, el modelo C++ generado (`native_parts`) y, si hay vista MIP, las destrucciones genéricas de HYB."""
+"""Los packs de todos los problemas tienen la misma forma: un oráculo que pasa sus casos, las partidas trivial y al azar
+y el modelo C++ generado (`native_parts`); con la vista MIP que escribió el LLM, las destrucciones genéricas de HYB."""
 
 import importlib
 
@@ -19,7 +19,8 @@ def test_pack(name):
         by_slot.setdefault(c["slot"], []).append(c["name"])
     assert by_slot["constructor"] == ["trivial", "random"]
     parts = importlib.import_module(pack.variants[next(iter(pack.variants))][1])
-    assert by_slot.get("destruction", []) == (["group_window", "random_variables"] if hasattr(parts, "variable_groups") else [])
+    assert not hasattr(parts, "constraint_families")  # el oráculo no trae vista MIP: la escribe el LLM
+    assert "destruction" not in by_slot
     assert check_heuristic_view(parts, pack.load_cases()).passed
     inst = pack.make_instances(1, 0, pack.parse_size(pack.default_size))[0]
     assert pack.baseline_cost(inst) > 0
@@ -28,11 +29,12 @@ def test_pack(name):
 def test_the_generic_destructions_pass_the_validator():
     from random import Random
 
-    from core.packs import GroupWindowDestruction, RandomVariableDestruction
+    from core.packs import GroupWindowDestruction, RandomVariableDestruction, mip_path, with_generated_mip
     from core.validation import validate_component
 
     for name in ("clsp", "jobshop", "cvrp"):
-        pack = base_pack(name)
+        pack = with_generated_mip(base_pack(name), mip_path(base_pack(name)))
+        assert [c["name"] for c, _ in pack.base_components if c["slot"] == "destruction"] == ["group_window", "random_variables"]
         ctx = pack.make_contexts(n_contexts=1)[0]
         for cls in (GroupWindowDestruction, RandomVariableDestruction):
             comp = {"name": cls.__name__, "slot": "destruction", "compatible_skeletons": ["HYB"], "params": {}}

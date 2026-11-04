@@ -8,7 +8,7 @@ y espera en stdout un único número: el costo. Variables de entorno:
 `HSF_BUDGET` (segundos por corrida, default 5), `HSF_PROBLEM` (paquete del problema, con
 su `pack.PACK`; default `examples.lotsizing`), `HSF_GENERATED` (workspace de los componentes
 C++ del LLM; vacío = el del problema), `HSF_SKELETONS` (separados por espacio), `HSF_SCALE_BUDGET=1` y
-`HSF_OBJECTIVE=ratio` (costo / partida trivial) `HSF_MIP` (vista MIP de HYB, como `tuning.cli --mip`) y `HSF_GENERATED_DESTRUCTIONS=1`.
+`HSF_OBJECTIVE=ratio` (costo / partida trivial) y `HSF_GENERATED_DESTRUCTIONS=1`.
 """
 
 from __future__ import annotations
@@ -33,7 +33,6 @@ def main(argv: list[str]) -> int:
     skeletons = os.environ.get("HSF_SKELETONS", "").split() or None
     assembler, _ = make_assembler(pack, os.environ.get("HSF_GENERATED") or None, skeletons=skeletons,
                                   scale_budget=os.environ.get("HSF_SCALE_BUDGET") == "1",
-                                  mip=os.environ.get("HSF_MIP", "auto"),
                                   generated_destructions=os.environ.get("HSF_GENERATED_DESTRUCTIONS") == "1")
     config = parse_irace_params(assembler.config_space(), params)
     inst = pack.load_instance(instance_path)
