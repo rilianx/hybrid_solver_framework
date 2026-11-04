@@ -1,0 +1,19 @@
+  vista MIP de HYB: reference
+
+=== catálogo `generated`: 25 parámetros, 5 opciones generadas por LLM ===
+  irace: 504 experimentos en 1456s; élite: HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=window_wagner_whitin_rebuild, destruction=random_variables]; HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=window_wagner_whitin_rebuild, destruction=random_variables]; HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=window_wagner_whitin_rebuild, destruction=random_variables]; HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=window_wagner_whitin_rebuild, destruction=random_variables]; HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=window_wagner_whitin_rebuild, destruction=random_variables]
+  mejor en train: 0.5239  HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=window_wagner_whitin_rebuild, destruction=random_variables]
+
+=== TEST `generated` (partida trivial sin búsqueda = 440444.0; gap vs mejor conocido por instancia) ===
+    tuned                                            gap   1.35%       234295.2 ±  30184.9   (+46.8% vs partida)   HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=window_wagner_whitin_rebuild, destruction=random_variables]
+    default:HYB                                      gap   0.61%       232576.9 ±  29801.1   (+47.2% vs partida)   HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=random_setup_flips_flow_repair, destruction=group_window]
+    HYB:perturbation=window_wagner_whitin_rebuild    gap   0.73%       232912.7 ±  30354.8   (+47.1% vs partida)   HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=window_wagner_whitin_rebuild, destruction=group_window]
+    HYB:perturbation=lot_shift_merge_swap_repair     gap   0.78%       232911.1 ±  29498.6   (+47.1% vs partida)   HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=lot_shift_merge_swap_repair, destruction=group_window]
+    HYB:neighborhood=composite                       gap   1.49%       234489.3 ±  29387.0   (+46.8% vs partida)   HYB[constructor=trivial, neighborhood=composite, perturbation=random_setup_flips_flow_repair, destruction=group_window]
+    HYB:neighborhood=lot_consolidation_window        gap   2.22%       236248.8 ±  30398.4   (+46.4% vs partida)   HYB[constructor=trivial, neighborhood=lot_consolidation_window, perturbation=random_setup_flips_flow_repair, destruction=group_window]
+    HYB:destruction=random_variables                 gap   2.82%       237570.4 ±  29854.4   (+46.1% vs partida)   HYB[constructor=trivial, neighborhood=setup_toggle_flip, perturbation=random_setup_flips_flow_repair, destruction=random_variables]
+    HYB:constructor=random                           gap   2.89%       237724.1 ±  29722.6   (+46.0% vs partida)   HYB[constructor=random, neighborhood=setup_toggle_flip, perturbation=random_setup_flips_flow_repair, destruction=group_window]
+  ganancia del afinado vs mejor default: -0.74%; gana en 1/6 instancias
+  afinado vs default:HYB: gap -0.74% a favor del afinado, IC95 [-1.25%, -0.25%]
+
+Escenario irace escrito en tuning_out/irace/scenario.txt (correr: irace --scenario tuning_out/irace/scenario.txt)
