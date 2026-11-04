@@ -212,7 +212,8 @@ def parts_pack(base: ProblemPack, parts, parts_import: str, model_spec, name: st
 def base_pack(problem: str) -> ProblemPack:
     module = {"clsp": "examples.lotsizing.pack", "cvrp": "examples.cvrp.pack",
               "jobshop": "examples.jobshop.pack", "flowshop": "examples.flowshop.pack",
-              "flowshop_cmax": "examples.flowshop_cmax.pack"}[problem]
+              "flowshop_cmax": "examples.flowshop_cmax.pack",
+              "jobshop_gen": "examples.jobshop_gen.pack", "cvrp_gen": "examples.cvrp_gen.pack"}[problem]
     return importlib.import_module(module).PACK
 
 
