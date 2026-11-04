@@ -200,7 +200,8 @@ class Assembler:
         key = f"{skeleton}.{p}"
         if key in config:
             return config[key]
-        pspec = self.skeletons[skeleton].params[p]
+        # un esqueleto fuera del espacio también tiene defaults (p.ej. el ILS interno de HYB con `--skeletons HYB`)
+        pspec = (self.skeletons.get(skeleton) or SKELETONS[skeleton]).params[p]
         return ComponentSpec("_", "stop", (), (), {p: pspec}, None).default_params()[p]
 
     def assemble(self, config: dict[str, Any]) -> VariantRunner:
