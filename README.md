@@ -64,8 +64,8 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   9 esqueletos en el espacio de diseño.
 - **`core/problem_pack.py`** — `ProblemPack`: lo que el framework recibe de un
   problema (ProblemModel, catálogo de referencia, spec para el LLM, contextos de
-  validación, generador de instancias, partida trivial). `llm.catalog`, `llm.cli`,
-  `llm.model_cli` y `tuning.cli` son genéricos sobre el pack; hay tres:
+  validación, generador de instancias, partida trivial). `llm.catalog`, `llm.cli`
+  y `tuning.cli` son genéricos sobre el pack; hay tres:
   `examples/lotsizing/pack.py` (CLSP), `examples/cvrp/pack.py` (CVRP) y
   `examples/jobshop/pack.py` (job shop, makespan). El del job shop entra
   directamente por piezas: su `ProblemModel` es el de las piezas de referencia
@@ -205,9 +205,7 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   `optimize` (`llm/optimizer.py`): versiones más rápidas del modelo y de los
   componentes aceptados, que se aceptan solo si dan las mismas salidas que la
   versión aceptada (pruebas diferenciales, `core/validation/equivalence.py`) y
-  son al menos 1,5 veces más rápidas. `scripts/throughput.py` mide la velocidad
-  de un catálogo; `scripts/reevaluate_configs.py` reevalúa en test lo que eligió
-  una corrida de tuning con el catálogo actual, sin volver a afinar.
+  son al menos 1,5 veces más rápidas.
   Reparación localizada (`llm/patching.py`): en cada corrección (componentes,
   etapas del modelo por piezas, optimización) el LLM devuelve solo las
   funciones o métodos que cambia; se reemplazan por nombre en el módulo
@@ -217,8 +215,6 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
   La optimización exige además memoria acotada (`core/validation/resources.py`):
   la memoria retenida no puede crecer al evaluar soluciones nuevas (una caché
   `lru_cache(maxsize=None)` de módulo agotó los runners en la run 34).
-- **`examples/validation_demo.py`** — componentes correctos y rotos pasando
-  por las capas, con el feedback que recibiría el LLM.
 - **`tests/`** — 260 tests (`pytest`): contratos, esqueleto genérico,
   exportadores, políticas de fijación, verificación cruzada heurística↔MIP,
   integración de ambos pilotos con el sub-MIP real, y las capas de
@@ -236,9 +232,6 @@ LNS-MIP). Exportador del espacio de configuración a irace y Optuna."*
 ```bash
 pip install -r requirements.txt
 python -m examples.knapsack.demo    # SA / ILS / LNS-MIP + export irace/Optuna
-python -m examples.lotsizing.demo   # CLSP Trigeiro 15×20, 20 s por variante (~3 min)
-python -m examples.lotsizing.demo --easy
-python -m examples.validation_demo  # capas de validación con componentes rotos
 python -m examples.lotsizing.random_search --configs 12 --budget 5   # espacio completo, target-runner
 python -m pytest -q                 # 260 passed (~170 s)
 
@@ -251,7 +244,6 @@ python -m llm.cycle model --problem jobshop --variant sequences --workspace gene
 # backend nativo (C++, necesita g++ y pybind11): las configuraciones corren enteras en C++
 python -m examples.jobshop.tune --native --catalog handwritten --size 10x10 --trials 40
 python -m examples.jobshop.tune --tuner irace --native --catalog handwritten --trials 70   # irace (apt install r-cran-irace)
-python -m scripts.native_benchmark results/tune_run47 --budgets 1 5 --native examples.jobshop.native_parts
 # componentes C++ generados por el LLM sobre el modelo nativo, y su tuning en C++
 python -m llm.native_generator --problem jobshop --workspace generated/jobshop_native --provider anthropic
 python -m llm.native_optimizer --problem jobshop --workspace generated/jobshop_native --provider anthropic  # más rápidos, mismas salidas
