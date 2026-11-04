@@ -319,7 +319,9 @@ def test_a_generated_destruction_is_validated_and_used_by_hyb(pack, tmp_path):
     write_catalog(tmp_path, nb)
     write_catalog(tmp_path, pert)
     write_catalog(tmp_path, acc)
-    A, _ = make_assembler(pack, str(tmp_path))
+    A, _ = make_assembler(pack, str(tmp_path))  # por defecto, solo las destrucciones genéricas
+    assert {s.name for s in A.registry.compatible("destruction", "HYB")} == {"group_window", "random_variables"}
+    A, _ = make_assembler(pack, str(tmp_path), generated_destructions=True)
     assert {s.name for s in A.registry.compatible("destruction", "HYB")} >= {"machine_window", "group_window"}
     cfg = A.default_config("HYB", {"neighborhood": "adjacent_swap", "destruction": "machine_window"})
     inst = pack.make_instances(1, 0, pack.parse_size("6x4"))[0]

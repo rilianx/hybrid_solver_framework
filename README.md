@@ -22,9 +22,10 @@ piezas de referencia en Python       └ más rápidos    native_optimizer      
    términos del costo). `native/check_model.py` lo valida en un proceso aparte contra los casos visibles y ocultos y
    contra las piezas de referencia en Python en instancias generadas (mismas violaciones y mismo costo), y lo corrige
    con el LLM hasta `--rounds` rondas. `native_model_optimizer` pide una versión más rápida con las mismas salidas.
-2. **Componentes** (`llm/native_generator.py`): constructores (`greedy_score`), vecindarios, perturbaciones, relinks
-   y destrucciones (las variables estructurales de la vista MIP que libera el sub-MIP de HYB, como índices) en C++ sobre
-   ese modelo (`native/generated.py` los compila juntos; las respuestas de corrección son ediciones,
+2. **Componentes** (`llm/native_generator.py`): constructores (`greedy_score`), vecindarios, perturbaciones y relinks
+   en C++ sobre ese modelo. Se le pueden pedir también destrucciones para HYB (`--slots destruction`), pero por defecto
+   el tuning usa solo las genéricas (`--generated-destructions` para incluirlas): en CLSP, job shop y CVRP las
+   generadas no les ganaron (`native/generated.py` los compila juntos; las respuestas de corrección son ediciones,
    `native/edits.py`). `native/check.py` aplica las capas de `core/validation/` (contractual, calidad, diversidad
    contra los aceptados, aporte en combinación con cada esqueleto) en un proceso aparte. `native_optimizer` acelera
    los aceptados con pruebas diferenciales (`core/validation/equivalence.py`).

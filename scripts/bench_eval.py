@@ -88,7 +88,7 @@ def _run(job):
 
     b = BENCHES[problem]
     pack = base_pack(b.pack)
-    assembler, _ = make_assembler(pack, generated, mip=mip)
+    assembler, _ = make_assembler(pack, generated, mip=mip, generated_destructions=True)  # las configuraciones pueden usarlas
     inst = pack.load_instance(str(b.dir / f"{name}{b.ext}"))
     res = assembler.assemble(config)(inst, Random(seed), seconds)
     P = pack.problem_factory(inst)
@@ -119,7 +119,7 @@ def main(argv: list[str] | None = None) -> None:
 
     b = BENCHES[args.problem]
     generated = args.generated or f"generated/{b.pack}_native"
-    make_assembler(base_pack(b.pack), generated, mip=args.mip)  # compila una vez antes de repartir
+    make_assembler(base_pack(b.pack), generated, mip=args.mip, generated_destructions=True)  # compila una vez antes de repartir
     configs: dict[str, tuple[dict, str]] = {}
     for run in args.runs:
         for rep, path in load_replicas(Path(run)):
