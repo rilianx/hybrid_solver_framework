@@ -79,7 +79,13 @@ def generated_cases(native, ref, pack, report_cases: int = 3) -> list[str]:
                 except Exception as exc:  # noqa: BLE001
                     problems.append(f"en una instancia oculta de tamaño {size} el modelo lanzó {type(exc).__name__}: {exc}")
                     break
-                if not _dict_close(want_v, got_v) or not _dict_close(want_c, got_c):
+                # en una solución infactible, como en los casos del problema (`cases.json`), solo se pide que viole las
+                # mismas familias: la magnitud y el costo de una infactible los fija cada modelo (p.ej. cómo romper un
+                # ciclo en el job shop); en una factible, todo exacto
+                infeasible = any(v > 1e-9 for v in want_v.values())
+                same = ({k for k, v in want_v.items() if v > 1e-9} == {k for k, v in got_v.items() if v > 1e-9}
+                        if infeasible else _dict_close(want_v, got_v) and _dict_close(want_c, got_c))
+                if not same:
                     shown = f" (solución {json.dumps(sol)[:300]})" if size == sizes[0] else ""
                     problems.append(f"en una instancia oculta de tamaño {size}{shown}: se esperaban violaciones {want_v} y "
                                     f"costo {want_c}; el modelo dio {got_v} y {got_c}")

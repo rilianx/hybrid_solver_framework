@@ -24,11 +24,13 @@ def best_known() -> dict[str, float]:
 
 
 def _run(args):
-    label, config, name, seed, budget, native, catalog, generated = args
+    label, config, name, seed, budget, native, catalog, generated, pack_module = args
+    import importlib
+
     from examples.cvrp.instance import CVRPInstance
-    from examples.cvrp.pack import PACK
     from tuning.cli import make_assembler
 
+    PACK = importlib.import_module(pack_module).PACK
     assembler, _ = make_assembler(PACK, catalog, generated, native=native)
     inst = CVRPInstance.load(str(UCHOA / f"{name}.vrp"))
     res = assembler.assemble(config)(inst, Random(seed), budget)
@@ -48,6 +50,7 @@ def main() -> None:
     ap.add_argument("--generated", default=None)
     ap.add_argument("--extra", nargs="*", default=[], help="nombre=JSON de una configuración adicional")
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--pack", default="examples.cvrp.pack", help="módulo del pack (p.ej. examples.cvrp_gen.pack, modelo C++ generado)")
     ap.add_argument("--out")
     args = ap.parse_args()
 
@@ -63,7 +66,7 @@ def main() -> None:
         configs[name] = (json.loads(cfg), "extra")
     bk = best_known()
     names = args.instances or sorted(bk, key=lambda n: int(n.split("-n")[1].split("-")[0]))
-    jobs = [(label, cfg, name, seed, args.budget, args.native, args.catalog, args.generated) for label, (cfg, _) in configs.items()
+    jobs = [(label, cfg, name, seed, args.budget, args.native, args.catalog, args.generated, args.pack) for label, (cfg, _) in configs.items()
             for name in names for seed in range(args.seeds)]
     with ProcessPoolExecutor(args.workers) as pool:
         rows = list(pool.map(_run, jobs))

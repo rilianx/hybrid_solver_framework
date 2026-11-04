@@ -1,0 +1,16 @@
+
+=== catálogo `generated`: 71 parámetros, 0 opciones generadas por LLM ===
+  irace: 1008 experimentos en 5653s; élite: ILS[constructor=giffler_thompson_grasp_active, neighborhood=critical_arc_adjacent_swap, perturbation=jssp_critical_block_insertion]; ILS[constructor=giffler_thompson_grasp_active, neighborhood=critical_arc_adjacent_swap, perturbation=jssp_critical_block_insertion]; ILS[constructor=giffler_thompson_grasp_active, neighborhood=critical_arc_adjacent_swap, perturbation=jssp_critical_block_insertion]; ILS[constructor=giffler_thompson_grasp_active, neighborhood=critical_arc_adjacent_swap, perturbation=jssp_critical_block_insertion]; ILS[constructor=giffler_thompson_grasp_active, neighborhood=critical_arc_adjacent_swap, perturbation=jssp_critical_block_insertion]; ILS[constructor=biased_job_repetition_sampling_best_of_k, neighborhood=critical_arc_adjacent_swap, perturbation=jssp_critical_block_insertion]; ILS[constructor=giffler_thompson_grasp_active, neighborhood=critical_arc_adjacent_swap, perturbation=jssp_critical_block_insertion]; ILS[constructor=giffler_thompson_grasp_active, neighborhood=critical_arc_adjacent_swap, perturbation=jssp_critical_block_insertion]
+  mejor en train: 0.1171  ILS[constructor=giffler_thompson_grasp_active, neighborhood=critical_arc_adjacent_swap, perturbation=jssp_critical_block_insertion]
+
+=== TEST `generated` (partida trivial sin búsqueda = 12505.8; gap vs mejor conocido por instancia) ===
+    tuned                                            gap   0.06%         1382.3 ±    159.2   (+88.9% vs partida)   ILS[constructor=giffler_thompson_grasp_active, neighborhood=critical_arc_adjacent_swap, perturbation=jssp_critical_block_insertion]
+    default:PR                                       gap   0.63%         1389.8 ±    156.9   (+88.9% vs partida)   PR[constructor=trivial, neighborhood=critical_arc_adjacent_swap, relink=swap_cycle_relink, perturbation=jssp_critical_swap_walk]
+    default:TS                                       gap   0.87%         1393.7 ±    161.4   (+88.9% vs partida)   TS[constructor=trivial, neighborhood=critical_arc_adjacent_swap]
+    default:SA                                       gap   1.04%         1395.3 ±    156.4   (+88.8% vs partida)   SA[constructor=trivial, neighborhood=critical_arc_adjacent_swap]
+    default:ILS                                      gap  21.74%         1697.8 ±    349.8   (+86.4% vs partida)   ILS[constructor=trivial, neighborhood=critical_arc_adjacent_swap, perturbation=jssp_critical_swap_walk]
+    default:VNS                                      gap  22.41%         1705.7 ±    327.9   (+86.4% vs partida)   VNS[constructor=trivial, neighborhood=critical_arc_adjacent_swap]
+  ganancia del afinado vs mejor default: +0.54%; gana en 5/6 instancias
+  afinado vs default:PR: gap +0.57% a favor del afinado, IC95 [+0.10%, +1.10%]
+
+Escenario irace escrito en tuning_out/irace/scenario.txt (correr: irace --scenario tuning_out/irace/scenario.txt)

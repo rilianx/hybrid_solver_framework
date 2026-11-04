@@ -1,0 +1,16 @@
+
+=== catálogo `generated`: 83 parámetros, 0 opciones generadas por LLM ===
+  irace: 1008 experimentos en 5935s; élite: ILS[constructor=trivial, neighborhood=route_dissolve_reinsert, perturbation=random_feasible_move_chain_kick]; PR[constructor=polar_sweep_2opt, neighborhood=granular_swap_star, perturbation=radial_ruin_cheapest_blink_insert, relink=route_prefix_growth_relink]; PR[constructor=polar_sweep_2opt, neighborhood=granular_swap_star, perturbation=radial_ruin_cheapest_blink_insert, relink=route_prefix_growth_relink]; ILS[constructor=trivial, neighborhood=route_dissolve_reinsert, perturbation=random_feasible_move_chain_kick]; TS[constructor=randomized_clarke_wright_savings, neighborhood=composite]; ILS[constructor=trivial, neighborhood=route_dissolve_reinsert, perturbation=random_feasible_move_chain_kick]; ILS[constructor=trivial, neighborhood=route_dissolve_reinsert, perturbation=random_feasible_move_chain_kick]; TS[constructor=sequential_cheapest_insertion, neighborhood=composite]
+  mejor en train: 0.1372  ILS[constructor=trivial, neighborhood=route_dissolve_reinsert, perturbation=random_feasible_move_chain_kick]
+
+=== TEST `generated` (partida trivial sin búsqueda = 154282.0; gap vs mejor conocido por instancia) ===
+    tuned                                            gap   0.26%        19445.8 ±   7875.4   (+87.4% vs partida)   ILS[constructor=trivial, neighborhood=route_dissolve_reinsert, perturbation=random_feasible_move_chain_kick]
+    default:PR                                       gap   1.84%        19885.7 ±   8418.3   (+87.1% vs partida)   PR[constructor=trivial, neighborhood=granular_relocate, relink=route_copy_relink, perturbation=radial_ruin_cheapest_blink_insert]
+    default:TS                                       gap   3.21%        19995.7 ±   8041.5   (+87.0% vs partida)   TS[constructor=trivial, neighborhood=granular_relocate]
+    default:ILS                                      gap   4.40%        20244.5 ±   8204.9   (+86.9% vs partida)   ILS[constructor=trivial, neighborhood=granular_relocate, perturbation=radial_ruin_cheapest_blink_insert]
+    default:VNS                                      gap   4.48%        20318.7 ±   8397.7   (+86.8% vs partida)   VNS[constructor=trivial, neighborhood=granular_relocate]
+    default:SA                                       gap   6.37%        20611.8 ±   8301.4   (+86.6% vs partida)   SA[constructor=trivial, neighborhood=granular_relocate]
+  ganancia del afinado vs mejor default: +2.21%; gana en 5/6 instancias
+  afinado vs default:PR: gap +1.58% a favor del afinado, IC95 [+0.11%, +3.04%]
+
+Escenario irace escrito en tuning_out/irace/scenario.txt (correr: irace --scenario tuning_out/irace/scenario.txt)
