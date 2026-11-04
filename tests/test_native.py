@@ -96,3 +96,12 @@ def test_a_compile_error_is_reported_with_the_compiler_output(tmp_path):
     src.write_text("int main( { return 0; }\n")
     with pytest.raises(NativeBuildError, match="broken.cpp"):
         build("broken", src)
+
+
+def test_hyb_runs_when_the_space_has_only_hyb():
+    """`--skeletons HYB`: el ILS interno de HYB toma sus defaults aunque ILS no esté en el espacio (tunings 84–86)."""
+    from tuning.cli import make_assembler
+
+    A, _ = make_assembler(PACK, skeletons=["HYB"])
+    assert A.available_skeletons() == ["HYB"]
+    _check(A, A.default_config("HYB"), PACK.make_instances(1, 3, PACK.parse_size("8x5"))[0], budget=1.0)

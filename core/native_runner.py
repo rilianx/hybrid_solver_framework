@@ -30,7 +30,9 @@ class NativeRunner:
         if sk not in NATIVE_SKELETONS:
             raise ValueError(f"el esqueleto {sk} no tiene versión nativa ({', '.join(NATIVE_SKELETONS)})")
         full = dict(config)
-        for p in A.skeletons[sk].params:
+        from core.assembler import SKELETONS
+
+        for p in (A.skeletons.get(sk) or SKELETONS[sk]).params:
             full.setdefault(f"{sk}.{p}", A._skeleton_param(config, sk, p))
         if sk == "SA":  # configuraciones de antes del enfriamiento por tiempo (como en el Assembler)
             full["SA.cooling"] = config.get("SA.cooling", "iterations" if "SA.alpha" in config else full["SA.cooling"])
