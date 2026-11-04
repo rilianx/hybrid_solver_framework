@@ -1,0 +1,39 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("TS", "PR")
+constructor "--constructor=" c ("trivial", "neh_operation_insertion_partial_makespan") | skeleton %in% c("TS", "PR")
+neh_operation_insertion_partial_makespan.noise "--neh_operation_insertion_partial_makespan.noise=" r (0.0, 1.0) | skeleton %in% c("TS", "PR") & constructor == "neh_operation_insertion_partial_makespan"
+neh_operation_insertion_partial_makespan.max_positions "--neh_operation_insertion_partial_makespan.max_positions=" i (4, 200) | skeleton %in% c("TS", "PR") & constructor == "neh_operation_insertion_partial_makespan"
+neighborhood "--neighborhood=" c ("critical_arc_adjacent_swap", "composite") | skeleton %in% c("TS", "PR")
+critical_arc_adjacent_swap.scope "--critical_arc_adjacent_swap.scope=" c ("critical", "all") | skeleton %in% c("TS", "PR") & neighborhood == "critical_arc_adjacent_swap"
+perturbation "--perturbation=" c ("jssp_critical_swap_walk", "jssp_noisy_start_redispatch", "jssp_critical_block_insertion") | skeleton %in% c("PR")
+jssp_critical_swap_walk.steps_scale "--jssp_critical_swap_walk.steps_scale=" r (0.5, 3.0) | skeleton %in% c("PR") & perturbation == "jssp_critical_swap_walk"
+jssp_critical_swap_walk.block_end_bias "--jssp_critical_swap_walk.block_end_bias=" r (0.0, 1.0) | skeleton %in% c("PR") & perturbation == "jssp_critical_swap_walk"
+jssp_noisy_start_redispatch.op_fraction "--jssp_noisy_start_redispatch.op_fraction=" r (0.02, 0.3) | skeleton %in% c("PR") & perturbation == "jssp_noisy_start_redispatch"
+jssp_noisy_start_redispatch.noise_scale "--jssp_noisy_start_redispatch.noise_scale=" r (0.5, 5.0) | skeleton %in% c("PR") & perturbation == "jssp_noisy_start_redispatch"
+jssp_noisy_start_redispatch.focus "--jssp_noisy_start_redispatch.focus=" c ("all", "critical") | skeleton %in% c("PR") & perturbation == "jssp_noisy_start_redispatch"
+jssp_critical_block_insertion.moves_scale "--jssp_critical_block_insertion.moves_scale=" r (0.5, 3.0) | skeleton %in% c("PR") & perturbation == "jssp_critical_block_insertion"
+jssp_critical_block_insertion.endpoint_prob "--jssp_critical_block_insertion.endpoint_prob=" r (0.0, 1.0) | skeleton %in% c("PR") & perturbation == "jssp_critical_block_insertion"
+jssp_critical_block_insertion.max_tries "--jssp_critical_block_insertion.max_tries=" i (3, 30) | skeleton %in% c("PR") & perturbation == "jssp_critical_block_insertion"
+relink "--relink=" c ("swap_cycle_relink") | skeleton %in% c("PR")
+swap_cycle_relink.machine_focus "--swap_cycle_relink.machine_focus=" r (0.0, 1.0) | skeleton %in% c("PR") & relink == "swap_cycle_relink"
+TS.tenure "--TS.tenure=" i (3, 30) | skeleton == "TS"
+TS.candidate_size "--TS.candidate_size=" i (5, 100) | skeleton == "TS"  # log-scale
+TS.estimate_top "--TS.estimate_top=" i (0, 10) | skeleton == "TS"
+TS.elite_size "--TS.elite_size=" i (0, 8) | skeleton == "TS"
+TS.stall "--TS.stall=" i (20, 5000) | skeleton == "TS"  # log-scale
+TS.pen_scale "--TS.pen_scale=" r (0.0001, 1.0) | skeleton == "TS"  # log-scale
+TS.pen_adapt "--TS.pen_adapt=" c ("no", "yes") | skeleton == "TS"
+TS.pen_target "--TS.pen_target=" r (0.05, 0.5) | skeleton == "TS"
+PR.pop_size "--PR.pop_size=" i (4, 30) | skeleton == "PR"
+PR.ts_iters "--PR.ts_iters=" i (100, 20000) | skeleton == "PR"  # log-scale
+PR.tenure "--PR.tenure=" i (3, 30) | skeleton == "PR"
+PR.candidate_size "--PR.candidate_size=" i (5, 100) | skeleton == "PR"  # log-scale
+PR.estimate_top "--PR.estimate_top=" i (0, 10) | skeleton == "PR"
+PR.path_cands "--PR.path_cands=" i (1, 8) | skeleton == "PR"
+PR.band "--PR.band=" r (0.05, 0.5) | skeleton == "PR"
+PR.init_moves "--PR.init_moves=" i (1, 100) | skeleton == "PR"  # log-scale
+PR.improve "--PR.improve=" c ("ts", "ils") | skeleton == "PR"
+PR.strength "--PR.strength=" i (1, 6) | skeleton == "PR"
+PR.ls_sample "--PR.ls_sample=" i (4, 256) | skeleton == "PR"  # log-scale
+PR.T_rel "--PR.T_rel=" r (0.0001, 0.05) | skeleton == "PR"  # log-scale
