@@ -1513,3 +1513,44 @@ El HYB por defecto mejora la mejor conocida publicada en G69 (131 208 < 131 234)
 instancias G por debajo de la literatura de los métodos exactos. La configuración más pareja es la r0 del tune 79:
 mejor que el branch-and-price de Degraeve y Jans en las G (0,40 % contra 0,47 %) y 0,26 % en las F; el
 branch-and-cut de Belvaux y Wolsey (0,18 %) sigue por delante, y en las F el HYB del tune 71 es mejor.
+
+## Job shop y CVRP con el modelo C++ escrito por el LLM (`jobshop_gen`, `cvrp_gen`)
+
+Los cinco problemas pasan ahora por el mismo pipeline: el LLM escribe también el modelo C++ (contrato genérico), no
+solo los componentes. Mismas instancias, casos y modelo de referencia en Python que `examples.jobshop` y
+`examples.cvrp`.
+
+- `check_model`: en los casos ocultos, una solución infactible solo pide las mismas familias violadas (como
+  `cases.json`). La corrida 128 rechazó 4 veces un modelo de job shop correcto porque no reproducía la regla arbitraria
+  con que la referencia rompe un ciclo de las secuencias.
+- Job shop: corrida 130 (0,09 USD) modelo a la primera; 132 (1,17 USD) 12 de 12 componentes (vecindarios del camino
+  crítico: intercambio en el arco crítico, inserción en el bloque, inversión de segmento; Giffler-Thompson GRASP);
+  134 (4,80 USD) optimización de componentes: ninguno mejora, todos al mismo ritmo, el cuello de botella es el modelo;
+  136 (0,68 USD) optimización del modelo: objetivo ×3,3, trayectoria ×2.
+- CVRP: corrida 129 (0,07 USD) modelo a la primera; 131 (1,50 USD) 11 de 12 (granulares relocate, 2-opt*, CROSS;
+  destrucción radial con reinserción con "blinks", la idea de SISR); 133 (2,77 USD) ×3,4–4,7; 135 (0,55 USD) la
+  generación que ve el catálogo agrega Or-opt intra-ruta, SWAP* y disolver una ruta; 137 (3,46 USD) ×1,8–3,1.
+- Tunes 80 y 81: irace en tamaños mezclados (job shop 15×15, 20×15, 20×20; CVRP x100, x200, x250), 20 s,
+  `--irace-parallel 4`, 3 réplicas. Job shop: ILS con el intercambio en el arco crítico y la inserción en el bloque
+  crítico como perturbación en las tres. CVRP: PR con la destrucción tipo SISR en dos, ILS en una.
+
+Taillard ta01–ta20, 30 s, 3 semillas (`taillard_jobshop_gen_run80.json`):
+
+| | 15×15 | 20×15 |
+|---|---|---|
+| tune 80 r0 / r1 / r2 | 0,64 / 0,60 / **0,43** % | 1,81 / 1,72 / **1,48** % |
+| tune 80, media de réplicas | 0,56 % | 1,67 % |
+| antes: modelo a mano + componentes del LLM (run 61, PR) | **0,36 %** | **1,29 %** |
+
+X de Uchoa, 43 instancias, 30 s, 3 semillas (`uchoa_cvrp_gen_run81.json`):
+
+| | 101–149 | 150–199 | 200–298 | las 43 | mejor de 3 |
+|---|---|---|---|---|---|
+| tune 81 r0 (ILS) | 1,48 % | 1,70 % | 2,01 % | 1,80 % | 1,46 % |
+| **tune 81 r1 (PR)** | **0,32 %** | **0,83 %** | **1,49 %** | **1,04 %** | **0,90 %** |
+| tune 81 r2 (PR) | 0,53 % | 1,21 % | 1,88 % | 1,38 % | 1,20 % |
+| antes: modelo a mano (run 66 r2, ILS) | 0,88 % | 1,57 % | 2,07 % | 1,65 % | 1,33 % |
+
+En el CVRP, con todo generado, el gap baja de 1,65 % a 1,04 % (0,32 % en 101–149 clientes); HGS sigue mejor
+(~0,1–0,3 %). En el job shop queda algo por detrás del pipeline anterior (que tenía el modelo a mano y PR con mejoras
+tabú largas, afinado con 3 h por réplica); irace no eligió PR esta vez.
