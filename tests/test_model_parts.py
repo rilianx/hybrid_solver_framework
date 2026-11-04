@@ -158,3 +158,18 @@ def test_assignment_that_includes_auxiliaries_is_named_precisely(cases):
                from_assignment=lambda inst, x: ref.from_assignment(inst, {k: v for k, v in x.items() if k.startswith("x_")}))
     msg = check_mip_view(m, cases).feedback()
     assert "SOLO las estructurales" in msg and "u_" in msg
+
+
+def test_a_tiny_mip_time_limit_does_not_crash_cbc():
+    """Con timeLimit 0.1 s CBC terminaba con error en el sub-MIP de un CVRP de 100 clientes (tuning 89): el sub-MIP usa
+    al menos `MIN_MIP_SECONDS` y un error de CBC es "sin solución"."""
+    from core.packs import GroupWindowDestruction
+    from examples.cvrp.pack import PACK
+
+    inst = PACK.make_instances(1, 500, PACK.parse_size("x100"))[0]
+    P = PartsModel(ref, inst)
+    sol = ref.trivial_solution(inst)
+    _, free = GroupWindowDestruction(P).destroy(sol, 0.2, Random(0))
+    x = P.to_assignment(sol)
+    out = P.build_mip(inst).solve({v: val for v, val in x.items() if v not in free}, set(free), set(), 0.1, warm_start=x)
+    assert out is None or P.from_assignment(out) is not None

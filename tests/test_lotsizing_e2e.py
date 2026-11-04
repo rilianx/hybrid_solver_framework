@@ -79,3 +79,4 @@ def test_hybrid_reaches_the_full_mip_optimum_on_a_small_instance(problem):
     result = A.assemble(cfg)(problem.inst, Random(0), 3.0)
     assert problem.is_feasible(result.best_solution)
     assert result.best_objective == pytest.approx(opt, rel=0.02)
+

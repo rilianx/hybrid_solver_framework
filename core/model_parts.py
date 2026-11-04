@@ -135,8 +135,11 @@ class LinearMIP:
             x_bar, k = near
             prob += pulp.lpSum((1 - x[v]) if round(x_bar.get(v, 0.0)) >= 1 else x[v]
                                for v in self._struct if v not in fixed) <= k
-        prob.solve(pulp.PULP_CBC_CMD(msg=False, timeLimit=max(0.1, float(time_limit)), warmStart=bool(warm_start)))
         self.last_objective = None
+        try:  # con timeLimit < 0.2 s, CBC termina con error en vez de devolver "sin solución" (tuning 89)
+            prob.solve(pulp.PULP_CBC_CMD(msg=False, timeLimit=max(MIN_MIP_SECONDS, float(time_limit)), warmStart=bool(warm_start)))
+        except pulp.PulpSolverError:
+            return None
         if pulp.LpStatus[prob.status] not in ("Optimal", "Not Solved"):
             return None
         vals = {v: x[v].value() for v in self._struct}
@@ -144,6 +147,9 @@ class LinearMIP:
             return None
         self.last_objective = float(pulp.value(prob.objective))
         return {k: (float(v) if k in relaxed else float(round(v))) for k, v in vals.items()}
+
+
+MIN_MIP_SECONDS = 0.2  # el menor límite de tiempo que CBC acepta sin error
 
 
 def _safe(name: str) -> str:
