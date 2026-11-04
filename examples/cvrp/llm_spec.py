@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import inspect
 
-FORBIDDEN = ["examples.cvrp.problem_model", "examples.cvrp.components", "examples.cvrp.construction",
-             "examples.cvrp.model_parts", "examples.cvrp.cases"]
+FORBIDDEN = ["examples.cvrp.model_parts", "examples.cvrp.cases"]
 
 
 def make_model_spec():

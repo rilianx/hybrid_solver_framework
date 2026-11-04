@@ -32,9 +32,9 @@ from typing import Any
 from .build import BUILD, build, import_path
 
 SLOT_BASE = {"constructor": "Constructor", "greedy_score": "GreedyScore", "neighborhood": "Neighborhood",
-             "perturbation": "Perturbation", "relink": "Relink"}
+             "perturbation": "Perturbation", "relink": "Relink", "destruction": "Destruction"}
 CATALOG_FIELD = {"constructor": "constructors", "greedy_score": "scores", "neighborhood": "neighborhoods",
-                 "perturbation": "perturbations", "relink": "relinks"}
+                 "perturbation": "perturbations", "relink": "relinks", "destruction": "destructions"}
 STD_HEADERS = ["algorithm", "array", "cmath", "cstdint", "deque", "functional", "limits", "map", "memory", "numeric",
                "queue", "random", "set", "unordered_map", "unordered_set", "utility", "vector"]
 DEBUG_FLAGS = ["-D_GLIBCXX_ASSERTIONS"]  # índices fuera de rango abortan con mensaje en vez de corromper memoria
@@ -229,8 +229,30 @@ class NativeRelink(_Wrapper):
         return self.h.step(cur, guide, rng.getrandbits(63))
 
 
+class NativeDestruction(_Wrapper):
+    """La destrucción C++ devuelve índices de `structural_variables(inst)` de la vista MIP de las piezas; aquí se
+    traducen a nombres y la parte fija es la asignación de la solución en el resto de las variables de los grupos."""
+
+    _make = staticmethod(lambda nat, m, name, p: nat.make_destruction(m, name, p))
+
+    def __init__(self, native, model_of, problem, name, params):
+        super().__init__(native, model_of, problem, name, params)
+        self.problem = problem
+        self.names = list(problem.parts.structural_variables(problem.inst))
+        self.all_vars = [v for vs in problem.variable_groups(problem.inst).values() for v in vs]
+
+    def destroy(self, sol, ratio, rng: Random):
+        idx = self.h.destroy(sol, float(ratio), rng.getrandbits(63))
+        bad = [k for k in idx if not 0 <= k < len(self.names)]
+        if bad:
+            raise ValueError(f"índices fuera de rango (hay {len(self.names)} variables estructurales): {bad[:5]}")
+        free = {self.names[k] for k in idx}
+        x = self.problem.to_assignment(sol)
+        return {v: x[v] for v in self.all_vars if v not in free}, free
+
+
 WRAPPERS = {"constructor": NativeConstructor, "neighborhood": NativeNeighborhood, "perturbation": NativePerturbation,
-            "greedy_score": NativeScore, "relink": NativeRelink}
+            "greedy_score": NativeScore, "relink": NativeRelink, "destruction": NativeDestruction}
 
 
 def factory(native, model_of, slot: str, name: str):

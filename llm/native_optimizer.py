@@ -25,7 +25,7 @@ from native.edits import EDIT_INSTRUCTIONS, EditError, merge_reply
 from native.generated import ModelCache, NativeComponent, build_components, load, parse_component, parse_response
 
 from .client import TokenUsage
-from .native_generator import NATIVE_SYSTEM_PROMPT, _compile_feedback, contract_source
+from .native_generator import NATIVE_SYSTEM_PROMPT, _entry_path, _compile_feedback, contract_source
 
 USAGE = """Cómo usan los esqueletos (C++) un vecindario:
 - SA: elige un movimiento al azar de `moves(s)`. Según un parámetro que elige el tuner, o calcula `delta(s, m)`,
@@ -87,8 +87,9 @@ def optimize_prompt(pack, gen: dict, comp: NativeComponent, before: dict, object
 def _latest(workspace: Path) -> list[NativeComponent]:
     comps = []
     for e in json.loads((workspace / "catalog.json").read_text()):
-        c = parse_component(Path(e["path"]).read_text())
-        c.name, c.slot, c.component, c.path = e["name"], e["slot"], dict(e["component"]), Path(e["path"])
+        src = _entry_path(workspace, e)
+        c = parse_component(src.read_text())
+        c.name, c.slot, c.component, c.path = e["name"], e["slot"], dict(e["component"]), src
         comps.append(c)
     return comps
 

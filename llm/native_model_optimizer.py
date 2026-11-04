@@ -25,6 +25,7 @@ from native.generated import build_components, parse_component
 from native.generic_model import generation
 
 from .client import TokenUsage
+from .native_generator import _entry_path
 from .native_model_generator import MODEL_SYSTEM_PROMPT, _compile_feedback, contract_text
 
 TECHNIQUES = """- Precalcula en `parse` lo que solo depende de la instancia; guarda memoria de trabajo `mutable` en vez de crear vectores
@@ -76,7 +77,7 @@ def optimize_model(client, pack, workspace: str | Path, rounds: int = 3, min_spe
     comps = []
     if (ws / "catalog.json").exists():
         for e in json.loads((ws / "catalog.json").read_text()):
-            c = parse_component(Path(e["path"]).read_text())
+            c = parse_component(_entry_path(ws, e).read_text())
             c.name, c.slot, c.component = e["name"], e["slot"], dict(e["component"])
             comps.append(c)
     nbhs = [c.name for c in comps if c.slot == "neighborhood"]

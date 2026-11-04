@@ -1,24 +1,26 @@
 [
  {
-  "name": "ect_mwkr_dispatch",
-  "slot": "greedy_score",
-  "path": "generated/jobshop_native/greedy_score/ect_mwkr_dispatch_r1.hpp",
+  "name": "giffler_thompson_grasp_active",
+  "slot": "constructor",
+  "path": "generated/jobshop_native/constructor/giffler_thompson_grasp_active_r1.hpp",
   "component": {
-   "name": "ect_mwkr_dispatch",
-   "slot": "greedy_score",
+   "name": "giffler_thompson_grasp_active",
+   "slot": "constructor",
    "params": {
-    "w_end": {
+    "rule": {
+     "type": "cat",
+     "values": [
+      "mwkr",
+      "spt",
+      "mopr",
+      "random"
+     ]
+    },
+    "alpha": {
      "type": "float",
      "range": [
       0.0,
       1.0
-     ]
-    },
-    "mwkr": {
-     "type": "float",
-     "range": [
-      0.0,
-      2.0
      ]
     }
    },
@@ -26,92 +28,65 @@
     "SA",
     "ILS",
     "TS",
-    "VNS"
+    "VNS",
+    "PR",
+    "HYB"
    ]
   }
  },
  {
-  "name": "lookahead_lower_bound",
-  "slot": "greedy_score",
-  "path": "generated/jobshop_native/greedy_score/lookahead_lower_bound_r1.hpp",
+  "name": "biased_job_repetition_sampling_best_of_k",
+  "slot": "constructor",
+  "path": "generated/jobshop_native/constructor/biased_job_repetition_sampling_best_of_k_r1.hpp",
   "component": {
-   "name": "lookahead_lower_bound",
-   "slot": "greedy_score",
+   "name": "biased_job_repetition_sampling_best_of_k",
+   "slot": "constructor",
    "params": {
-    "idle_w": {
-     "type": "float",
+    "samples": {
+     "type": "int",
      "range": [
-      0.0,
-      1.0
-     ]
-    },
-    "tie": {
-     "type": "float",
-     "range": [
-      0.0,
-      0.5
-     ]
-    }
-   },
-   "compatible_skeletons": [
-    "SA",
-    "ILS",
-    "TS",
-    "VNS"
-   ]
-  }
- },
- {
-  "name": "bottleneck_weighted_work",
-  "slot": "greedy_score",
-  "path": "generated/jobshop_native/greedy_score/bottleneck_weighted_work_r1.hpp",
-  "component": {
-   "name": "bottleneck_weighted_work",
-   "slot": "greedy_score",
-   "params": {
-    "gamma": {
-     "type": "float",
-     "range": [
-      0.0,
-      4.0
+      1,
+      30
      ]
     },
     "beta": {
      "type": "float",
      "range": [
       0.0,
-      2.0
+      3.0
      ]
-    },
-    "idle_w": {
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "neh_operation_insertion_partial_makespan",
+  "slot": "constructor",
+  "path": "generated/jobshop_native/constructor/neh_operation_insertion_partial_makespan_r1.hpp",
+  "component": {
+   "name": "neh_operation_insertion_partial_makespan",
+   "slot": "constructor",
+   "params": {
+    "noise": {
      "type": "float",
      "range": [
       0.0,
-      2.0
+      1.0
      ]
-    }
-   },
-   "compatible_skeletons": [
-    "SA",
-    "ILS",
-    "TS",
-    "VNS"
-   ]
-  }
- },
- {
-  "name": "critical_path_adjacent_swap",
-  "slot": "neighborhood",
-  "path": "generated/jobshop_native/neighborhood/critical_path_adjacent_swap_r5.hpp",
-  "component": {
-   "name": "critical_path_adjacent_swap",
-   "slot": "neighborhood",
-   "params": {
-    "block_ends_only": {
+    },
+    "max_positions": {
      "type": "int",
      "range": [
-      0,
-      1
+      4,
+      200
      ]
     }
    },
@@ -119,43 +94,21 @@
     "SA",
     "ILS",
     "TS",
-    "VNS"
+    "VNS",
+    "PR",
+    "HYB"
    ]
   }
  },
  {
-  "name": "critical_block_end_insertion",
+  "name": "critical_arc_adjacent_swap",
   "slot": "neighborhood",
-  "path": "generated/jobshop_native/neighborhood/critical_block_end_insertion_r8.hpp",
+  "path": "generated/jobshop_native/neighborhood/critical_arc_adjacent_swap_r1.hpp",
   "component": {
-   "name": "critical_block_end_insertion",
+   "name": "critical_arc_adjacent_swap",
    "slot": "neighborhood",
    "params": {
-    "max_shift": {
-     "type": "int",
-     "range": [
-      2,
-      60
-     ]
-    }
-   },
-   "compatible_skeletons": [
-    "SA",
-    "ILS",
-    "TS",
-    "VNS"
-   ]
-  }
- },
- {
-  "name": "job_pair_priority_swap_all_machines",
-  "slot": "neighborhood",
-  "path": "generated/jobshop_native/neighborhood/job_pair_priority_swap_all_machines_r2.hpp",
-  "component": {
-   "name": "job_pair_priority_swap_all_machines",
-   "slot": "neighborhood",
-   "params": {
-    "restrict": {
+    "scope": {
      "type": "cat",
      "values": [
       "critical",
@@ -167,107 +120,209 @@
     "SA",
     "ILS",
     "TS",
-    "VNS"
+    "VNS",
+    "PR",
+    "HYB"
    ]
   }
  },
  {
-  "name": "critical_arc_swap_kick",
-  "slot": "perturbation",
-  "path": "generated/jobshop_native/perturbation/critical_arc_swap_kick_r1.hpp",
+  "name": "critical_block_insertion",
+  "slot": "neighborhood",
+  "path": "generated/jobshop_native/neighborhood/critical_block_insertion_r2.hpp",
   "component": {
-   "name": "critical_arc_swap_kick",
-   "slot": "perturbation",
+   "name": "critical_block_insertion",
+   "slot": "neighborhood",
    "params": {
-    "swaps_per_strength": {
-     "type": "float",
-     "range": [
-      0.5,
-      4.0
+    "mode": {
+     "type": "cat",
+     "values": [
+      "block_ends",
+      "block_all"
      ]
     },
-    "random_swap_prob": {
-     "type": "float",
-     "range": [
-      0.0,
-      0.5
-     ]
-    }
-   },
-   "compatible_skeletons": [
-    "ILS"
-   ]
-  }
- },
- {
-  "name": "noisy_giffler_thompson_rebuild",
-  "slot": "perturbation",
-  "path": "generated/jobshop_native/perturbation/noisy_giffler_thompson_rebuild_r1.hpp",
-  "component": {
-   "name": "noisy_giffler_thompson_rebuild",
-   "slot": "perturbation",
-   "params": {
-    "noise": {
-     "type": "float",
-     "range": [
-      0.05,
-      3.0
-     ]
-    },
-    "random_pick_prob": {
-     "type": "float",
-     "range": [
-      0.0,
-      0.3
-     ]
-    }
-   },
-   "compatible_skeletons": [
-    "ILS"
-   ]
-  }
- },
- {
-  "name": "topological_window_reshuffle",
-  "slot": "perturbation",
-  "path": "generated/jobshop_native/perturbation/topological_window_reshuffle_r2.hpp",
-  "component": {
-   "name": "topological_window_reshuffle",
-   "slot": "perturbation",
-   "params": {
     "window": {
      "type": "int",
      "range": [
-      3,
-      40
-     ]
-    },
-    "windows_per_strength": {
-     "type": "float",
-     "range": [
-      0.3,
-      3.0
+      2,
+      20
      ]
     }
    },
    "compatible_skeletons": [
-    "ILS"
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
    ]
   }
  },
  {
-  "name": "kendall_adjacent_swap_relink",
-  "slot": "relink",
-  "path": "generated/jobshop_native/relink/kendall_adjacent_swap_relink_r1.hpp",
+  "name": "critical_segment_reversal",
+  "slot": "neighborhood",
+  "path": "generated/jobshop_native/neighborhood/critical_segment_reversal_r2.hpp",
   "component": {
-   "name": "kendall_adjacent_swap_relink",
-   "slot": "relink",
+   "name": "critical_segment_reversal",
+   "slot": "neighborhood",
    "params": {
-    "pick": {
+    "max_len": {
+     "type": "int",
+     "range": [
+      3,
+      12
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "jssp_critical_swap_walk",
+  "slot": "perturbation",
+  "path": "generated/jobshop_native/perturbation/jssp_critical_swap_walk_r1.hpp",
+  "component": {
+   "name": "jssp_critical_swap_walk",
+   "slot": "perturbation",
+   "params": {
+    "steps_scale": {
+     "type": "float",
+     "range": [
+      0.5,
+      3.0
+     ]
+    },
+    "block_end_bias": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "jssp_noisy_start_redispatch",
+  "slot": "perturbation",
+  "path": "generated/jobshop_native/perturbation/jssp_noisy_start_redispatch_r1.hpp",
+  "component": {
+   "name": "jssp_noisy_start_redispatch",
+   "slot": "perturbation",
+   "params": {
+    "op_fraction": {
+     "type": "float",
+     "range": [
+      0.02,
+      0.3
+     ]
+    },
+    "noise_scale": {
+     "type": "float",
+     "range": [
+      0.5,
+      5.0
+     ]
+    },
+    "focus": {
      "type": "cat",
      "values": [
-      "pair",
-      "machine"
+      "all",
+      "critical"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "jssp_critical_block_insertion",
+  "slot": "perturbation",
+  "path": "generated/jobshop_native/perturbation/jssp_critical_block_insertion_r1.hpp",
+  "component": {
+   "name": "jssp_critical_block_insertion",
+   "slot": "perturbation",
+   "params": {
+    "moves_scale": {
+     "type": "float",
+     "range": [
+      0.5,
+      3.0
+     ]
+    },
+    "endpoint_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "max_tries": {
+     "type": "int",
+     "range": [
+      3,
+      30
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "swap_cycle_relink",
+  "slot": "relink",
+  "path": "generated/jobshop_native/relink/swap_cycle_relink_r1.hpp",
+  "component": {
+   "name": "swap_cycle_relink",
+   "slot": "relink",
+   "params": {
+    "machine_focus": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "disjunctive_arc_flip_relink",
+  "slot": "relink",
+  "path": "generated/jobshop_native/relink/disjunctive_arc_flip_relink_r1.hpp",
+  "component": {
+   "name": "disjunctive_arc_flip_relink",
+   "slot": "relink",
+   "params": {
+    "machine_focus": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
      ]
     }
    },
@@ -288,28 +343,7 @@
      "type": "cat",
      "values": [
       "uniform",
-      "weighted"
-     ]
-    }
-   },
-   "compatible_skeletons": [
-    "PR"
-   ]
-  }
- },
- {
-  "name": "hamming_position_swap_relink",
-  "slot": "relink",
-  "path": "generated/jobshop_native/relink/hamming_position_swap_relink_r1.hpp",
-  "component": {
-   "name": "hamming_position_swap_relink",
-   "slot": "relink",
-   "params": {
-    "pick": {
-     "type": "cat",
-     "values": [
-      "position",
-      "machine"
+      "far"
      ]
     }
    },

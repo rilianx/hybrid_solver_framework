@@ -22,8 +22,8 @@ from dataclasses import dataclass
 from random import Random
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:  # `problem_model` re-exporta los tipos de aquí: importarlo al cargar sería circular
-    from .problem_model import CLSPInstance
+if TYPE_CHECKING:
+    from .instance import CLSPInstance
 
 EPS = 1e-7
 
@@ -149,7 +149,7 @@ class CLSPConstructionView:
         """Callejón sin salida: fija en 1 los setups ya encendidos y deja que el MIP decida
         el resto (con tiempo límite). Si el MIP no encuentra nada, devuelve los setups
         decididos más lot-for-lot para lo pendiente (puede quedar infactible)."""
-        from .problem_model import var_name
+        from .model_parts import _y as var_name
 
         inst = self.inst
         fixed = {var_name(i, t): 1.0 for i in range(inst.n_items) for t in range(inst.n_periods) if p.setup[i][t]}
@@ -159,26 +159,3 @@ class CLSPConstructionView:
         if x is not None:
             return self.problem.from_assignment(x)
         return tuple(tuple(p.setup[i][t] or p.rem[i][t] > EPS for t in range(inst.n_periods)) for i in range(inst.n_items))
-
-
-class UnitMarginalCost:
-    """Puntaje de referencia: costo marginal por unidad cubierta (setup nuevo + inventario
-    de llevar la producción de `source` a `period`)."""
-
-    def __init__(self, problem):
-        self.inst = problem.inst
-
-    def score(self, p: CLSPPartial, a: CoverAction) -> float:
-        inst = self.inst
-        cost = (inst.setup_cost[a.item] if a.new_setup else 0.0) + inst.holding_cost[a.item] * (a.period - a.source) * a.qty
-        return cost / max(a.qty, EPS)
-
-
-class LatestSource:
-    """Puntaje de referencia: producir lo más tarde posible (lot-for-lot cuando cabe)."""
-
-    def __init__(self, problem):
-        pass
-
-    def score(self, p: CLSPPartial, a: CoverAction) -> float:
-        return float(a.period - a.source)

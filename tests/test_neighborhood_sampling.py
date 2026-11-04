@@ -56,7 +56,7 @@ def test_sampled_hill_climb_evaluates_fewer_moves_per_step():
 
 
 def test_validator_checks_the_optional_sample_method():
-    from examples.lotsizing.components import COMPONENT_SETUP_FLIP, SetupFlipNeighborhood
+    from tests.clsp_fixtures import COMPONENT_SETUP_FLIP, SetupFlipNeighborhood
     from tests.contexts import clsp_contexts
 
     ctx = clsp_contexts(n_contexts=1, strict=False)[0]

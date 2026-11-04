@@ -172,6 +172,16 @@ struct Relink {
     virtual Sol step(const Sol& cur, const Sol& guide, Rng& rng) = 0;
 };
 
+// Elegir qué parte de la solución reoptimiza el sub-MIP de HYB (ILS en C++ alternado con sub-MIPs sobre la vista MIP de
+// las piezas de referencia en Python). Devuelve los índices de las variables estructurales de la vista MIP que quedan
+// libres (las demás se fijan en su valor en `s`); `ratio` en (0, 1) es la fracción aproximada a liberar.
+template <class M>
+struct Destruction {
+    using Sol = typename M::Solution;
+    virtual ~Destruction() = default;
+    virtual std::vector<int> destroy(const Sol& s, double ratio, Rng& rng) = 0;
+};
+
 // La vista constructiva es opcional: un modelo sin `Partial`/`Action` no tiene constructores greedy ni puntajes.
 struct NoConstruction {};
 template <class M, class = void>
@@ -250,6 +260,7 @@ struct Catalog {
     std::map<std::string, std::function<std::unique_ptr<Neighborhood<M>>(const M&, const Params&)>> neighborhoods;
     std::map<std::string, std::function<std::unique_ptr<Perturbation<M>>(const M&, const Params&)>> perturbations;
     std::map<std::string, std::function<std::unique_ptr<Relink<M>>(const M&, const Params&)>> relinks;
+    std::map<std::string, std::function<std::unique_ptr<Destruction<M>>(const M&, const Params&)>> destructions;
 
     // `greedy_<puntaje>` es el constructor greedy con ese puntaje (como en `llm.catalog`)
     std::unique_ptr<Constructor<M>> constructor(const std::string& name, const M& m, const Config& cfg) const {
@@ -285,9 +296,14 @@ struct Catalog {
         if (it == relinks.end()) throw std::invalid_argument("relink desconocido: " + name);
         return it->second(m, cfg.scoped(name));
     }
+    std::unique_ptr<Destruction<M>> destruction(const std::string& name, const M& m, const Config& cfg) const {
+        auto it = destructions.find(name);
+        if (it == destructions.end()) throw std::invalid_argument("destrucción desconocida: " + name);
+        return it->second(m, cfg.scoped(name));
+    }
 };
 
-// Las partidas de referencia de todo catálogo (como `llm.cycle._handwritten`): la solución trivial y una al
+// Las partidas de referencia de todo catálogo (como `core.packs.base_components`): la solución trivial y una al
 // azar del modelo (`M::trivial()`, `M::random(rng)`).
 template <class M>
 struct TrivialConstructor : Constructor<M> {

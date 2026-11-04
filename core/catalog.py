@@ -14,7 +14,7 @@ def build_registry(pack: ProblemPack, exclude_slots: set[str] | None = None) -> 
     (`GreedyConstructor` con ese puntaje, con la regla y α como parámetros del tuner), y si hay dos o más vecindarios,
     `composite` con todos."""
     registry = ComponentRegistry()
-    for component, factory in pack.handwritten:
+    for component, factory in pack.base_components:
         if exclude_slots and component["slot"] in exclude_slots:
             continue
         registry.register(ComponentSpec.from_dict(component, factory))

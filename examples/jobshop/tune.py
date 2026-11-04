@@ -1,6 +1,6 @@
 """Tuning sobre el job shop: el CLI genérico `tuning.cli` con el pack del job shop.
 
-    python -m examples.jobshop.tune --catalog handwritten --size 10x10 --trials 30 --ref-time 60
+    python -m examples.jobshop.tune --size 10x10 --trials 30 --tuner irace
 """
 
 from __future__ import annotations

@@ -34,22 +34,13 @@ def test_reference_parts_pass_and_the_mip_matches_brute_force(cases):
     assert brute_force_optimum(inst)[0] == pytest.approx(cases[0].optimum, abs=1e-5)
 
 
-def test_assembled_model_is_a_problem_model_the_skeletons_can_use(cases):
-    from core.assembler import Assembler
-    from core.catalog import build_registry
-    from examples.cvrp.pack import PACK as BASE
-
+def test_assembled_model_is_a_problem_model(cases):
     inst = cases[3].instance
     P = PartsModel(ref, inst)
     triv = ref.trivial_solution(inst)
     assert P.is_feasible(triv) and P.objective(triv) == pytest.approx(ref.cost_terms(inst, triv)["distancia"])
     bad = ref.from_answer(inst, [list(inst.customers)[1:]])
     assert not P.is_feasible(bad) and P.objective(bad) > P.objective(triv)
-    # los componentes del CVRP usan la misma representación canónica: corren sobre el modelo ensamblado
-    A = Assembler(problem_factory=lambda i: PartsModel(ref, i), registry=build_registry(BASE))
-    for sk in ("SA", "HYB"):
-        r = A.assemble(A.default_config(sk))(inst, Random(0), 0.5)
-        assert P.is_feasible(r.best_solution) and r.best_objective <= P.objective(triv) + 1e-6
 
 
 def test_forgetting_the_return_leg_in_cost_terms_fails_against_the_cases(cases):

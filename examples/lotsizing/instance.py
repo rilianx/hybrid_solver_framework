@@ -1,7 +1,7 @@
 """Instancia del CLSP (lot sizing capacitado multi-ítem, un nivel, sin backlog).
 
-Separada de `problem_model.py` para poder dársela al LLM que genera el `ProblemModel` sin
-darle el modelo escrito a mano (`llm_spec.make_model_spec` prohíbe importar este último).
+Separada de las piezas de referencia (`model_parts.py`) para poder dársela al LLM que escribe el modelo
+sin darle la referencia (`llm_spec.make_model_spec` prohíbe importarla).
 """
 
 from __future__ import annotations

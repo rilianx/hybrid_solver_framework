@@ -19,7 +19,7 @@ def _load_cases():
 
 
 _BASE = ProblemPack(
-    name="flowshop_cmax", module="examples.flowshop_cmax", problem_factory=None, handwritten=[],
+    name="flowshop_cmax", module="examples.flowshop_cmax", problem_factory=None,
     make_instances=make_instances, parse_size=parse_size, default_size="50x10",
     baseline_constructor=None, load_instance=PFSPInstance.load, make_model_spec=make_model_spec, micro_size="6x3",
     load_cases=_load_cases, constructor_skeletons=SKELETONS,

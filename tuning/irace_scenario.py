@@ -68,9 +68,7 @@ def write_irace_scenario(
     target_runner_module: str = "scripts.irace_target_runner",
     generated_dir: str | None = None,
     problem_module: str = "examples.lotsizing",
-    catalog: str | None = None,
     skeletons: list[str] | None = None,
-    native: bool = False,
     objective: str = "raw",
     scale_budget: bool = False,
 ) -> Path:
@@ -88,9 +86,7 @@ def write_irace_scenario(
     runner = out / "target-runner"
     env = (f"export HSF_BUDGET={budget}\nexport HSF_PROBLEM={shlex.quote(problem_module)}\n"
            + (f"export HSF_GENERATED={shlex.quote(generated_dir)}\n" if generated_dir else "")
-           + (f"export HSF_CATALOG={shlex.quote(catalog)}\n" if catalog else "")
            + (f"export HSF_SKELETONS={shlex.quote(' '.join(skeletons))}\n" if skeletons else "")
-           + ("export HSF_NATIVE=1\n" if native else "")
            + (f"export HSF_OBJECTIVE={objective}\n" if objective != "raw" else "")
            + ("export HSF_SCALE_BUDGET=1\n" if scale_budget else "")
            # el entorno del tuner: irace (R) cambia LD_LIBRARY_PATH y el intérprete cargaba otra libpython (en el CI,

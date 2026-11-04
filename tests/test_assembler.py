@@ -8,9 +8,8 @@ pytest.importorskip("pulp")
 
 from config_space import to_irace_parameters
 from core.assembler import Assembler, AssemblyError, describe
-from core.catalog import build_registry
-from examples.lotsizing.pack import PACK
-from examples.lotsizing.problem_model import CLSPInstance, LotSizingModel
+from examples.lotsizing.instance import CLSPInstance
+from tests.clsp_fixtures import LotSizingModel, clsp_registry
 
 SKELETONS = {"SA", "ILS", "TS", "VNS", "HYB"}
 
@@ -22,11 +21,11 @@ def inst():
 
 @pytest.fixture(scope="module")
 def assembler():
-    return Assembler(problem_factory=LotSizingModel, registry=build_registry(PACK))
+    return Assembler(problem_factory=LotSizingModel, registry=clsp_registry())
 
 
 def test_all_skeletons_available_and_space_exports(assembler):
-    assert set(assembler.available_skeletons()) == SKELETONS  # PR no: el CLSP a mano no tiene relink
+    assert set(assembler.available_skeletons()) == SKELETONS  # PR no: no hay relink
     txt = to_irace_parameters(assembler.config_space())
     assert 'skeleton "--skeleton=" c (' in txt and '"HYB"' in txt
     assert "greedy_unit_marginal_cost" in txt
@@ -65,4 +64,4 @@ def test_incompatible_component_rejected(assembler):
     assembler.assemble(bad)  # perturbation no es slot de SA: se ignora
     with pytest.raises(AssemblyError):
         assembler.assemble({"skeleton": "HYB", "constructor": "lot_for_lot", "neighborhood": "setup_flip",
-                            "perturbation": "setup_flip_perturbation", "destruction": "setup_flip"})
+                            "perturbation": "setup_flip_perturbation", "destruction": "lot_for_lot"})

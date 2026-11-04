@@ -5,8 +5,9 @@ problema necesita solo esto:
 
 - `problem_factory(inst)`: el `ProblemModel` ligado a una instancia (con `build_mip`,
   `variable_groups` y, si hay constructor modular, `construction_view`);
-- `handwritten`: el catálogo de referencia, pares `(COMPONENT, fábrica)`; puede ser mínimo
-  (las partidas trivial y al azar) si los componentes los escribe el LLM;
+- `base_components`: los componentes genéricos del framework para este problema, pares `(COMPONENT, fábrica)`
+  (`core.packs.base_components`: las partidas trivial y al azar y, con vista MIP, las destrucciones de HYB); el
+  resto del catálogo lo escribe el LLM;
 - `make_contexts(...)`: los micro-contextos de validación (`core.packs.parts_contexts`);
 - `make_instances(n, seed0, size)` y `parse_size(texto)`: el generador de instancias;
 - `baseline_constructor()`: la partida trivial, que normaliza el objetivo del tuner
@@ -29,12 +30,12 @@ class ProblemPack:
     name: str  # corto, para directorios y ramas: "clsp", "cvrp"
     module: str  # paquete Python del problema: "examples.lotsizing"
     problem_factory: Callable[[Any], Any]
-    handwritten: list[tuple[dict, Callable]]
     make_instances: Callable[[int, int, dict], list]  # (n, seed0, size) -> instancias
     parse_size: Callable[[str], dict]
     default_size: str
     baseline_constructor: Callable[[], Any]
     load_instance: Callable[[str], Any]
+    base_components: list[tuple[dict, Callable]] = field(default_factory=list)
     make_contexts: Callable[..., list] | None = None
     # generación del ProblemModel con LLM (§6.1): descripción para el LLM y tamaño de las micro-instancias
     make_model_spec: Callable[[], Any] | None = None
@@ -55,7 +56,7 @@ class ProblemPack:
 
     @property
     def default_workspace(self) -> str:
-        return f"generated/{self.name}"
+        return f"generated/{self.name}_native"
 
     def baseline_cost(self, inst) -> float:
         from random import Random

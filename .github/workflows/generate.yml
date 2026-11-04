@@ -7,16 +7,16 @@ on:
     inputs:
       problem:
         description: "Problema"
-        default: clsp
+        default: flowshop
         type: choice
-        options: [clsp, cvrp, jobshop, flowshop, flowshop_cmax, jobshop_gen, cvrp_gen]
+        options: [flowshop, flowshop_cmax, clsp, jobshop, cvrp]
       target:
         description: "Qué generar: model (el modelo C++ del problema), model_optimize (una versión más rápida del modelo aceptado), components (componentes C++ sobre el modelo; slots por defecto greedy_score neighborhood perturbation) u optimize (versiones más rápidas de los componentes aceptados; slots de opt_slots)"
         default: components
         type: choice
         options: [model, model_optimize, components, optimize]
       slots:
-        description: "Con target=components: slots a generar (separados por espacio)"
+        description: "Con target=components: slots a generar, separados por espacio (greedy_score, constructor, neighborhood, perturbation, relink, destruction)"
         default: "greedy_score neighborhood perturbation"
         type: string
       n:

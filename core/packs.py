@@ -11,8 +11,7 @@ from core.model_parts import PartsModel
 from core.problem_pack import ProblemPack
 
 PACKS = {"clsp": "examples.lotsizing.pack", "cvrp": "examples.cvrp.pack", "jobshop": "examples.jobshop.pack",
-         "flowshop": "examples.flowshop.pack", "flowshop_cmax": "examples.flowshop_cmax.pack",
-         "jobshop_gen": "examples.jobshop_gen.pack", "cvrp_gen": "examples.cvrp_gen.pack"}
+         "flowshop": "examples.flowshop.pack", "flowshop_cmax": "examples.flowshop_cmax.pack"}
 
 
 def base_pack(problem: str) -> ProblemPack:
@@ -37,13 +36,51 @@ class RandomConstructor:
         return self.parts.random_solution(inst, rng)
 
 
-def _handwritten(parts, skeletons: list[str]) -> list[tuple[dict, Any]]:
-    return [
+class _GroupDestruction:
+    """Base de las destrucciones genéricas del sub-MIP de HYB: trabajan sobre la partición `variable_groups` de la
+    vista MIP (en el CLSP, los setups de cada período), sin saber nada más del problema."""
+
+    def __init__(self, problem):
+        self.problem = problem
+        self.groups = list(problem.variable_groups(problem.inst).values())
+
+    def _split(self, sol, free: set[str]):
+        x = self.problem.to_assignment(sol)
+        return {v: x[v] for vs in self.groups for v in vs if v not in free}, free
+
+
+class GroupWindowDestruction(_GroupDestruction):
+    """Libera una ventana de grupos consecutivos (en el orden de `variable_groups`): `ratio` de los grupos, al menos
+    uno. Con grupos por período es la destrucción por ventana de tiempo."""
+
+    def destroy(self, sol, ratio: float, rng: Random):
+        n = len(self.groups)
+        width = max(1, min(n, round(ratio * n)))
+        start = rng.randint(0, n - width)
+        return self._split(sol, {v for g in self.groups[start:start + width] for v in g})
+
+
+class RandomVariableDestruction(_GroupDestruction):
+    """Libera una fracción `ratio` de las variables estructurales, al azar."""
+
+    def destroy(self, sol, ratio: float, rng: Random):
+        names = [v for g in self.groups for v in g]
+        return self._split(sol, set(rng.sample(names, max(1, round(ratio * len(names))))))
+
+
+def base_components(parts, skeletons: list[str]) -> list[tuple[dict, Any]]:
+    """Los componentes genéricos del framework para unas piezas: partidas trivial y al azar y, si hay vista MIP, las
+    destrucciones del sub-MIP de HYB."""
+    out = [
         ({"name": "trivial", "slot": "constructor", "compatible_skeletons": skeletons, "params": {}},
          lambda problem: TrivialConstructor(parts)),
         ({"name": "random", "slot": "constructor", "compatible_skeletons": skeletons, "params": {}},
          lambda problem: RandomConstructor(parts)),
     ]
+    if hasattr(parts, "variable_groups"):  # vista MIP: el sub-MIP de HYB tiene destrucciones genéricas
+        out += [({"name": name, "slot": "destruction", "compatible_skeletons": ["HYB"], "params": {}}, cls)
+                for name, cls in (("group_window", GroupWindowDestruction), ("random_variables", RandomVariableDestruction))]
+    return out
 
 
 def parts_contexts(base: ProblemPack, parts, n_contexts: int = 2, strict: bool = True, reference_free: bool = True,
@@ -111,7 +148,7 @@ def parts_pack(base: ProblemPack, parts, parts_import: str, model_spec, name: st
         name=name,
         module=base.module,
         problem_factory=lambda inst: PartsModel(parts, inst),
-        handwritten=_handwritten(parts, list(base.constructor_skeletons)),
+        base_components=base_components(parts, list(base.constructor_skeletons)),
         make_contexts=lambda **kw: None,  # se reemplaza abajo (necesita el pack para la sonda de combinación)
         make_instances=base.make_instances,
         parse_size=base.parse_size,

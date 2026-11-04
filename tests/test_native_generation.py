@@ -15,21 +15,21 @@ if shutil.which("g++") is None:
 
 SWAP = '''```cpp
 // COMPONENT: {"name": "adjacent_swap", "slot": "neighborhood", "params": {}}
-struct AdjacentSwap : hsf::Neighborhood<JobShop> {
-    const JobShop& js;
-    explicit AdjacentSwap(const JobShop& m) : js(m) {}
-    void moves(const JobShop::Solution& s, std::vector<Move>& out) override {
+struct AdjacentSwap : hsf::Neighborhood<Model> {
+    const Model& js;
+    explicit AdjacentSwap(const Model& m) : js(m) {}
+    void moves(const Model::Solution& s, std::vector<Move>& out) override {
         for (int mm = 0; mm < (int)s.size(); ++mm)
             for (int i = 0; i + 1 < (int)s[mm].size(); ++i) out.push_back({mm, i, 0, 0, 0, 0});
     }
-    JobShop::Solution apply(const JobShop::Solution& s, const Move& m) override {
+    Model::Solution apply(const Model::Solution& s, const Move& m) override {
         auto t = s;
         std::swap(t[m[0]][m[1]], t[m[0]][m[1] + 1]);
         return t;
     }
-    double delta(const JobShop::Solution& s, const Move& m) override { return js.objective(apply(s, m)) - js.objective(s); }
+    double delta(const Model::Solution& s, const Move& m) override { return js.objective(apply(s, m)) - js.objective(s); }
 };
-std::unique_ptr<hsf::Neighborhood<JobShop>> make_component(const JobShop& model, const Config&) {
+std::unique_ptr<hsf::Neighborhood<Model>> make_component(const Model& model, const Config&) {
     return std::make_unique<AdjacentSwap>(model);
 }
 ```'''
@@ -90,11 +90,11 @@ def test_the_staged_tuner_runs_the_generated_cpp_catalog(pack, tmp_path):
     accepted, _ = generate_native_slot(ScriptedClient(responses=[SWAP]), pack, "neighborhood", 1, ws, verbose=False)
     write_catalog(ws, accepted)
     out = os.path.relpath(tmp_path / "out")  # relativo a la raíz del repo, como en CI
-    main(["--tuner", "staged", "--catalog", "generated", "--generated", os.path.relpath(ws), "--size", "6x4",
+    main(["--tuner", "staged", "--generated", os.path.relpath(ws), "--size", "6x4",
           "--trials", "60", "--budget", "0.02", "--train", "5", "--test", "1", "--seeds", "1", "--final-seeds", "1",
           "--skeletons", "SA", "TS", "--irace-parallel", "2", "--baselines", "defaults", "--out", out])
     res = json.loads((tmp_path / "out" / "generated.json").read_text())
-    assert res["settings"]["native"] is True and res["settings"]["tuner"] == "staged"
+    assert res["settings"]["tuner"] == "staged"
     assert "adjacent_swap" in res["test"]["tuned"]["summary"]
     staged = json.loads((tmp_path / "out" / "irace_generated" / "staged.json").read_text())
     assert staged["chosen"] and staged["best"] in staged["final"]
@@ -110,10 +110,10 @@ def test_the_optimization_stage_accepts_a_faster_equivalent_version_and_rejects_
     accepted, _ = generate_native_slot(ScriptedClient(responses=[SWAP]), pack, "neighborhood", 1, tmp_path, verbose=False)
     write_catalog(tmp_path, accepted)
     fast = SWAP.replace(
-        "double delta(const JobShop::Solution& s, const Move& m) override { return js.objective(apply(s, m)) - js.objective(s); }",
-        "double delta(const JobShop::Solution& s, const Move& m) override {\n"
+        "double delta(const Model::Solution& s, const Move& m) override { return js.objective(apply(s, m)) - js.objective(s); }",
+        "double delta(const Model::Solution& s, const Move& m) override {\n"
         "        if (!has || !(s == last)) { last = s; base = js.objective(s); has = true; }\n"
-        "        return js.objective(apply(s, m)) - base;\n    }\n    JobShop::Solution last; double base = 0; bool has = false;")
+        "        return js.objective(apply(s, m)) - base;\n    }\n    Model::Solution last; double base = 0; bool has = false;")
     wrong = fast.replace("- base;", "- base + 1.0;")
     client = ScriptedClient(responses=[wrong, fast])
     out = optimize_native(client, pack, tmp_path, rounds=2, verbose=False)
@@ -135,10 +135,10 @@ def test_chained_passes_reoptimize_what_improved_and_show_the_profile(pack, tmp_
     accepted, _ = generate_native_slot(ScriptedClient(responses=[SWAP]), pack, "neighborhood", 1, tmp_path, verbose=False)
     write_catalog(tmp_path, accepted)
     fast = SWAP.replace(
-        "double delta(const JobShop::Solution& s, const Move& m) override { return js.objective(apply(s, m)) - js.objective(s); }",
-        "double delta(const JobShop::Solution& s, const Move& m) override {\n"
+        "double delta(const Model::Solution& s, const Move& m) override { return js.objective(apply(s, m)) - js.objective(s); }",
+        "double delta(const Model::Solution& s, const Move& m) override {\n"
         "        if (!has || !(s == last)) { last = s; base = js.objective(s); has = true; }\n"
-        "        return js.objective(apply(s, m)) - base;\n    }\n    JobShop::Solution last; double base = 0; bool has = false;")
+        "        return js.objective(apply(s, m)) - base;\n    }\n    Model::Solution last; double base = 0; bool has = false;")
     client = ScriptedClient(responses=[fast, fast])  # la segunda pasada no gana nada: se rechaza por velocidad
     out = optimize_native(client, pack, tmp_path, rounds=1, passes=3, verbose=False)
     first, second = out["neighborhood/adjacent_swap#1"], out["neighborhood/adjacent_swap#2"]
@@ -173,10 +173,10 @@ def test_the_optimizer_accepts_an_edit_reply(pack, tmp_path):
 
     accepted, _ = generate_native_slot(ScriptedClient(responses=[SWAP]), pack, "neighborhood", 1, tmp_path, verbose=False)
     write_catalog(tmp_path, accepted)
-    old = "double delta(const JobShop::Solution& s, const Move& m) override { return js.objective(apply(s, m)) - js.objective(s); }"
-    new = ("double delta(const JobShop::Solution& s, const Move& m) override {\n"
+    old = "double delta(const Model::Solution& s, const Move& m) override { return js.objective(apply(s, m)) - js.objective(s); }"
+    new = ("double delta(const Model::Solution& s, const Move& m) override {\n"
            "        if (!has || !(s == last)) { last = s; base = js.objective(s); has = true; }\n"
-           "        return js.objective(apply(s, m)) - base;\n    }\n    JobShop::Solution last; double base = 0; bool has = false;")
+           "        return js.objective(apply(s, m)) - base;\n    }\n    Model::Solution last; double base = 0; bool has = false;")
     bad = "<<<<<<< BUSCAR\nno existe\n=======\nx\n>>>>>>> REEMPLAZAR"
     good = f"Cacheo el objetivo:\n<<<<<<< BUSCAR\n{old}\n=======\n{new}\n>>>>>>> REEMPLAZAR"
     client = ScriptedClient(responses=[bad, good])
@@ -187,18 +187,18 @@ def test_the_optimizer_accepts_an_edit_reply(pack, tmp_path):
 
 RELINK = '''```cpp
 // COMPONENT: {"name": "adjacent_order_relink", "slot": "relink", "params": {}}
-struct OrderRelink : hsf::Relink<JobShop> {
-    const JobShop& js;
-    explicit OrderRelink(const JobShop& m) : js(m) {}
+struct OrderRelink : hsf::Relink<Model> {
+    const Model& js;
+    explicit OrderRelink(const Model& m) : js(m) {}
     static int pos(const std::vector<int>& v, int x) { return (int)(std::find(v.begin(), v.end(), x) - v.begin()); }
-    int distance(const JobShop::Solution& a, const JobShop::Solution& b) override {
+    int distance(const Model::Solution& a, const Model::Solution& b) override {
         int d = 0;
         for (size_t mm = 0; mm < a.size(); ++mm)
             for (size_t i = 0; i < a[mm].size(); ++i)
                 for (size_t k = i + 1; k < a[mm].size(); ++k) d += pos(b[mm], a[mm][i]) > pos(b[mm], a[mm][k]);
         return d;
     }
-    JobShop::Solution step(const JobShop::Solution& cur, const JobShop::Solution& guide, Rng& rng) override {
+    Model::Solution step(const Model::Solution& cur, const Model::Solution& guide, Rng& rng) override {
         std::vector<std::pair<int, int>> inv;
         for (size_t mm = 0; mm < cur.size(); ++mm)
             for (size_t i = 0; i + 1 < cur[mm].size(); ++i)
@@ -210,7 +210,7 @@ struct OrderRelink : hsf::Relink<JobShop> {
         return t;
     }
 };
-std::unique_ptr<hsf::Relink<JobShop>> make_component(const JobShop& model, const Config&) {
+std::unique_ptr<hsf::Relink<Model>> make_component(const Model& model, const Config&) {
     return std::make_unique<OrderRelink>(model);
 }
 ```'''
@@ -230,7 +230,7 @@ def test_a_generated_relink_runs_in_pr(pack, tmp_path):
     assert "Relink" in client.calls[-1][1] and "path relinking" in client.calls[-1][1]
     write_catalog(tmp_path, nb)
     write_catalog(tmp_path, rel)
-    A, _ = make_assembler(pack, "generated", str(tmp_path), native=True)
+    A, _ = make_assembler(pack, str(tmp_path))
     assert "PR" in A.available_skeletons()
     cfg = A.default_config("PR", {"neighborhood": "adjacent_swap", "relink": "adjacent_order_relink", "constructor": "random"})
     cfg.update({"PR.pop_size": 3, "PR.ts_iters": 50})
@@ -250,3 +250,88 @@ def test_generating_a_slot_again_shows_the_existing_catalog(pack, tmp_path):
     prompt = again.calls[0][1]
     assert "YA están en el catálogo" in prompt and "struct AdjacentSwap" in prompt
     assert acc2 == [] and stats.parsed == 0
+
+
+KICK = '''```cpp
+// COMPONENT: {"name": "random_swaps", "slot": "perturbation", "params": {}}
+struct RandomSwaps : hsf::Perturbation<Model> {
+    explicit RandomSwaps(const Model&) {}
+    Model::Solution perturb(const Model::Solution& s, double strength, Rng& rng) override {
+        auto t = s;
+        for (int r = 0; r < std::max(1, (int)strength); ++r) {
+            int m = rng.below((int)t.size());
+            if (t[m].size() < 2) continue;
+            int i = rng.below((int)t[m].size() - 1);
+            std::swap(t[m][i], t[m][i + 1]);
+        }
+        return t;
+    }
+};
+std::unique_ptr<hsf::Perturbation<Model>> make_component(const Model& model, const Config&) {
+    return std::make_unique<RandomSwaps>(model);
+}
+```'''
+
+
+MACHINE_WINDOW = '''```cpp
+// COMPONENT: {"name": "machine_window", "slot": "destruction", "params": {}}
+struct MachineWindow : hsf::Destruction<Model> {
+    const Model& M;
+    std::vector<int> start;  // primer índice de las variables de cada máquina en structural_variables
+    explicit MachineWindow(const Model& m) : M(m) {
+        int k = 0;
+        for (auto& js : M.machine_jobs) { start.push_back(k); k += (int)js.size() * ((int)js.size() - 1); }
+        start.push_back(k);
+    }
+    std::vector<int> destroy(const Model::Solution&, double ratio, Rng& rng) override {
+        int n = (int)M.machine_jobs.size();
+        int w = std::max(1, std::min(n, (int)std::lround(ratio * n)));
+        int a = rng.below(n - w + 1);
+        std::vector<int> out;
+        for (int k = start[a]; k < start[a + w]; ++k) out.push_back(k);
+        return out;
+    }
+};
+std::unique_ptr<hsf::Destruction<Model>> make_component(const Model& model, const Config&) {
+    return std::make_unique<MachineWindow>(model);
+}
+```'''
+
+
+def test_a_generated_destruction_is_validated_and_used_by_hyb(pack, tmp_path):
+    from random import Random
+
+    from llm import ScriptedClient
+    from llm.native_generator import generate_native_slot, write_catalog
+    from native.generated import parse_response
+    from tuning.cli import make_assembler
+
+    nb, _ = generate_native_slot(ScriptedClient(responses=[SWAP]), pack, "neighborhood", 1, tmp_path, verbose=False)
+    pert = [c for c in parse_response(KICK)[0]]  # la perturbación entra directo al catálogo (no es lo que se prueba)
+    for c in pert:
+        c.path = tmp_path / f"{c.name}.hpp"
+        c.path.write_text(c.source)
+    client = ScriptedClient(responses=[MACHINE_WINDOW])
+    acc, stats = generate_native_slot(client, pack, "destruction", 1, tmp_path, verbose=False)
+    assert [c.name for c in acc] == ["machine_window"], stats.rejections_by_layer
+    prompt = client.calls[0][1]
+    assert "structural_variables" in prompt and "def _y(" in prompt and "def jobs_on(" in prompt
+    write_catalog(tmp_path, nb)
+    write_catalog(tmp_path, pert)
+    write_catalog(tmp_path, acc)
+    A, _ = make_assembler(pack, str(tmp_path))
+    assert {s.name for s in A.registry.compatible("destruction", "HYB")} >= {"machine_window", "group_window"}
+    cfg = A.default_config("HYB", {"neighborhood": "adjacent_swap", "destruction": "machine_window"})
+    inst = pack.make_instances(1, 0, pack.parse_size("6x4"))[0]
+    res = A.assemble(cfg)(inst, Random(0), 1.0)
+    assert pack.problem_factory(inst).is_feasible(res.best_solution)
+
+
+def test_a_destruction_with_indices_out_of_range_is_rejected(pack, tmp_path):
+    from llm import ScriptedClient
+    from llm.native_generator import generate_native_slot
+
+    bad = MACHINE_WINDOW.replace("out.push_back(k);", "out.push_back(k + 100000);")
+    acc, stats = generate_native_slot(ScriptedClient(responses=[bad]), pack, "destruction", 1, tmp_path,
+                                      max_rounds=1, verbose=False)
+    assert acc == [] and stats.rejections_by_layer
