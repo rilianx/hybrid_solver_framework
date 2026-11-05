@@ -26,9 +26,6 @@ def make_model_spec():
         ),
         instance_source=inspect.getsource(instance.CVRPInstance),
         instance_import="examples.cvrp.instance",
-        representation=("Tupla canónica de rutas: cada ruta, una tupla de clientes en orden de visita sin el depósito; las "
-                        "rutas vacías se omiten y las rutas se ordenan por su primer cliente (la usan los componentes "
-                        "heurísticos del problema)."),
         forbidden_modules=FORBIDDEN,
         answer_format=("Lista de rutas; cada ruta, una lista de clientes (enteros 1..n) en orden de visita, sin el depósito. "
                        "Ejemplo: [[3, 1], [2, 4]]. Dos respuestas con las mismas rutas en otro orden de rutas son la misma solución."),

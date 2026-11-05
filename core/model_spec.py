@@ -14,18 +14,9 @@ class ModelSpec:
     description: str  # datos, restricciones y objetivo, en lenguaje natural
     instance_source: str  # código de la clase de instancia
     instance_import: str  # módulo desde donde se importa la clase de instancia
-    notes: list[str] = field(default_factory=list)
-    # módulos que el generado no puede importar (p.ej. el modelo de referencia: sería copiarlo)
+    # módulos que el código generado no puede importar (el oráculo y los casos: sería copiarlos)
     forbidden_modules: list[str] = field(default_factory=list)
-    # generación por piezas (`llm.parts_generator`): formato neutral de las respuestas de los casos y
-    # nombres de las familias de restricciones y de los términos del objetivo
+    # formato neutral de las respuestas de los casos y nombres de las familias de restricciones y de los términos del
+    # objetivo (`families`)
     answer_format: str = ""
-    # cómo es `sol` en la vista heurística. Cada representación es un problema distinto para el framework
-    # (su pack, sus componentes, su tuning); vacío = la elige el LLM. `decoder`: la representación es una
-    # codificación que se decodifica a una solución (p.ej. gran tour + Split) y from_answer puede devolver
-    # una codificación cuya decodificación sea igual o MEJOR que la respuesta del caso
-    representation: str = ""
-    decoder: bool = False
-    # pista para la vista constructiva (etapa 3 de la generación por piezas), si el problema la necesita
-    construction: str = ""
     families: str = ""

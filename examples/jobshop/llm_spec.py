@@ -28,9 +28,6 @@ def make_model_spec():
         ),
         instance_source=inspect.getsource(instance.JSSPInstance),
         instance_import="examples.jobshop.instance",
-        representation=("Una tupla con una secuencia por máquina (en el orden de las máquinas 0..m-1): la tupla de trabajos "
-                        "en el orden en que esa máquina los procesa. Es la que usan los vecindarios clásicos del job shop "
-                        "(intercambios en los bloques del camino crítico)."),
         forbidden_modules=FORBIDDEN,
         answer_format=("Una lista por máquina, en el orden de las máquinas 0..m-1; cada una, la lista de trabajos (enteros "
                        "desde 0) en el orden en que esa máquina los procesa. Ejemplo con 3 trabajos y 2 máquinas: "
@@ -39,9 +36,5 @@ def make_model_spec():
                   "por ella; magnitud = trabajos que faltan, sobran o se repiten) y `orden` (los órdenes de las máquinas "
                   "no forman un ciclo con las rutas; magnitud > 0 si lo forman, p.ej. cuántas operaciones no se pueden "
                   "agendar). Término del objetivo: `makespan`."),
-        notes=["En el MIP, el orden entre dos trabajos en una máquina se modela con binarias de precedencia y restricciones "
-               "disyuntivas big-M sobre los inicios; M = suma de todos los tiempos de proceso (`inst.horizon()`) basta.",
-               "Un ciclo de órdenes es una violación de la familia `orden`: en el MIP, ningún vector de inicios cumple a la "
-               "vez las precedencias de las rutas y las disyuntivas de esas binarias (todo tiempo de proceso es >= 1)."],
     )
 
