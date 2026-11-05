@@ -1,0 +1,268 @@
+[
+ {
+  "name": "setup_shift_merge",
+  "slot": "neighborhood",
+  "path": "generated/clsp_compact/neighborhood/setup_shift_merge_r1.hpp",
+  "component": {
+   "name": "setup_shift_merge",
+   "slot": "neighborhood",
+   "params": {
+    "window": {
+     "type": "int",
+     "range": [
+      1,
+      6
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "lot_block_consolidation",
+  "slot": "neighborhood",
+  "path": "generated/clsp_compact/neighborhood/lot_block_consolidation_r1.hpp",
+  "component": {
+   "name": "lot_block_consolidation",
+   "slot": "neighborhood",
+   "params": {
+    "max_span": {
+     "type": "int",
+     "range": [
+      2,
+      8
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "setup_bit_flip",
+  "slot": "neighborhood",
+  "path": "generated/clsp_compact/neighborhood/setup_bit_flip_r3.hpp",
+  "component": {
+   "name": "setup_bit_flip",
+   "slot": "neighborhood",
+   "params": {
+    "max_window": {
+     "type": "int",
+     "range": [
+      2,
+      8
+     ]
+    },
+    "max_period": {
+     "type": "int",
+     "range": [
+      1,
+      4
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "random_flip_with_staged_undo",
+  "slot": "perturbation",
+  "path": "generated/clsp_compact/perturbation/random_flip_with_staged_undo_r1.hpp",
+  "component": {
+   "name": "random_flip_with_staged_undo",
+   "slot": "perturbation",
+   "params": {
+    "flips_per_strength": {
+     "type": "float",
+     "range": [
+      0.5,
+      4.0
+     ]
+    },
+    "add_prob": {
+     "type": "float",
+     "range": [
+      0.1,
+      0.9
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "window_ruin_silver_meal_rebuild",
+  "slot": "perturbation",
+  "path": "generated/clsp_compact/perturbation/window_ruin_silver_meal_rebuild_r1.hpp",
+  "component": {
+   "name": "window_ruin_silver_meal_rebuild",
+   "slot": "perturbation",
+   "params": {
+    "window_per_strength": {
+     "type": "float",
+     "range": [
+      0.5,
+      4.0
+     ]
+    },
+    "item_frac": {
+     "type": "float",
+     "range": [
+      0.1,
+      1.0
+     ]
+    },
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.6
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "setup_time_shift_merge",
+  "slot": "perturbation",
+  "path": "generated/clsp_compact/perturbation/setup_time_shift_merge_r2.hpp",
+  "component": {
+   "name": "setup_time_shift_merge",
+   "slot": "perturbation",
+   "params": {
+    "moves_per_strength": {
+     "type": "float",
+     "range": [
+      0.5,
+      3.0
+     ]
+    },
+    "max_shift": {
+     "type": "int",
+     "range": [
+      1,
+      6
+     ]
+    },
+    "early_prob": {
+     "type": "float",
+     "range": [
+      0.2,
+      0.8
+     ]
+    },
+    "merge_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.6
+     ]
+    },
+    "window": {
+     "type": "int",
+     "range": [
+      2,
+      8
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "hamming_setup_bitflip",
+  "slot": "relink",
+  "path": "generated/clsp_compact/relink/hamming_setup_bitflip_r1.hpp",
+  "component": {
+   "name": "hamming_setup_bitflip",
+   "slot": "relink",
+   "params": {
+    "flips_per_step": {
+     "type": "int",
+     "range": [
+      1,
+      3
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "item_plan_row_copy",
+  "slot": "relink",
+  "path": "generated/clsp_compact/relink/item_plan_row_copy_r1.hpp",
+  "component": {
+   "name": "item_plan_row_copy",
+   "slot": "relink",
+   "params": {
+    "rows_per_step": {
+     "type": "int",
+     "range": [
+      1,
+      2
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "setup_shift_relink",
+  "slot": "relink",
+  "path": "generated/clsp_compact/relink/setup_shift_relink_r1.hpp",
+  "component": {
+   "name": "setup_shift_relink",
+   "slot": "relink",
+   "params": {
+    "p_nearest": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ }
+]
