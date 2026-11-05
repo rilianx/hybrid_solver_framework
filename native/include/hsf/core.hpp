@@ -59,21 +59,21 @@ struct Clock {
 struct Config {
     std::map<std::string, double> num;
     std::map<std::string, std::string> str;
-    double get(const std::string& k) const {
+    double get(const std::string& k) const {  // lanza std::invalid_argument si falta
         auto it = num.find(k);
         if (it == num.end()) throw std::invalid_argument("falta el parámetro numérico '" + k + "' en la configuración");
         return it->second;
     }
-    double get(const std::string& k, double def) const {
+    double get(const std::string& k, double def) const {  // `def` si falta
         auto it = num.find(k);
         return it == num.end() ? def : it->second;
     }
-    std::string text(const std::string& k) const {
+    std::string text(const std::string& k) const {  // lanza std::invalid_argument si falta
         auto it = str.find(k);
         if (it == str.end()) throw std::invalid_argument("falta '" + k + "' en la configuración");
         return it->second;
     }
-    std::string text(const std::string& k, const std::string& def) const {
+    std::string text(const std::string& k, const std::string& def) const {  // `def` si falta
         auto it = str.find(k);
         return it == str.end() ? def : it->second;
     }
