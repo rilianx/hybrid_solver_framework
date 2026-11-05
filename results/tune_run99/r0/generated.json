@@ -1,0 +1,425 @@
+{
+  "catalog": "generated",
+  "generated_components": [
+    "setup_shift_merge",
+    "lot_block_consolidation",
+    "setup_bit_flip",
+    "random_flip_with_staged_undo",
+    "window_ruin_silver_meal_rebuild",
+    "setup_time_shift_merge",
+    "hamming_setup_bitflip",
+    "item_plan_row_copy",
+    "setup_shift_relink"
+  ],
+  "settings": {
+    "trials": 80,
+    "budget": 10.0,
+    "train": 6,
+    "test": 6,
+    "problem": "clsp",
+    "size": "20x20",
+    "seed": 0,
+    "tuner_seed": 0,
+    "seeds_test": 2,
+    "objective": "ratio",
+    "skeletons": "all",
+    "ref_time": 0.0,
+    "generated": "generated/clsp_compact",
+    "tuner": "irace",
+    "mip": "generated",
+    "generated_destructions": false
+  },
+  "tuning": {
+    "tuner": "irace",
+    "best_config": {
+      "skeleton": "ILS",
+      "constructor": "trivial",
+      "neighborhood": "composite",
+      "perturbation": "random_flip_with_staged_undo",
+      "random_flip_with_staged_undo.flips_per_strength": 1.2319,
+      "random_flip_with_staged_undo.add_prob": 0.8333,
+      "ILS.strength": 4,
+      "ILS.ls_strategy": "first",
+      "ILS.ls_time_share": 0.2244,
+      "ILS.ls_sample": 34,
+      "ILS.ls_scope": "full",
+      "ILS.accept": "better",
+      "ILS.T_rel": 0.0066,
+      "ILS.pen_scale": 0.676,
+      "ILS.pen_adapt": "yes",
+      "ILS.pen_target": 0.3455
+    },
+    "best_cost": 0.5190237988230016,
+    "best_summary": "ILS[constructor=trivial, neighborhood=composite, perturbation=random_flip_with_staged_undo]",
+    "n_trials": 1008,
+    "n_failed": 0,
+    "seconds": 3003.5,
+    "skeleton_usage": {
+      "ILS": 1
+    },
+    "elites": [
+      "ILS[constructor=trivial, neighborhood=composite, perturbation=random_flip_with_staged_undo]"
+    ],
+    "elite_configs": [
+      {
+        "skeleton": "ILS",
+        "constructor": "trivial",
+        "neighborhood": "composite",
+        "perturbation": "random_flip_with_staged_undo",
+        "random_flip_with_staged_undo.flips_per_strength": 1.2319,
+        "random_flip_with_staged_undo.add_prob": 0.8333,
+        "ILS.strength": 4,
+        "ILS.ls_strategy": "first",
+        "ILS.ls_time_share": 0.2244,
+        "ILS.ls_sample": 34,
+        "ILS.ls_scope": "full",
+        "ILS.accept": "better",
+        "ILS.T_rel": 0.0066,
+        "ILS.pen_scale": 0.676,
+        "ILS.pen_adapt": "yes",
+        "ILS.pen_target": 0.3455
+      }
+    ],
+    "reevaluated": [],
+    "log_tail": [
+      "+-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+",
+      "Best-so-far configuration:         146    mean value:     0.5186287059",
+      "Description of the best-so-far configuration:",
+      "    .ID. skeleton constructor neighborhood                 perturbation relink destruction SA.T0 SA.cooling SA.T_end SA.alpha SA.iters_per_T SA.eval SA.pen_scale SA.pen_adapt SA.pen_target ILS.strength ILS.ls_strategy ILS.ls_time_share ILS.ls_sample ILS.ls_scope ILS.accept ILS.T_rel ILS.pen_scale ILS.pen_adapt ILS.pen_target VNS.shake_strength VNS.ls_time_share VNS.ls_sample VNS.pen_scale VNS.pen_adapt VNS.pen_target TS.tenure TS.candidate_size TS.estimate_top TS.elite_size TS.stall TS.pen_scale TS.pen_adapt TS.pen_target PR.pop_size PR.ts_iters PR.tenure PR.candidate_size PR.estimate_top PR.path_cands PR.band PR.init_moves PR.improve PR.strength PR.ls_sample PR.T_rel HYB.ls_share HYB.mip_share HYB.destroy_ratio HYB.strength HYB.ls_sample HYB.T_rel setup_shift_merge.window lot_block_consolidation.max_span setup_bit_flip.max_window setup_bit_flip.max_period random_flip_with_staged_undo.flips_per_strength random_flip_with_staged_undo.add_prob window_ruin_silver_meal_rebuild.window_per_strength window_ruin_silver_meal_rebuild.item_frac window_ruin_silver_meal_rebuild.noise setup_time_shift_merge.moves_per_strength setup_time_shift_merge.max_shift setup_time_shift_merge.early_prob setup_time_shift_merge.merge_prob setup_time_shift_merge.window hamming_setup_bitflip.flips_per_step item_plan_row_copy.rows_per_step setup_shift_relink.p_nearest .PARENT.",
+      "146  146      ILS     trivial    composite random_flip_with_staged_undo   <NA>        <NA>    NA       <NA>       NA       NA             NA    <NA>           NA         <NA>            NA            4           first            0.2244            34         full     better    0.0066         0.676           yes         0.3455                 NA                NA            NA            NA          <NA>             NA        NA                NA              NA            NA       NA           NA         <NA>            NA          NA          NA        NA                NA              NA            NA      NA            NA       <NA>          NA           NA       NA           NA            NA                NA           NA            NA        NA                       NA                               NA                        NA                        NA                                          1.2319                                0.8333                                                  NA                                        NA                                    NA                                        NA                               NA                                NA                                NA                            NA                                   NA                               NA                           NA      105",
+      "",
+      "# 2026-11-05 01:39:59 UTC: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):",
+      "    skeleton constructor neighborhood                 perturbation relink destruction SA.T0 SA.cooling SA.T_end SA.alpha SA.iters_per_T SA.eval SA.pen_scale SA.pen_adapt SA.pen_target ILS.strength ILS.ls_strategy ILS.ls_time_share ILS.ls_sample ILS.ls_scope ILS.accept ILS.T_rel ILS.pen_scale ILS.pen_adapt ILS.pen_target VNS.shake_strength VNS.ls_time_share VNS.ls_sample VNS.pen_scale VNS.pen_adapt VNS.pen_target TS.tenure TS.candidate_size TS.estimate_top TS.elite_size TS.stall TS.pen_scale TS.pen_adapt TS.pen_target PR.pop_size PR.ts_iters PR.tenure PR.candidate_size PR.estimate_top PR.path_cands PR.band PR.init_moves PR.improve PR.strength PR.ls_sample PR.T_rel HYB.ls_share HYB.mip_share HYB.destroy_ratio HYB.strength HYB.ls_sample HYB.T_rel setup_shift_merge.window lot_block_consolidation.max_span setup_bit_flip.max_window setup_bit_flip.max_period random_flip_with_staged_undo.flips_per_strength random_flip_with_staged_undo.add_prob window_ruin_silver_meal_rebuild.window_per_strength window_ruin_silver_meal_rebuild.item_frac window_ruin_silver_meal_rebuild.noise setup_time_shift_merge.moves_per_strength setup_time_shift_merge.max_shift setup_time_shift_merge.early_prob setup_time_shift_merge.merge_prob setup_time_shift_merge.window hamming_setup_bitflip.flips_per_step item_plan_row_copy.rows_per_step setup_shift_relink.p_nearest",
+      "146      ILS     trivial    composite random_flip_with_staged_undo   <NA>        <NA>    NA       <NA>       NA       NA             NA    <NA>           NA         <NA>            NA            4           first            0.2244            34         full     better    0.0066         0.676           yes         0.3455                 NA                NA            NA            NA          <NA>             NA        NA                NA              NA            NA       NA           NA         <NA>            NA          NA          NA        NA                NA              NA            NA      NA            NA       <NA>          NA           NA       NA           NA            NA                NA           NA            NA        NA                       NA                               NA                        NA                        NA                                          1.2319                                0.8333                                                  NA                                        NA                                    NA                                        NA                               NA                                NA                                NA                            NA                                   NA                               NA                           NA",
+      "# 2026-11-05 01:39:59 UTC: Stopped because there is not enough budget left to race more than the minimum (8)",
+      "# You may either increase the budget or set 'minNbSurvival' to a lower value",
+      "# Iteration: 10",
+      "# nbIterations: 10",
+      "# experimentsUsedSoFar: 963",
+      "# timeUsed: 0",
+      "# remainingBudget: 45",
+      "# currentBudget: 45",
+      "# number of elites: 1",
+      "# nbConfigurations: 3",
+      "# Total CPU user time: 10322.61, CPU sys time: 51.594, Wall-clock time: 3002.914",
+      "# Best configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):",
+      "    skeleton constructor neighborhood                 perturbation relink destruction SA.T0 SA.cooling SA.T_end SA.alpha SA.iters_per_T SA.eval SA.pen_scale SA.pen_adapt SA.pen_target ILS.strength ILS.ls_strategy ILS.ls_time_share ILS.ls_sample ILS.ls_scope ILS.accept ILS.T_rel ILS.pen_scale ILS.pen_adapt ILS.pen_target VNS.shake_strength VNS.ls_time_share VNS.ls_sample VNS.pen_scale VNS.pen_adapt VNS.pen_target TS.tenure TS.candidate_size TS.estimate_top TS.elite_size TS.stall TS.pen_scale TS.pen_adapt TS.pen_target PR.pop_size PR.ts_iters PR.tenure PR.candidate_size PR.estimate_top PR.path_cands PR.band PR.init_moves PR.improve PR.strength PR.ls_sample PR.T_rel HYB.ls_share HYB.mip_share HYB.destroy_ratio HYB.strength HYB.ls_sample HYB.T_rel setup_shift_merge.window lot_block_consolidation.max_span setup_bit_flip.max_window setup_bit_flip.max_period random_flip_with_staged_undo.flips_per_strength random_flip_with_staged_undo.add_prob window_ruin_silver_meal_rebuild.window_per_strength window_ruin_silver_meal_rebuild.item_frac window_ruin_silver_meal_rebuild.noise setup_time_shift_merge.moves_per_strength setup_time_shift_merge.max_shift setup_time_shift_merge.early_prob setup_time_shift_merge.merge_prob setup_time_shift_merge.window hamming_setup_bitflip.flips_per_step item_plan_row_copy.rows_per_step setup_shift_relink.p_nearest",
+      "146      ILS     trivial    composite random_flip_with_staged_undo   <NA>        <NA>    NA       <NA>       NA       NA             NA    <NA>           NA         <NA>            NA            4           first            0.2244            34         full     better    0.0066         0.676           yes         0.3455                 NA                NA            NA            NA          <NA>             NA        NA                NA              NA            NA       NA           NA         <NA>            NA          NA          NA        NA                NA              NA            NA      NA            NA       <NA>          NA           NA       NA           NA            NA                NA           NA            NA        NA                       NA                               NA                        NA                        NA                                          1.2319                                0.8333                                                  NA                                        NA                                    NA                                        NA                               NA                                NA                                NA                            NA                                   NA                               NA                           NA",
+      "# Best configurations as commandlines (first number is the configuration ID; same order as above):",
+      "146  --skeleton=ILS --constructor=trivial --neighborhood=composite --perturbation=random_flip_with_staged_undo --random_flip_with_staged_undo.flips_per_strength=1.2319 --random_flip_with_staged_undo.add_prob=0.8333 --ILS.strength=4 --ILS.ls_strategy=first --ILS.ls_time_share=0.2244 --ILS.ls_sample=34 --ILS.ls_scope=full --ILS.accept=better --ILS.T_rel=0.0066 --ILS.pen_scale=0.676 --ILS.pen_adapt=yes --ILS.pen_target=0.3455",
+      "",
+      "",
+      "# Testing of elite configurations: 1 ",
+      "# Testing iteration configurations: FALSE ",
+      "# 2026-11-05 01:39:59 UTC: No test instances, skip testing"
+    ]
+  },
+  "test": {
+    "tuned": {
+      "label": "tuned",
+      "summary": "ILS[constructor=trivial, neighborhood=composite, perturbation=random_flip_with_staged_undo]",
+      "mean": 232319.76666666666,
+      "std": 29658.81592431198,
+      "per_instance": [
+        208983.90000000002,
+        239973.0,
+        259191.89999999997,
+        177781.25,
+        258323.95,
+        249664.6
+      ],
+      "config": {
+        "skeleton": "ILS",
+        "constructor": "trivial",
+        "neighborhood": "composite",
+        "perturbation": "random_flip_with_staged_undo",
+        "random_flip_with_staged_undo.flips_per_strength": 1.2319,
+        "random_flip_with_staged_undo.add_prob": 0.8333,
+        "ILS.strength": 4,
+        "ILS.ls_strategy": "first",
+        "ILS.ls_time_share": 0.2244,
+        "ILS.ls_sample": 34,
+        "ILS.ls_scope": "full",
+        "ILS.accept": "better",
+        "ILS.T_rel": 0.0066,
+        "ILS.pen_scale": 0.676,
+        "ILS.pen_adapt": "yes",
+        "ILS.pen_target": 0.3455
+      },
+      "gap_per_instance": [
+        0.014922452008438645,
+        0.00047527922654559554,
+        0.006352409846720504,
+        0.0007331790983445069,
+        0.003497152748562001,
+        0.001441606512820407
+      ],
+      "mean_gap": 0.004570346573571943
+    },
+    "baselines": [
+      {
+        "label": "default:TS",
+        "summary": "TS[constructor=trivial, neighborhood=setup_shift_merge]",
+        "mean": 233096.6,
+        "std": 30454.529672748733,
+        "per_instance": [
+          206582.80000000002,
+          241667.5,
+          259701.0,
+          178497.5,
+          260144.2,
+          251986.6
+        ],
+        "config": {
+          "skeleton": "TS",
+          "constructor": "trivial",
+          "neighborhood": "setup_shift_merge",
+          "setup_shift_merge.window": 4,
+          "TS.tenure": 16,
+          "TS.candidate_size": 52,
+          "TS.estimate_top": 0,
+          "TS.elite_size": 0,
+          "TS.stall": 500,
+          "TS.pen_scale": 1.0,
+          "TS.pen_adapt": "no",
+          "TS.pen_target": 0.2
+        },
+        "gap_per_instance": [
+          0.003261600146082417,
+          0.007539846326383417,
+          0.00832906888526685,
+          0.0047649605124654515,
+          0.010568180008289834,
+          0.010755491662428196
+        ],
+        "mean_gap": 0.007536524590152694
+      },
+      {
+        "label": "default:PR",
+        "summary": "PR[constructor=trivial, neighborhood=setup_shift_merge, relink=hamming_setup_bitflip, perturbation=random_flip_with_staged_undo]",
+        "mean": 233096.6,
+        "std": 30454.529672748733,
+        "per_instance": [
+          206582.80000000002,
+          241667.5,
+          259701.0,
+          178497.5,
+          260144.2,
+          251986.6
+        ],
+        "config": {
+          "skeleton": "PR",
+          "constructor": "trivial",
+          "neighborhood": "setup_shift_merge",
+          "setup_shift_merge.window": 4,
+          "relink": "hamming_setup_bitflip",
+          "hamming_setup_bitflip.flips_per_step": 2,
+          "perturbation": "random_flip_with_staged_undo",
+          "random_flip_with_staged_undo.flips_per_strength": 2.25,
+          "random_flip_with_staged_undo.add_prob": 0.5,
+          "PR.pop_size": 10,
+          "PR.ts_iters": 2000,
+          "PR.tenure": 16,
+          "PR.candidate_size": 52,
+          "PR.estimate_top": 0,
+          "PR.path_cands": 2,
+          "PR.band": 0.25,
+          "PR.init_moves": 20,
+          "PR.improve": "ts",
+          "PR.strength": 1,
+          "PR.ls_sample": 64,
+          "PR.T_rel": 0.005
+        },
+        "gap_per_instance": [
+          0.003261600146082417,
+          0.007539846326383417,
+          0.00832906888526685,
+          0.0047649605124654515,
+          0.010568180008289834,
+          0.010755491662428196
+        ],
+        "mean_gap": 0.007536524590152694
+      },
+      {
+        "label": "default:HYB",
+        "summary": "HYB[constructor=trivial, neighborhood=setup_shift_merge, perturbation=random_flip_with_staged_undo, destruction=group_window]",
+        "mean": 233933.19166666668,
+        "std": 29513.877786996472,
+        "per_instance": [
+          207955.35,
+          242482.5,
+          258936.2,
+          180915.25,
+          258598.45,
+          254711.40000000002
+        ],
+        "config": {
+          "skeleton": "HYB",
+          "constructor": "trivial",
+          "neighborhood": "setup_shift_merge",
+          "setup_shift_merge.window": 4,
+          "perturbation": "random_flip_with_staged_undo",
+          "random_flip_with_staged_undo.flips_per_strength": 2.25,
+          "random_flip_with_staged_undo.add_prob": 0.5,
+          "destruction": "group_window",
+          "HYB.ls_share": 0.1,
+          "HYB.mip_share": 0.05,
+          "HYB.destroy_ratio": 0.2,
+          "HYB.strength": 1,
+          "HYB.ls_sample": 64,
+          "HYB.T_rel": 0.005
+        },
+        "gap_per_instance": [
+          0.009927337609610327,
+          0.010937675884582191,
+          0.005359615275602503,
+          0.018374509572138632,
+          0.004563488132600067,
+          0.02168506713859162
+        ],
+        "mean_gap": 0.01180794893552089
+      },
+      {
+        "label": "default:SA",
+        "summary": "SA[constructor=trivial, neighborhood=setup_shift_merge]",
+        "mean": 236549.80833333335,
+        "std": 31566.914745200615,
+        "per_instance": [
+          206621.3,
+          243928.0,
+          269915.0,
+          182375.0,
+          261826.45,
+          254633.09999999998
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "trivial",
+          "neighborhood": "setup_shift_merge",
+          "setup_shift_merge.window": 4,
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26,
+          "SA.eval": "objective",
+          "SA.pen_scale": 1.0,
+          "SA.pen_adapt": "no",
+          "SA.pen_target": 0.2
+        },
+        "gap_per_instance": [
+          0.003448573948381519,
+          0.016964133094859897,
+          0.04798649457709751,
+          0.026591463037078315,
+          0.017103126091342794,
+          0.02137099426726745
+        ],
+        "mean_gap": 0.022244130836004582
+      },
+      {
+        "label": "default:ILS",
+        "summary": "ILS[constructor=trivial, neighborhood=setup_shift_merge, perturbation=random_flip_with_staged_undo]",
+        "mean": 237154.075,
+        "std": 30414.267973248043,
+        "per_instance": [
+          210993.8,
+          246119.0,
+          261900.7,
+          182340.75,
+          265237.0,
+          256333.2
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "trivial",
+          "neighborhood": "setup_shift_merge",
+          "setup_shift_merge.window": 4,
+          "perturbation": "random_flip_with_staged_undo",
+          "random_flip_with_staged_undo.flips_per_strength": 2.25,
+          "random_flip_with_staged_undo.add_prob": 0.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32,
+          "ILS.ls_scope": "sample",
+          "ILS.accept": "better",
+          "ILS.T_rel": 0.005,
+          "ILS.pen_scale": 1.0,
+          "ILS.pen_adapt": "no",
+          "ILS.pen_target": 0.2
+        },
+        "gap_per_instance": [
+          0.024683455780938463,
+          0.026098666299784457,
+          0.016869742401452514,
+          0.026398669301045306,
+          0.030351906215317345,
+          0.02819034661130213
+        ],
+        "mean_gap": 0.025432131101640037
+      },
+      {
+        "label": "default:VNS",
+        "summary": "VNS[constructor=trivial, neighborhood=setup_shift_merge]",
+        "mean": 237953.74166666667,
+        "std": 31008.167105712066,
+        "per_instance": [
+          210087.5,
+          244977.5,
+          265678.3,
+          183371.25,
+          266136.9,
+          257471.0
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "trivial",
+          "neighborhood": "setup_shift_merge",
+          "setup_shift_merge.window": 4,
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32,
+          "VNS.pen_scale": 1.0,
+          "VNS.pen_adapt": "no",
+          "VNS.pen_target": 0.2
+        },
+        "gap_per_instance": [
+          0.020282043910190353,
+          0.021339620360295006,
+          0.031536855314460016,
+          0.0321993684246078,
+          0.03384769933770671,
+          0.03275423055756554
+        ],
+        "mean_gap": 0.028659969650804237
+      }
+    ],
+    "best_baseline": "default:TS",
+    "gain_vs_best_baseline": 0.0033326669429470145,
+    "wins_per_instance": "5/6",
+    "reference": 440444.0,
+    "best_known": [
+      205911.2,
+      239859.0,
+      257555.8,
+      177651.0,
+      257423.7,
+      249305.2
+    ],
+    "best_baseline_by_gap": "default:TS",
+    "tuned_vs_best_baseline": {
+      "a": "tuned",
+      "b": "default:TS",
+      "mean_diff": 0.002966178016580751,
+      "ci95": [
+        -0.003307994249849827,
+        0.007342318141155895
+      ],
+      "wins_a": 5,
+      "n": 6,
+      "significant": false
+    },
+    "mip_reference": null
+  }
+}
