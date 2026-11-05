@@ -1,0 +1,664 @@
+[
+ {
+  "name": "giffler_thompson_grasp_active",
+  "slot": "constructor",
+  "path": "generated/cexp/jobshop_compact_1/constructor/giffler_thompson_grasp_active_r1.hpp",
+  "component": {
+   "name": "giffler_thompson_grasp_active",
+   "slot": "constructor",
+   "params": {
+    "rule": {
+     "type": "cat",
+     "values": [
+      "mwkr",
+      "spt",
+      "mopr",
+      "random"
+     ]
+    },
+    "alpha": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "biased_job_repetition_sampling_best_of_k",
+  "slot": "constructor",
+  "path": "generated/cexp/jobshop_compact_1/constructor/biased_job_repetition_sampling_best_of_k_r1.hpp",
+  "component": {
+   "name": "biased_job_repetition_sampling_best_of_k",
+   "slot": "constructor",
+   "params": {
+    "samples": {
+     "type": "int",
+     "range": [
+      1,
+      30
+     ]
+    },
+    "beta": {
+     "type": "float",
+     "range": [
+      0.0,
+      3.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "neh_operation_insertion_partial_makespan",
+  "slot": "constructor",
+  "path": "generated/cexp/jobshop_compact_1/constructor/neh_operation_insertion_partial_makespan_r1.hpp",
+  "component": {
+   "name": "neh_operation_insertion_partial_makespan",
+   "slot": "constructor",
+   "params": {
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "max_positions": {
+     "type": "int",
+     "range": [
+      4,
+      200
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "critical_arc_adjacent_swap",
+  "slot": "neighborhood",
+  "path": "generated/cexp/jobshop_compact_1/neighborhood/critical_arc_adjacent_swap_r1.hpp",
+  "component": {
+   "name": "critical_arc_adjacent_swap",
+   "slot": "neighborhood",
+   "params": {
+    "scope": {
+     "type": "cat",
+     "values": [
+      "critical",
+      "all"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "critical_block_insertion",
+  "slot": "neighborhood",
+  "path": "generated/cexp/jobshop_compact_1/neighborhood/critical_block_insertion_r2.hpp",
+  "component": {
+   "name": "critical_block_insertion",
+   "slot": "neighborhood",
+   "params": {
+    "mode": {
+     "type": "cat",
+     "values": [
+      "block_ends",
+      "block_all"
+     ]
+    },
+    "window": {
+     "type": "int",
+     "range": [
+      2,
+      20
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "critical_segment_reversal",
+  "slot": "neighborhood",
+  "path": "generated/cexp/jobshop_compact_1/neighborhood/critical_segment_reversal_r2.hpp",
+  "component": {
+   "name": "critical_segment_reversal",
+   "slot": "neighborhood",
+   "params": {
+    "max_len": {
+     "type": "int",
+     "range": [
+      3,
+      12
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "jssp_critical_swap_walk",
+  "slot": "perturbation",
+  "path": "generated/cexp/jobshop_compact_1/perturbation/jssp_critical_swap_walk_r1.hpp",
+  "component": {
+   "name": "jssp_critical_swap_walk",
+   "slot": "perturbation",
+   "params": {
+    "steps_scale": {
+     "type": "float",
+     "range": [
+      0.5,
+      3.0
+     ]
+    },
+    "block_end_bias": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "jssp_noisy_start_redispatch",
+  "slot": "perturbation",
+  "path": "generated/cexp/jobshop_compact_1/perturbation/jssp_noisy_start_redispatch_r1.hpp",
+  "component": {
+   "name": "jssp_noisy_start_redispatch",
+   "slot": "perturbation",
+   "params": {
+    "op_fraction": {
+     "type": "float",
+     "range": [
+      0.02,
+      0.3
+     ]
+    },
+    "noise_scale": {
+     "type": "float",
+     "range": [
+      0.5,
+      5.0
+     ]
+    },
+    "focus": {
+     "type": "cat",
+     "values": [
+      "all",
+      "critical"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "jssp_critical_block_insertion",
+  "slot": "perturbation",
+  "path": "generated/cexp/jobshop_compact_1/perturbation/jssp_critical_block_insertion_r1.hpp",
+  "component": {
+   "name": "jssp_critical_block_insertion",
+   "slot": "perturbation",
+   "params": {
+    "moves_scale": {
+     "type": "float",
+     "range": [
+      0.5,
+      3.0
+     ]
+    },
+    "endpoint_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "max_tries": {
+     "type": "int",
+     "range": [
+      3,
+      30
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "swap_cycle_relink",
+  "slot": "relink",
+  "path": "generated/cexp/jobshop_compact_1/relink/swap_cycle_relink_r1.hpp",
+  "component": {
+   "name": "swap_cycle_relink",
+   "slot": "relink",
+   "params": {
+    "machine_focus": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "disjunctive_arc_flip_relink",
+  "slot": "relink",
+  "path": "generated/cexp/jobshop_compact_1/relink/disjunctive_arc_flip_relink_r1.hpp",
+  "component": {
+   "name": "disjunctive_arc_flip_relink",
+   "slot": "relink",
+   "params": {
+    "machine_focus": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "lis_insertion_relink",
+  "slot": "relink",
+  "path": "generated/cexp/jobshop_compact_1/relink/lis_insertion_relink_r1.hpp",
+  "component": {
+   "name": "lis_insertion_relink",
+   "slot": "relink",
+   "params": {
+    "pick": {
+     "type": "cat",
+     "values": [
+      "uniform",
+      "far"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "critical_path_window_destruction",
+  "slot": "destruction",
+  "path": "generated/cexp/jobshop_compact_1/destruction/critical_path_window_destruction_r1.hpp",
+  "component": {
+   "name": "critical_path_window_destruction",
+   "slot": "destruction",
+   "params": {
+    "window": {
+     "type": "int",
+     "range": [
+      1,
+      8
+     ]
+    },
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.6
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "time_window_cross_machine_destruction",
+  "slot": "destruction",
+  "path": "generated/cexp/jobshop_compact_1/destruction/time_window_cross_machine_destruction_r1.hpp",
+  "component": {
+   "name": "time_window_cross_machine_destruction",
+   "slot": "destruction",
+   "params": {
+    "center_critical_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "jitter": {
+     "type": "float",
+     "range": [
+      0.0,
+      3.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "related_job_cluster_destruction",
+  "slot": "destruction",
+  "path": "generated/cexp/jobshop_compact_1/destruction/related_job_cluster_destruction_r2.hpp",
+  "component": {
+   "name": "related_job_cluster_destruction",
+   "slot": "destruction",
+   "params": {
+    "adj_window": {
+     "type": "int",
+     "range": [
+      1,
+      5
+     ]
+    },
+    "greed": {
+     "type": "float",
+     "range": [
+      1.0,
+      8.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "critical_pair_exchange",
+  "slot": "neighborhood",
+  "path": "generated/cexp/jobshop_compact_1/neighborhood/critical_pair_exchange_r1.hpp",
+  "component": {
+   "name": "critical_pair_exchange",
+   "slot": "neighborhood",
+   "params": {
+    "window": {
+     "type": "int",
+     "range": [
+      2,
+      15
+     ]
+    },
+    "pair_mode": {
+     "type": "cat",
+     "values": [
+      "one_critical",
+      "both_critical"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "job_priority_shift_all_machines",
+  "slot": "neighborhood",
+  "path": "generated/cexp/jobshop_compact_1/neighborhood/job_priority_shift_all_machines_r1.hpp",
+  "component": {
+   "name": "job_priority_shift_all_machines",
+   "slot": "neighborhood",
+   "params": {
+    "max_shift": {
+     "type": "int",
+     "range": [
+      1,
+      8
+     ]
+    },
+    "scope": {
+     "type": "cat",
+     "values": [
+      "critical_jobs",
+      "all_jobs"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "schrage_block_resequencing",
+  "slot": "neighborhood",
+  "path": "generated/cexp/jobshop_compact_1/neighborhood/schrage_block_resequencing_r3.hpp",
+  "component": {
+   "name": "schrage_block_resequencing",
+   "slot": "neighborhood",
+   "params": {
+    "extend": {
+     "type": "int",
+     "range": [
+      0,
+      3
+     ]
+    },
+    "rules": {
+     "type": "cat",
+     "values": [
+      "schrage",
+      "all"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "jssp_bottleneck_machine_gt_resequence",
+  "slot": "perturbation",
+  "path": "generated/cexp/jobshop_compact_1/perturbation/jssp_bottleneck_machine_gt_resequence_r1.hpp",
+  "component": {
+   "name": "jssp_bottleneck_machine_gt_resequence",
+   "slot": "perturbation",
+   "params": {
+    "machines_scale": {
+     "type": "float",
+     "range": [
+      0.3,
+      2.0
+     ]
+    },
+    "select_mode": {
+     "type": "cat",
+     "values": [
+      "critical",
+      "load",
+      "random"
+     ]
+    },
+    "greedy_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "jssp_job_ruin_greedy_reinsert",
+  "slot": "perturbation",
+  "path": "generated/cexp/jobshop_compact_1/perturbation/jssp_job_ruin_greedy_reinsert_r1.hpp",
+  "component": {
+   "name": "jssp_job_ruin_greedy_reinsert",
+   "slot": "perturbation",
+   "params": {
+    "jobs_scale": {
+     "type": "float",
+     "range": [
+      0.3,
+      2.0
+     ]
+    },
+    "insert_noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.5
+     ]
+    },
+    "job_select": {
+     "type": "cat",
+     "values": [
+      "critical",
+      "random"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "jssp_machine_segment_scramble",
+  "slot": "perturbation",
+  "path": "generated/cexp/jobshop_compact_1/perturbation/jssp_machine_segment_scramble_r2.hpp",
+  "component": {
+   "name": "jssp_machine_segment_scramble",
+   "slot": "perturbation",
+   "params": {
+    "seg_max": {
+     "type": "int",
+     "range": [
+      2,
+      8
+     ]
+    },
+    "moves_scale": {
+     "type": "float",
+     "range": [
+      0.5,
+      3.0
+     ]
+    },
+    "scramble_mode": {
+     "type": "cat",
+     "values": [
+      "shuffle",
+      "reverse"
+     ]
+    },
+    "max_tries": {
+     "type": "int",
+     "range": [
+      3,
+      30
+     ]
+    },
+    "machine_pick": {
+     "type": "cat",
+     "values": [
+      "bottleneck",
+      "random"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ }
+]

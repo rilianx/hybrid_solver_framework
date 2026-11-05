@@ -1,0 +1,303 @@
+[
+ {
+  "name": "setup_shift_merge_window",
+  "slot": "neighborhood",
+  "path": "generated/cexp/clsp_full_3/neighborhood/setup_shift_merge_window_r1.hpp",
+  "component": {
+   "name": "setup_shift_merge_window",
+   "slot": "neighborhood",
+   "params": {
+    "window": {
+     "type": "int",
+     "range": [
+      1,
+      8
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "block_lot_consolidate_split",
+  "slot": "neighborhood",
+  "path": "generated/cexp/clsp_full_3/neighborhood/block_lot_consolidate_split_r1.hpp",
+  "component": {
+   "name": "block_lot_consolidate_split",
+   "slot": "neighborhood",
+   "params": {
+    "max_len": {
+     "type": "int",
+     "range": [
+      2,
+      8
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "setup_flip_toggle",
+  "slot": "neighborhood",
+  "path": "generated/cexp/clsp_full_3/neighborhood/setup_flip_toggle_r3.hpp",
+  "component": {
+   "name": "setup_flip_toggle",
+   "slot": "neighborhood",
+   "params": {
+    "use_estimate": {
+     "type": "int",
+     "range": [
+      0,
+      1
+     ]
+    },
+    "max_offset": {
+     "type": "int",
+     "range": [
+      0,
+      2
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "scattered_setup_flips_flow_repair",
+  "slot": "perturbation",
+  "path": "generated/cexp/clsp_full_3/perturbation/scattered_setup_flips_flow_repair_r1.hpp",
+  "component": {
+   "name": "scattered_setup_flips_flow_repair",
+   "slot": "perturbation",
+   "params": {
+    "flips_per_strength": {
+     "type": "int",
+     "range": [
+      1,
+      6
+     ]
+    },
+    "remove_prob": {
+     "type": "float",
+     "range": [
+      0.2,
+      0.9
+     ]
+    },
+    "greedy": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "prune_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "period_window_ruin_recreate",
+  "slot": "perturbation",
+  "path": "generated/cexp/clsp_full_3/perturbation/period_window_ruin_recreate_r1.hpp",
+  "component": {
+   "name": "period_window_ruin_recreate",
+   "slot": "perturbation",
+   "params": {
+    "window_per_strength": {
+     "type": "int",
+     "range": [
+      1,
+      5
+     ]
+    },
+    "item_frac": {
+     "type": "float",
+     "range": [
+      0.1,
+      1.0
+     ]
+    },
+    "greedy": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "prune_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "item_eoq_row_regeneration",
+  "slot": "perturbation",
+  "path": "generated/cexp/clsp_full_3/perturbation/item_eoq_row_regeneration_r1.hpp",
+  "component": {
+   "name": "item_eoq_row_regeneration",
+   "slot": "perturbation",
+   "params": {
+    "items_per_strength": {
+     "type": "int",
+     "range": [
+      1,
+      4
+     ]
+    },
+    "cycle_noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.8
+     ]
+    },
+    "greedy": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "prune_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "hamming_flip_setup_first",
+  "slot": "relink",
+  "path": "generated/cexp/clsp_full_3/relink/hamming_flip_setup_first_r1.hpp",
+  "component": {
+   "name": "hamming_flip_setup_first",
+   "slot": "relink",
+   "params": {
+    "add_first_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "max_flips": {
+     "type": "int",
+     "range": [
+      1,
+      4
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "item_run_block_copy",
+  "slot": "relink",
+  "path": "generated/cexp/clsp_full_3/relink/item_run_block_copy_r1.hpp",
+  "component": {
+   "name": "item_run_block_copy",
+   "slot": "relink",
+   "params": {
+    "short_bias": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "max_runs": {
+     "type": "int",
+     "range": [
+      1,
+      3
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "period_column_copy",
+  "slot": "relink",
+  "path": "generated/cexp/clsp_full_3/relink/period_column_copy_r1.hpp",
+  "component": {
+   "name": "period_column_copy",
+   "slot": "relink",
+   "params": {
+    "max_cols": {
+     "type": "int",
+     "range": [
+      1,
+      3
+     ]
+    },
+    "adjacent_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ }
+]
