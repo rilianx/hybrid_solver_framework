@@ -1653,3 +1653,35 @@ en Trigeiro: las instancias de entrenamiento 20×20 no representan bien a las G 
 la r1 no encontró ninguna solución factible en una semilla de G53 (parte de la solución trivial, que en G53 es
 infactible, y con penalización fija). Es una generación por catálogo: no muestra que los prompts compactos generen
 mejores componentes, sí que no los empeoran.
+
+### Prompts completos contra compactos: 3 generaciones por modo en el CLSP y el job shop (runs 145–156)
+
+Mismo modelo y vista MIP; workspaces en `generated/cexp/`. CLSP: vecindarios, perturbaciones y relinks (3 de cada uno)
+desde un workspace vacío. Job shop: 3 vecindarios y 3 perturbaciones sobre una copia del catálogo actual (con prompts
+compactos el LLM ve solo las firmas de los componentes que ya están).
+
+| | aceptados | llamadas | rechazos | tokens entrada / salida | USD |
+|---|---|---|---|---|---|
+| CLSP completo | 27/27 | 17 | 8 | 115 mil / 126 mil | 2,98 |
+| CLSP compacto | 27/27 | 14 | 5 | 49 mil / 76 mil | **1,72** |
+| job shop completo | 18/18 | 9 | 3 | 108 mil / 154 mil | **3,51** |
+| job shop compacto | 18/18 | 11 | 5 | 59 mil / 187 mil | 3,97 |
+
+Ningún rechazo por diversidad en ninguno de los dos modos: ver solo las firmas de lo que ya está no llevó a repetir
+ideas. En el job shop la salida (incluido el pensamiento) crece con prompts compactos y se come el ahorro de entrada.
+
+Calidad sin tuning (`compact_prompts_{clsp,jobshop}.json`): default de cada esqueleto y una variante por componente,
+6 instancias, 5 s, 2 semillas; gap contra la mejor de todas las corridas del problema.
+
+| CLSP 20×20 | rep. 1 | rep. 2 | rep. 3 | media |
+|---|---|---|---|---|
+| mejor configuración, completo | 2,31 | 2,03 | 1,89 | 2,08 % |
+| mejor configuración, compacto | 1,87 | 1,92 | **1,21** | **1,67 %** |
+| mediana de las variantes, completo | 8,66 | 7,54 | 5,52 | 7,24 % |
+| mediana de las variantes, compacto | 5,37 | 7,55 | 5,80 | **6,24 %** |
+
+En el job shop 15×15 (solo variantes con componentes nuevos), las perturbaciones nuevas empatan en los dos modos
+(0,00–0,02 % con PR) y ningún vecindario nuevo se acerca a los que ya estaban (basados en el camino crítico); el mejor
+vecindario nuevo queda en 9,2 % de media con prompts compactos y 11,3 % con completos. Con 3 repeticiones las
+diferencias están dentro del ruido: los prompts compactos no empeoran ni la validación ni la calidad, y en el CLSP
+cuestan 42 % menos.
