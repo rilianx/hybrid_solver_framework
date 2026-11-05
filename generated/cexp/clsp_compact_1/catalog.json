@@ -1,0 +1,275 @@
+[
+ {
+  "name": "setup_bit_flip",
+  "slot": "neighborhood",
+  "path": "generated/cexp/clsp_compact_1/neighborhood/setup_bit_flip_r1.hpp",
+  "component": {
+   "name": "setup_bit_flip",
+   "slot": "neighborhood",
+   "params": {
+    "skip_period0_drop": {
+     "type": "cat",
+     "values": [
+      "no",
+      "yes"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "setup_block_rewrite",
+  "slot": "neighborhood",
+  "path": "generated/cexp/clsp_compact_1/neighborhood/setup_block_rewrite_r1.hpp",
+  "component": {
+   "name": "setup_block_rewrite",
+   "slot": "neighborhood",
+   "params": {
+    "block_len": {
+     "type": "int",
+     "range": [
+      2,
+      5
+     ]
+    },
+    "min_hamming": {
+     "type": "int",
+     "range": [
+      2,
+      3
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "setup_time_shift",
+  "slot": "neighborhood",
+  "path": "generated/cexp/clsp_compact_1/neighborhood/setup_time_shift_r3.hpp",
+  "component": {
+   "name": "setup_time_shift",
+   "slot": "neighborhood",
+   "params": {
+    "window": {
+     "type": "int",
+     "range": [
+      1,
+      10
+     ]
+    },
+    "block": {
+     "type": "int",
+     "range": [
+      2,
+      8
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "random_setup_flips_with_revert_repair",
+  "slot": "perturbation",
+  "path": "generated/cexp/clsp_compact_1/perturbation/random_setup_flips_with_revert_repair_r1.hpp",
+  "component": {
+   "name": "random_setup_flips_with_revert_repair",
+   "slot": "perturbation",
+   "params": {
+    "flips_per_strength": {
+     "type": "float",
+     "range": [
+      0.5,
+      4.0
+     ]
+    },
+    "add_bias": {
+     "type": "float",
+     "range": [
+      0.2,
+      0.8
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "feasible_setup_shift_chain",
+  "slot": "perturbation",
+  "path": "generated/cexp/clsp_compact_1/perturbation/feasible_setup_shift_chain_r1.hpp",
+  "component": {
+   "name": "feasible_setup_shift_chain",
+   "slot": "perturbation",
+   "params": {
+    "shifts_per_strength": {
+     "type": "float",
+     "range": [
+      0.5,
+      3.0
+     ]
+    },
+    "max_dist": {
+     "type": "int",
+     "range": [
+      1,
+      3
+     ]
+    },
+    "prefer_earlier": {
+     "type": "float",
+     "range": [
+      0.3,
+      0.9
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "time_window_destroy_rebuild",
+  "slot": "perturbation",
+  "path": "generated/cexp/clsp_compact_1/perturbation/time_window_destroy_rebuild_r1.hpp",
+  "component": {
+   "name": "time_window_destroy_rebuild",
+   "slot": "perturbation",
+   "params": {
+    "window_frac": {
+     "type": "float",
+     "range": [
+      0.1,
+      0.5
+     ]
+    },
+    "item_frac": {
+     "type": "float",
+     "range": [
+      0.2,
+      1.0
+     ]
+    },
+    "rebuild_prob": {
+     "type": "float",
+     "range": [
+      0.2,
+      0.9
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "hamming_cell_flip_relink",
+  "slot": "relink",
+  "path": "generated/cexp/clsp_compact_1/relink/hamming_cell_flip_relink_r1.hpp",
+  "component": {
+   "name": "hamming_cell_flip_relink",
+   "slot": "relink",
+   "params": {
+    "max_flips": {
+     "type": "int",
+     "range": [
+      1,
+      4
+     ]
+    },
+    "same_item_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "item_row_copy_relink",
+  "slot": "relink",
+  "path": "generated/cexp/clsp_compact_1/relink/item_row_copy_relink_r1.hpp",
+  "component": {
+   "name": "item_row_copy_relink",
+   "slot": "relink",
+   "params": {
+    "rows_per_step": {
+     "type": "int",
+     "range": [
+      1,
+      3
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "time_window_segment_relink",
+  "slot": "relink",
+  "path": "generated/cexp/clsp_compact_1/relink/time_window_segment_relink_r1.hpp",
+  "component": {
+   "name": "time_window_segment_relink",
+   "slot": "relink",
+   "params": {
+    "max_extend": {
+     "type": "int",
+     "range": [
+      0,
+      6
+     ]
+    },
+    "all_items_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ }
+]
