@@ -10,7 +10,6 @@ from core.component import ComponentRegistry, ComponentSpec
 from core.model_parts import PartsModel
 from core.packs import GroupWindowDestruction, RandomVariableDestruction
 from examples.lotsizing import model_parts
-from examples.lotsizing.construction import EPS, CLSPPartial, CoverAction
 from examples.lotsizing.instance import CLSPInstance
 
 SKELETONS = ["SA", "ILS", "TS", "VNS", "HYB"]
@@ -28,6 +27,13 @@ class LotForLotConstructor:
 
     def build(self, inst: CLSPInstance, rng: Random):
         return tuple(tuple(d > 0 for d in row) for row in inst.demand)
+
+
+class AllSetupsConstructor:
+    """Setup en todos los períodos: siempre factible (la producción puede adelantarse a cualquier período)."""
+
+    def build(self, inst: CLSPInstance, rng: Random):
+        return tuple(tuple(True for _ in row) for row in inst.demand)
 
 
 class SetupFlipNeighborhood:
@@ -70,33 +76,10 @@ COMPONENT_SETUP_FLIP_PERTURBATION = {"name": "setup_flip_perturbation", "slot": 
 COMPONENT_PERIOD_WINDOW = {"name": "period_window", "slot": "destruction", "compatible_skeletons": ["HYB"], "params": {}}
 
 
-class UnitMarginalCost:
-    """Puntaje de referencia: costo marginal por unidad cubierta (setup nuevo + inventario
-    de llevar la producción de `source` a `period`)."""
-
-    def __init__(self, problem):
-        self.inst = problem.inst
-
-    def score(self, p: CLSPPartial, a: CoverAction) -> float:
-        inst = self.inst
-        cost = (inst.setup_cost[a.item] if a.new_setup else 0.0) + inst.holding_cost[a.item] * (a.period - a.source) * a.qty
-        return cost / max(a.qty, EPS)
-
-
-class LatestSource:
-    """Puntaje de referencia: producir lo más tarde posible (lot-for-lot cuando cabe)."""
-
-    def __init__(self, problem):
-        pass
-
-    def score(self, p: CLSPPartial, a: CoverAction) -> float:
-        return float(a.period - a.source)
-
-
 COMPONENTS = [
     (COMPONENT_LOT_FOR_LOT, lambda problem: LotForLotConstructor()),
-    ({"name": "unit_marginal_cost", "slot": "greedy_score", "compatible_skeletons": SKELETONS, "params": {}}, UnitMarginalCost),
-    ({"name": "latest_source", "slot": "greedy_score", "compatible_skeletons": SKELETONS, "params": {}}, LatestSource),
+    ({"name": "all_setups", "slot": "constructor", "compatible_skeletons": SKELETONS, "params": {}},
+     lambda problem: AllSetupsConstructor()),
     (COMPONENT_SETUP_FLIP, SetupFlipNeighborhood),
     (COMPONENT_SETUP_FLIP_PERTURBATION, lambda problem: SetupFlipPerturbation()),
     (COMPONENT_PERIOD_WINDOW, GroupWindowDestruction),

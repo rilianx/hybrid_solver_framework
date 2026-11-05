@@ -24,7 +24,7 @@ def make_model_spec():
         ),
         instance_source=inspect.getsource(instance.CLSPInstance),
         instance_import="examples.lotsizing.instance",
-        forbidden_modules=["examples.lotsizing.construction", "examples.lotsizing.model_parts", "examples.lotsizing.cases"],
+        forbidden_modules=["examples.lotsizing.model_parts", "examples.lotsizing.cases"],
         answer_format=("Matriz de setups: lista de `n_items` listas de `n_periods` enteros 0/1; answer[i][t] = 1 si el ítem i "
                        "tiene setup en el período t. Ejemplo con 2 ítems y 3 períodos: [[1, 0, 1], [1, 1, 0]]."),
         families=("Familia de restricciones: `demanda` (magnitud = unidades de demanda que el plan de setups no alcanza a cubrir "

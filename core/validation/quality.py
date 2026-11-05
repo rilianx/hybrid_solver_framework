@@ -59,7 +59,6 @@ _WHAT = {
     "neighborhood": "los vecinos alcanzables desde la misma solución",
     "destruction": "la forma de los conjuntos que libera (tamaño, concentración y contigüidad por coordenada de las variables)",
     "perturbation": "la forma del conjunto de variables que cambia (cuántas, concentración por coordenada, si enciende o apaga)",
-    "greedy_score": "las acciones que elige el constructor greedy al construir la misma instancia",
 }
 
 
@@ -131,10 +130,6 @@ def probe_checks(slot: str, impl, probe) -> list[CheckResult]:
                          f"en la instancia de tamaño realista, la distancia media con strength=3 ({mean(d3):.1f}) es menor que "
                          f"con strength=1 ({mean(d1):.1f})")]
         return [ok(LAYER, "perturbation.strength_monotone", f"distancia media: strength 1 → {mean(d1):.1f}, 3 → {mean(d3):.1f}")]
-    if slot == "greedy_score":  # un puntaje se juzga por el constructor greedy que arma
-        from core.construction import GreedyConstructor
-
-        impl, slot = GreedyConstructor(P, impl), "constructor"
     if slot != "constructor" or inst is None:
         return []
     explain = getattr(P, "explain_infeasibility", None)
@@ -188,13 +183,6 @@ def _short(obj, n: int = 300) -> str:
 
 def check_component_quality(slot: str, impl, ctx: ValidationContext) -> list[CheckResult]:
     P = ctx.problem
-    if slot == "greedy_score":
-        # Diversidad como puntaje (qué acciones elige); calidad como el constructor que arma.
-        from core.construction import GreedyConstructor
-
-        results = [] if ctx.diversity_probe is not None else list(
-            diversity_check(slot, impl, ctx.accepted_peers, ctx.trivial_solutions[0], P, ctx.max_similarity_to_peers))
-        return results + check_component_quality("constructor", GreedyConstructor(P, impl), replace(ctx, accepted_peers=[]))
     # Si el contexto trae una sonda de diversidad, la comparación se hace allí (instancia
     # grande, componente reconstruido) desde `llm.generator`, no aquí con la micro-instancia.
     results: list[CheckResult] = [] if ctx.diversity_probe is not None else list(

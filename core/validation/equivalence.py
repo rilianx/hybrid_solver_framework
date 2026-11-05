@@ -14,7 +14,7 @@ import time
 from random import Random
 from typing import Any, Callable
 
-from core.model_parts import CONSTRUCTION_PARTS, MIP_PARTS, TOL, has_construction
+from core.model_parts import MIP_PARTS, TOL
 
 from .base import ValidationReport, fail, ok, describe_exception
 
@@ -56,7 +56,7 @@ def parts_test_solutions(parts, inst, cases_answers: list, n_random: int = 30) -
 
 def check_parts_equivalent(old, new, instances: list[tuple[Any, list]], n_random: int = 30) -> ValidationReport:
     """`instances`: [(instancia, respuestas de casos)]. Las mismas salidas en la vista heurística, la
-    vista MIP (datos y puente) y la vista constructiva (reproduciendo construcciones al azar)."""
+    vista MIP (datos y puente)."""
     report = ValidationReport(subject="equivalencia del modelo")
     for k, (inst, answers) in enumerate(instances):
         where = f"instancia {k}"
@@ -99,41 +99,11 @@ def check_parts_equivalent(old, new, instances: list[tuple[Any, list]], n_random
                         if not _dict_close(old.aux_values(inst, sol), new.aux_values(inst, sol)):
                             report.add(fail(LAYER, "aux_values_equal", f"aux_values cambió en {where}, sol={_short(sol)}"))
                             return report
-            if has_construction(old):
-                if not has_construction(new):
-                    report.add(fail(LAYER, "construction_kept", f"la versión nueva no tiene las funciones {CONSTRUCTION_PARTS}"))
-                    return report
-                bad = _replay_construction(old, new, inst)
-                if bad:
-                    report.add(fail(LAYER, "construction_equal", f"la vista constructiva cambió en {where}: {bad}"))
-                    return report
         except Exception as exc:  # noqa: BLE001
             report.add(fail(LAYER, "runs", f"la versión nueva lanzó {describe_exception(exc)} en {where}"))
             return report
     report.add(ok(LAYER, "same_outputs", f"mismas salidas en {len(instances)} instancias"))
     return report
-
-
-def _replay_construction(old, new, inst, n: int = 3, max_steps: int = 20_000) -> str | None:
-    for s in range(n):
-        rng = Random(s)
-        po, pn = old.empty_partial(inst), new.empty_partial(inst)
-        for _ in range(max_steps):
-            do, dn = old.is_complete(inst, po), new.is_complete(inst, pn)
-            if do != dn:
-                return "is_complete difiere"
-            if do:
-                if old.to_solution(inst, po) != new.to_solution(inst, pn):
-                    return "to_solution difiere"
-                break
-            co, cn = list(old.candidates(inst, po)), list(new.candidates(inst, pn))
-            if repr(co) != repr(cn):
-                return f"candidates difiere: antes {_short(co)}, ahora {_short(cn)}"
-            if not co:
-                break
-            k = rng.randrange(len(co))
-            po, pn = old.apply_action(inst, po, co[k]), new.apply_action(inst, pn, cn[k])
-    return None
 
 
 def parts_speed(parts, inst, n: int = 2000, seconds: float = 0.5) -> float:
@@ -189,20 +159,6 @@ def check_component_equivalent(slot: str, old, new, problem, sols: list, n_moves
                     if repr(old.destroy(sol, 0.3, Random(s))) != repr(new.destroy(sol, 0.3, Random(s))):
                         report.add(fail(LAYER, "destroy_equal", f"destroy con la misma semilla cambió en {where}"))
                         return report
-        if slot == "greedy_score":
-            view = problem.construction_view(problem.inst)
-            for s in range(3):
-                rng, partial = Random(s), view.empty()
-                while not view.is_complete(partial):
-                    cands = list(view.candidates(partial))
-                    if not cands:
-                        break
-                    for c in cands:
-                        if not _close(old.score(partial, c), new.score(partial, c)):
-                            report.add(fail(LAYER, "score_equal", f"score(partial, {_short(c)}) cambió: antes {old.score(partial, c):.6g}, "
-                                                                  f"ahora {new.score(partial, c):.6g}"))
-                            return report
-                    partial = view.apply(partial, cands[rng.randrange(len(cands))])
     except Exception as exc:  # noqa: BLE001
         report.add(fail(LAYER, "runs", f"la versión nueva lanzó {describe_exception(exc)}"))
         return report
@@ -242,12 +198,6 @@ def component_speed(slot: str, make, problem_factory, inst, sol, seconds: float 
             n += 1
             if time.perf_counter() - t0 > seconds:
                 break
-    elif slot == "greedy_score":
-        from core.construction import GreedyConstructor
-
-        while time.perf_counter() - t0 < seconds and n < 50:
-            GreedyConstructor(problem_factory(inst), make(problem)).build(inst, Random(n))
-            n += 1
     elif slot in ("perturbation", "destruction"):
         rng = Random(0)
         while time.perf_counter() - t0 < seconds and n < 100_000:

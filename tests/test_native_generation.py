@@ -68,7 +68,7 @@ def test_the_prompt_has_no_hints_from_the_handwritten_catalog(pack):
     from llm.native_generator import NATIVE_SYSTEM_PROMPT, generation_prompt
 
     gen = importlib.import_module(pack.native_module).GENERATION
-    for slot in ("neighborhood", "perturbation", "greedy_score"):
+    for slot in ("constructor", "neighborhood", "perturbation"):
         text = (NATIVE_SYSTEM_PROMPT + generation_prompt(pack, gen, slot, 3, [])).lower()
         for word in ("crític", "critical", "cabeza", "taillard", "nowicki", "n5", "bloque crít", "handwritten"):
             assert word not in text, (slot, word)

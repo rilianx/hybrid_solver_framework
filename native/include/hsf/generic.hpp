@@ -16,7 +16,7 @@
 //   };
 //
 // `penalty` = 10 · (|costo de la solución trivial| + 1), como `core.model_parts.PartsModel`. Los esqueletos y los
-// componentes solo usan `objective`, `feasible` y lo que el modelo exponga; la vista constructiva es opcional.
+// componentes solo usan `objective`, `feasible` y lo que el modelo exponga.
 #pragma once
 
 #include "model.hpp"

@@ -8,7 +8,6 @@ from random import Random
 
 from core.assembler import Assembler
 from core.component import ComponentSpec
-from core.construction import GreedyConstructor
 from core.validation import ValidationContext
 from core.validation.base import DiversityProbe
 from core.validation.combination import CombinationProbe
@@ -34,15 +33,15 @@ def _assembler_for(problem_factory):
 
 # ------------------------------------------------------------------------------------------------------------ CLSP
 def clsp_feasible_trivial(problem, inst):
-    """Partida factible: lot-for-lot si lo es; si no, el greedy de costo marginal (lot-for-lot deja faltante cuando
+    """Partida factible: lot-for-lot si lo es; si no, setups en todos los períodos (lot-for-lot deja faltante cuando
     los tiempos de setup de todos los ítems exceden la capacidad del pico)."""
-    from tests.clsp_fixtures import LotForLotConstructor, UnitMarginalCost
+    from tests.clsp_fixtures import AllSetupsConstructor, LotForLotConstructor
 
-    sol = LotForLotConstructor().build(inst, Random(0))
-    if problem.is_feasible(sol):
-        return sol
-    sol = GreedyConstructor(problem, UnitMarginalCost(problem)).build(inst, Random(0))
-    return sol if problem.is_feasible(sol) else None
+    for ctor in (LotForLotConstructor(), AllSetupsConstructor()):
+        sol = ctor.build(inst, Random(0))
+        if problem.is_feasible(sol):
+            return sol
+    return None
 
 
 def clsp_diversity_probe(n_items: int = 10, n_periods: int = 15, seed: int = 100) -> DiversityProbe | None:
@@ -62,7 +61,7 @@ def clsp_combination_probe(probe: DiversityProbe | None, budget: float = 1.0):
     if probe is None:
         return None
     return CombinationProbe(instance=probe.problem.inst, assembler_for=_assembler_for(LotSizingModel),
-                            starts=["lot_for_lot", "greedy_unit_marginal_cost"], budget=budget)
+                            starts=["lot_for_lot", "all_setups"], budget=budget)
 
 
 def clsp_contexts(n_contexts: int = 2, n_items: int = 3, n_periods: int = 5, seed: int = 7, strict: bool = True,

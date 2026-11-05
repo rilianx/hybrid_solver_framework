@@ -74,36 +74,3 @@ def cost_terms(inst: CLSPInstance, sol) -> dict[str, float]:
     _, s, _ = _plan(inst, canonical(sol))
     setup = sum(inst.setup_cost[i] for i in range(inst.n_items) for t in range(inst.n_periods) if sol[i][t])
     return {"setup": float(setup), "inventario": sum(inst.holding_cost[i] * v for (i, _t), v in s.items())}
-
-
-# ---------------------------------------------------------------- vista constructiva
-# La de `construction.py` (cubrir la demanda del deadline más temprano desde un período anterior
-# con capacidad). En un callejón sin salida se encienden todos los setups (el plan trivial, factible).
-def _view(inst: CLSPInstance):
-    from .construction import CLSPConstructionView
-
-    return CLSPConstructionView(None, inst)
-
-
-def empty_partial(inst: CLSPInstance):
-    return _view(inst).empty()
-
-
-def candidates(inst: CLSPInstance, partial):
-    return _view(inst).candidates(partial)
-
-
-def apply_action(inst: CLSPInstance, partial, action):
-    return _view(inst).apply(partial, action)
-
-
-def is_complete(inst: CLSPInstance, partial) -> bool:
-    return _view(inst).is_complete(partial)
-
-
-def to_solution(inst: CLSPInstance, partial):
-    return canonical(partial.setup)
-
-
-def complete_partial(inst: CLSPInstance, partial, rng):
-    return trivial_solution(inst)

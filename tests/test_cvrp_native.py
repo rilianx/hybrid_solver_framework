@@ -1,4 +1,4 @@
-"""El modelo C++ del Model (rutas): mismas violaciones, costo y vista constructiva que las piezas de Python, las
+"""El modelo C++ del Model (rutas): mismas violaciones y costo que las piezas de Python, las
 instancias X de Uchoa con distancias redondeadas, y un componente C++ generado (simulado) que se valida y corre."""
 
 from __future__ import annotations
