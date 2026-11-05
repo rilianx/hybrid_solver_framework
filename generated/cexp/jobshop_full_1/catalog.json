@@ -435,5 +435,230 @@
     "HYB"
    ]
   }
+ },
+ {
+  "name": "critical_pair_exchange",
+  "slot": "neighborhood",
+  "path": "generated/cexp/jobshop_full_1/neighborhood/critical_pair_exchange_r1.hpp",
+  "component": {
+   "name": "critical_pair_exchange",
+   "slot": "neighborhood",
+   "params": {
+    "window": {
+     "type": "int",
+     "range": [
+      2,
+      15
+     ]
+    },
+    "pair": {
+     "type": "cat",
+     "values": [
+      "one_critical",
+      "both_critical"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "critical_subblock_relocation",
+  "slot": "neighborhood",
+  "path": "generated/cexp/jobshop_full_1/neighborhood/critical_subblock_relocation_r1.hpp",
+  "component": {
+   "name": "critical_subblock_relocation",
+   "slot": "neighborhood",
+   "params": {
+    "max_seg": {
+     "type": "int",
+     "range": [
+      2,
+      8
+     ]
+    },
+    "window": {
+     "type": "int",
+     "range": [
+      1,
+      15
+     ]
+    },
+    "seg": {
+     "type": "cat",
+     "values": [
+      "block_ends",
+      "any"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "job_pair_multi_machine_exchange",
+  "slot": "neighborhood",
+  "path": "generated/cexp/jobshop_full_1/neighborhood/job_pair_multi_machine_exchange_r1.hpp",
+  "component": {
+   "name": "job_pair_multi_machine_exchange",
+   "slot": "neighborhood",
+   "params": {
+    "scope": {
+     "type": "cat",
+     "values": [
+      "critical_arcs",
+      "critical_blocks",
+      "all"
+     ]
+    },
+    "span": {
+     "type": "cat",
+     "values": [
+      "adjacent_only",
+      "all_shared"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "jssp_job_ruin_reinsert",
+  "slot": "perturbation",
+  "path": "generated/cexp/jobshop_full_1/perturbation/jssp_job_ruin_reinsert_r1.hpp",
+  "component": {
+   "name": "jssp_job_ruin_reinsert",
+   "slot": "perturbation",
+   "params": {
+    "jobs_scale": {
+     "type": "float",
+     "range": [
+      0.3,
+      2.0
+     ]
+    },
+    "random_pos_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "noise_scale": {
+     "type": "float",
+     "range": [
+      0.0,
+      4.0
+     ]
+    },
+    "job_pick": {
+     "type": "cat",
+     "values": [
+      "critical",
+      "random"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "jssp_bottleneck_schrage_resequence",
+  "slot": "perturbation",
+  "path": "generated/cexp/jobshop_full_1/perturbation/jssp_bottleneck_schrage_resequence_r1.hpp",
+  "component": {
+   "name": "jssp_bottleneck_schrage_resequence",
+   "slot": "perturbation",
+   "params": {
+    "machines_scale": {
+     "type": "float",
+     "range": [
+      0.3,
+      2.0
+     ]
+    },
+    "noise_scale": {
+     "type": "float",
+     "range": [
+      0.0,
+      4.0
+     ]
+    },
+    "machine_pick": {
+     "type": "cat",
+     "values": [
+      "critical",
+      "random"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "jssp_machine_window_reshuffle",
+  "slot": "perturbation",
+  "path": "generated/cexp/jobshop_full_1/perturbation/jssp_machine_window_reshuffle_r2.hpp",
+  "component": {
+   "name": "jssp_machine_window_reshuffle",
+   "slot": "perturbation",
+   "params": {
+    "window_len": {
+     "type": "int",
+     "range": [
+      3,
+      10
+     ]
+    },
+    "windows_scale": {
+     "type": "float",
+     "range": [
+      0.3,
+      2.0
+     ]
+    },
+    "machine_pick": {
+     "type": "cat",
+     "values": [
+      "critical",
+      "random"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
  }
 ]
