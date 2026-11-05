@@ -79,4 +79,4 @@ def test_the_compact_contract_keeps_the_slot_interface_whole():
     full, compact = contract_source("neighborhood", False), contract_source("neighborhood", True)
     assert len(compact) < len(full) and "uniform_real_distribution" not in compact
     iface = full[full.index("template <class M>"):]
-    assert iface in compact
+    assert iface in compact and "lanza std::invalid_argument si falta" in compact
