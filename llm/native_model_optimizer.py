@@ -68,8 +68,8 @@ def optimize_prompt(spec, source: str, before: dict, members: list[str], min_spe
     ])
 
 
-def optimize_model(client, pack, workspace: str | Path, rounds: int = 3, min_speedup: float = 1.5, passes: int = 2,
-                   later_speedup: float = 1.2, verbose: bool = True) -> dict:
+def optimize_model(client, pack, workspace: str | Path, rounds: int = 3, min_speedup: float = 1.2, passes: int = 2,
+                   later_speedup: float = 1.1, verbose: bool = True) -> dict:
     mip_parts = pack.variants[next(iter(pack.variants))][1] if pack.variants else f"{pack.module}.model_parts"
     ws = Path(workspace)
     model_dir = ws / "model"
@@ -165,12 +165,14 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--workspace", required=True)
     ap.add_argument("--rounds", type=int, default=3)
     ap.add_argument("--passes", type=int, default=2)
+    ap.add_argument("--min-speedup", type=float, default=1.2, help="mejora exigida en la primera pasada")
+    ap.add_argument("--later-speedup", type=float, default=1.1, help="mejora exigida desde la segunda pasada")
     ap.add_argument("--provider", default="anthropic")
     ap.add_argument("--model", default=None)
     args = ap.parse_args(argv)
     t0 = time.perf_counter()
     out = optimize_model(make_client(args.provider, args.model), base_pack(args.problem), args.workspace, args.rounds,
-                         passes=args.passes)
+                         min_speedup=args.min_speedup, passes=args.passes, later_speedup=args.later_speedup)
     out["wall_seconds"] = round(time.perf_counter() - t0, 1)
     print(json.dumps({k: v for k, v in out.items()}, indent=2, ensure_ascii=False)[:4000])
 

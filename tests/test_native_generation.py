@@ -142,7 +142,7 @@ def test_chained_passes_reoptimize_what_improved_and_show_the_profile(pack, tmp_
     client = ScriptedClient(responses=[fast, fast])  # la segunda pasada no gana nada: se rechaza por velocidad
     out = optimize_native(client, pack, tmp_path, rounds=1, passes=3, verbose=False)
     first, second = out["neighborhood/adjacent_swap#1"], out["neighborhood/adjacent_swap#2"]
-    assert first["accepted"] and not second["accepted"] and second["min_speedup"] == 1.2
+    assert first["accepted"] and not second["accepted"] and second["min_speedup"] == 1.1
     assert "neighborhood/adjacent_swap#3" not in out  # lo que no mejoró ya no se vuelve a intentar
     assert "perfil por método" in client.calls[0][1] and "delta:" in client.calls[0][1]
     # un componente del mismo slot ya optimizado se muestra como referencia

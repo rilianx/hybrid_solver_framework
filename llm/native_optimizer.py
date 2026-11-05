@@ -56,7 +56,7 @@ TECHNIQUES = """- Evita rehacer lo que no cambia: calcula `delta` de forma incre
 
 
 def optimize_prompt(pack, gen: dict, comp: NativeComponent, before: dict, objective_rate: float, prof: str = "",
-                    siblings: list[NativeComponent] | None = None, min_speedup: float = 1.5) -> str:
+                    siblings: list[NativeComponent] | None = None, min_speedup: float = 1.2) -> str:
     from native.check import METRICS
 
     spec = pack.make_model_spec()
@@ -177,8 +177,8 @@ def optimize_one(client, pack, gen: dict, ws: Path, comp: NativeComponent, comps
 
 
 def optimize_native(client, pack, workspace: str | Path, slots=("neighborhood",), rounds: int = 3,
-                    min_speedup: float = 1.5, verbose: bool = True, deadline: float | None = None,
-                    passes: int = 1, later_speedup: float = 1.2, new_only: bool = False) -> dict:
+                    min_speedup: float = 1.2, verbose: bool = True, deadline: float | None = None,
+                    passes: int = 1, later_speedup: float = 1.1, new_only: bool = False) -> dict:
     """Pasadas encadenadas: en cada una, los componentes que mejoraron en la anterior se vuelven a optimizar con su
     versión nueva como oráculo (pidiendo `later_speedup` en vez de `min_speedup`); el resto ya no. Los componentes del
     mismo slot que ya se optimizaron se muestran como referencia."""
@@ -225,12 +225,12 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--workspace", required=True)
     ap.add_argument("--slots", nargs="+", default=["neighborhood"])
     ap.add_argument("--rounds", type=int, default=3)
-    ap.add_argument("--min-speedup", type=float, default=1.5)
+    ap.add_argument("--min-speedup", type=float, default=1.2)
     ap.add_argument("--provider", default="anthropic")
     ap.add_argument("--model", default=None)
     ap.add_argument("--max-minutes", type=float, default=40.0)
     ap.add_argument("--passes", type=int, default=3, help="pasadas encadenadas (los que mejoran vuelven a optimizarse)")
-    ap.add_argument("--later-speedup", type=float, default=1.2, help="mejora exigida desde la segunda pasada")
+    ap.add_argument("--later-speedup", type=float, default=1.1, help="mejora exigida desde la segunda pasada")
     ap.add_argument("--new-only", action="store_true", help="solo los componentes que nunca se optimizaron (ronda 1)")
     ap.add_argument("--full-prompts", action="store_true",
                     help="código completo de lo que el LLM solo usa, en lugar de sus prototipos (llm/outline.py)")
