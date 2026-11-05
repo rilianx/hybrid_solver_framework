@@ -1,11 +1,10 @@
 """Componentes en C++ generados por el LLM: generar → compilar → validar → corregir.
 
     python -m llm.native_generator --problem jobshop --workspace generated/jobshop_native \\
-        --slots greedy_score neighborhood perturbation --n 3 --rounds 3 --provider anthropic
+        --slots constructor neighborhood perturbation --n 3 --rounds 3 --provider anthropic
 
 Lo que ve el LLM es lo mismo que en Python, nada específico de cómo resolver el problema: la descripción,
-el header del MODELO C++ (evaluación, plan, vista constructiva; no el catálogo escrito a mano ni sus
-helpers), el contrato del slot en C++ y las reglas genéricas (delta exacto, soluciones inmutables, que
+el header del MODELO C++ (su interfaz, con prompts compactos), el contrato del slot en C++ y las reglas genéricas (delta exacto, soluciones inmutables, que
 los métodos se llaman cientos de miles de veces por segundo). Qué vecindarios usar, cómo evaluarlos o si
 conviene estimar es cosa suya.
 
@@ -70,12 +69,6 @@ SLOT_HINTS = {
         "delta)."
     ),
     "perturbation": "Se verificará: `perturb(s, strength, rng)` devuelve una solución distinta de `s` y factible (strength >= 1).",
-    "greedy_score": (
-        "Escribes SOLO el criterio de un constructor greedy: `score(partial, action)` devuelve un número, MENOR es mejor. El "
-        "bucle, la regla (greedy, lista restringida o ruleta) y la factibilidad son del framework: los candidatos ya vienen "
-        "filtrados. Se llama para cada candidato en cada paso, así que debe ser barato y no modificar `partial`. Se "
-        "verificará que el constructor que arma produce soluciones factibles y no mucho peores que la de referencia."
-    ),
     "constructor": "Se verificará: `build(rng)` devuelve una solución FACTIBLE y es determinista dada la semilla.",
     "destruction": (
         "Eliges qué parte de la solución reoptimiza el sub-MIP del esqueleto HYB: HYB alterna una búsqueda local en C++ con "
@@ -347,7 +340,7 @@ def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(prog="python -m llm.native_generator")
     ap.add_argument("--problem", required=True)
     ap.add_argument("--workspace", required=True)
-    ap.add_argument("--slots", nargs="+", default=["greedy_score", "neighborhood", "perturbation"])
+    ap.add_argument("--slots", nargs="+", default=["constructor", "neighborhood", "perturbation"])
     ap.add_argument("--n", type=int, default=3)
     ap.add_argument("--rounds", type=int, default=3)
     ap.add_argument("--provider", default="anthropic")

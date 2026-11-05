@@ -35,10 +35,20 @@ def brute_force_optimum(inst: JSSPInstance) -> tuple[float, list[list[int]]]:
 
 
 def _earliest_end(inst: JSSPInstance):
-    p = ref.empty_partial(inst)
-    while not ref.is_complete(inst, p):
-        p = ref.apply_action(inst, p, min(ref.candidates(inst, p), key=lambda a: (a.end, a.job)))
-    return ref.to_solution(inst, p)
+    """Despacho: en cada paso, la próxima operación (de cualquier trabajo) que termina antes."""
+    seqs = [[] for _ in inst.machines]
+    nxt, job_ready, mach_ready = [0] * inst.n_jobs, [0] * inst.n_jobs, [0] * inst.n_machines
+    while any(nxt[j] < len(inst.routes[j]) for j in inst.jobs):
+        cands = []
+        for j in inst.jobs:
+            if nxt[j] < len(inst.routes[j]):
+                m, p = inst.routes[j][nxt[j]]
+                s = max(job_ready[j], mach_ready[m])
+                cands.append((s + p, j, m))
+        end, j, m = min(cands)
+        seqs[m].append(j)
+        nxt[j], job_ready[j], mach_ready[m] = nxt[j] + 1, end, end
+    return ref.canonical(tuple(tuple(s) for s in seqs))
 
 
 def _cyclic(inst: JSSPInstance, rng: Random):

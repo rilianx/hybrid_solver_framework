@@ -14,7 +14,6 @@ La vista MIP la escribe el LLM (`llm.native_mip_generator`, `generated/jobshop_n
 from __future__ import annotations
 
 from random import Random
-from typing import NamedTuple
 
 from .instance import JSSPInstance
 
@@ -164,71 +163,3 @@ def critical_blocks(inst: JSSPInstance, sol, start=None) -> list[tuple[int, list
         else:
             blocks.append((m, [j]))
     return [b for b in blocks if len(b[1]) > 1]
-
-
-# ---------------------------------------------------------------- vista constructiva
-# Despacho: en cada paso se agenda la próxima operación de un trabajo al final de su máquina (el plan
-# semiactivo se arma en orden). Cualquier orden de despacho da secuencias sin ciclos.
-class JSSPPartial(NamedTuple):
-    """Estado parcial (inmutable). Atributos que puede leer un puntaje:
-      seqs[m]          trabajos ya secuenciados en la máquina m, en orden
-      nxt[j]           índice de la próxima operación del trabajo j (== len(routes[j]) si terminó)
-      job_ready[j]     cuándo termina la última operación agendada del trabajo j
-      mach_ready[m]    cuándo queda libre la máquina m
-      order            trabajos en el orden en que se despacharon sus operaciones
-    """
-
-    seqs: tuple[tuple[int, ...], ...]
-    nxt: tuple[int, ...]
-    job_ready: tuple[int, ...]
-    mach_ready: tuple[int, ...]
-    order: tuple[int, ...]
-
-
-class Dispatch(NamedTuple):
-    """Agendar la operación `op` del trabajo `job` en la máquina `machine`, de `start` a `end`."""
-
-    job: int
-    op: int
-    machine: int
-    start: int
-    end: int
-
-
-def empty_partial(inst: JSSPInstance):
-    return JSSPPartial(tuple(() for _ in inst.machines), (0,) * inst.n_jobs, (0,) * inst.n_jobs,
-                       (0,) * inst.n_machines, ())
-
-
-def candidates(inst: JSSPInstance, partial):
-    out = []
-    for j in inst.jobs:
-        k = partial.nxt[j]
-        if k < len(inst.routes[j]):
-            m, p = inst.routes[j][k]
-            s = max(partial.job_ready[j], partial.mach_ready[m])
-            out.append(Dispatch(j, k, m, s, s + p))
-    return out
-
-
-def apply_action(inst: JSSPInstance, partial, action):
-    j, k, m, _, e = action
-    seqs = list(partial.seqs)
-    seqs[m] = (*seqs[m], j)
-    nxt, jr, mr = list(partial.nxt), list(partial.job_ready), list(partial.mach_ready)
-    nxt[j], jr[j], mr[m] = k + 1, e, e
-    return JSSPPartial(tuple(seqs), tuple(nxt), tuple(jr), tuple(mr), (*partial.order, j))
-
-
-def is_complete(inst: JSSPInstance, partial) -> bool:
-    return all(partial.nxt[j] >= len(inst.routes[j]) for j in inst.jobs)
-
-
-def to_solution(inst: JSSPInstance, partial):
-    return canonical(partial.seqs)
-
-
-def complete_partial(inst: JSSPInstance, partial, rng):
-    while not is_complete(inst, partial):
-        partial = apply_action(inst, partial, candidates(inst, partial)[0])
-    return to_solution(inst, partial)

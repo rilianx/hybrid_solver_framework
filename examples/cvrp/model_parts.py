@@ -10,7 +10,6 @@ La vista MIP la escribe el LLM (`llm.native_mip_generator`, `generated/cvrp_nati
 
 from __future__ import annotations
 
-import math
 from random import Random
 
 from .instance import CVRPInstance
@@ -58,35 +57,3 @@ def cost_terms(inst: CVRPInstance, sol) -> dict[str, float]:
         nodes = (0, *r, 0)
         total += sum(inst.dist(a, b) for a, b in zip(nodes, nodes[1:]))
     return {"distancia": total}
-
-
-# ---------------------------------------------------------------- vista constructiva
-# La de `construction.py` (inserción de un cliente en una ruta donde cabe, o ruta nueva).
-def _view(inst: CVRPInstance):
-    from .construction import CVRPConstructionView
-
-    return CVRPConstructionView(None, inst)
-
-
-def empty_partial(inst: CVRPInstance):
-    return _view(inst).empty()
-
-
-def candidates(inst: CVRPInstance, partial):
-    return _view(inst).candidates(partial)
-
-
-def apply_action(inst: CVRPInstance, partial, action):
-    return _view(inst).apply(partial, action)
-
-
-def is_complete(inst: CVRPInstance, partial) -> bool:
-    return _view(inst).is_complete(partial)
-
-
-def to_solution(inst: CVRPInstance, partial):
-    return canonical(partial.routes)
-
-
-def complete_partial(inst: CVRPInstance, partial, rng):
-    return canonical([*partial.routes, *([c] for c in sorted(partial.pending))])

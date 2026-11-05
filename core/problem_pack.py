@@ -3,8 +3,7 @@
 El framework trae los esqueletos, el validador, el generador con LLM y el tuner. De cada
 problema necesita solo esto:
 
-- `problem_factory(inst)`: el `ProblemModel` ligado a una instancia (con `build_mip`,
-  `variable_groups` y, si hay constructor modular, `construction_view`);
+- `problem_factory(inst)`: el `ProblemModel` ligado a una instancia (con `build_mip` y `variable_groups`);
 - `base_components`: los componentes genéricos del framework para este problema, pares `(COMPONENT, fábrica)`
   (`core.packs.base_components`: las partidas trivial y al azar y, con vista MIP, las destrucciones de HYB); el
   resto del catálogo lo escribe el LLM;

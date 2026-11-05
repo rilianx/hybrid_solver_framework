@@ -54,19 +54,30 @@ def _answer(sol) -> list[list[int]]:
     return [list(r) for r in sol]
 
 
+def _nearest_neighbor(inst: CVRPInstance):
+    """Rutas por vecino más cercano: se agrega el cliente más cercano que cabe; si no cabe ninguno, ruta nueva."""
+    left, routes = set(inst.customers), []
+    while left:
+        route, load, at = [], 0.0, 0
+        while True:
+            fits = [c for c in left if load + inst.demand[c] <= inst.capacity]
+            if not fits:
+                break
+            c = min(fits, key=lambda c: (inst.dist(at, c), c))
+            route.append(c)
+            left.discard(c)
+            load, at = load + inst.demand[c], c
+        routes.append(route)
+    return ref.canonical(routes)
+
+
 def build_cases(sizes=(4, 5, 5, 6, 6, 6), seed: int = 2026) -> list[dict]:
-    from core.construction import GreedyConstructor
-
-    from .construction import CheapestInsertion
-    from .problem_model import CVRPModel
-
     out = []
     for k, n in enumerate(sizes):
         inst = CVRPInstance.random(n, Random(seed + k), route_size=2.5, clustered=k % 2 == 1)
-        P = CVRPModel(inst)
         opt, opt_routes = brute_force_optimum(inst)
         triv = ref.trivial_solution(inst)
-        greedy = GreedyConstructor(P, CheapestInsertion(P)).build(inst, Random(0))
+        greedy = _nearest_neighbor(inst)
         custs = list(inst.customers)
         sols = [
             {"answer": _answer(triv), "feasible": True, "cost": round(ref.cost_terms(inst, triv)["distancia"], 6)},

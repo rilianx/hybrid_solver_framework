@@ -19,7 +19,6 @@ import sys
 from pathlib import Path
 
 NATIVE_SKELETONS_FOR_SLOT = {"constructor": ["SA", "ILS", "TS", "VNS", "PR", "HYB"],
-                             "greedy_score": ["SA", "ILS", "TS", "VNS", "PR", "HYB"],
                              "neighborhood": ["SA", "ILS", "TS", "VNS", "PR", "HYB"], "perturbation": ["ILS", "PR", "HYB"],
                              "relink": ["PR"], "destruction": ["HYB"]}
 
@@ -89,7 +88,7 @@ METRICS = {"delta": "delta exacto por segundo (búsqueda local, SA)",
            "ts_step": "candidatos revisados por segundo en un paso de TS (estimate o delta de todos, delta de los 5 mejores)",
            "walk": "pasos por segundo de una trayectoria (revisar los candidatos como en TS, aplicar uno y seguir desde la "
                    "solución que devolvió apply)",
-           "perturbation": "perturbaciones por segundo", "greedy_score": "construcciones greedy completas por segundo"}
+           "perturbation": "perturbaciones por segundo"}
 
 
 WALK_FLOOR = 1.1  # por debajo, una "mejora" de la trayectoria cabe en el ruido de medir 1 s en un runner compartido
@@ -153,19 +152,17 @@ def optimize_check(request: dict) -> None:
             P = pack.problem_factory(inst)
             eq = check_component_equivalent(slot, factory(old, old_of, slot, name)(P), factory(new, parts.model, slot, name)(P),
                                             P, [mip.trivial_solution(inst)] + sols)
-        else:  # mismos puntajes = mismas construcciones con cualquier regla y semilla
+        else:  # constructor: la misma solución con la misma semilla
             from core.validation.base import ValidationReport, fail, ok
 
             eq = ValidationReport(subject=f"equivalencia ({slot})")
-            cname = f"greedy_{name}" if slot == "greedy_score" else name
-            for rule in ("greedy", "rcl", "roulette"):
-                for seed in range(3):
-                    a = old.make_constructor(old_of(inst), cname, {"rule": rule, "alpha": 0.3}).build(seed)
-                    b = new.make_constructor(parts.model(inst), cname, {"rule": rule, "alpha": 0.3}).build(seed)
-                    if a != b:
-                        eq.add(fail("equivalence", "same_constructions", f"con la regla {rule} y la semilla {seed} el "
-                                                                         f"constructor arma otra solución: los puntajes cambiaron"))
-                        break
+            for seed in range(5):
+                a = old.make_constructor(old_of(inst), name, {}).build(seed)
+                b = new.make_constructor(parts.model(inst), name, {}).build(seed)
+                if a != b:
+                    eq.add(fail("equivalence", "same_constructions", f"con la semilla {seed} el constructor arma otra "
+                                                                     f"solución"))
+                    break
             if eq.passed:
                 eq.add(ok("equivalence", "same_constructions"))
         out.update(passed=eq.passed, failed_layer=eq.failed_layer, feedback=eq.feedback())

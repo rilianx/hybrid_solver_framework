@@ -28,7 +28,7 @@ def test_all_skeletons_available_and_space_exports(assembler):
     assert set(assembler.available_skeletons()) == SKELETONS  # PR no: no hay relink
     txt = to_irace_parameters(assembler.config_space())
     assert 'skeleton "--skeleton=" c (' in txt and '"HYB"' in txt
-    assert "greedy_unit_marginal_cost" in txt
+    assert "all_setups" in txt and "lot_for_lot" in txt
 
 
 @pytest.mark.parametrize("skeleton", sorted(SKELETONS))

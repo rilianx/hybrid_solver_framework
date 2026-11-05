@@ -7,7 +7,7 @@ from random import Random
 
 import pytest
 
-from core.validation.model_parts import check_construction_view, validate_parts
+from core.validation.model_parts import validate_parts
 from examples.jobshop import model_parts
 from examples.jobshop.cases import brute_force_optimum, load_cases
 from examples.jobshop.instance import JSSPInstance
@@ -33,8 +33,6 @@ def test_the_reference_parts_pass_the_model_validator():
     from tests.mip_views import full_parts
 
     report = validate_parts(full_parts("jobshop"), cases, scale_instances=scale)  # el oráculo con la vista MIP generada
-    assert report.passed, report.feedback()
-    report = check_construction_view(model_parts, cases, scale_instances=scale)
     assert report.passed, report.feedback()
 
 

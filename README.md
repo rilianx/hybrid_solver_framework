@@ -22,7 +22,7 @@ oráculo en Python (model_parts:      └ más rápidos    native_optimizer     
    términos del costo). `native/check_model.py` lo valida en un proceso aparte contra los casos visibles y ocultos y
    contra el oráculo en Python en instancias generadas (mismas violaciones y mismo costo), y lo corrige
    con el LLM hasta `--rounds` rondas. `native_model_optimizer` pide una versión más rápida con las mismas salidas.
-2. **Componentes** (`llm/native_generator.py`): constructores (`greedy_score`), vecindarios, perturbaciones y relinks
+2. **Componentes** (`llm/native_generator.py`): constructores, vecindarios, perturbaciones y relinks
    en C++ sobre ese modelo. Se le pueden pedir también destrucciones para HYB (`--slots destruction`), pero por defecto
    el tuning usa solo las genéricas (`--generated-destructions` para incluirlas): en CLSP, job shop y CVRP las
    generadas no les ganaron (`native/generated.py` los compila juntos; las respuestas de corrección son ediciones,
@@ -47,7 +47,7 @@ en Python en `skeletons/` (misma semántica y parámetros, `core/assembler.py`; 
 
 | directorio | qué hay |
 |---|---|
-| `core/` | contratos de los slots (`contracts.py`), registro de componentes, ensamblador, modelo por piezas (`model_parts.py`), packs (`problem_pack.py`, `packs.py`), catálogo (`catalog.py`), constructor greedy modular, `MIPModel`, validación por capas (`validation/`) |
+| `core/` | contratos de los slots (`contracts.py`), registro de componentes, ensamblador, modelo por piezas (`model_parts.py`), packs (`problem_pack.py`, `packs.py`), catálogo (`catalog.py`), `MIPModel`, validación por capas (`validation/`) |
 | `skeletons/` | esqueletos en Python (referencia y HYB) |
 | `native/` | contrato y esqueletos C++ (`include/hsf/`), compilación con caché, validación del modelo y de los componentes generados |
 | `llm/` | cliente intercambiable (`client.py`: OpenAI, Anthropic, guionado) y la generación y optimización del modelo y de los componentes C++ |
@@ -69,7 +69,7 @@ en Python en `skeletons/` (misma semántica y parámetros, `core/assembler.py`; 
 
 En todos, el modelo C++ y los componentes los escribió el LLM (`generated/<problema>_native/`). Un problema nuevo
 necesita la instancia (`to_text`/`parse`, generador), la descripción para el LLM (`ModelSpec`), los casos de prueba y
-el oráculo en Python (`model_parts.py`: violaciones por familia y términos del costo, y la vista constructiva);
+el oráculo en Python (`model_parts.py`: violaciones por familia y términos del costo);
 `core.packs.parts_pack` arma el pack con los componentes base del framework (`base_components`): las partidas trivial
 y al azar y, con la vista MIP generada, dos destrucciones genéricas sobre `variable_groups` (una ventana de grupos consecutivos y
 variables al azar), así HYB está disponible aunque el LLM no haya escrito destrucciones. Ver `examples/flowshop/`.
@@ -83,7 +83,7 @@ python -m pytest -q
 export ANTHROPIC_API_KEY=...             # u OPENAI_API_KEY con --provider openai
 P=flowshop; WS=generated/${P}_native
 python -m llm.native_model_generator --problem $P --workspace $WS --provider anthropic
-python -m llm.native_generator --problem $P --workspace $WS --provider anthropic --slots greedy_score neighborhood perturbation
+python -m llm.native_generator --problem $P --workspace $WS --provider anthropic --slots constructor neighborhood perturbation
 python -m llm.native_optimizer --problem $P --workspace $WS --provider anthropic --slots neighborhood
 python -m llm.native_mip_generator --problem $P --workspace $WS --provider anthropic   # opcional: HYB
 # por defecto los prompts llevan prototipos de lo que el LLM solo usa (llm/outline.py); --full-prompts, el código completo

@@ -31,9 +31,9 @@ from typing import Any
 
 from .build import BUILD, build, import_path
 
-SLOT_BASE = {"constructor": "Constructor", "greedy_score": "GreedyScore", "neighborhood": "Neighborhood",
+SLOT_BASE = {"constructor": "Constructor", "neighborhood": "Neighborhood",
              "perturbation": "Perturbation", "relink": "Relink", "destruction": "Destruction"}
-CATALOG_FIELD = {"constructor": "constructors", "greedy_score": "scores", "neighborhood": "neighborhoods",
+CATALOG_FIELD = {"constructor": "constructors", "neighborhood": "neighborhoods",
                  "perturbation": "perturbations", "relink": "relinks", "destruction": "destructions"}
 STD_HEADERS = ["algorithm", "array", "cmath", "cstdint", "deque", "functional", "limits", "map", "memory", "numeric",
                "queue", "random", "set", "unordered_map", "unordered_set", "utility", "vector"]
@@ -146,32 +146,11 @@ class ModelCache:
 
 
 def parts_for(native, mip_parts, model_of=None) -> SimpleNamespace:
-    """Las piezas de un modelo nativo (`core.model_parts`): vista heurística y constructiva en C++, vista MIP
-    de Python (`mip_parts`)."""
-    if not hasattr(native, "empty_partial"):  # un modelo generado por el LLM (native/include/hsf/generic.hpp)
-        from .generic_model import model_parts
+    """Las piezas de un modelo nativo escrito por el LLM (`native/include/hsf/generic.hpp`): la vista heurística en
+    C++ y, de `mip_parts`, la forma canónica, `from_answer` y la vista MIP si la hay."""
+    from .generic_model import model_parts
 
-        return model_parts(native, mip_parts, model_of)
-    model_of = model_of or ModelCache(native)
-    seed = lambda rng: rng.getrandbits(63)  # noqa: E731
-    ns = SimpleNamespace(
-        native=native, model=model_of,
-        canonical=mip_parts.canonical, from_answer=mip_parts.from_answer,
-        trivial_solution=lambda inst: native.trivial_solution(model_of(inst)),
-        random_solution=lambda inst, rng: native.random_solution(model_of(inst), seed(rng)),
-        violations=lambda inst, sol: native.violations(model_of(inst), sol),
-        cost_terms=lambda inst, sol: native.cost_terms(model_of(inst), sol),
-        empty_partial=lambda inst: native.empty_partial(model_of(inst)),
-        candidates=lambda inst, p: native.candidates(model_of(inst), p),
-        apply_action=lambda inst, p, a: native.apply_action(model_of(inst), p, a),
-        is_complete=lambda inst, p: native.is_complete(model_of(inst), p),
-        to_solution=lambda inst, p: native.to_solution(model_of(inst), p),
-        complete_partial=lambda inst, p, rng: native.complete_partial(model_of(inst), p, seed(rng)),
-    )
-    for name in ("variables", "structural_variables", "to_assignment", "aux_values", "from_assignment",
-                 "constraint_families", "objective_terms", "variable_groups"):
-        setattr(ns, name, getattr(mip_parts, name))
-    return ns
+    return model_parts(native, mip_parts, model_of)
 
 
 class _Wrapper:
@@ -212,13 +191,6 @@ class NativePerturbation(_Wrapper):
         return self.h.perturb(sol, float(strength), rng.getrandbits(63))
 
 
-class NativeScore(_Wrapper):
-    _make = staticmethod(lambda nat, m, name, p: nat.make_score(m, name, p))
-
-    def score(self, partial, action) -> float:
-        return self.h.score(partial, action)
-
-
 class NativeRelink(_Wrapper):
     _make = staticmethod(lambda nat, m, name, p: nat.make_relink(m, name, p))
 
@@ -252,7 +224,7 @@ class NativeDestruction(_Wrapper):
 
 
 WRAPPERS = {"constructor": NativeConstructor, "neighborhood": NativeNeighborhood, "perturbation": NativePerturbation,
-            "greedy_score": NativeScore, "relink": NativeRelink, "destruction": NativeDestruction}
+            "relink": NativeRelink, "destruction": NativeDestruction}
 
 
 def factory(native, model_of, slot: str, name: str):

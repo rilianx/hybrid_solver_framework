@@ -10,14 +10,6 @@
 //   using Solution = ...;            // con ==, copiable
 //   double objective(const Solution&) const;   // costo + penalización (se minimiza)
 //   bool feasible(const Solution&) const;
-// y, si tiene vista constructiva (para el constructor greedy modular):
-//   using Partial = ...; using Action = ...;
-//   Partial empty() const;
-//   void candidates(const Partial&, std::vector<Action>&) const;
-//   Partial apply(const Partial&, const Action&) const;
-//   bool is_complete(const Partial&) const;
-//   Solution to_solution(const Partial&) const;
-//   Solution complete(const Partial&, Rng&) const;
 #pragma once
 
 #include <algorithm>
@@ -194,98 +186,19 @@ struct Destruction {
     virtual std::vector<int> destroy(const Sol& s, double ratio, Rng& rng) = 0;
 };
 
-// La vista constructiva es opcional: un modelo sin `Partial`/`Action` no tiene constructores greedy ni puntajes.
-struct NoConstruction {};
-template <class M, class = void>
-struct partial_of { using type = NoConstruction; };
-template <class M>
-struct partial_of<M, std::void_t<typename M::Partial>> { using type = typename M::Partial; };
-template <class M, class = void>
-struct action_of { using type = NoConstruction; };
-template <class M>
-struct action_of<M, std::void_t<typename M::Action>> { using type = typename M::Action; };
-template <class M>
-inline constexpr bool has_construction = !std::is_same_v<typename partial_of<M>::type, NoConstruction>;
-
-template <class M>
-struct GreedyScore {
-    virtual ~GreedyScore() = default;
-    virtual double score(const typename partial_of<M>::type& p, const typename action_of<M>::type& a) = 0;
-};
-
-// El constructor greedy modular (`core.construction.GreedyConstructor`): reglas greedy | rcl | roulette.
-template <class M>
-struct GreedyConstructor : Constructor<M> {
-    const M& model;
-    std::unique_ptr<GreedyScore<M>> score;
-    std::string rule;
-    double alpha;
-    GreedyConstructor(const M& m, std::unique_ptr<GreedyScore<M>> s, std::string r, double a)
-        : model(m), score(std::move(s)), rule(std::move(r)), alpha(a) {
-        if (rule != "greedy" && rule != "rcl" && rule != "roulette") throw std::invalid_argument("regla desconocida: " + rule);
-    }
-    typename M::Solution build(Rng& rng) override {
-        auto p = model.empty();
-        std::vector<typename M::Action> cands;
-        std::vector<double> sc;
-        for (int step = 0; step < 10'000'000; ++step) {
-            if (model.is_complete(p)) return model.to_solution(p);
-            cands.clear();
-            model.candidates(p, cands);
-            if (cands.empty()) return model.complete(p, rng);
-            sc.resize(cands.size());
-            for (size_t i = 0; i < cands.size(); ++i) {
-                sc[i] = score->score(p, cands[i]);
-                if (!std::isfinite(sc[i])) throw std::runtime_error("el puntaje devolvió NaN o infinito");
-            }
-            p = model.apply(p, cands[pick(sc, rng)]);
-        }
-        throw std::runtime_error("la construcción no terminó");
-    }
-    size_t pick(const std::vector<double>& sc, Rng& rng) {
-        size_t best = std::min_element(sc.begin(), sc.end()) - sc.begin();
-        if (rule == "greedy") return best;
-        double lo = sc[best], hi = *std::max_element(sc.begin(), sc.end());
-        if (rule == "rcl") {
-            double cut = lo + alpha * (hi - lo) + 1e-12;
-            std::vector<size_t> pool;
-            for (size_t i = 0; i < sc.size(); ++i) if (sc[i] <= cut) pool.push_back(i);
-            return pool[rng.below((int)pool.size())];
-        }
-        double eps = 1e-9 + 1e-6 * (hi - lo), total = 0.0;
-        for (double s : sc) total += 1.0 / (s - lo + eps);
-        double r = rng.uniform() * total, acc = 0.0;
-        for (size_t i = 0; i < sc.size(); ++i) {
-            acc += 1.0 / (sc[i] - lo + eps);
-            if (acc >= r) return i;
-        }
-        return sc.size() - 1;
-    }
-};
-
 // ------------------------------------------------------------------ catálogo
 template <class M>
 struct Catalog {
     using Params = Config;
     std::map<std::string, std::function<std::unique_ptr<Constructor<M>>(const M&, const Params&)>> constructors;
-    std::map<std::string, std::function<std::unique_ptr<GreedyScore<M>>(const M&, const Params&)>> scores;
     std::map<std::string, std::function<std::unique_ptr<Neighborhood<M>>(const M&, const Params&)>> neighborhoods;
     std::map<std::string, std::function<std::unique_ptr<Perturbation<M>>(const M&, const Params&)>> perturbations;
     std::map<std::string, std::function<std::unique_ptr<Relink<M>>(const M&, const Params&)>> relinks;
     std::map<std::string, std::function<std::unique_ptr<Destruction<M>>(const M&, const Params&)>> destructions;
 
-    // `greedy_<puntaje>` es el constructor greedy con ese puntaje (como en `llm.catalog`)
     std::unique_ptr<Constructor<M>> constructor(const std::string& name, const M& m, const Config& cfg) const {
-        Params p = cfg.scoped(name);
         auto it = constructors.find(name);
-        if (it != constructors.end()) return it->second(m, p);
-        if constexpr (has_construction<M>) {
-            if (name.rfind("greedy_", 0) == 0) {
-                auto s = scores.find(name.substr(7));
-                if (s != scores.end())
-                    return std::make_unique<GreedyConstructor<M>>(m, s->second(m, p), p.text("rule", "greedy"), p.get("alpha", 0.2));
-            }
-        }
+        if (it != constructors.end()) return it->second(m, cfg.scoped(name));
         throw std::invalid_argument("constructor desconocido: " + name);
     }
     std::unique_ptr<Neighborhood<M>> neighborhood(const std::string& name, const M& m, const Config& cfg) const {

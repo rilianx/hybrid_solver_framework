@@ -145,7 +145,7 @@ class ValidationContext:
 _CORE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _LIBS = (os.path.dirname(os.__file__) + os.sep,)
 _FRAMEWORK = (os.path.join(_CORE, "validation") + os.sep,
-              *(os.path.join(_CORE, f) for f in ("model_parts.py", "skeleton.py", "neighborhood.py", "construction.py")))
+              *(os.path.join(_CORE, f) for f in ("model_parts.py", "skeleton.py", "neighborhood.py")))
 
 
 def describe_exception(exc: BaseException, frames: int = 3) -> str:

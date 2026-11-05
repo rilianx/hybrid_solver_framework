@@ -47,11 +47,6 @@ struct PertHandle {
     std::unique_ptr<Perturbation<M>> impl;
 };
 template <class M>
-struct ScoreHandle {
-    std::shared_ptr<M> model;
-    std::unique_ptr<GreedyScore<M>> impl;
-};
-template <class M>
 struct RelinkHandle {
     std::shared_ptr<M> model;
     std::unique_ptr<Relink<M>> impl;
@@ -110,20 +105,10 @@ void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy 
             return to_py(h.impl->build(rng));
         });
 
-    py::class_<ScoreHandle<M>>(mod, "GreedyScore", py::module_local())
-        .def("score", [](ScoreHandle<M>& h, const typename partial_of<M>::type& p, const typename action_of<M>::type& a) {
-            return h.impl->score(p, a);
-        });
-    mod.def("make_score", [catalog](Model m, const std::string& name, py::dict params) {
-        auto it = catalog->scores.find(name);
-        if (it == catalog->scores.end()) throw std::invalid_argument("puntaje desconocido: " + name);
-        return ScoreHandle<M>{m, it->second(*m, config_from(params))};
-    });
     mod.def("names", [catalog]() {
         py::dict d;
         auto keys = [](const auto& m) { py::list l; for (auto& [k, _] : m) l.append(k); return l; };
         d["constructor"] = keys(catalog->constructors);
-        d["greedy_score"] = keys(catalog->scores);
         d["neighborhood"] = keys(catalog->neighborhoods);
         d["perturbation"] = keys(catalog->perturbations);
         d["relink"] = keys(catalog->relinks);
@@ -248,8 +233,8 @@ void bind_model(py::module_& mod, const Catalog<M>* catalog, ToPy to_py, FromPy 
             auto pert = catalog->perturbation(name, *m, scoped);
             for (; busy() < seconds; refresh())
                 for (auto& s : sols) { pert->perturb(s, 1.0, rng); ++n; }
-        } else if (slot == "greedy_score" || slot == "constructor") {
-            auto ctor = catalog->constructor(slot == "greedy_score" ? "greedy_" + name : name, *m, scoped);
+        } else if (slot == "constructor") {
+            auto ctor = catalog->constructor(name, *m, scoped);
             while (busy() < seconds) { ctor->build(rng); ++n; }
         } else {
             throw std::invalid_argument("bench: slot sin medición: " + slot);
