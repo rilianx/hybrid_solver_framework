@@ -21,6 +21,7 @@ import argparse
 import ast
 import inspect
 import json
+import os
 import re
 import time
 from pathlib import Path
@@ -29,6 +30,7 @@ from core.model_parts import HEURISTIC_PARTS, MIP_PARTS
 from core.validation.base import ValidationReport, describe_exception, fail
 from native.edits import EditError, apply_edits, find_edits
 
+from . import outline
 from .client import TokenUsage
 
 _PY = re.compile(r"```python\s*\n(.*?)```", re.DOTALL)
@@ -110,7 +112,8 @@ def mip_prompt(spec, cases, oracle, names: list[str]) -> str:
     return "\n".join([
         f"# Tarea\nEscribe la vista MIP del problema **{spec.name}**, como datos (ver el contrato).",
         f"\n# El problema\n{spec.description}",
-        f"\n# La instancia (`{spec.instance_import}`)\n```python\n{spec.instance_source}\n```",
+        f"\n# La instancia (`{spec.instance_import}`)\n```python\n"
+        f"{outline.py_outline(spec.instance_source) if outline.compact_default() else spec.instance_source}\n```",
         f"\n# Familias de restricciones y términos del costo\n{spec.families}",
         f"\n# El oráculo (`{oracle.__name__}`)\nDefine qué es una solución, qué viola y cuánto cuesta; tu formulación tiene "
         f"que coincidir con él. Puedes importar estas funciones con `from {oracle.__name__} import ...`: "
@@ -194,7 +197,8 @@ def generate_mip(client, pack, workspace: str | Path, rounds: int = 4, time_limi
     names = oracle_names(oracle)
     forbidden = [m for m in spec.forbidden_modules if m != oracle.__name__]
     scale = pack.make_instances(2, 900, pack.parse_size(pack.default_size))
-    stats = {"problem": pack.name, "rounds": 0, "accepted": False, "rejections": [], "reply_modes": [],
+    stats = {"problem": pack.name, "compact_prompts": outline.compact_default(), "rounds": 0, "accepted": False,
+             "rejections": [], "reply_modes": [],
              "model": getattr(client, "model", None)}
     tokens = TokenUsage()
     prompt, source = mip_prompt(spec, cases, oracle, names), None
@@ -255,7 +259,11 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--rounds", type=int, default=4)
     ap.add_argument("--provider", default="anthropic")
     ap.add_argument("--model", default=None)
+    ap.add_argument("--compact-prompts", action="store_true",
+                    help="prototipos en lugar del código completo de lo que el LLM solo usa (llm/outline.py)")
     args = ap.parse_args(argv)
+    if args.compact_prompts:
+        os.environ[outline.ENV] = "1"
     stats = generate_mip(make_client(args.provider, args.model), base_pack(args.problem), args.workspace, args.rounds)
     print(json.dumps({k: v for k, v in stats.items() if k != "rejections"}, indent=2, ensure_ascii=False))
 
