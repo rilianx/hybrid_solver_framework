@@ -44,8 +44,8 @@ using Move = std::array<int, 7>;
 struct Rng {
     std::mt19937_64 g;
     explicit Rng(uint64_t seed) : g(seed) {}
-    double uniform() { return std::uniform_real_distribution<double>(0.0, 1.0)(g); }
-    int below(int n) { return std::uniform_int_distribution<int>(0, n - 1)(g); }
+    double uniform();  // uniforme en [0, 1)
+    int below(int n);  // entero uniforme en [0, n)
 };
 
 struct Clock {
@@ -59,33 +59,45 @@ struct Clock {
 struct Config {
     std::map<std::string, double> num;
     std::map<std::string, std::string> str;
-    double get(const std::string& k) const {  // lanza std::invalid_argument si falta
-        auto it = num.find(k);
-        if (it == num.end()) throw std::invalid_argument("falta el parámetro numérico '" + k + "' en la configuración");
-        return it->second;
-    }
-    double get(const std::string& k, double def) const {  // `def` si falta
-        auto it = num.find(k);
-        return it == num.end() ? def : it->second;
-    }
-    std::string text(const std::string& k) const {  // lanza std::invalid_argument si falta
-        auto it = str.find(k);
-        if (it == str.end()) throw std::invalid_argument("falta '" + k + "' en la configuración");
-        return it->second;
-    }
-    std::string text(const std::string& k, const std::string& def) const {  // `def` si falta
-        auto it = str.find(k);
-        return it == str.end() ? def : it->second;
-    }
+    double get(const std::string& k) const;  // lanza std::invalid_argument si falta
+    double get(const std::string& k, double def) const;  // `def` si falta
+    std::string text(const std::string& k) const;  // lanza std::invalid_argument si falta
+    std::string text(const std::string& k, const std::string& def) const;  // `def` si falta
     // los parámetros de un componente: las claves "<nombre>.<param>"
-    Config scoped(const std::string& name) const {
-        Config out;
-        std::string pre = name + ".";
-        for (auto& [k, v] : num) if (k.rfind(pre, 0) == 0) out.num[k.substr(pre.size())] = v;
-        for (auto& [k, v] : str) if (k.rfind(pre, 0) == 0) out.str[k.substr(pre.size())] = v;
-        return out;
-    }
+    Config scoped(const std::string& name) const;
 };
+
+// ------------------------------------------------------------------ definiciones de Rng y Config
+// (los prompts compactos muestran solo las declaraciones de arriba; los completos, también esta sección)
+inline double Rng::uniform() { return std::uniform_real_distribution<double>(0.0, 1.0)(g); }
+inline int Rng::below(int n) { return std::uniform_int_distribution<int>(0, n - 1)(g); }
+
+inline double Config::get(const std::string& k) const {
+    auto it = num.find(k);
+    if (it == num.end()) throw std::invalid_argument("falta el parámetro numérico '" + k + "' en la configuración");
+    return it->second;
+}
+inline double Config::get(const std::string& k, double def) const {
+    auto it = num.find(k);
+    return it == num.end() ? def : it->second;
+}
+inline std::string Config::text(const std::string& k) const {
+    auto it = str.find(k);
+    if (it == str.end()) throw std::invalid_argument("falta '" + k + "' en la configuración");
+    return it->second;
+}
+inline std::string Config::text(const std::string& k, const std::string& def) const {
+    auto it = str.find(k);
+    return it == str.end() ? def : it->second;
+}
+inline Config Config::scoped(const std::string& name) const {
+    Config out;
+    std::string pre = name + ".";
+    for (auto& [k, v] : num) if (k.rfind(pre, 0) == 0) out.num[k.substr(pre.size())] = v;
+    for (auto& [k, v] : str) if (k.rfind(pre, 0) == 0) out.str[k.substr(pre.size())] = v;
+    return out;
+}
+// ------------------------------------------------------------------ fin de las definiciones de Rng y Config
 
 // ------------------------------------------------------------------ contratos de los slots
 template <class M>

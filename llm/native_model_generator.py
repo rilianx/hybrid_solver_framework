@@ -48,8 +48,13 @@ Formato de salida: el bloque ```cpp```, con una línea breve antes. Nada más.""
 def contract_text() -> str:
     head = (INCLUDE / "hsf" / "generic.hpp").read_text()
     contract = head[:head.index("#pragma once")].strip()
+    from .native_generator import rng_config_definitions
+
     core = (INCLUDE / "hsf" / "core.hpp").read_text()
     rng = core[core.index("struct Rng"):core.index("};", core.index("struct Rng")) + 2]
+    if not outline.compact_default():
+        defs = rng_config_definitions(core)
+        rng += "\n" + "\n".join(line for line in defs.splitlines() if line.startswith("inline") and "Rng::" in line)
     return f"{contract}\n\n// en <hsf/core.hpp>:\nnamespace hsf {{\n{rng}\n}}"
 
 
