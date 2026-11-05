@@ -435,5 +435,210 @@
     "HYB"
    ]
   }
+ },
+ {
+  "name": "job_pair_global_exchange",
+  "slot": "neighborhood",
+  "path": "generated/cexp/jobshop_compact_2/neighborhood/job_pair_global_exchange_r1.hpp",
+  "component": {
+   "name": "job_pair_global_exchange",
+   "slot": "neighborhood",
+   "params": {
+    "mode": {
+     "type": "cat",
+     "values": [
+      "critical_arcs",
+      "critical_window"
+     ]
+    },
+    "window": {
+     "type": "int",
+     "range": [
+      1,
+      6
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "machine_resequence_heads_tails",
+  "slot": "neighborhood",
+  "path": "generated/cexp/jobshop_compact_2/neighborhood/machine_resequence_heads_tails_r1.hpp",
+  "component": {
+   "name": "machine_resequence_heads_tails",
+   "slot": "neighborhood",
+   "params": {
+    "rules": {
+     "type": "cat",
+     "values": [
+      "all",
+      "schrage"
+     ]
+    },
+    "machines": {
+     "type": "cat",
+     "values": [
+      "critical",
+      "all"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "job_shift_all_machines",
+  "slot": "neighborhood",
+  "path": "generated/cexp/jobshop_compact_2/neighborhood/job_shift_all_machines_r2.hpp",
+  "component": {
+   "name": "job_shift_all_machines",
+   "slot": "neighborhood",
+   "params": {
+    "max_shift": {
+     "type": "int",
+     "range": [
+      2,
+      6
+     ]
+    },
+    "where": {
+     "type": "cat",
+     "values": [
+      "all_machines",
+      "critical_machines"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "jssp_bottleneck_machine_schrage_resequence",
+  "slot": "perturbation",
+  "path": "generated/cexp/jobshop_compact_2/perturbation/jssp_bottleneck_machine_schrage_resequence_r1.hpp",
+  "component": {
+   "name": "jssp_bottleneck_machine_schrage_resequence",
+   "slot": "perturbation",
+   "params": {
+    "machines_scale": {
+     "type": "float",
+     "range": [
+      0.5,
+      3.0
+     ]
+    },
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      4.0
+     ]
+    },
+    "pick": {
+     "type": "cat",
+     "values": [
+      "critical",
+      "load",
+      "random"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "jssp_job_removal_greedy_reinsertion",
+  "slot": "perturbation",
+  "path": "generated/cexp/jobshop_compact_2/perturbation/jssp_job_removal_greedy_reinsertion_r1.hpp",
+  "component": {
+   "name": "jssp_job_removal_greedy_reinsertion",
+   "slot": "perturbation",
+   "params": {
+    "jobs_scale": {
+     "type": "float",
+     "range": [
+      0.5,
+      3.0
+     ]
+    },
+    "rcl_alpha": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "focus": {
+     "type": "cat",
+     "values": [
+      "critical",
+      "random"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "jssp_time_window_giffler_thompson_rebuild",
+  "slot": "perturbation",
+  "path": "generated/cexp/jobshop_compact_2/perturbation/jssp_time_window_giffler_thompson_rebuild_r2.hpp",
+  "component": {
+   "name": "jssp_time_window_giffler_thompson_rebuild",
+   "slot": "perturbation",
+   "params": {
+    "window_frac": {
+     "type": "float",
+     "range": [
+      0.03,
+      0.5
+     ]
+    },
+    "rule": {
+     "type": "cat",
+     "values": [
+      "random",
+      "mwr",
+      "spt"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
  }
 ]

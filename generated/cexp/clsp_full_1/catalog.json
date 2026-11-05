@@ -1,0 +1,325 @@
+[
+ {
+  "name": "setup_relocate_window_merge",
+  "slot": "neighborhood",
+  "path": "generated/cexp/clsp_full_1/neighborhood/setup_relocate_window_merge_r1.hpp",
+  "component": {
+   "name": "setup_relocate_window_merge",
+   "slot": "neighborhood",
+   "params": {
+    "window": {
+     "type": "int",
+     "range": [
+      1,
+      6
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "block_consolidate_expand",
+  "slot": "neighborhood",
+  "path": "generated/cexp/clsp_full_1/neighborhood/block_consolidate_expand_r1.hpp",
+  "component": {
+   "name": "block_consolidate_expand",
+   "slot": "neighborhood",
+   "params": {
+    "max_len": {
+     "type": "int",
+     "range": [
+      1,
+      8
+     ]
+    },
+    "expand": {
+     "type": "cat",
+     "values": [
+      "on",
+      "off"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "setup_flip_segment_estimate",
+  "slot": "neighborhood",
+  "path": "generated/cexp/clsp_full_1/neighborhood/setup_flip_segment_estimate_r3.hpp",
+  "component": {
+   "name": "setup_flip_segment_estimate",
+   "slot": "neighborhood",
+   "params": {
+    "est_penalty_scale": {
+     "type": "float",
+     "range": [
+      0.1,
+      2.0
+     ]
+    },
+    "seg_min": {
+     "type": "int",
+     "range": [
+      2,
+      4
+     ]
+    },
+    "seg_max": {
+     "type": "int",
+     "range": [
+      3,
+      8
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "random_setup_flip_kick_repair",
+  "slot": "perturbation",
+  "path": "generated/cexp/clsp_full_1/perturbation/random_setup_flip_kick_repair_r1.hpp",
+  "component": {
+   "name": "random_setup_flip_kick_repair",
+   "slot": "perturbation",
+   "params": {
+    "flip_per_strength": {
+     "type": "float",
+     "range": [
+      0.5,
+      3.0
+     ]
+    },
+    "add_bias": {
+     "type": "float",
+     "range": [
+      0.2,
+      0.8
+     ]
+    },
+    "repair_iters": {
+     "type": "int",
+     "range": [
+      5,
+      80
+     ]
+    },
+    "latest_bias": {
+     "type": "float",
+     "range": [
+      0.3,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "lot_shift_merge_split",
+  "slot": "perturbation",
+  "path": "generated/cexp/clsp_full_1/perturbation/lot_shift_merge_split_r1.hpp",
+  "component": {
+   "name": "lot_shift_merge_split",
+   "slot": "perturbation",
+   "params": {
+    "ops_per_strength": {
+     "type": "float",
+     "range": [
+      0.5,
+      3.0
+     ]
+    },
+    "p_shift": {
+     "type": "float",
+     "range": [
+      0.2,
+      0.8
+     ]
+    },
+    "shift_max": {
+     "type": "int",
+     "range": [
+      1,
+      3
+     ]
+    },
+    "repair_iters": {
+     "type": "int",
+     "range": [
+      5,
+      80
+     ]
+    },
+    "latest_bias": {
+     "type": "float",
+     "range": [
+      0.3,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "window_ruin_silver_meal_rebuild",
+  "slot": "perturbation",
+  "path": "generated/cexp/clsp_full_1/perturbation/window_ruin_silver_meal_rebuild_r1.hpp",
+  "component": {
+   "name": "window_ruin_silver_meal_rebuild",
+   "slot": "perturbation",
+   "params": {
+    "win_base": {
+     "type": "int",
+     "range": [
+      1,
+      6
+     ]
+    },
+    "win_per_strength": {
+     "type": "float",
+     "range": [
+      0.5,
+      3.0
+     ]
+    },
+    "item_frac": {
+     "type": "float",
+     "range": [
+      0.1,
+      1.0
+     ]
+    },
+    "sm_noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.6
+     ]
+    },
+    "repair_iters": {
+     "type": "int",
+     "range": [
+      5,
+      80
+     ]
+    },
+    "latest_bias": {
+     "type": "float",
+     "range": [
+      0.3,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "hamming_cell_flip_setup_first",
+  "slot": "relink",
+  "path": "generated/cexp/clsp_full_1/relink/hamming_cell_flip_setup_first_r1.hpp",
+  "component": {
+   "name": "hamming_cell_flip_setup_first",
+   "slot": "relink",
+   "params": {
+    "on_first": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "flips": {
+     "type": "int",
+     "range": [
+      1,
+      3
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "item_run_segment_copy",
+  "slot": "relink",
+  "path": "generated/cexp/clsp_full_1/relink/item_run_segment_copy_r1.hpp",
+  "component": {
+   "name": "item_run_segment_copy",
+   "slot": "relink",
+   "params": {
+    "pick": {
+     "type": "cat",
+     "values": [
+      "uniform",
+      "short",
+      "long"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "period_column_window_copy",
+  "slot": "relink",
+  "path": "generated/cexp/clsp_full_1/relink/period_column_window_copy_r1.hpp",
+  "component": {
+   "name": "period_column_window_copy",
+   "slot": "relink",
+   "params": {
+    "window": {
+     "type": "int",
+     "range": [
+      1,
+      3
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ }
+]

@@ -435,5 +435,232 @@
     "HYB"
    ]
   }
+ },
+ {
+  "name": "job_pair_global_swap",
+  "slot": "neighborhood",
+  "path": "generated/cexp/jobshop_full_2/neighborhood/job_pair_global_swap_r1.hpp",
+  "component": {
+   "name": "job_pair_global_swap",
+   "slot": "neighborhood",
+   "params": {
+    "scope": {
+     "type": "cat",
+     "values": [
+      "block_pairs",
+      "adjacent"
+     ]
+    },
+    "window": {
+     "type": "int",
+     "range": [
+      1,
+      10
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "critical_segment_oropt_shift",
+  "slot": "neighborhood",
+  "path": "generated/cexp/jobshop_full_2/neighborhood/critical_segment_oropt_shift_r1.hpp",
+  "component": {
+   "name": "critical_segment_oropt_shift",
+   "slot": "neighborhood",
+   "params": {
+    "max_seg": {
+     "type": "int",
+     "range": [
+      2,
+      8
+     ]
+    },
+    "window": {
+     "type": "int",
+     "range": [
+      2,
+      15
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "priority_rule_window_resequence",
+  "slot": "neighborhood",
+  "path": "generated/cexp/jobshop_full_2/neighborhood/priority_rule_window_resequence_r2.hpp",
+  "component": {
+   "name": "priority_rule_window_resequence",
+   "slot": "neighborhood",
+   "params": {
+    "max_window": {
+     "type": "int",
+     "range": [
+      3,
+      12
+     ]
+    },
+    "rules": {
+     "type": "cat",
+     "values": [
+      "all",
+      "release",
+      "tail"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "jssp_schrage_machine_reoptimize",
+  "slot": "perturbation",
+  "path": "generated/cexp/jobshop_full_2/perturbation/jssp_schrage_machine_reoptimize_r1.hpp",
+  "component": {
+   "name": "jssp_schrage_machine_reoptimize",
+   "slot": "perturbation",
+   "params": {
+    "machines_scale": {
+     "type": "float",
+     "range": [
+      0.5,
+      3.0
+     ]
+    },
+    "tail_noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      3.0
+     ]
+    },
+    "critical_bias": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "jssp_machine_window_permute",
+  "slot": "perturbation",
+  "path": "generated/cexp/jobshop_full_2/perturbation/jssp_machine_window_permute_r1.hpp",
+  "component": {
+   "name": "jssp_machine_window_permute",
+   "slot": "perturbation",
+   "params": {
+    "win_scale": {
+     "type": "float",
+     "range": [
+      1.0,
+      4.0
+     ]
+    },
+    "n_windows": {
+     "type": "int",
+     "range": [
+      1,
+      4
+     ]
+    },
+    "machine_pick": {
+     "type": "cat",
+     "values": [
+      "critical",
+      "load",
+      "uniform"
+     ]
+    },
+    "window_op": {
+     "type": "cat",
+     "values": [
+      "shuffle",
+      "reverse"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "jssp_job_ruin_gt_rebuild",
+  "slot": "perturbation",
+  "path": "generated/cexp/jobshop_full_2/perturbation/jssp_job_ruin_gt_rebuild_r2.hpp",
+  "component": {
+   "name": "jssp_job_ruin_gt_rebuild",
+   "slot": "perturbation",
+   "params": {
+    "jobs_scale": {
+     "type": "float",
+     "range": [
+      0.5,
+      3.0
+     ]
+    },
+    "delay_ratio": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "critical_bias": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "ruined_priority": {
+     "type": "cat",
+     "values": [
+      "random",
+      "first",
+      "last"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
  }
 ]

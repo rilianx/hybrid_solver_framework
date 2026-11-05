@@ -435,5 +435,234 @@
     "HYB"
    ]
   }
+ },
+ {
+  "name": "critical_block_pair_exchange",
+  "slot": "neighborhood",
+  "path": "generated/cexp/jobshop_full_3/neighborhood/critical_block_pair_exchange_r1.hpp",
+  "component": {
+   "name": "critical_block_pair_exchange",
+   "slot": "neighborhood",
+   "params": {
+    "window": {
+     "type": "int",
+     "range": [
+      2,
+      15
+     ]
+    },
+    "members": {
+     "type": "cat",
+     "values": [
+      "ends",
+      "all"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "job_priority_shift_all_machines",
+  "slot": "neighborhood",
+  "path": "generated/cexp/jobshop_full_3/neighborhood/job_priority_shift_all_machines_r1.hpp",
+  "component": {
+   "name": "job_priority_shift_all_machines",
+   "slot": "neighborhood",
+   "params": {
+    "max_shift": {
+     "type": "int",
+     "range": [
+      1,
+      8
+     ]
+    },
+    "extremes": {
+     "type": "cat",
+     "values": [
+      "yes",
+      "no"
+     ]
+    },
+    "focus": {
+     "type": "cat",
+     "values": [
+      "critical",
+      "all"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "dispatch_rule_window_resequence",
+  "slot": "neighborhood",
+  "path": "generated/cexp/jobshop_full_3/neighborhood/dispatch_rule_window_resequence_r1.hpp",
+  "component": {
+   "name": "dispatch_rule_window_resequence",
+   "slot": "neighborhood",
+   "params": {
+    "window": {
+     "type": "int",
+     "range": [
+      3,
+      12
+     ]
+    },
+    "rules": {
+     "type": "cat",
+     "values": [
+      "all",
+      "ready",
+      "tail",
+      "slack"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "jssp_job_ruin_gap_reinsert",
+  "slot": "perturbation",
+  "path": "generated/cexp/jobshop_full_3/perturbation/jssp_job_ruin_gap_reinsert_r1.hpp",
+  "component": {
+   "name": "jssp_job_ruin_gap_reinsert",
+   "slot": "perturbation",
+   "params": {
+    "jobs_base": {
+     "type": "int",
+     "range": [
+      1,
+      6
+     ]
+    },
+    "greed": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "select": {
+     "type": "cat",
+     "values": [
+      "random",
+      "critical"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "jssp_machine_window_resequence",
+  "slot": "perturbation",
+  "path": "generated/cexp/jobshop_full_3/perturbation/jssp_machine_window_resequence_r1.hpp",
+  "component": {
+   "name": "jssp_machine_window_resequence",
+   "slot": "perturbation",
+   "params": {
+    "window_scale": {
+     "type": "float",
+     "range": [
+      1.0,
+      5.0
+     ]
+    },
+    "windows_per_strength": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "machine_pick": {
+     "type": "cat",
+     "values": [
+      "critical",
+      "load",
+      "uniform"
+     ]
+    },
+    "rule": {
+     "type": "cat",
+     "values": [
+      "mixed",
+      "shuffle",
+      "reverse",
+      "head_sort"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "jssp_job_pair_cross_machine_exchange",
+  "slot": "perturbation",
+  "path": "generated/cexp/jobshop_full_3/perturbation/jssp_job_pair_cross_machine_exchange_r1.hpp",
+  "component": {
+   "name": "jssp_job_pair_cross_machine_exchange",
+   "slot": "perturbation",
+   "params": {
+    "pair_radius": {
+     "type": "int",
+     "range": [
+      1,
+      8
+     ]
+    },
+    "machine_frac": {
+     "type": "float",
+     "range": [
+      0.05,
+      1.0
+     ]
+    },
+    "seed": {
+     "type": "cat",
+     "values": [
+      "critical",
+      "uniform"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
  }
 ]

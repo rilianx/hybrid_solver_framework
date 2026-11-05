@@ -1,0 +1,269 @@
+[
+ {
+  "name": "setup_flip",
+  "slot": "neighborhood",
+  "path": "generated/cexp/clsp_compact_2/neighborhood/setup_flip_r1.hpp",
+  "component": {
+   "name": "setup_flip",
+   "slot": "neighborhood",
+   "params": {},
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "setup_block_assign",
+  "slot": "neighborhood",
+  "path": "generated/cexp/clsp_compact_2/neighborhood/setup_block_assign_r1.hpp",
+  "component": {
+   "name": "setup_block_assign",
+   "slot": "neighborhood",
+   "params": {
+    "max_len": {
+     "type": "int",
+     "range": [
+      2,
+      8
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "setup_time_shift",
+  "slot": "neighborhood",
+  "path": "generated/cexp/clsp_compact_2/neighborhood/setup_time_shift_r3.hpp",
+  "component": {
+   "name": "setup_time_shift",
+   "slot": "neighborhood",
+   "params": {
+    "window": {
+     "type": "int",
+     "range": [
+      1,
+      12
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "biased_random_setup_flips",
+  "slot": "perturbation",
+  "path": "generated/cexp/clsp_compact_2/perturbation/biased_random_setup_flips_r1.hpp",
+  "component": {
+   "name": "biased_random_setup_flips",
+   "slot": "perturbation",
+   "params": {
+    "scale": {
+     "type": "float",
+     "range": [
+      0.5,
+      3.0
+     ]
+    },
+    "close_bias": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "attempts": {
+     "type": "int",
+     "range": [
+      2,
+      20
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "setup_time_shift_merge",
+  "slot": "perturbation",
+  "path": "generated/cexp/clsp_compact_2/perturbation/setup_time_shift_merge_r1.hpp",
+  "component": {
+   "name": "setup_time_shift_merge",
+   "slot": "perturbation",
+   "params": {
+    "scale": {
+     "type": "float",
+     "range": [
+      0.5,
+      3.0
+     ]
+    },
+    "window": {
+     "type": "int",
+     "range": [
+      1,
+      4
+     ]
+    },
+    "early_bias": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "attempts": {
+     "type": "int",
+     "range": [
+      2,
+      20
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "window_ruin_silver_meal_rebuild",
+  "slot": "perturbation",
+  "path": "generated/cexp/clsp_compact_2/perturbation/window_ruin_silver_meal_rebuild_r1.hpp",
+  "component": {
+   "name": "window_ruin_silver_meal_rebuild",
+   "slot": "perturbation",
+   "params": {
+    "len_factor": {
+     "type": "float",
+     "range": [
+      1.0,
+      4.0
+     ]
+    },
+    "item_frac": {
+     "type": "float",
+     "range": [
+      0.05,
+      0.5
+     ]
+    },
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.5
+     ]
+    },
+    "cap_frac": {
+     "type": "float",
+     "range": [
+      0.3,
+      1.0
+     ]
+    },
+    "attempts": {
+     "type": "int",
+     "range": [
+      2,
+      12
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "hamming_multi_flip_relink",
+  "slot": "relink",
+  "path": "generated/cexp/clsp_compact_2/relink/hamming_multi_flip_relink_r1.hpp",
+  "component": {
+   "name": "hamming_multi_flip_relink",
+   "slot": "relink",
+   "params": {
+    "max_flips": {
+     "type": "int",
+     "range": [
+      1,
+      4
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "item_row_copy_relink",
+  "slot": "relink",
+  "path": "generated/cexp/clsp_compact_2/relink/item_row_copy_relink_r1.hpp",
+  "component": {
+   "name": "item_row_copy_relink",
+   "slot": "relink",
+   "params": {
+    "bias": {
+     "type": "cat",
+     "values": [
+      "uniform",
+      "setup_cost",
+      "diff_size"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "setup_run_segment_relink",
+  "slot": "relink",
+  "path": "generated/cexp/clsp_compact_2/relink/setup_run_segment_relink_r1.hpp",
+  "component": {
+   "name": "setup_run_segment_relink",
+   "slot": "relink",
+   "params": {
+    "pick": {
+     "type": "cat",
+     "values": [
+      "uniform",
+      "short_first",
+      "long_first"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ }
+]
