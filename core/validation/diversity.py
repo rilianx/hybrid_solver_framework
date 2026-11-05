@@ -198,8 +198,20 @@ def destruction_signature(
     return {k: mean(r.get(k, 0.0) for r in rows) for k in keys}
 
 
+def tiebreak_signature(impl, sol, problem=None, n: int = 30) -> set:
+    """El orden que da el desempate a un conjunto fijo de soluciones (la de la sonda y `n` al azar): los pares (i, j) con
+    score_i < score_j. Dos desempates que ordenan igual (aunque con otra escala) dan 1."""
+    sols = [sol]
+    gen = getattr(problem, "random_solution", None)
+    if callable(gen):
+        sols += [gen(Random(s)) for s in range(n)]
+    sc = [impl.score(s) for s in sols]
+    return {(i, j) for i in range(len(sc)) for j in range(len(sc)) if sc[i] < sc[j] - 1e-9 * max(1.0, abs(sc[j]))}
+
+
 SIGNATURE = {
     "neighborhood": neighborhood_signature,
+    "tiebreak": tiebreak_signature,
     "destruction": destruction_signature,
     "perturbation": perturbation_signature,
 }

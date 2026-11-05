@@ -65,7 +65,7 @@ SKELETONS: dict[str, SkeletonDef] = {
         },
     ),
     "ILS": SkeletonDef(
-        "ILS", ("constructor", "neighborhood", "perturbation"),
+        "ILS", ("constructor", "neighborhood", "perturbation"), optional_slots=("tiebreak",),
         params={
             "strength": {"type": "int", "range": [1, 6]},
             "ls_strategy": {"type": "cat", "values": ["first", "best"]},
@@ -81,7 +81,7 @@ SKELETONS: dict[str, SkeletonDef] = {
         },
     ),
     "TS": SkeletonDef(
-        "TS", ("constructor", "neighborhood"),
+        "TS", ("constructor", "neighborhood"), optional_slots=("tiebreak",),
         params={
             "tenure": {"type": "int", "range": [3, 30]},
             "candidate_size": {"type": "int", "range": [5, 100], "log": True},
@@ -94,7 +94,7 @@ SKELETONS: dict[str, SkeletonDef] = {
     ),
     "PR": SkeletonDef(
         # población de élite con path relinking y mejora tabú (skeletons/pr.py); `relink` conecta dos soluciones
-        "PR", ("constructor", "neighborhood", "relink"), optional_slots=("perturbation",),
+        "PR", ("constructor", "neighborhood", "relink"), optional_slots=("perturbation", "tiebreak"),
         params={
             "pop_size": {"type": "int", "range": [4, 30], "default": 10},
             "ts_iters": {"type": "int", "range": [100, 20000], "log": True, "default": 2000},
@@ -113,7 +113,7 @@ SKELETONS: dict[str, SkeletonDef] = {
     ),
     "HYB": SkeletonDef(
         # matheurística: ILS con recocido (en C++ con el backend nativo) alternada con sub-MIPs (skeletons/hybrid.py)
-        "HYB", ("constructor", "neighborhood", "perturbation", "destruction"),
+        "HYB", ("constructor", "neighborhood", "perturbation", "destruction"), optional_slots=("tiebreak",),
         params={
             "ls_share": {"type": "float", "range": [0.02, 0.5], "log": True, "default": 0.1},
             "mip_share": {"type": "float", "range": [0.01, 0.3], "log": True, "default": 0.05},
@@ -126,7 +126,7 @@ SKELETONS: dict[str, SkeletonDef] = {
     "VNS": SkeletonDef(
         # `neighborhood` es el de la búsqueda local; para el shake se usan, en orden,
         # todos los vecindarios compatibles del catálogo (k_max = cuántos hay).
-        "VNS", ("constructor", "neighborhood"),
+        "VNS", ("constructor", "neighborhood"), optional_slots=("tiebreak",),
         params={
             "shake_strength": {"type": "int", "range": [1, 4]},
             "ls_time_share": {"type": "float", "range": [0.02, 0.3]},

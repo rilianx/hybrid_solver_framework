@@ -20,7 +20,7 @@ from pathlib import Path
 
 NATIVE_SKELETONS_FOR_SLOT = {"constructor": ["SA", "ILS", "TS", "VNS", "PR", "HYB"],
                              "neighborhood": ["SA", "ILS", "TS", "VNS", "PR", "HYB"], "perturbation": ["ILS", "PR", "HYB"],
-                             "relink": ["PR"], "destruction": ["HYB"]}
+                             "relink": ["PR"], "destruction": ["HYB"], "tiebreak": ["ILS", "TS", "VNS", "PR", "HYB"]}
 
 
 def run_check(request: dict, timeout: float = 900.0) -> dict:
@@ -88,7 +88,7 @@ METRICS = {"delta": "delta exacto por segundo (búsqueda local, SA)",
            "ts_step": "candidatos revisados por segundo en un paso de TS (estimate o delta de todos, delta de los 5 mejores)",
            "walk": "pasos por segundo de una trayectoria (revisar los candidatos como en TS, aplicar uno y seguir desde la "
                    "solución que devolvió apply)",
-           "perturbation": "perturbaciones por segundo"}
+           "perturbation": "perturbaciones por segundo", "tiebreak": "evaluaciones del desempate por segundo"}
 
 
 WALK_FLOOR = 1.1  # por debajo, una "mejora" de la trayectoria cabe en el ruido de medir 1 s en un runner compartido
@@ -152,6 +152,14 @@ def optimize_check(request: dict) -> None:
             P = pack.problem_factory(inst)
             eq = check_component_equivalent(slot, factory(old, old_of, slot, name)(P), factory(new, parts.model, slot, name)(P),
                                             P, [mip.trivial_solution(inst)] + sols)
+        elif slot == "tiebreak":  # el mismo puntaje en las mismas soluciones
+            from core.validation.base import ValidationReport, fail, ok
+
+            eq = ValidationReport(subject="equivalencia (tiebreak)")
+            a_h, b_h = old.make_tiebreak(old_of(inst), name, {}), new.make_tiebreak(parts.model(inst), name, {})
+            bad = [s for s in [mip.trivial_solution(inst)] + sols if abs(a_h.score(s) - b_h.score(s)) > 1e-9 * max(1.0, abs(a_h.score(s)))]
+            eq.add(fail("equivalence", "same_scores", f"score cambió en {len(bad)} de las soluciones de prueba") if bad
+                   else ok("equivalence", "same_scores"))
         else:  # constructor: la misma solución con la misma semilla
             from core.validation.base import ValidationReport, fail, ok
 

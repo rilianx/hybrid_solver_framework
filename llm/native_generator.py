@@ -70,6 +70,14 @@ SLOT_HINTS = {
     ),
     "perturbation": "Se verificará: `perturb(s, strength, rng)` devuelve una solución distinta de `s` y factible (strength >= 1).",
     "constructor": "Se verificará: `build(rng)` devuelve una solución FACTIBLE y es determinista dada la semilla.",
+    "tiebreak": (
+        "Escribes un DESEMPATE: `score(s)` es un criterio secundario, MENOR es mejor. Los esqueletos lo usan solo para elegir "
+        "entre soluciones con el MISMO objetivo (mesetas: muchos vecinos con el mismo valor), así que nunca cambia cuál de dos "
+        "soluciones es mejor si sus objetivos difieren. Un buen desempate prefiere, entre soluciones igual de buenas, la que "
+        "está más cerca de mejorar el objetivo. Se llama en cada empate de la búsqueda local: tiene que ser barato. Se "
+        "verificará: es un número finito y determinista, distingue soluciones distintas con el mismo objetivo, y ordena las "
+        "soluciones de forma distinta que los otros desempates aceptados."
+    ),
     "destruction": (
         "Eliges qué parte de la solución reoptimiza el sub-MIP del esqueleto HYB: HYB alterna una búsqueda local en C++ con "
         "sub-MIPs que fijan las variables de decisión de la solución actual salvo las que tu componente libera, y resuelven "
