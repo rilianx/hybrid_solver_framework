@@ -59,6 +59,7 @@ _WHAT = {
     "neighborhood": "los vecinos alcanzables desde la misma solución",
     "destruction": "la forma de los conjuntos que libera (tamaño, concentración y contigüidad por coordenada de las variables)",
     "perturbation": "la forma del conjunto de variables que cambia (cuántas, concentración por coordenada, si enciende o apaga)",
+    "tiebreak": "el orden que da a un mismo conjunto de soluciones",
 }
 
 
@@ -181,6 +182,31 @@ def _short(obj, n: int = 300) -> str:
     return text if len(text) <= n else text[:n] + "…"
 
 
+def _tiebreak_breaks_ties(impl, ctx: ValidationContext, n: int = 60) -> list[CheckResult]:
+    """Un desempate sirve si distingue soluciones con el MISMO objetivo: entre los grupos de soluciones distintas con igual
+    objetivo (la trivial y soluciones al azar de las micro-instancias), alguno con más de un `score`. Sin grupos empatados
+    no hay cómo juzgarlo y pasa."""
+    from core.validation.contractual import _tiebreak_solutions
+
+    P, groups, distinct = ctx.problem, 0, 0
+    for k in range(len(ctx.instances)):
+        by_obj: dict[float, dict] = {}
+        for sol in _tiebreak_solutions(ctx, k, n):
+            by_obj.setdefault(round(P.objective(sol), 9), {})[sol] = impl.score(sol)
+        for scores in by_obj.values():
+            if len(scores) > 1:
+                groups += 1
+                distinct += len(set(scores.values())) > 1
+    if distinct:
+        return [ok(LAYER, "tiebreak.breaks_ties", f"distingue soluciones de igual objetivo en {distinct} de {groups} grupos")]
+    if groups == 0:
+        return [ok(LAYER, "tiebreak.breaks_ties", "sin soluciones de prueba con el mismo objetivo: no se puede juzgar")]
+    return [fail(LAYER, "tiebreak.breaks_ties",
+                 f"en {groups} grupos de soluciones distintas con el MISMO objetivo (micro-instancias, la trivial y soluciones "
+                 f"al azar) score da el mismo valor a todas: no desempata nada. Un desempate tiene que distinguir soluciones "
+                 f"que el objetivo no distingue (p.ej. cuán cerca está cada una de mejorar).")]
+
+
 def check_component_quality(slot: str, impl, ctx: ValidationContext) -> list[CheckResult]:
     P = ctx.problem
     # Si el contexto trae una sonda de diversidad, la comparación se hace allí (instancia
@@ -188,6 +214,9 @@ def check_component_quality(slot: str, impl, ctx: ValidationContext) -> list[Che
     results: list[CheckResult] = [] if ctx.diversity_probe is not None else list(
         diversity_check(slot, impl, ctx.accepted_peers, ctx.trivial_solutions[0], ctx.problem, ctx.max_similarity_to_peers)
     )
+
+    if slot == "tiebreak":
+        return results + _tiebreak_breaks_ties(impl, ctx)
 
     if slot == "constructor":
         # No absurdamente peor que la solución trivial factible de referencia. Umbral laxo

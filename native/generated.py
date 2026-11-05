@@ -32,9 +32,10 @@ from typing import Any
 from .build import BUILD, build, import_path
 
 SLOT_BASE = {"constructor": "Constructor", "neighborhood": "Neighborhood",
-             "perturbation": "Perturbation", "relink": "Relink", "destruction": "Destruction"}
+             "perturbation": "Perturbation", "relink": "Relink", "destruction": "Destruction", "tiebreak": "TieBreak"}
 CATALOG_FIELD = {"constructor": "constructors", "neighborhood": "neighborhoods",
-                 "perturbation": "perturbations", "relink": "relinks", "destruction": "destructions"}
+                 "perturbation": "perturbations", "relink": "relinks", "destruction": "destructions",
+                 "tiebreak": "tiebreaks"}
 STD_HEADERS = ["algorithm", "array", "cmath", "cstdint", "deque", "functional", "limits", "map", "memory", "numeric",
                "queue", "random", "set", "unordered_map", "unordered_set", "utility", "vector"]
 DEBUG_FLAGS = ["-D_GLIBCXX_ASSERTIONS"]  # índices fuera de rango abortan con mensaje en vez de corromper memoria
@@ -191,6 +192,13 @@ class NativePerturbation(_Wrapper):
         return self.h.perturb(sol, float(strength), rng.getrandbits(63))
 
 
+class NativeTieBreak(_Wrapper):
+    _make = staticmethod(lambda nat, m, name, p: nat.make_tiebreak(m, name, p))
+
+    def score(self, sol) -> float:
+        return self.h.score(sol)
+
+
 class NativeRelink(_Wrapper):
     _make = staticmethod(lambda nat, m, name, p: nat.make_relink(m, name, p))
 
@@ -224,7 +232,7 @@ class NativeDestruction(_Wrapper):
 
 
 WRAPPERS = {"constructor": NativeConstructor, "neighborhood": NativeNeighborhood, "perturbation": NativePerturbation,
-            "relink": NativeRelink, "destruction": NativeDestruction}
+            "relink": NativeRelink, "destruction": NativeDestruction, "tiebreak": NativeTieBreak}
 
 
 def factory(native, model_of, slot: str, name: str):

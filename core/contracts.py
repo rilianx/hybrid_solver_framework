@@ -62,6 +62,15 @@ class Constructor(Protocol):
 
 
 @runtime_checkable
+class TieBreak(Protocol):
+    """Slot `tiebreak`: criterio secundario, MENOR es mejor. Los esqueletos C++ lo usan solo para decidir entre
+    soluciones con el MISMO objetivo (mesetas), así que no cambia cuál de dos soluciones es mejor cuando sus objetivos
+    difieren. Debe ser barato y determinista."""
+
+    def score(self, sol: Solution) -> float: ...
+
+
+@runtime_checkable
 class Neighborhood(Protocol):
     """Slot `neighborhood`: movimientos locales con delta incremental.
 

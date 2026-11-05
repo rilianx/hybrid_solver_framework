@@ -61,6 +61,9 @@ def make_assembler(pack: ProblemPack, generated_dir: str | None = None, skeleton
         entries = [(c, f) for c, f in entries if c["slot"] != "destruction"]
     base = [({"name": n, "slot": "constructor", "compatible_skeletons": NATIVE_SKELETONS_FOR_SLOT["constructor"],
               "params": {}}, factory(mod, model_of, "constructor", n)) for n in ("trivial", "random")]
+    if any(c["slot"] == "tiebreak" for c, _ in entries):  # sin desempate es una opción más (y el default)
+        base.append(({"name": "none", "slot": "tiebreak", "compatible_skeletons": NATIVE_SKELETONS_FOR_SLOT["tiebreak"],
+                      "params": {}}, lambda problem: None))
     mip = [(c, f) for c, f in pack.base_components if c["slot"] == "destruction"]  # el sub-MIP de HYB es de Python
     registry = build_registry(replace(pack, base_components=base + entries + mip))
     names = [s for s in (skeletons or NATIVE_SKELETONS) if s in NATIVE_SKELETONS]

@@ -186,6 +186,24 @@ struct Destruction {
     virtual std::vector<int> destroy(const Sol& s, double ratio, Rng& rng) = 0;
 };
 
+// Un desempate (`tiebreak`): criterio secundario, MENOR es mejor, que solo decide entre soluciones con el MISMO
+// objetivo (mesetas: muchos vecinos con el mismo makespan o el mismo número de rutas). Nunca cambia cuál de dos soluciones
+// es mejor cuando sus objetivos difieren, así que no puede alejar del óptimo.
+template <class M>
+struct TieBreak {
+    using Sol = typename M::Solution;
+    virtual ~TieBreak() = default;
+    virtual double score(const Sol& s) = 0;
+};
+
+// La comparación lexicográfica (objetivo, desempate) de los esqueletos; sin desempate (nullptr) todo es como antes.
+template <class M>
+struct Ties {
+    TieBreak<M>* tb = nullptr;
+    static bool tie(double a, double b) { return std::abs(a - b) <= 1e-9 * std::max(1.0, std::abs(a)); }
+    double score(const typename M::Solution& s) const { return tb->score(s); }
+};
+
 // ------------------------------------------------------------------ catálogo
 template <class M>
 struct Catalog {
@@ -195,6 +213,7 @@ struct Catalog {
     std::map<std::string, std::function<std::unique_ptr<Perturbation<M>>(const M&, const Params&)>> perturbations;
     std::map<std::string, std::function<std::unique_ptr<Relink<M>>(const M&, const Params&)>> relinks;
     std::map<std::string, std::function<std::unique_ptr<Destruction<M>>(const M&, const Params&)>> destructions;
+    std::map<std::string, std::function<std::unique_ptr<TieBreak<M>>(const M&, const Params&)>> tiebreaks;
 
     std::unique_ptr<Constructor<M>> constructor(const std::string& name, const M& m, const Config& cfg) const {
         auto it = constructors.find(name);
@@ -224,6 +243,13 @@ struct Catalog {
     std::unique_ptr<Destruction<M>> destruction(const std::string& name, const M& m, const Config& cfg) const {
         auto it = destructions.find(name);
         if (it == destructions.end()) throw std::invalid_argument("destrucción desconocida: " + name);
+        return it->second(m, cfg.scoped(name));
+    }
+    // "none" (o sin clave `tiebreak` en la configuración): sin desempate
+    std::unique_ptr<TieBreak<M>> tiebreak(const std::string& name, const M& m, const Config& cfg) const {
+        if (name.empty() || name == "none") return nullptr;
+        auto it = tiebreaks.find(name);
+        if (it == tiebreaks.end()) throw std::invalid_argument("desempate desconocido: " + name);
         return it->second(m, cfg.scoped(name));
     }
 };
@@ -307,7 +333,7 @@ struct PenaltyControl {
 
 template <class M, class Gen, class Accept, class Update>
 Result<M> trajectory(const M& model, typename M::Solution sol, double budget, Gen gen, Accept accept, Update update,
-                     PenaltyControl<M>* pen = nullptr) {
+                     PenaltyControl<M>* pen = nullptr, const Ties<M>* ties = nullptr) {
     Clock clock;
     double f = model.objective(sol);
     Result<M> res{sol, f, 0, 0.0};
@@ -319,7 +345,8 @@ Result<M> trajectory(const M& model, typename M::Solution sol, double budget, Ge
         double fc = std::numeric_limits<double>::quiet_NaN();
         if (gen(sol, f, res.objective, elapsed, cand, fc)) {
             if (std::isnan(fc)) fc = model.objective(cand);
-            if (accept(f, fc)) {
+            // un candidato con el mismo objetivo que la aceptación rechaza entra si el desempate mejora
+            if (accept(f, fc) || (ties && Ties<M>::tie(fc, f) && ties->score(cand) < ties->score(sol))) {
                 sol = cand;
                 f = fc;
                 if (!pen && f < res.objective) res.best = sol, res.objective = f;
@@ -341,9 +368,11 @@ Result<M> trajectory(const M& model, typename M::Solution sol, double budget, Ge
 // movimientos consecutivos (la aceleración de Taillard en el flow shop) los aprovecha.
 template <class M>
 typename M::Solution hill_climb(Neighborhood<M>& nbh, typename M::Solution cur, bool first, int sample,
-                                double max_seconds, Rng& rng) {
+                                double max_seconds, Rng& rng, const Ties<M>* ties = nullptr) {
     Clock clock;
     std::vector<Move> mv;
+    // con desempate, un movimiento de delta 0 mejora si baja el desempate (siempre estrictamente: termina)
+    double t_cur = ties ? ties->score(cur) : 0.0;
     if (sample < 0 && first) {
         size_t pos = 0, since = 0;  // índice donde seguir y movimientos revisados desde la última mejora
         while (clock.elapsed() < max_seconds) {
@@ -354,10 +383,21 @@ typename M::Solution hill_climb(Neighborhood<M>& nbh, typename M::Solution cur, 
             bool improved = false;
             for (; since < mv.size(); ++since, pos = (pos + 1) % mv.size()) {
                 if ((since & 63) == 0 && clock.elapsed() >= max_seconds) return cur;
-                if (nbh.delta(cur, mv[pos]) < 0.0) {
+                double d = nbh.delta(cur, mv[pos]);
+                if (ties ? d < 0.0 && !Ties<M>::tie(d, 0.0) : d < 0.0) {
                     cur = nbh.apply(cur, mv[pos]);
+                    if (ties) t_cur = ties->score(cur);
                     improved = true;
                     break;
+                }
+                if (ties && Ties<M>::tie(d, 0.0)) {
+                    auto c = nbh.apply(cur, mv[pos]);
+                    double t = ties->score(c);
+                    if (t < t_cur) {
+                        cur = std::move(c), t_cur = t;
+                        improved = true;
+                        break;
+                    }
                 }
             }
             if (!improved) break;
@@ -368,18 +408,27 @@ typename M::Solution hill_climb(Neighborhood<M>& nbh, typename M::Solution cur, 
     while (true) {
         nbh.sample(cur, sample, rng, mv);
         const Move* best = nullptr;
-        double best_d = 0.0;
+        double best_d = 0.0, best_t = t_cur;  // el umbral: (0, desempate de la actual)
         bool timeout = false;
         for (const Move& m : mv) {
             if (clock.elapsed() >= max_seconds) { timeout = true; break; }
             double d = nbh.delta(cur, m);
-            if (d < best_d) {
+            if (ties ? d < best_d && !Ties<M>::tie(d, best_d) : d < best_d) {
                 best = &m, best_d = d;
+                if (ties) best_t = std::numeric_limits<double>::quiet_NaN();  // se calcula si aparece un empate
                 if (first) break;
+            } else if (ties && Ties<M>::tie(d, best_d)) {
+                if (std::isnan(best_t)) best_t = ties->score(nbh.apply(cur, *best));
+                double t = ties->score(nbh.apply(cur, m));
+                if (t < best_t) {
+                    best = &m, best_d = d, best_t = t;
+                    if (first) break;
+                }
             }
         }
         if (!best) break;
         cur = nbh.apply(cur, *best);
+        if (ties) t_cur = std::isnan(best_t) ? ties->score(cur) : best_t;
         if (timeout || clock.elapsed() >= max_seconds) break;
     }
     return cur;
@@ -408,7 +457,10 @@ struct TabuStep {
     size_t head = 0;
     std::vector<std::pair<double, size_t>> order;
 
-    TabuStep(Neighborhood<M>& n, size_t ten, int sz, int tp) : nbh(&n), tenure(ten), size(sz), top(n.has_estimate() ? tp : 0) {}
+    const Ties<M>* ties = nullptr;  // entre movimientos con el mismo delta, el de menor desempate
+
+    TabuStep(Neighborhood<M>& n, size_t ten, int sz, int tp, const Ties<M>* t = nullptr)
+        : nbh(&n), tenure(ten), size(sz), top(n.has_estimate() ? tp : 0), ties(t) {}
     void rebind(Neighborhood<M>& n) { nbh = &n, clear(); }
     void clear() { tabu.clear(), queue.clear(), head = 0; }
     bool operator()(const Sol& s, double f, double f_best, Rng& rng, Sol& cand, double& fc) {
@@ -419,6 +471,7 @@ struct TabuStep {
         const Move* best = nullptr;
         const Move* best_tabu = nullptr;
         double best_d = std::numeric_limits<double>::infinity(), tabu_d = best_d;
+        double best_t = std::numeric_limits<double>::quiet_NaN();
         int exact = 0;
         for (auto& [e, i] : order) {
             const Move& m = buf[i];
@@ -427,7 +480,13 @@ struct TabuStep {
                 if (d < tabu_d) best_tabu = &m, tabu_d = d;
                 continue;
             }
-            if (d < best_d) best = &m, best_d = d;
+            if (ties && best && Ties<M>::tie(d, best_d)) {
+                if (std::isnan(best_t)) best_t = ties->score(nbh->apply(s, *best));
+                double t = ties->score(nbh->apply(s, m));
+                if (t < best_t) best = &m, best_d = d, best_t = t;
+            } else if (d < best_d) {
+                best = &m, best_d = d, best_t = std::numeric_limits<double>::quiet_NaN();
+            }
             if (top > 0 && ++exact >= top) break;
         }
         if (!best) best = best_tabu, best_d = tabu_d;
@@ -458,7 +517,11 @@ Result<M> path_relinking(const Catalog<M>& cat, const M& model, const Config& cf
     Clock clock;
     auto nbh = cat.neighborhood(cfg.text("neighborhood"), model, cfg);
     auto rel = cat.relink(cfg.text("relink"), model, cfg);
-    TabuStep<M> step(*nbh, (size_t)cfg.get("PR.tenure"), (int)cfg.get("PR.candidate_size"), (int)cfg.get("PR.estimate_top", 0));
+    auto tbk = cat.tiebreak(cfg.text("tiebreak", "none"), model, cfg);
+    Ties<M> ties_v{tbk.get()};
+    const Ties<M>* ties = tbk ? &ties_v : nullptr;
+    TabuStep<M> step(*nbh, (size_t)cfg.get("PR.tenure"), (int)cfg.get("PR.candidate_size"), (int)cfg.get("PR.estimate_top", 0),
+                     ties);
     size_t pop_size = std::max(2, (int)cfg.get("PR.pop_size"));
     long ts_iters = (long)cfg.get("PR.ts_iters");
     int path_cands = std::max(1, (int)cfg.get("PR.path_cands", 1)), init_moves = (int)cfg.get("PR.init_moves", 20);
@@ -478,7 +541,7 @@ Result<M> path_relinking(const Catalog<M>& cat, const M& model, const Config& cf
         Sol best = s, cand;
         if (pert) {
             for (long i = 0; i < ts_iters && !over(); ++i, ++res.iterations) {
-                cand = hill_climb(*nbh, pert->perturb(s, strength, rng), false, ls_sample, budget - clock.elapsed(), rng);
+                cand = hill_climb(*nbh, pert->perturb(s, strength, rng), false, ls_sample, budget - clock.elapsed(), rng, ties);
                 double fc = model.objective(cand), T = T_rel * std::pow(0.01, (double)i / ts_iters) * std::abs(f);
                 if (fc <= f || (T > 0 && rng.uniform() < std::exp(-(fc - f) / T))) s = std::move(cand), f = fc;
                 if (f < fb) best = s, fb = f;
@@ -579,6 +642,9 @@ Result<M> solve_with(const Catalog<M>& cat, const M& model, const Config& cfg, c
     std::string sk = cfg.text("skeleton");
     auto ctor = cat.constructor(cfg.text("constructor"), model, cfg);
     auto start = from ? *from : ctor->build(rng);
+    auto tbk = cat.tiebreak(cfg.text("tiebreak", "none"), model, cfg);
+    Ties<M> ties_v{tbk.get()};
+    const Ties<M>* ties = tbk ? &ties_v : nullptr;
     auto better = [](double fc, double fn) { return fn < fc; };
     auto none = [](double) {};
     std::vector<Move> buf;
@@ -631,9 +697,9 @@ Result<M> solve_with(const Catalog<M>& cat, const M& model, const Config& cfg, c
         auto gen = [&](const auto& s, double, double, double, auto& cand, double&) {
             if (!started) {
                 started = true;
-                cand = hill_climb(*nbh, s, first, sample, ls_s, rng);
+                cand = hill_climb(*nbh, s, first, sample, ls_s, rng, ties);
             } else {
-                cand = hill_climb(*nbh, pert->perturb(s, strength, rng), first, sample, ls_s, rng);
+                cand = hill_climb(*nbh, pert->perturb(s, strength, rng), first, sample, ls_s, rng, ties);
             }
             return true;
         };
@@ -648,7 +714,7 @@ Result<M> solve_with(const Catalog<M>& cat, const M& model, const Config& cfg, c
             return T > 0 && rng.uniform() < std::exp(-d / (T * std::abs(fc)));
         };
         auto cool = [&](double elapsed) { T = T_rel * std::pow(0.01, std::min(1.0, elapsed / budget)); };
-        return trajectory(model, start, budget, gen, accept, cool, pen);
+        return trajectory(model, start, budget, gen, accept, cool, pen, ties);
     }
     if (sk == "VNS") {
         std::vector<std::unique_ptr<Neighborhood<M>>> ns;
@@ -669,16 +735,17 @@ Result<M> solve_with(const Catalog<M>& cat, const M& model, const Config& cfg, c
                 if (!random_move(*ns[k], cur, rng, buf, m)) break;
                 cur = ns[k]->apply(cur, m);
             }
-            cand = hill_climb(*ns[0], cur, true, sample, ls_s, rng);
+            cand = hill_climb(*ns[0], cur, true, sample, ls_s, rng, ties);
             k = model.objective(cand) < f ? 0 : (k + 1) % ns.size();
             return true;
         };
-        return trajectory(model, start, budget, gen, better, none, pen);
+        return trajectory(model, start, budget, gen, better, none, pen, ties);
     }
     if (sk == "TS") {
         // como `skeletons/ts.py`: filtrado por estimación (`estimate_top`) y saltos atrás a la élite (`elite_size`, `stall`)
         auto nbh = cat.neighborhood(cfg.text("neighborhood"), model, cfg);
-        TabuStep<M> step(*nbh, (size_t)cfg.get("TS.tenure"), (int)cfg.get("TS.candidate_size"), (int)cfg.get("TS.estimate_top", 0));
+        TabuStep<M> step(*nbh, (size_t)cfg.get("TS.tenure"), (int)cfg.get("TS.candidate_size"), (int)cfg.get("TS.estimate_top", 0),
+                         ties);
         if (pen)
             pen->rebuild = [&] {
                 nbh = cat.neighborhood(cfg.text("neighborhood"), model, cfg);

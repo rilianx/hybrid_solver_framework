@@ -384,8 +384,37 @@ def check_stop(impl, ctx: ValidationContext) -> list[CheckResult]:
     return guard(LAYER, "stop.eventually_true", _eventually) + guard(LAYER, "stop.not_immediately_true", _not_immediately)
 
 
+def _tiebreak_solutions(ctx: ValidationContext, k: int, n: int = 40) -> list[Any]:
+    """La trivial y soluciones al azar de la micro-instancia k (mismo problema: el desempate se juzga en todas)."""
+    sols = list(_sample_solutions(ctx, k))
+    gen = getattr(ctx.problem, "random_solution", None)
+    if callable(gen):
+        sols += [gen(Random(s)) for s in range(n)]
+    return sols
+
+
+def check_tiebreak(impl, ctx: ValidationContext) -> list[CheckResult]:
+    """Slot `tiebreak`: `score` es un número finito y determinista en soluciones factibles e infactibles."""
+    results: list[CheckResult] = []
+    for k in range(len(ctx.instances)):
+        def _props(k=k):
+            for sol in _tiebreak_solutions(ctx, k, 12):
+                a, b = impl.score(sol), impl.score(sol)
+                if not isinstance(a, (int, float)) or math.isnan(a) or math.isinf(a):
+                    return fail(LAYER, "tiebreak.finite", f"score devolvió {a!r} en inst_{k} para sol={_short(sol)}: debe ser un "
+                                                          f"número finito")
+                if a != b:
+                    return fail(LAYER, "tiebreak.deterministic", f"dos llamadas a score con la misma solución dan {a} y {b} "
+                                                                 f"(inst_{k})")
+            return ok(LAYER, "tiebreak.finite")
+
+        results += guard(LAYER, "tiebreak.finite", _props)
+    return _collapse(results)
+
+
 CHECKERS = {
     "constructor": check_constructor,
+    "tiebreak": check_tiebreak,
     "neighborhood": check_neighborhood,
     "evaluator": check_evaluator,
     "acceptance": check_acceptance,
