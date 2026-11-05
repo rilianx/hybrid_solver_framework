@@ -1,5 +1,5 @@
 """Prompts compactos (`--compact-prompts`): en lugar del código completo de lo que el LLM solo usa (el modelo C++ en
-los prompts de componentes, los componentes que ya están en el catálogo, la clase de la instancia), sus prototipos:
+los prompts de componentes, los componentes que ya están en el catálogo, `Rng` y `Config` del contrato, la clase de la instancia), sus prototipos:
 declaraciones, firmas y comentarios. Lo que el LLM tiene que modificar (el componente o el modelo que se corrige u
 optimiza) y el oráculo de la vista MIP (es la especificación) van siempre completos.
 """
@@ -61,6 +61,9 @@ def cpp_outline(src: str) -> str:
             while out and out[-1].isspace():
                 out.pop()
             out.append(";")
+            m = re.match(r"[ \t]*(//[^\n]*)", src[i + 1:])  # el comentario de la línea de la firma se conserva
+            if m:
+                out.append("  " + m.group(1))
             i = k + 1
             if src[i:i + 1] == ";":
                 i += 1

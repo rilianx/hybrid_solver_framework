@@ -111,12 +111,16 @@ def _block(source: str, start: int) -> str:
     raise ValueError("llaves desbalanceadas")
 
 
-def contract_source(slot: str) -> str:
-    """El contrato del slot en C++, tal cual está en `native/include/hsf/core.hpp`, con Move, Rng y Config."""
+def contract_source(slot: str, compact: bool | None = None) -> str:
+    """El contrato del slot en C++, tal cual está en `native/include/hsf/core.hpp`, con Move, Rng y Config. Con
+    prompts compactos, Rng y Config van como prototipos (la interfaz del slot va siempre completa: sus métodos por
+    defecto son parte del contrato)."""
+    compact = outline.compact_default() if compact is None else compact
     core = (INCLUDE / "hsf" / "core.hpp").read_text()
     parts = [core[core.index("using Move"):core.index("\n", core.index("using Move")) + 1]]
     for name in ("struct Rng", "struct Config"):
-        parts.append(_block(core, core.index(name)))
+        block = _block(core, core.index(name))
+        parts.append(outline.cpp_outline(block) if compact else block)
     m = re.search(r"template <class M>\nstruct " + SLOT_BASE[slot] + r" \{", core)
     parts.append(_block(core, m.start()))
     return "\n\n".join(parts)
