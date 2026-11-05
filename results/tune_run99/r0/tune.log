@@ -1,0 +1,18 @@
+  vista MIP de HYB: generated
+
+=== catálogo `generated`: 74 parámetros, 9 opciones generadas por LLM ===
+  irace: 1008 experimentos en 3004s; élite: ILS[constructor=trivial, neighborhood=composite, perturbation=random_flip_with_staged_undo]
+  mejor en train: 0.5190  ILS[constructor=trivial, neighborhood=composite, perturbation=random_flip_with_staged_undo]
+
+=== TEST `generated` (partida trivial sin búsqueda = 440444.0; gap vs mejor conocido por instancia) ===
+    tuned                                            gap   0.46%       232319.8 ±  29658.8   (+47.3% vs partida)   ILS[constructor=trivial, neighborhood=composite, perturbation=random_flip_with_staged_undo]
+    default:TS                                       gap   0.75%       233096.6 ±  30454.5   (+47.1% vs partida)   TS[constructor=trivial, neighborhood=setup_shift_merge]
+    default:PR                                       gap   0.75%       233096.6 ±  30454.5   (+47.1% vs partida)   PR[constructor=trivial, neighborhood=setup_shift_merge, relink=hamming_setup_bitflip, perturbation=random_flip_with_staged_undo]
+    default:HYB                                      gap   1.18%       233933.2 ±  29513.9   (+46.9% vs partida)   HYB[constructor=trivial, neighborhood=setup_shift_merge, perturbation=random_flip_with_staged_undo, destruction=group_window]
+    default:SA                                       gap   2.22%       236549.8 ±  31566.9   (+46.3% vs partida)   SA[constructor=trivial, neighborhood=setup_shift_merge]
+    default:ILS                                      gap   2.54%       237154.1 ±  30414.3   (+46.2% vs partida)   ILS[constructor=trivial, neighborhood=setup_shift_merge, perturbation=random_flip_with_staged_undo]
+    default:VNS                                      gap   2.87%       237953.7 ±  31008.2   (+46.0% vs partida)   VNS[constructor=trivial, neighborhood=setup_shift_merge]
+  ganancia del afinado vs mejor default: +0.33%; gana en 5/6 instancias
+  afinado vs default:TS: gap +0.30% a favor del afinado, IC95 [-0.33%, +0.73%] (no se distingue del ruido)
+
+Escenario irace escrito en tuning_out/irace/scenario.txt (correr: irace --scenario tuning_out/irace/scenario.txt)
