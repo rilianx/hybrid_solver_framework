@@ -77,8 +77,8 @@ on:
         default: ""
         type: string
       compact_prompts:
-        description: "Prompts compactos: prototipos (firmas y comentarios) en lugar del código completo del modelo, de los componentes del catálogo y de la instancia (llm/outline.py)"
-        default: false
+        description: "Prompts compactos: prototipos (firmas y comentarios) en lugar del código completo del modelo, de los componentes del catálogo y de la instancia (llm/outline.py); desmarcar para los completos"
+        default: true
         type: boolean
 
 permissions:
@@ -94,7 +94,7 @@ jobs:
       TARGET: ${{ inputs.target }}
       HINT: ${{ inputs.hint }}
       HSF_BENCH_SIZE: ${{ inputs.bench_size }}
-      HSF_COMPACT_PROMPTS: ${{ inputs.compact_prompts && '1' || '' }}
+      HSF_COMPACT_PROMPTS: ${{ inputs.compact_prompts && '1' || '0' }}
     steps:
       - uses: actions/checkout@v4
 

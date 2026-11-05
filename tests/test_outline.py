@@ -1,5 +1,5 @@
-"""Prompts compactos (`--compact-prompts`, `llm/outline.py`): el modelo C++ y los componentes del catálogo como
-prototipos, la instancia con sus campos y su formato; por defecto, los prompts no cambian."""
+"""Prompts compactos (por defecto; `--full-prompts` para los completos; `llm/outline.py`): el modelo C++ y los componentes del catálogo como
+prototipos, la instancia con sus campos y su formato."""
 
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ def test_the_instance_outline_keeps_the_fields_and_the_format(problem):
     compile(out, "instance", "exec")
 
 
-def test_compact_prompts_are_an_option(monkeypatch):
+def test_compact_prompts_are_the_default(monkeypatch):
     from llm import native_generator as ng
     from llm import native_mip_generator as nmip
     from llm import native_model_generator as nmg
@@ -63,10 +63,10 @@ def test_compact_prompts_are_an_option(monkeypatch):
         return (ng.generation_prompt(pack, gen, "neighborhood", 3, [], existing, "", ws),
                 nmg.model_prompt(spec, cases), nmip.mip_prompt(spec, cases, oracle, names))
 
-    monkeypatch.delenv(outline.ENV, raising=False)
+    monkeypatch.setenv(outline.ENV, "0")
     full = prompts()
     assert (Path(gen["dir"]) / gen["model_header"]).read_text() in full[0] and spec.instance_source in full[1]
-    monkeypatch.setenv(outline.ENV, "1")
+    monkeypatch.delenv(outline.ENV, raising=False)  # por defecto, compactos
     compact = prompts()
     assert all(len(c) < len(f) for c, f in zip(compact, full))
     assert "solveFlow(" in compact[0] and spec.instance_source not in compact[1]
