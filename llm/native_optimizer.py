@@ -232,11 +232,11 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--passes", type=int, default=3, help="pasadas encadenadas (los que mejoran vuelven a optimizarse)")
     ap.add_argument("--later-speedup", type=float, default=1.2, help="mejora exigida desde la segunda pasada")
     ap.add_argument("--new-only", action="store_true", help="solo los componentes que nunca se optimizaron (ronda 1)")
-    ap.add_argument("--compact-prompts", action="store_true",
-                    help="prototipos en lugar del código completo de lo que el LLM solo usa (llm/outline.py)")
+    ap.add_argument("--full-prompts", action="store_true",
+                    help="código completo de lo que el LLM solo usa, en lugar de sus prototipos (llm/outline.py)")
     args = ap.parse_args(argv)
-    if args.compact_prompts:
-        os.environ[outline.ENV] = "1"
+    if args.full_prompts:
+        os.environ[outline.ENV] = "0"
     client = make_client(args.provider, args.model)
     out = optimize_native(client, base_pack(args.problem), args.workspace, tuple(args.slots), args.rounds,
                           args.min_speedup, deadline=time.monotonic() + 60 * args.max_minutes, passes=args.passes,

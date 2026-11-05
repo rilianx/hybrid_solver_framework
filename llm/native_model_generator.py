@@ -171,11 +171,11 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--rounds", type=int, default=4)
     ap.add_argument("--provider", default="anthropic")
     ap.add_argument("--model", default=None)
-    ap.add_argument("--compact-prompts", action="store_true",
-                    help="prototipos en lugar del código completo de lo que el LLM solo usa (llm/outline.py)")
+    ap.add_argument("--full-prompts", action="store_true",
+                    help="código completo de lo que el LLM solo usa, en lugar de sus prototipos (llm/outline.py)")
     args = ap.parse_args(argv)
-    if args.compact_prompts:
-        os.environ[outline.ENV] = "1"
+    if args.full_prompts:
+        os.environ[outline.ENV] = "0"
     stats = generate_native_model(make_client(args.provider, args.model), base_pack(args.problem), args.workspace, args.rounds)
     print(json.dumps({k: v for k, v in stats.items() if k != "rejections"}, indent=2, ensure_ascii=False))
 

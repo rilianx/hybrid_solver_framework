@@ -1,4 +1,4 @@
-"""Prompts compactos (`--compact-prompts`): en lugar del código completo de lo que el LLM solo usa (el modelo C++ en
+"""Prompts compactos (por defecto; `--full-prompts` o HSF_COMPACT_PROMPTS=0 para los completos): en lugar del código completo de lo que el LLM solo usa (el modelo C++ en
 los prompts de componentes, los componentes que ya están en el catálogo, `Rng` y `Config` del contrato, la clase de la instancia), sus prototipos:
 declaraciones, firmas y comentarios. Lo que el LLM tiene que modificar (el componente o el modelo que se corrige u
 optimiza) y el oráculo de la vista MIP (es la especificación) van siempre completos.
@@ -14,7 +14,9 @@ ENV = "HSF_COMPACT_PROMPTS"
 
 
 def compact_default() -> bool:
-    return os.environ.get(ENV, "").lower() in ("1", "yes", "true")
+    """Prompts compactos salvo HSF_COMPACT_PROMPTS=0 (o no/false): en CLSP y job shop rinden igual que los completos
+    (3 generaciones por modo, `results/README.md`)."""
+    return os.environ.get(ENV, "").lower() not in ("0", "no", "false")
 
 
 def _skip_literal(src: str, i: int) -> int:
