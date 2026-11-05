@@ -1629,3 +1629,27 @@ no se notan con sub-MIPs chicos de 10 s). La vista generada rinde igual, así qu
 problema lo humano es la instancia, la descripción, los casos y el oráculo (violaciones y costo); la vista MIP la
 escribe el LLM (`generated/<problema>_native/mip/mip.py`).
 
+
+## CLSP: componentes generados con prompts compactos (run 144, tunings 98 y 99)
+
+`--compact-prompts` pasa al LLM las firmas del modelo C++, de los componentes del catálogo y de Rng/Config en lugar
+del código completo (`llm/outline.py`). Se regeneraron los componentes del CLSP (vecindarios, perturbaciones y relinks,
+3 de cada uno) sobre el mismo modelo, en `generated/clsp_compact`: 9 de 9 aceptados (la generación original, 8 de 9),
+0,77 USD. Los dos catálogos se afinaron igual: irace con todos los esqueletos, 80 experimentos, 10 s, 6+6 instancias
+20×20, 2 réplicas. En test (20×20) quedan iguales: 0,62 / 0,59 % (original, TS en las dos) y 0,60 / 0,56 %
+(compacto, ILS y SA). En Trigeiro G, 30 s, 3 semillas (`clsp_trigeiro_G_run{98,99}.json`):
+
+| | G30 | G30b | G53 | G57 | G62 | G69 | G72 | media |
+|---|---|---|---|---|---|---|---|---|
+| tune 98 r0 (original, TS) | 0,59 | 0,48 | 2,18 | 1,99 | 0,88 | 1,48 | 2,11 | 1,39 % |
+| tune 98 r1 (original, TS) | 0,79 | 0,79 | 1,82 | 1,58 | 0,71 | 1,49 | 2,01 | 1,31 % |
+| tune 99 r0 (compacto, ILS) | 0,48 | **0,08** | **0,30** | 0,30 | 0,79 | **−0,02** | 1,96 | **0,55 %** |
+| tune 99 r1 (compacto, SA) | 1,19 | 0,31 | infactible 1 de 3 | **0,26** | 1,39 | 0,61 | **0,46** | – |
+
+El ILS del catálogo compacto (vecindario compuesto + `random_flip_with_staged_undo`) es el mejor: 0,55 % de media y
+dos soluciones por debajo de la mejor conocida (G53 74 781 < 74 799; G69 131 110 < 131 234), con la mitad del tiempo
+que el tune 79 (0,40 % en G sin G30, 60 s). Las TS del catálogo original, que ganaban en 20×20, se quedan en 1,3–1,4 %
+en Trigeiro: las instancias de entrenamiento 20×20 no representan bien a las G (hasta 24×30 y más apretadas). El SA de
+la r1 no encontró ninguna solución factible en una semilla de G53 (parte de la solución trivial, que en G53 es
+infactible, y con penalización fija). Es una generación por catálogo: no muestra que los prompts compactos generen
+mejores componentes, sí que no los empeoran.
