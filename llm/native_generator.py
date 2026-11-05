@@ -111,16 +111,27 @@ def _block(source: str, start: int) -> str:
     raise ValueError("llaves desbalanceadas")
 
 
+DEFS_BEGIN = "// ------------------------------------------------------------------ definiciones de Rng y Config"
+DEFS_END = "// ------------------------------------------------------------------ fin de las definiciones de Rng y Config"
+
+
+def rng_config_definitions(core: str | None = None) -> str:
+    """Las definiciones de los métodos de Rng y Config (la sección marcada de `core.hpp`), sin los marcadores."""
+    core = core if core is not None else (INCLUDE / "hsf" / "core.hpp").read_text()
+    body = core[core.index(DEFS_BEGIN):core.index(DEFS_END)].split("\n", 2)[2]  # sin el marcador ni la nota
+    return body.strip()
+
+
 def contract_source(slot: str, compact: bool | None = None) -> str:
-    """El contrato del slot en C++, tal cual está en `native/include/hsf/core.hpp`, con Move, Rng y Config. Con
-    prompts compactos, Rng y Config van como prototipos (la interfaz del slot va siempre completa: sus métodos por
+    """El contrato del slot en C++, tal cual está en `native/include/hsf/core.hpp`: Move, las declaraciones de Rng y
+    Config, sus definiciones (salvo con prompts compactos) y la interfaz del slot, siempre completa (sus métodos por
     defecto son parte del contrato)."""
     compact = outline.compact_default() if compact is None else compact
     core = (INCLUDE / "hsf" / "core.hpp").read_text()
     parts = [core[core.index("using Move"):core.index("\n", core.index("using Move")) + 1]]
-    for name in ("struct Rng", "struct Config"):
-        block = _block(core, core.index(name))
-        parts.append(outline.cpp_outline(block) if compact else block)
+    parts += [_block(core, core.index(name)) for name in ("struct Rng", "struct Config")]
+    if not compact:
+        parts.append(rng_config_definitions(core))
     m = re.search(r"template <class M>\nstruct " + SLOT_BASE[slot] + r" \{", core)
     parts.append(_block(core, m.start()))
     return "\n\n".join(parts)
