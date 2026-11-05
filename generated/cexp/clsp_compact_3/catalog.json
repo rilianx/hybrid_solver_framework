@@ -1,0 +1,268 @@
+[
+ {
+  "name": "setup_flip_single",
+  "slot": "neighborhood",
+  "path": "generated/cexp/clsp_compact_3/neighborhood/setup_flip_single_r1.hpp",
+  "component": {
+   "name": "setup_flip_single",
+   "slot": "neighborhood",
+   "params": {},
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "lot_interval_consolidation",
+  "slot": "neighborhood",
+  "path": "generated/cexp/clsp_compact_3/neighborhood/lot_interval_consolidation_r1.hpp",
+  "component": {
+   "name": "lot_interval_consolidation",
+   "slot": "neighborhood",
+   "params": {
+    "max_len": {
+     "type": "int",
+     "range": [
+      2,
+      8
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "setup_shift_window",
+  "slot": "neighborhood",
+  "path": "generated/cexp/clsp_compact_3/neighborhood/setup_shift_window_r2.hpp",
+  "component": {
+   "name": "setup_shift_window",
+   "slot": "neighborhood",
+   "params": {
+    "window": {
+     "type": "int",
+     "range": [
+      1,
+      6
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "random_setup_flip_kick",
+  "slot": "perturbation",
+  "path": "generated/cexp/clsp_compact_3/perturbation/random_setup_flip_kick_r1.hpp",
+  "component": {
+   "name": "random_setup_flip_kick",
+   "slot": "perturbation",
+   "params": {
+    "flip_rate": {
+     "type": "float",
+     "range": [
+      0.5,
+      3.0
+     ]
+    },
+    "remove_prob": {
+     "type": "float",
+     "range": [
+      0.2,
+      0.8
+     ]
+    },
+    "max_tries": {
+     "type": "int",
+     "range": [
+      3,
+      30
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "item_window_lot_replan",
+  "slot": "perturbation",
+  "path": "generated/cexp/clsp_compact_3/perturbation/item_window_lot_replan_r1.hpp",
+  "component": {
+   "name": "item_window_lot_replan",
+   "slot": "perturbation",
+   "params": {
+    "win_scale": {
+     "type": "float",
+     "range": [
+      1.0,
+      4.0
+     ]
+    },
+    "items_hit": {
+     "type": "int",
+     "range": [
+      1,
+      4
+     ]
+    },
+    "mode": {
+     "type": "cat",
+     "values": [
+      "merge",
+      "random",
+      "mixed"
+     ]
+    },
+    "max_tries": {
+     "type": "int",
+     "range": [
+      3,
+      30
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "setup_time_shift",
+  "slot": "perturbation",
+  "path": "generated/cexp/clsp_compact_3/perturbation/setup_time_shift_r1.hpp",
+  "component": {
+   "name": "setup_time_shift",
+   "slot": "perturbation",
+   "params": {
+    "shift_rate": {
+     "type": "float",
+     "range": [
+      0.5,
+      3.0
+     ]
+    },
+    "backward_prob": {
+     "type": "float",
+     "range": [
+      0.3,
+      0.9
+     ]
+    },
+    "max_dist": {
+     "type": "int",
+     "range": [
+      1,
+      4
+     ]
+    },
+    "max_tries": {
+     "type": "int",
+     "range": [
+      3,
+      30
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "random_cell_flip_relink",
+  "slot": "relink",
+  "path": "generated/cexp/clsp_compact_3/relink/random_cell_flip_relink_r1.hpp",
+  "component": {
+   "name": "random_cell_flip_relink",
+   "slot": "relink",
+   "params": {
+    "max_flips": {
+     "type": "int",
+     "range": [
+      1,
+      4
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "block_line_copy_relink",
+  "slot": "relink",
+  "path": "generated/cexp/clsp_compact_3/relink/block_line_copy_relink_r1.hpp",
+  "component": {
+   "name": "block_line_copy_relink",
+   "slot": "relink",
+   "params": {
+    "axis": {
+     "type": "cat",
+     "values": [
+      "item",
+      "period"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ },
+ {
+  "name": "setup_shift_pair_relink",
+  "slot": "relink",
+  "path": "generated/cexp/clsp_compact_3/relink/setup_shift_pair_relink_r1.hpp",
+  "component": {
+   "name": "setup_shift_pair_relink",
+   "slot": "relink",
+   "params": {
+    "pair_prob": {
+     "type": "float",
+     "range": [
+      0.3,
+      1.0
+     ]
+    },
+    "near_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "PR"
+   ]
+  }
+ }
+]
