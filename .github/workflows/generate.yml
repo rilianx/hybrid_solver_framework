@@ -60,6 +60,10 @@ on:
         description: "Con target=optimize: solo los componentes C++ que nunca se optimizaron"
         default: false
         type: boolean
+      opt_min_speedup:
+        description: "Con target=optimize o model_optimize: mejora de velocidad exigida en la primera pasada (las siguientes, 1.1)"
+        default: "1.2"
+        type: string
       opt_slots:
         description: "Con target=optimize: slots cuyos componentes se aceleran"
         default: "neighborhood"
@@ -155,6 +159,7 @@ jobs:
           ANTHROPIC_WORKSPACE_ID: ${{ secrets.ANTHROPIC_WORKSPACE_ID || vars.ANTHROPIC_WORKSPACE_ID }}
           SLOTS: ${{ inputs.slots }}
           OPT_SLOTS: ${{ inputs.opt_slots }}
+          OPT_MIN_SPEEDUP: ${{ inputs.opt_min_speedup }}
           OPT_NEW_ONLY: ${{ inputs.opt_new_only && 'true' || 'false' }}
           N: ${{ inputs.n }}
           ROUNDS: ${{ inputs.rounds }}
@@ -171,7 +176,9 @@ jobs:
           [ -n "$MODEL" ] && ARGS+=(--model "$MODEL")
           case "$TARGET" in
             model) MOD=llm.native_model_generator ;;
-            model_optimize) MOD=llm.native_model_optimizer ;;
+            model_optimize)
+              MOD=llm.native_model_optimizer
+              ARGS+=(--min-speedup "${OPT_MIN_SPEEDUP:-1.2}") ;;
             mip) MOD=llm.native_mip_generator ;;
             components)
               MOD=llm.native_generator
@@ -179,7 +186,7 @@ jobs:
               [ -n "$HINT" ] && ARGS+=(--hint "$HINT") ;;
             optimize)
               MOD=llm.native_optimizer
-              ARGS+=(--slots ${OPT_SLOTS:-neighborhood} --max-minutes 75)
+              ARGS+=(--slots ${OPT_SLOTS:-neighborhood} --max-minutes 75 --min-speedup "${OPT_MIN_SPEEDUP:-1.2}")
               [ "$OPT_NEW_ONLY" = "true" ] && ARGS+=(--new-only) ;;
           esac
           echo "python -m $MOD ${ARGS[*]}"

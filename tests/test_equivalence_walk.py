@@ -38,4 +38,5 @@ def test_walk_threshold_is_smaller():
 
     need = thresholds({"delta": 1.0, "ts_step": 1.0, "walk": 1.0}, 1.5)
     assert need["delta"] == need["ts_step"] == 1.5 and abs(need["walk"] - 1.2) < 1e-9
-    assert abs(thresholds({"walk": 1.0}, 1.2)["walk"] - 1.08) < 1e-9
+    assert abs(thresholds({"walk": 1.0}, 1.2)["walk"] - 1.1) < 1e-9  # piso: lo de abajo cabe en el ruido de medir
+    assert abs(thresholds({"walk": 1.0}, 1.05)["walk"] - 1.05) < 1e-9  # nunca más que a las demás medidas

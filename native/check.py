@@ -92,11 +92,15 @@ METRICS = {"delta": "delta exacto por segundo (búsqueda local, SA)",
            "perturbation": "perturbaciones por segundo", "greedy_score": "construcciones greedy completas por segundo"}
 
 
+WALK_FLOOR = 1.1  # por debajo, una "mejora" de la trayectoria cabe en el ruido de medir 1 s en un runner compartido
+
+
 def thresholds(before: dict, min_speedup: float) -> dict[str, float]:
     """Cuánto tiene que mejorar cada medida para aceptar. La trayectoria también paga lo que no cambia (estimate,
-    apply, la revisión del paso), así que una mejora real se ve más chica ahí: se pide el 40 % de la mejora (1,2× si
-    a las demás se les pide 1,5×)."""
-    return {m: 1 + 0.4 * (min_speedup - 1) if m == "walk" else min_speedup for m in before}
+    apply, la revisión del paso), así que una mejora real se ve más chica ahí: se pide el 40 % de la mejora, con un
+    piso de `WALK_FLOOR` (1,1× si a las demás se les pide 1,2×)."""
+    walk = max(WALK_FLOOR, 1 + 0.4 * (min_speedup - 1))
+    return {m: min(walk, min_speedup) if m == "walk" else min_speedup for m in before}
 
 
 def profile(native, model_of, slot: str, name: str, inst, sols, seconds: float = 0.5) -> str:
