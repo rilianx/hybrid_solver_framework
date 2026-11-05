@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import time
 from pathlib import Path
 
@@ -23,6 +24,7 @@ from native.edits import EDIT_INSTRUCTIONS, EditError, merge_reply
 from native.generated import _BLOCK, build_components
 from native.generic_model import generation
 
+from . import outline
 from .client import TokenUsage
 
 MODEL_SYSTEM_PROMPT = """Eres un experto en optimización combinatoria que escribe en C++17 el MODELO de un problema para un framework
@@ -67,11 +69,12 @@ def _cases_block(cases) -> str:
 
 
 def model_prompt(spec, cases) -> str:
+    instance = outline.py_outline(spec.instance_source) if outline.compact_default() else spec.instance_source
     return "\n".join([
         f"# Tarea\nEscribe en C++ el modelo del problema **{spec.name}**.",
         f"\n# El problema\n{spec.description}",
         f"\n# La instancia\nTu `Model::parse(text)` recibe la instancia en el formato que produce `to_text()` de esta clase "
-        f"(Python, solo como especificación de los datos y del formato):\n```python\n{spec.instance_source}\n```",
+        f"(Python, solo como especificación de los datos y del formato):\n```python\n{instance}\n```",
         f"\n# La solución\n`Solution` es `std::vector<std::vector<int>>` con la forma de la respuesta del problema: "
         f"{spec.answer_format}",
         f"\n# Familias de restricciones y términos del costo\n{spec.families}",
@@ -102,7 +105,8 @@ def generate_native_model(client, pack, workspace: str | Path, rounds: int = 4, 
     model_dir.mkdir(parents=True, exist_ok=True)
     gen = generation(model_dir, mip_parts)
     spec, cases = pack.make_model_spec(), pack.load_cases()
-    stats = {"problem": pack.name, "rounds": 0, "accepted": False, "rejections": [], "reply_modes": [],
+    stats = {"problem": pack.name, "compact_prompts": outline.compact_default(), "rounds": 0, "accepted": False,
+             "rejections": [], "reply_modes": [],
              "model": getattr(client, "model", None)}
     tokens = TokenUsage()
     prompt, source = model_prompt(spec, cases), None
@@ -162,7 +166,11 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--rounds", type=int, default=4)
     ap.add_argument("--provider", default="anthropic")
     ap.add_argument("--model", default=None)
+    ap.add_argument("--compact-prompts", action="store_true",
+                    help="prototipos en lugar del código completo de lo que el LLM solo usa (llm/outline.py)")
     args = ap.parse_args(argv)
+    if args.compact_prompts:
+        os.environ[outline.ENV] = "1"
     stats = generate_native_model(make_client(args.provider, args.model), base_pack(args.problem), args.workspace, args.rounds)
     print(json.dumps({k: v for k, v in stats.items() if k != "rejections"}, indent=2, ensure_ascii=False))
 

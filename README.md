@@ -86,6 +86,7 @@ python -m llm.native_model_generator --problem $P --workspace $WS --provider ant
 python -m llm.native_generator --problem $P --workspace $WS --provider anthropic --slots greedy_score neighborhood perturbation
 python -m llm.native_optimizer --problem $P --workspace $WS --provider anthropic --slots neighborhood
 python -m llm.native_mip_generator --problem $P --workspace $WS --provider anthropic   # opcional: HYB
+# --compact-prompts (en los cuatro): prototipos en lugar del código completo de lo que el LLM solo usa (llm/outline.py)
 
 # configuración (irace necesita R con el paquete irace: apt install r-cran-irace)
 python -m examples.flowshop.tune --generated $WS --tuner irace --trials 70 --size 50x10,100x20 --scale-budget

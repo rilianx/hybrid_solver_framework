@@ -31,6 +31,7 @@ from native.check import NATIVE_SKELETONS_FOR_SLOT, run_check
 from native.edits import EDIT_INSTRUCTIONS, EditError, merge_reply
 from native.generated import SLOT_BASE, NativeComponent, build_components, parse_component, parse_response
 
+from . import outline
 from .client import TokenUsage
 
 NATIVE_SYSTEM_PROMPT = """Eres un experto en metaheurísticas que escribe componentes algorítmicos en C++17 para un framework de
@@ -126,9 +127,13 @@ def _model_type(gen: dict) -> str:
 
 
 def generation_prompt(pack, gen: dict, slot: str, n: int, avoid: list[str],
-                      existing: list[NativeComponent] | None = None, hint: str = "", workspace: Path | None = None) -> str:
+                      existing: list[NativeComponent] | None = None, hint: str = "", workspace: Path | None = None,
+                      compact: bool | None = None) -> str:
+    compact = outline.compact_default() if compact is None else compact
     spec = pack.make_model_spec()
     model = (Path(gen["dir"]) / gen["model_header"]).read_text()
+    if compact:  # el componente solo usa el modelo: basta su interfaz
+        model = outline.cpp_outline(model)
     T = _model_type(gen)
     parts = [
         f"# Tarea\nGenera {n} componentes ESTRUCTURALMENTE DISTINTOS para el slot `{slot}` del problema de abajo, en C++.",
@@ -145,7 +150,7 @@ def generation_prompt(pack, gen: dict, slot: str, n: int, avoid: list[str],
         parts.append("\n# Componentes que YA están en el catálogo para este slot\nEl tuner los combina con los tuyos. Aporta ideas "
                      "que cubran lo que estos no cubren (por ejemplo, partes o aspectos de la solución que ninguno cambia), "
                      "con nombres distintos.")
-        parts += [f"```cpp\n{c.source}\n```" for c in existing]
+        parts += [f"```cpp\n{outline.cpp_outline(c.source) if compact else c.source}\n```" for c in existing]
     if avoid:
         parts.append(f"\nYa existen componentes llamados {avoid} en este slot; usa ideas y nombres distintos.")
     if hint:  # indicación explícita del investigador (queda registrada en stats.json)
@@ -333,7 +338,11 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--provider", default="anthropic")
     ap.add_argument("--model", default=None)
     ap.add_argument("--hint", default="", help="indicación del investigador que se agrega al pedido (queda en stats.json)")
+    ap.add_argument("--compact-prompts", action="store_true",
+                    help="prototipos en lugar del código completo de lo que el LLM solo usa (llm/outline.py)")
     args = ap.parse_args(argv)
+    if args.compact_prompts:
+        os.environ[outline.ENV] = "1"
 
     pack = base_pack(args.problem)
     client = make_client(args.provider, args.model)
@@ -352,6 +361,7 @@ def main(argv: list[str] | None = None) -> None:
     all_stats["_run"] = {"problem": args.problem, "model": client.model, "provider": args.provider, "language": "cpp",
                          "from_scratch": True, "wall_seconds": round(time.perf_counter() - t0, 1),
                          "tokens": total.as_dict(client.model), "hint": args.hint,
+                         "compact_prompts": outline.compact_default(),
                          "bench_size": os.environ.get("HSF_BENCH_SIZE") or pack.bench_size}
     out = Path(args.workspace) / "stats.json"
     if out.exists():  # un slot nuevo sobre un catálogo existente: no se pisan las estadísticas de la corrida anterior

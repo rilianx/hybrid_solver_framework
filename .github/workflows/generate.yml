@@ -76,6 +76,10 @@ on:
         description: "Workspace (vacío = generated/<problema>_native); úsalo para no pisar una corrida anterior"
         default: ""
         type: string
+      compact_prompts:
+        description: "Prompts compactos: prototipos (firmas y comentarios) en lugar del código completo del modelo, de los componentes del catálogo y de la instancia (llm/outline.py)"
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -90,6 +94,7 @@ jobs:
       TARGET: ${{ inputs.target }}
       HINT: ${{ inputs.hint }}
       HSF_BENCH_SIZE: ${{ inputs.bench_size }}
+      HSF_COMPACT_PROMPTS: ${{ inputs.compact_prompts && '1' || '' }}
     steps:
       - uses: actions/checkout@v4
 

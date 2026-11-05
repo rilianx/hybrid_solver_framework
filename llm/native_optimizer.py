@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import importlib
 import json
+import os
 import time
 from pathlib import Path
 
@@ -24,6 +25,7 @@ from native.check import bench_solutions, profile, run_check, speeds, thresholds
 from native.edits import EDIT_INSTRUCTIONS, EditError, merge_reply
 from native.generated import ModelCache, NativeComponent, build_components, load, parse_component, parse_response
 
+from . import outline
 from .client import TokenUsage
 from .native_generator import NATIVE_SYSTEM_PROMPT, _entry_path, _compile_feedback, contract_source
 
@@ -59,6 +61,8 @@ def optimize_prompt(pack, gen: dict, comp: NativeComponent, before: dict, object
 
     spec = pack.make_model_spec()
     model = (Path(gen["dir"]) / gen["model_header"]).read_text()
+    if outline.compact_default():  # el componente solo usa el modelo: basta su interfaz
+        model = outline.cpp_outline(model)
     need = thresholds(before, min_speedup)
     measures = "\n".join(f"- {METRICS[m]}: {v:,.0f} (para aceptar: {need[m]:g}×)" for m, v in before.items())
     if comp.slot == "neighborhood":
@@ -228,7 +232,11 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--passes", type=int, default=3, help="pasadas encadenadas (los que mejoran vuelven a optimizarse)")
     ap.add_argument("--later-speedup", type=float, default=1.2, help="mejora exigida desde la segunda pasada")
     ap.add_argument("--new-only", action="store_true", help="solo los componentes que nunca se optimizaron (ronda 1)")
+    ap.add_argument("--compact-prompts", action="store_true",
+                    help="prototipos en lugar del código completo de lo que el LLM solo usa (llm/outline.py)")
     args = ap.parse_args(argv)
+    if args.compact_prompts:
+        os.environ[outline.ENV] = "1"
     client = make_client(args.provider, args.model)
     out = optimize_native(client, base_pack(args.problem), args.workspace, tuple(args.slots), args.rounds,
                           args.min_speedup, deadline=time.monotonic() + 60 * args.max_minutes, passes=args.passes,
