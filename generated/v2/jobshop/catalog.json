@@ -1,0 +1,294 @@
+[
+ {
+  "name": "giffler_thompson_grasp",
+  "slot": "constructor",
+  "path": "generated/v2/jobshop/constructor/giffler_thompson_grasp_r1.hpp",
+  "component": {
+   "name": "giffler_thompson_grasp",
+   "slot": "constructor",
+   "params": {
+    "alpha": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "rule": {
+     "type": "cat",
+     "values": [
+      "mwkr",
+      "spt",
+      "mopnr",
+      "lpt",
+      "random"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "multistart_nondelay_composite_rule",
+  "slot": "constructor",
+  "path": "generated/v2/jobshop/constructor/multistart_nondelay_composite_rule_r1.hpp",
+  "component": {
+   "name": "multistart_nondelay_composite_rule",
+   "slot": "constructor",
+   "params": {
+    "restarts": {
+     "type": "int",
+     "range": [
+      1,
+      30
+     ]
+    },
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.5
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "neh_operation_sequence_insertion",
+  "slot": "constructor",
+  "path": "generated/v2/jobshop/constructor/neh_operation_sequence_insertion_r1.hpp",
+  "component": {
+   "name": "neh_operation_sequence_insertion",
+   "slot": "constructor",
+   "params": {
+    "max_pos": {
+     "type": "int",
+     "range": [
+      4,
+      64
+     ]
+    },
+    "order_noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.5
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "critical_arc_adjacent_swap_n1",
+  "slot": "neighborhood",
+  "path": "generated/v2/jobshop/neighborhood/critical_arc_adjacent_swap_n1_r1.hpp",
+  "component": {
+   "name": "critical_arc_adjacent_swap_n1",
+   "slot": "neighborhood",
+   "params": {
+    "use_estimate": {
+     "type": "cat",
+     "values": [
+      "yes",
+      "no"
+     ]
+    },
+    "scale_estimate": {
+     "type": "cat",
+     "values": [
+      "yes",
+      "no"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "critical_segment_reversal_2opt",
+  "slot": "neighborhood",
+  "path": "generated/v2/jobshop/neighborhood/critical_segment_reversal_2opt_r1.hpp",
+  "component": {
+   "name": "critical_segment_reversal_2opt",
+   "slot": "neighborhood",
+   "params": {
+    "max_len": {
+     "type": "int",
+     "range": [
+      2,
+      8
+     ]
+    },
+    "extend": {
+     "type": "int",
+     "range": [
+      0,
+      1
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "critical_block_boundary_insertion",
+  "slot": "neighborhood",
+  "path": "generated/v2/jobshop/neighborhood/critical_block_boundary_insertion_r2.hpp",
+  "component": {
+   "name": "critical_block_boundary_insertion",
+   "slot": "neighborhood",
+   "params": {
+    "fallback_window": {
+     "type": "int",
+     "range": [
+      1,
+      8
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "critical_block_adjacent_swap",
+  "slot": "perturbation",
+  "path": "generated/v2/jobshop/perturbation/critical_block_adjacent_swap_r1.hpp",
+  "component": {
+   "name": "critical_block_adjacent_swap",
+   "slot": "perturbation",
+   "params": {
+    "scale": {
+     "type": "float",
+     "range": [
+      0.5,
+      3.0
+     ]
+    },
+    "mode": {
+     "type": "cat",
+     "values": [
+      "n5",
+      "n1"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "operation_sequence_shift_decode",
+  "slot": "perturbation",
+  "path": "generated/v2/jobshop/perturbation/operation_sequence_shift_decode_r1.hpp",
+  "component": {
+   "name": "operation_sequence_shift_decode",
+   "slot": "perturbation",
+   "params": {
+    "scale": {
+     "type": "float",
+     "range": [
+      0.5,
+      4.0
+     ]
+    },
+    "max_shift": {
+     "type": "int",
+     "range": [
+      2,
+      60
+     ]
+    },
+    "move": {
+     "type": "cat",
+     "values": [
+      "insert",
+      "swap",
+      "mixed"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "giffler_thompson_machine_ruin_rebuild",
+  "slot": "perturbation",
+  "path": "generated/v2/jobshop/perturbation/giffler_thompson_machine_ruin_rebuild_r1.hpp",
+  "component": {
+   "name": "giffler_thompson_machine_ruin_rebuild",
+   "slot": "perturbation",
+   "params": {
+    "machines_per_strength": {
+     "type": "float",
+     "range": [
+      0.3,
+      3.0
+     ]
+    },
+    "key_noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ }
+]
