@@ -1,0 +1,360 @@
+[
+ {
+  "name": "grasp_amortized_fixed_regret_order",
+  "slot": "constructor",
+  "path": "generated/v2/sscflp/constructor/grasp_amortized_fixed_regret_order_r1.hpp",
+  "component": {
+   "name": "grasp_amortized_fixed_regret_order",
+   "slot": "constructor",
+   "params": {
+    "alpha": {
+     "type": "float",
+     "range": [
+      0.0,
+      2.0
+     ]
+    },
+    "rcl": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.3
+     ]
+    },
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "passes": {
+     "type": "int",
+     "range": [
+      0,
+      4
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "randomized_add_open_then_regret_assign",
+  "slot": "constructor",
+  "path": "generated/v2/sscflp/constructor/randomized_add_open_then_regret_assign_r1.hpp",
+  "component": {
+   "name": "randomized_add_open_then_regret_assign",
+   "slot": "constructor",
+   "params": {
+    "slack": {
+     "type": "float",
+     "range": [
+      1.0,
+      1.6
+     ]
+    },
+    "topk": {
+     "type": "int",
+     "range": [
+      1,
+      5
+     ]
+    },
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.8
+     ]
+    },
+    "passes": {
+     "type": "int",
+     "range": [
+      0,
+      4
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "facility_star_packing_greedy",
+  "slot": "constructor",
+  "path": "generated/v2/sscflp/constructor/facility_star_packing_greedy_r1.hpp",
+  "component": {
+   "name": "facility_star_packing_greedy",
+   "slot": "constructor",
+   "params": {
+    "rcl_k": {
+     "type": "int",
+     "range": [
+      1,
+      5
+     ]
+    },
+    "ratio_mode": {
+     "type": "cat",
+     "values": [
+      "per_customer",
+      "per_demand"
+     ]
+    },
+    "passes": {
+     "type": "int",
+     "range": [
+      0,
+      4
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "shift_customer_near_or_open",
+  "slot": "neighborhood",
+  "path": "generated/v2/sscflp/neighborhood/shift_customer_near_or_open_r1.hpp",
+  "component": {
+   "name": "shift_customer_near_or_open",
+   "slot": "neighborhood",
+   "params": {
+    "k_near": {
+     "type": "int",
+     "range": [
+      3,
+      100
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "swap_customers_between_near_facilities",
+  "slot": "neighborhood",
+  "path": "generated/v2/sscflp/neighborhood/swap_customers_between_near_facilities_r1.hpp",
+  "component": {
+   "name": "swap_customers_between_near_facilities",
+   "slot": "neighborhood",
+   "params": {
+    "k_near": {
+     "type": "int",
+     "range": [
+      2,
+      50
+     ]
+    },
+    "max_partners": {
+     "type": "int",
+     "range": [
+      5,
+      200
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "facility_close_open_greedy_redistribution",
+  "slot": "neighborhood",
+  "path": "generated/v2/sscflp/neighborhood/facility_close_open_greedy_redistribution_r1.hpp",
+  "component": {
+   "name": "facility_close_open_greedy_redistribution",
+   "slot": "neighborhood",
+   "params": {
+    "pull_frac": {
+     "type": "float",
+     "range": [
+      0.3,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "random_shift_swap_walk",
+  "slot": "perturbation",
+  "path": "generated/v2/sscflp/perturbation/random_shift_swap_walk_r1.hpp",
+  "component": {
+   "name": "random_shift_swap_walk",
+   "slot": "perturbation",
+   "params": {
+    "moves_per_strength": {
+     "type": "int",
+     "range": [
+      1,
+      6
+     ]
+    },
+    "swap_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "open_bias": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "cluster_ruin_regret_recreate",
+  "slot": "perturbation",
+  "path": "generated/v2/sscflp/perturbation/cluster_ruin_regret_recreate_r1.hpp",
+  "component": {
+   "name": "cluster_ruin_regret_recreate",
+   "slot": "perturbation",
+   "params": {
+    "ruin_per_strength": {
+     "type": "int",
+     "range": [
+      2,
+      20
+     ]
+    },
+    "reference": {
+     "type": "cat",
+     "values": [
+      "open_facility",
+      "any_facility"
+     ]
+    },
+    "insertion": {
+     "type": "cat",
+     "values": [
+      "regret",
+      "greedy_demand"
+     ]
+    },
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.5
+     ]
+    },
+    "open_weight": {
+     "type": "float",
+     "range": [
+      0.5,
+      1.5
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "facility_close_greedy_repair",
+  "slot": "perturbation",
+  "path": "generated/v2/sscflp/perturbation/facility_close_greedy_repair_r2.hpp",
+  "component": {
+   "name": "facility_close_greedy_repair",
+   "slot": "perturbation",
+   "params": {
+    "close_per_strength": {
+     "type": "float",
+     "range": [
+      0.5,
+      3.0
+     ]
+    },
+    "selection": {
+     "type": "cat",
+     "values": [
+      "random",
+      "expensive"
+     ]
+    },
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.5
+     ]
+    },
+    "open_weight": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.5
+     ]
+    },
+    "steal": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ }
+]
