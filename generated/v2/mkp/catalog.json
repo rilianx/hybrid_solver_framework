@@ -1,0 +1,332 @@
+[
+ {
+  "name": "grasp_topk_jittered_ratio",
+  "slot": "constructor",
+  "path": "generated/v2/mkp/constructor/grasp_topk_jittered_ratio_r2.hpp",
+  "component": {
+   "name": "grasp_topk_jittered_ratio",
+   "slot": "constructor",
+   "params": {
+    "rcl_size": {
+     "type": "int",
+     "range": [
+      1,
+      8
+     ]
+    },
+    "weight_jitter": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.5
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "lagrangian_dual_ratio_greedy",
+  "slot": "constructor",
+  "path": "generated/v2/mkp/constructor/lagrangian_dual_ratio_greedy_r2.hpp",
+  "component": {
+   "name": "lagrangian_dual_ratio_greedy",
+   "slot": "constructor",
+   "params": {
+    "iters": {
+     "type": "int",
+     "range": [
+      20,
+      300
+     ]
+    },
+    "theta": {
+     "type": "float",
+     "range": [
+      0.1,
+      2.0
+     ]
+    },
+    "score_noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.3
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "random_overfill_drop_add_congestion",
+  "slot": "constructor",
+  "path": "generated/v2/mkp/constructor/random_overfill_drop_add_congestion_r2.hpp",
+  "component": {
+   "name": "random_overfill_drop_add_congestion",
+   "slot": "constructor",
+   "params": {
+    "init_density": {
+     "type": "float",
+     "range": [
+      0.3,
+      1.0
+     ]
+    },
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.3
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "swap_1_1_ratio_candidates",
+  "slot": "neighborhood",
+  "path": "generated/v2/mkp/neighborhood/swap_1_1_ratio_candidates_r1.hpp",
+  "component": {
+   "name": "swap_1_1_ratio_candidates",
+   "slot": "neighborhood",
+   "params": {
+    "max_in": {
+     "type": "int",
+     "range": [
+      5,
+      300
+     ]
+    },
+    "max_out": {
+     "type": "int",
+     "range": [
+      5,
+      300
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "drop_k_greedy_refill",
+  "slot": "neighborhood",
+  "path": "generated/v2/mkp/neighborhood/drop_k_greedy_refill_r1.hpp",
+  "component": {
+   "name": "drop_k_greedy_refill",
+   "slot": "neighborhood",
+   "params": {
+    "max_drop": {
+     "type": "int",
+     "range": [
+      1,
+      500
+     ]
+    },
+    "pair_pool": {
+     "type": "int",
+     "range": [
+      0,
+      30
+     ]
+    },
+    "refill_order": {
+     "type": "cat",
+     "values": [
+      "ratio",
+      "profit"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "forced_insert_ejection_repair",
+  "slot": "neighborhood",
+  "path": "generated/v2/mkp/neighborhood/forced_insert_ejection_repair_r1.hpp",
+  "component": {
+   "name": "forced_insert_ejection_repair",
+   "slot": "neighborhood",
+   "params": {
+    "max_add": {
+     "type": "int",
+     "range": [
+      1,
+      500
+     ]
+    },
+    "refill": {
+     "type": "int",
+     "range": [
+      0,
+      1
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "random_drop_noisy_greedy_refill",
+  "slot": "perturbation",
+  "path": "generated/v2/mkp/perturbation/random_drop_noisy_greedy_refill_r1.hpp",
+  "component": {
+   "name": "random_drop_noisy_greedy_refill",
+   "slot": "perturbation",
+   "params": {
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.5
+     ]
+    },
+    "extra_drop_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.5
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "forced_insertion_excess_repair",
+  "slot": "perturbation",
+  "path": "generated/v2/mkp/perturbation/forced_insertion_excess_repair_r2.hpp",
+  "component": {
+   "name": "forced_insertion_excess_repair",
+   "slot": "perturbation",
+   "params": {
+    "tournament": {
+     "type": "int",
+     "range": [
+      1,
+      6
+     ]
+    },
+    "allow_readd": {
+     "type": "int",
+     "range": [
+      0,
+      1
+     ]
+    },
+    "cluster_mult": {
+     "type": "float",
+     "range": [
+      1.0,
+      3.0
+     ]
+    },
+    "sim_noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.3
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "surrogate_weighted_ruin_repair",
+  "slot": "perturbation",
+  "path": "generated/v2/mkp/perturbation/surrogate_weighted_ruin_repair_r3.hpp",
+  "component": {
+   "name": "surrogate_weighted_ruin_repair",
+   "slot": "perturbation",
+   "params": {
+    "sigma": {
+     "type": "float",
+     "range": [
+      0.1,
+      2.0
+     ]
+    },
+    "tight_power": {
+     "type": "float",
+     "range": [
+      0.0,
+      4.0
+     ]
+    },
+    "align_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    },
+    "core_mult": {
+     "type": "float",
+     "range": [
+      0.5,
+      4.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ }
+]
