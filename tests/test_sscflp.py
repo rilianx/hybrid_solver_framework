@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from random import Random
 
@@ -77,27 +78,41 @@ def test_generated_instances_have_a_feasible_trivial():
         assert len(sol) == inst.n_customers and all(i in inst.facilities for i in sol)
 
 
+def _in_git():
+    """Los conjuntos que están en el repositorio (los grandes se bajan con `fetch --large` y git los ignora)."""
+    return sorted(p.stem for p in BENCH.glob("*.txt") if not re.fullmatch(r"cap[abc]\d|i\d+_\d+", p.stem))
+
+
 def test_the_benchmark_is_complete_and_feasible():
-    names = {p.stem for p in BENCH.glob("*.txt")}
+    names = _in_git()
     groups = {}
     for n in names:
-        groups[n.split("-")[0]] = groups.get(n.split("-")[0], 0) + 1
-    assert {k: groups.get(k, 0) for k in ("H", "D", "Y", "TB4")} == {"H": 71, "D": 57, "Y": 20, "TB4": 45}
+        g = n.split("-")[0] if "-" in n else "cap"
+        groups[g] = groups.get(g, 0) + 1
+    assert groups == {"H": 71, "D": 57, "Y": 20, "TB4": 45, "cap": 24}
     bk = load()
-    # Yang y TB4 tienen referencia de la literatura; Holmberg y Díaz-Fernández, las que haya calculado CBC
-    assert {n for n in names if n.startswith(("Y-", "TB4-"))} <= set(bk)
-    for n in sorted(names):
+    # todas tienen referencia salvo las Díaz-Fernández que CBC no resolvió (no hay tabla publicada)
+    assert {n for n in names if not n.startswith("D-")} <= set(bk)
+    for n in names:
         inst = SSCFLPInstance.load(str(BENCH / f"{n}.txt"))
         triv = ref.trivial_solution(inst)
         assert not any(ref.violations(inst, triv).values()), n
-        if n not in bk:
-            continue
-        e = bk[n]
-        assert e["lb"] is None or e["lb"] <= e["ub"] + 1e-6
-        assert sum(ref.cost_terms(inst, triv).values()) >= e["ub"] - 1e-6, n
+        if n in bk:
+            e = bk[n]
+            assert e["lb"] is None or e["lb"] <= e["ub"] + 1e-6
+            assert sum(ref.cost_terms(inst, triv).values()) >= e["ub"] - 1e-6, n
 
 
-def test_holmberg_p1_matches_the_literature():
-    # óptimo conocido de p1 (Holmberg et al., 1999): 8848
-    res = solve_cbc(str(BENCH / "H-p1.txt"), 60)
-    assert res["opt"] and res["ub"] == 8848
+def test_references_cover_every_published_instance():
+    bk = load()
+    assert sum(1 for k in bk if re.fullmatch(r"i\d+_\d+", k)) == 100  # TBED1
+    assert sum(1 for k in bk if re.fullmatch(r"cap[abc]\d", k)) == 12
+    assert all(bk[f"H-p{k}"]["opt"] for k in range(1, 72))
+    assert bk["H-p1"]["ub"] == 8848 and bk["cap61"]["ub"] == 932615.8
+
+
+def test_published_optima_match_cbc_on_our_conversion():
+    # Holmberg p1 (8848) y cap61 (932615.8, redondeado a un decimal en la tabla): la conversión de los archivos y el
+    # oráculo reproducen los óptimos publicados
+    assert solve_cbc(str(BENCH / "H-p1.txt"), 60)["ub"] == 8848
+    assert solve_cbc(str(BENCH / "cap61.txt"), 60)["ub"] == pytest.approx(932615.8, abs=0.06)

@@ -88,6 +88,24 @@ class SSCFLPInstance:
         cost = tuple(tuple(by_customer[j][i] for j in range(m)) for i in range(n))
         return SSCFLPInstance(cap, fixed, tuple(demand), cost)
 
+    @staticmethod
+    def parse_tbed1(text: str) -> "SSCFLPInstance":
+        """El formato de TBED1 (Avella y Boccia 2009, en OR-Brescia): `m n` (clientes, centros); las m demandas; las n
+        capacidades; los n costos fijos; n filas de m costos POR UNIDAD de demanda (el costo de asignación es costo
+        unitario × demanda, como en el CFLP de FrontierCO)."""
+        vals = [float(t) for t in text.split()]
+        m, n = int(vals[0]), int(vals[1])
+        p = 2
+        demand = tuple(vals[p:p + m])
+        p += m
+        cap = tuple(vals[p:p + n])
+        p += n
+        fixed = tuple(vals[p:p + n])
+        p += n
+        assert len(vals) - p == n * m, "archivo incompleto"
+        cost = tuple(tuple(vals[p + i * m + j] * demand[j] for j in range(m)) for i in range(n))
+        return SSCFLPInstance(cap, fixed, demand, cost)
+
     def save(self, path: str) -> None:
         with open(path, "w") as f:
             f.write(self.to_text())

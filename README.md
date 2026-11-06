@@ -66,12 +66,14 @@ en Python en `skeletons/` (misma semántica y parámetros, `core/assembler.py`; 
 | `clsp` | lot sizing capacitado multi-ítem | Trigeiro |
 | `jobshop` | job shop, makespan | Taillard |
 | `cvrp` | CVRP con flota libre | Uchoa X |
-| `sscflp` | localización de centros con capacidad y fuente única | Holmberg, Díaz-Fernández, Yang, TB4; TBED1 i1000 (`--large`) |
+| `sscflp` | localización de centros con capacidad y fuente única | Holmberg, Díaz-Fernández, Yang, TB4, OR-Library; capa–c y TBED1 (`--large`) |
 
-En el SSCFLP todavía no hay modelo ni componentes generados: están la instancia, la descripción, los casos y el
-oráculo, y el benchmark (193 instancias en `examples/sscflp/bench/`, con `python -m examples.sscflp.fetch` para
-descargarlas de nuevo y las referencias en `bench/best_known.json`: de la literatura en Yang, TB4 e i1000; en
-Holmberg y Díaz-Fernández se calculan con `python -m examples.sscflp.best_known --cbc H- D-`). Las i1000 son las "easy" del CFLP de FrontierCO.
+En el SSCFLP todavía no hay modelo ni componentes generados: están la instancia, la descripción, los casos, el
+oráculo y el benchmark. En el repositorio, 217 instancias (`examples/sscflp/bench/`); con
+`python -m examples.sscflp.fetch --large`, además capa–capc y las 100 de TBED1 (entre ellas las i1000, las "easy" del
+CFLP de FrontierCO). Las referencias (`bench/best_known.json`) son las de Guastaroba y Speranza (2014, OR-Brescia) y
+Kong (2021); en Díaz-Fernández no hay tabla publicada y se calculan con
+`python -m examples.sscflp.best_known --cbc D-`.
 
 En los demás, el modelo C++ y los componentes los escribió el LLM (`generated/<problema>_native/`). Un problema nuevo
 necesita la instancia (`to_text`/`parse`, generador), la descripción para el LLM (`ModelSpec`), los casos de prueba y

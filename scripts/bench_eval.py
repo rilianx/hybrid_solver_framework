@@ -12,7 +12,7 @@ contra la mejor solución conocida (un gap negativo es una mejor solución nueva
 | `jobshop` | Taillard ta01–ta20 (`examples/jobshop/taillard/`) | óptimo o mejor cota superior (JSPLIB) | 15×15, 20×15 |
 | `cvrp` | X de Uchoa et al. (`examples/cvrp/uchoa/`) | mejor conocida (CVRPLIB) | todas |
 | `clsp` | Trigeiro et al. (`examples/lotsizing/trigeiro/`) | CBC y la tabla 9 de Degraeve y Jans | F; cada G |
-| `sscflp` | Holmberg, Díaz-Fernández, Yang, TB4 y TBED1 i1000 (`examples/sscflp/bench/`) | óptimo o mejor conocida | prefijo (H, D, Y, TB4, i1000) |
+| `sscflp` | Holmberg, Díaz-Fernández, Yang, TB4, OR-Library y TBED1 (`examples/sscflp/bench/`) | óptimo o mejor conocida | H, D, Y, TB4, cap, capa–c, i300 … i3001500 |
 
 Cada réplica de cada corrida (`results/tune_runNN/r<k>/generated.json`) es una configuración; `--extra` agrega otras.
 El tiempo es `--budget` segundos por corrida o, en el flow shop, el protocolo de la literatura n·m/2·t ms (`--t`).
@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
@@ -57,6 +58,13 @@ def _pfsp_time(name: str, t: float) -> float:
     return int(n) * int(m) / 2 * t / 1000.0
 
 
+def _sscflp_group(name: str) -> str:
+    """H, D, Y, TB4, cap (16–50 centros), capa/capb/capc, i300, i500, i700, i1000, i3001500."""
+    if "-" in name:
+        return name.split("-")[0]
+    return re.match(r"(cap[abc]?|i\d+)", name).group(1)
+
+
 @dataclass
 class Bench:
     pack: str  # nombre del problema en core.packs
@@ -79,7 +87,7 @@ BENCHES = {
                   lambda n: "X"),
     "sscflp": Bench("sscflp", ROOT / "sscflp" / "bench", ".txt",
                     lambda: {k: v["ub"] for k, v in _json(ROOT / "sscflp" / "bench" / "best_known.json").items()},
-                    lambda n: n.split("-")[0] if "-" in n else n.split("_")[0]),
+                    _sscflp_group),
     "clsp": Bench("clsp", ROOT / "lotsizing" / "trigeiro", ".txt", _trigeiro_reference,
                   lambda n: "F" if n.startswith("F") else n),
 }
