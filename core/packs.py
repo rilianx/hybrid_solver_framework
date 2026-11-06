@@ -12,7 +12,7 @@ from core.problem_pack import ProblemPack
 
 PACKS = {"clsp": "examples.lotsizing.pack", "cvrp": "examples.cvrp.pack", "jobshop": "examples.jobshop.pack",
          "flowshop": "examples.flowshop.pack", "flowshop_cmax": "examples.flowshop_cmax.pack",
-         "sscflp": "examples.sscflp.pack"}
+         "sscflp": "examples.sscflp.pack", "mkp": "examples.mkp.pack"}
 
 
 def base_pack(problem: str) -> ProblemPack:

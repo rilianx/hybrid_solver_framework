@@ -296,7 +296,7 @@ class Assembler:
         (o relanza si `on_error="raise"`).
 
         Con `normalizers` (un costo de referencia por instancia) devuelve la media de
-        `costo / referencia`: sin eso, la instancia de mayor escala domina el promedio y
+        `costo / |referencia|`: sin eso, la instancia de mayor escala domina el promedio y
         el tuner optimiza para ella.
         """
         if normalizers is not None and len(normalizers) != len(instances):
@@ -309,7 +309,9 @@ class Assembler:
                 result = runner(inst, Random(seed + k), b)
                 if not self.problem_factory(inst).is_feasible(result.best_solution):
                     return self.penalty_cost
-                costs.append(result.best_objective / normalizers[k] if normalizers is not None else result.best_objective)
+                # |referencia|: en los de maximización (MKP) el costo es negativo y dividir por él invertiría el orden
+                costs.append(result.best_objective / abs(normalizers[k]) if normalizers is not None
+                             else result.best_objective)
             return mean(costs)
         except Exception:
             if on_error == "raise":

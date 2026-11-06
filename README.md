@@ -66,9 +66,10 @@ en Python en `skeletons/` (misma semántica y parámetros, `core/assembler.py`; 
 | `clsp` | lot sizing capacitado multi-ítem | Trigeiro |
 | `jobshop` | job shop, makespan | Taillard ta01–ta80, OR-Library |
 | `cvrp` | CVRP con flota libre | Uchoa X (100); FrontierCO (Golden, Arnold); test de ReEvo |
+| `mkp` | mochila multidimensional 0/1 | OR-Library (mknap1, mknap2, mknapcb1–9); test de ReEvo (`--reevo`) |
 | `sscflp` | localización de centros con capacidad y fuente única | Holmberg, Díaz-Fernández, Yang, TB4, OR-Library; capa–c y TBED1 (`--large`) |
 
-En el SSCFLP todavía no hay modelo ni componentes generados: están la instancia, la descripción, los casos, el
+En el SSCFLP y el MKP todavía no hay modelo ni componentes generados: están la instancia, la descripción, los casos, el
 oráculo y el benchmark. En el repositorio, 217 instancias (`examples/sscflp/bench/`); con
 `python -m examples.sscflp.fetch --large`, además capa–capc y las 100 de TBED1 (entre ellas las i1000, las "easy" del
 CFLP de FrontierCO). Las referencias (`bench/best_known.json`) son las de Guastaroba y Speranza (2014, OR-Brescia) y
@@ -100,7 +101,7 @@ python -m llm.native_mip_generator --problem $P --workspace $WS --provider anthr
 python -m examples.flowshop.tune --generated $WS --tuner irace --trials 70 --size 50x10,100x20 --scale-budget
 python -m examples.flowshop.tune --generated $WS --tuner staged --trials 70
 
-# evaluación en el benchmark con la configuración afinada (flowshop, flowshop_cmax, jobshop, cvrp, clsp, sscflp)
+# evaluación en el benchmark con la configuración afinada (flowshop, flowshop_cmax, jobshop, cvrp, cvrp_frontierco, clsp, sscflp, mkp)
 python -m scripts.bench_eval flowshop results/tune_runNN --t 60 --seeds 3
 ```
 

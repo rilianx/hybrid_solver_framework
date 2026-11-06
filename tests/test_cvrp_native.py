@@ -53,7 +53,7 @@ def test_uchoa_instances_round_distances(nat):
 
     d = Path("examples/cvrp/uchoa")
     bk = json.loads((d / "best_known.json").read_text())
-    assert len([k for k in bk if not k.startswith("_")]) == 43 and bk["X-n101-k25"] == 27591
+    assert len([k for k in bk if not k.startswith("_")]) == 100 and bk["X-n101-k25"] == 27591
     inst = CVRPInstance.load(str(d / "X-n101-k25.vrp"))
     assert inst.rounded and inst.n_customers == 100 and inst.capacity == 206 and inst.demand[0] == 0
     assert CVRPInstance.parse(inst.to_text()) == inst

@@ -13,6 +13,7 @@ contra la mejor solución conocida (un gap negativo es una mejor solución nueva
 | `cvrp` | X de Uchoa et al. (`examples/cvrp/uchoa/`, 100) | mejor conocida (CVRPLIB) | todas |
 | `cvrp_frontierco` | CVRP de FrontierCO (`examples/cvrp/frontierco/`): Golden, valid, Arnold | la de FrontierCO | Golden, valid, Arnold |
 | `clsp` | Trigeiro et al. (`examples/lotsizing/trigeiro/`) | CBC y la tabla 9 de Degraeve y Jans | F; cada G |
+| `mkp` | OR-Library: mknap1, mknap2, mknapcb1–9 (`examples/mkp/orlib/`) | óptimo o mejor conocida (CO-Bench) | archivo |
 | `sscflp` | Holmberg, Díaz-Fernández, Yang, TB4, OR-Library y TBED1 (`examples/sscflp/bench/`) | óptimo o mejor conocida | H, D, Y, TB4, cap, capa–c, i300 … i3001500 |
 
 Cada réplica de cada corrida (`results/tune_runNN/r<k>/generated.json`) es una configuración; `--extra` agrega otras.
@@ -99,6 +100,8 @@ BENCHES = {
     "cvrp_frontierco": Bench("cvrp", ROOT / "cvrp" / "frontierco", ".txt",
                              lambda: _json(ROOT / "cvrp" / "frontierco" / "best_known.json"),
                              lambda n: "Golden" if n.startswith("Golden") else ("valid" if n.startswith("instance") else "Arnold")),
+    "mkp": Bench("mkp", ROOT / "mkp" / "orlib", ".txt", lambda: _json(ROOT / "mkp" / "orlib" / "best_known.json"),
+                 lambda n: n.split("_")[0]),
     "sscflp": Bench("sscflp", ROOT / "sscflp" / "bench", ".txt",
                     lambda: {k: v["ub"] for k, v in _json(ROOT / "sscflp" / "bench" / "best_known.json").items()},
                     _sscflp_group),
@@ -169,7 +172,8 @@ def main(argv: list[str] | None = None) -> None:
     with ProcessPoolExecutor(args.workers) as pool:
         rows = list(pool.map(_run, jobs))
 
-    gap = lambda r: 100 * (r["cost"] - ref[r["instance"]]) / ref[r["instance"]]  # noqa: E731
+    # |ref|: en los de maximización (MKP) el costo es el beneficio con signo menos y la referencia es negativa
+    gap = lambda r: 100 * (r["cost"] - ref[r["instance"]]) / abs(ref[r["instance"]])  # noqa: E731
     groups: dict[str, list[str]] = {}
     for n in names:
         groups.setdefault(b.group(n), []).append(n)

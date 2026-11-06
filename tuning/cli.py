@@ -155,7 +155,7 @@ def print_test(catalog: str, report, reference: float, n_test: int) -> None:
     rows = [("tuned", report.tuned)] + [(b.label, b) for b in sorted(report.baselines, key=lambda s: s.mean_gap(bk))]
     for label, sc in rows:
         print(f"    {label:<48} gap {sc.mean_gap(bk):>7.2%}   {sc.mean:>12.1f} ± {sc.std:>8.1f}   "
-              f"({(reference - sc.mean) / reference:+.1%} vs partida)   {describe(sc.config)}")
+              f"({(reference - sc.mean) / abs(reference):+.1%} vs partida)   {describe(sc.config)}")
     print(f"  ganancia del afinado vs mejor default: {report.gain_vs_best_baseline():+.2%}; "
           f"gana en {report.wins_per_instance()}/{n_test} instancias")
     pc = report.to_dict()["tuned_vs_best_baseline"]

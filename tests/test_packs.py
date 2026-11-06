@@ -23,7 +23,7 @@ def test_pack(name):
     assert "destruction" not in by_slot
     assert check_heuristic_view(parts, pack.load_cases()).passed
     inst = pack.make_instances(1, 0, pack.parse_size(pack.default_size))[0]
-    assert pack.baseline_cost(inst) > 0
+    assert pack.baseline_cost(inst) != 0  # negativo en los de maximización (MKP: -beneficio)
 
 
 def test_the_generic_destructions_pass_the_validator():
