@@ -45,3 +45,5 @@ PACK = parts_pack(_BASE, model_parts, "examples.lotsizing.model_parts", make_mod
 PACK.baseline_constructor = lambda: TrivialConstructor(model_parts)
 PACK.native_module = "examples.lotsizing.native_parts"
 PACK.variants = {"setups": (make_model_spec, "examples.lotsizing.model_parts")}
+# presupuesto por instancia (`--scale-budget`): proporcional a ítems·períodos, 1 en 20×20
+PACK.budget_scale = lambda inst: inst.n_items * inst.n_periods / 400

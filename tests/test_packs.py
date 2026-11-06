@@ -46,3 +46,15 @@ def test_the_generic_destructions_pass_the_validator():
             assert report.passed, (name, cls.__name__, report.feedback())
         _, free = GroupWindowDestruction(ctx.problem).destroy(ctx.trivial_solutions[0], 0.3, Random(0))
         assert free
+
+
+def test_every_pack_scales_the_budget_and_has_an_evaluation_protocol():
+    from scripts.bench_eval import BENCHES
+
+    for name in PACKS:
+        pack = base_pack(name)
+        inst = pack.make_instances(1, 0, pack.parse_size(pack.default_size))[0]
+        assert pack.budget_scale is not None and pack.budget_scale(inst) > 0, name
+    for name, b in BENCHES.items():
+        fn, t, text = b.protocol
+        assert t > 0 and text, name

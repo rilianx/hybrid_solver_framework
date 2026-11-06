@@ -44,3 +44,5 @@ PACK.baseline_constructor = lambda: TrivialConstructor(model_parts)
 PACK.native_module = "examples.jobshop.native_parts"
 PACK.bench_size = "20x15"
 PACK.variants = {"sequences": (make_model_spec, "examples.jobshop.model_parts")}
+# presupuesto por instancia (`--scale-budget`): proporcional a las operaciones n·m, 1 en 15×15 (como el flow shop)
+PACK.budget_scale = lambda inst: inst.n_jobs * inst.n_machines / 225

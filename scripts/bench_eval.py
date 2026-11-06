@@ -19,7 +19,10 @@ contra la mejor solución conocida (un gap negativo es una mejor solución nueva
 | `sscflp` | Holmberg, Díaz-Fernández, Yang, TB4, OR-Library y TBED1 (`examples/sscflp/bench/`) | óptimo o mejor conocida | H, D, Y, TB4, cap, capa–c, i300 … i3001500 |
 
 Cada réplica de cada corrida (`results/tune_runNN/r<k>/generated.json`) es una configuración; `--extra` agrega otras.
-El tiempo es `--budget` segundos por corrida o, en el flow shop, el protocolo de la literatura n·m/2·t ms (`--t`).
+El tiempo por corrida crece con el tamaño de la instancia (`_PROTOCOLS`, con `--t`): el del flow shop, n·m/2·t ms
+(Taillard; Ruiz y Stützle), con el análogo de n·m en cada problema (operaciones, ítems × períodos, centros × clientes,
+ítems × restricciones), y en el CVRP n·t/100 s (t = 240 es el 2,4·n s de Vidal 2022, el de PyVRP y el DIMACS). Con
+`--budget`, segundos fijos (para compararse con CO-Bench, 10 s, o FrontierCO, hasta 3600 s).
 Las corridas van en paralelo (`--workers` procesos).
 """
 
@@ -33,7 +36,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from random import Random
 from statistics import mean
-from typing import Callable
+from typing import Any, Callable
 
 ROOT = Path(__file__).resolve().parent.parent / "examples"
 
@@ -57,9 +60,21 @@ def _pfsp_class(name: str) -> str:
     return "_".join(name[3:].split("_")[:2])
 
 
-def _pfsp_time(name: str, t: float) -> float:
-    n, m = _pfsp_class(name).split("_")
-    return int(n) * int(m) / 2 * t / 1000.0
+def _nm_ms(size: Callable[[Any], int]) -> tuple[Callable[[Any, float], float], str]:
+    """El protocolo del flow shop (Taillard; Ruiz y Stützle): size/2·t ms, con size = n·m o el análogo del problema."""
+    return (lambda inst, t: size(inst) / 2 * t / 1000.0), "size/2·t ms"
+
+
+_PROTOCOLS = {  # (instancia, t) -> segundos; t por defecto; descripción
+    "flowshop": (*_nm_ms(lambda i: i.n_jobs * i.n_machines), 60.0, "n·m/2·t ms (trabajos × máquinas)"),
+    "jobshop": (*_nm_ms(lambda i: i.n_jobs * i.n_machines), 60.0, "n·m/2·t ms (operaciones)"),
+    "clsp": (*_nm_ms(lambda i: i.n_items * i.n_periods), 60.0, "N·T/2·t ms (ítems × períodos)"),
+    "sscflp": (*_nm_ms(lambda i: i.n_facilities * i.n_customers), 60.0, "n·m/2·t ms (centros × clientes)"),
+    "mkp": (*_nm_ms(lambda i: i.n_items * i.n_resources), 60.0, "n·m/2·t ms (ítems × restricciones)"),
+    # Vidal (2022), el de PyVRP y el DIMACS en las X: 2,4·n s, que es t = 240
+    "cvrp": (lambda i, t: i.n_customers * t / 100.0, "", 240.0, "n·t/100 s (clientes; t = 240 es el 2,4·n s de Vidal 2022)"),
+}
+_PROTOCOLS["flowshop_cmax"] = _PROTOCOLS["flowshop"]
 
 
 _TA_SIZES = ["15×15", "20×15", "20×20", "30×15", "30×20", "50×15", "50×20", "100×20"]
@@ -86,14 +101,19 @@ class Bench:
     ext: str
     reference: Callable[[], dict[str, float]]
     group: Callable[[str], str]
-    protocol: Callable[[str, float], float] | None = None  # (instancia, t) -> segundos
+
+    @property
+    def protocol(self):
+        """(segundos(instancia, t), t por defecto, descripción): el tiempo crece con el tamaño de la instancia."""
+        fn, _, t, text = _PROTOCOLS[self.pack]
+        return fn, t, text
 
 
 BENCHES = {
     "flowshop": Bench("flowshop", ROOT / "flowshop" / "taillard", ".txt",
-                      lambda: _json(ROOT / "flowshop" / "taillard" / "best_known.json"), _pfsp_class, _pfsp_time),
+                      lambda: _json(ROOT / "flowshop" / "taillard" / "best_known.json"), _pfsp_class),
     "flowshop_cmax": Bench("flowshop_cmax", ROOT / "flowshop" / "taillard", ".txt",
-                           lambda: _json(ROOT / "flowshop_cmax" / "best_known.json"), _pfsp_class, _pfsp_time),
+                           lambda: _json(ROOT / "flowshop_cmax" / "best_known.json"), _pfsp_class),
     "jobshop": Bench("jobshop", ROOT / "jobshop" / "bench", ".txt",
                      lambda: {k: v["ub"] for k, v in _json(ROOT / "jobshop" / "bench" / "best_known.json").items()},
                      _jssp_group),
@@ -142,8 +162,10 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("problem", choices=sorted(BENCHES))
     ap.add_argument("runs", nargs="*", help="directorios results/tune_runNN (una configuración por réplica)")
     ap.add_argument("--generated", default=None, help="workspace de los componentes (default generated/<problema>_native)")
-    ap.add_argument("--budget", type=float, default=None, help="segundos por corrida")
-    ap.add_argument("--t", type=float, default=None, help="flow shop: n·m/2·t ms por instancia (default 60)")
+    ap.add_argument("--budget", type=float, default=None,
+                    help="segundos fijos por corrida (CO-Bench: 10; FrontierCO: 3600); sin esto, el protocolo del problema")
+    ap.add_argument("--t", type=float, default=None,
+                    help="t del protocolo: size/2·t ms (default 60) o, en el CVRP, n·t/100 s (default 240, Vidal 2022)")
     ap.add_argument("--seeds", type=int, default=1)
     ap.add_argument("--first-seed", type=int, default=0, help="semillas first-seed .. first-seed+seeds-1 (para repartir corridas)")
     ap.add_argument("--instances", nargs="*", default=None, help="prefijos de los nombres (p.ej. G, tai50_10, X-n1); default todas")
@@ -173,11 +195,16 @@ def main(argv: list[str] | None = None) -> None:
     ref = _json(Path(args.best_known)) if args.best_known else b.reference()
     names = sorted(p.stem for p in b.dir.glob(f"*{b.ext}") if p.stem in ref
                    and (not args.instances or any(p.stem.startswith(x) for x in args.instances)))
-    if b.protocol is not None and args.budget is None:
-        t = args.t or 60.0
-        seconds, when = (lambda n: b.protocol(n, t)), f"n·m/2·{t:g} ms"
-    else:
-        seconds, when = (lambda n: args.budget or 30.0), f"{args.budget or 30.0:g} s"
+    if args.budget is None:  # el protocolo del problema: el tiempo crece con el tamaño
+        from core.packs import base_pack
+
+        fn, t_default, text = b.protocol
+        t = args.t or t_default
+        load = base_pack(b.pack).load_instance
+        secs = {n: fn(load(str(b.dir / f"{n}{b.ext}")), t) for n in names}
+        seconds, when = secs.__getitem__, f"{text} con t = {t:g}"
+    else:  # un tiempo fijo (CO-Bench: 10 s por instancia; FrontierCO: hasta 3600 s)
+        seconds, when = (lambda n: args.budget), f"{args.budget:g} s"
     seeds = range(args.first_seed, args.first_seed + args.seeds)
     jobs = [(args.problem, label, cfg, n, s, seconds(n), generated) for label, (cfg, _) in configs.items() for n in names for s in seeds]
     jobs.sort(key=lambda j: -j[5])  # las largas primero

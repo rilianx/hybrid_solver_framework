@@ -49,3 +49,6 @@ PACK.baseline_constructor = lambda: TrivialConstructor(model_parts)
 PACK.native_module = "examples.cvrp.native_parts"
 PACK.bench_size = "x150"
 PACK.variants = {"routes": (make_model_spec, "examples.cvrp.model_parts")}
+# presupuesto por instancia (`--scale-budget`): proporcional a los clientes, como el 2,4·n s de Vidal (2022) en las X;
+# 1 en 100 clientes
+PACK.budget_scale = lambda inst: inst.n_customers / 100

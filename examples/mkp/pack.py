@@ -46,3 +46,5 @@ PACK.baseline_constructor = lambda: TrivialConstructor(model_parts)
 PACK.native_module = "examples.mkp.native_parts"
 PACK.bench_size = "250x10"
 PACK.variants = {"binary": (make_model_spec, "examples.mkp.model_parts")}
+# presupuesto por instancia (`--scale-budget`): proporcional a ítems·restricciones, 1 en 100×5
+PACK.budget_scale = lambda inst: inst.n_items * inst.n_resources / 500

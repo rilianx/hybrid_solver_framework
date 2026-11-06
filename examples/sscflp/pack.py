@@ -61,3 +61,5 @@ PACK.baseline_constructor = lambda: TrivialConstructor(model_parts)
 PACK.native_module = "examples.sscflp.native_parts"
 PACK.bench_size = "30x200"
 PACK.variants = {"assignment": (make_model_spec, "examples.sscflp.model_parts")}
+# presupuesto por instancia (`--scale-budget`): proporcional a las asignaciones centros·clientes, 1 en 20×100
+PACK.budget_scale = lambda inst: inst.n_facilities * inst.n_customers / 2000
