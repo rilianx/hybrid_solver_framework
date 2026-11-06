@@ -1713,3 +1713,24 @@ Pendiente: un desempate incremental (calculado junto con el delta) o probarlo en
 Las brechas del job shop de arriba usan las mejores conocidas de JSPLIB, desactualizadas en ta11, ta15, ta19 y ta20
 (1361, 1340, 1335 y 1351; los óptimos son 1357, 1339, 1332 y 1348). Desde `examples/jobshop/bench/best_known.json`
 (Weise 2020) las brechas en esas cuatro son algo mayores que las reportadas (hasta 0.3 puntos).
+
+## Protocolo v2: los 7 problemas generados con el mismo protocolo
+
+`generated/v2/<problema>`: modelo C++, 3 constructores, 3 vecindarios y 3 perturbaciones (n = 3, hasta 3 rondas) y la
+vista MIP (no en los flow shop), con Opus 5.5, prompts compactos, la representación de la solución en el prompt de
+componentes y el chequeo de forma. Corridas 168–187 de `generate.yml`.
+
+| problema | rondas del modelo | componentes | aceptados en la 1ª ronda | rechazos | rondas de la MIP | USD |
+|---|---|---|---|---|---|---|
+| flowshop | 1 | 9/9 | 8/9 | 2 | — | 0.77 |
+| flowshop_cmax | 1 | 9/9 | 9/9 | 0 | — | 0.62 |
+| jobshop | 1 | 9/9 | 8/9 | 1 | 1 | 1.31 |
+| clsp | 1 | 9/9 | 8/9 | 2 | 1 | 1.16 |
+| cvrp | 1 | 9/9 | 8/9 | 2 | 1 | 2.50 |
+| sscflp | 1 | 9/9 | 8/9 | 1 | 1 | 1.18 |
+| mkp | 1 | 9/9 | 4/9 | 6 (3 de compilación) | 1 | 1.34 |
+| total | | 63/63 | 53/63 | 14 | | 8.88 |
+
+No incluye un intento fallido del modelo del SSCFLP (corrida 173, 0.54 USD): la descripción no decía cuál es la solución
+trivial y la coherencia compara la penalización con la del oráculo; se agregó (como en el MKP) y el siguiente se aceptó
+en la ronda 1. Todos los componentes pasan el chequeo de forma (`well_formed`; el CVRP no lo define).
