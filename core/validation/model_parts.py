@@ -74,6 +74,17 @@ def check_heuristic_view(parts, cases: list[TestCase], n_random: int = 4, decode
             if v:
                 report.add(fail(L, "trivial_feasible", f"trivial_solution viola {v} en {where}: {_short(triv)}"))
             sols = [parts.random_solution(inst, Random(s)) for s in range(n_random)]
+            wf = getattr(parts, "well_formed", None)
+            if callable(wf):  # la forma de lo que devuelve el modelo, antes de la forma canónica si la hay
+                raw_t = getattr(parts, "raw_trivial_solution", parts.trivial_solution)
+                raw_r = getattr(parts, "raw_random_solution", parts.random_solution)
+                for what, sol in [("trivial_solution", raw_t(inst))] + [("random_solution", raw_r(inst, Random(s)))
+                                                                          for s in range(n_random)]:
+                    why = wf(inst, sol)
+                    if why:
+                        report.add(fail(L, "well_formed", f"{what} devuelve una solución con otra forma en {where}: {why}. "
+                                                          f"sol={_short(sol)}"))
+                        break
             for s in sols:
                 hash(s)
                 c = parts.canonical(s)

@@ -8,7 +8,8 @@ faltan, sobran o no existen). Término: `makespan` (instante en que el último t
 
 from __future__ import annotations
 
-from examples.flowshop.model_parts import canonical, from_answer, random_solution, trivial_solution, violations  # noqa: F401
+from examples.flowshop.model_parts import (  # noqa: F401
+    canonical, from_answer, random_solution, trivial_solution, violations, well_formed)
 
 from examples.flowshop.instance import PFSPInstance
 

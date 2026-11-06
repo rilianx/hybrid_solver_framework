@@ -36,6 +36,15 @@ def _why_infeasible(ctx: ValidationContext, sol) -> str:
         return ""
 
 
+def _malformed(ctx: ValidationContext, sol) -> str | None:
+    """Por qué `sol` no tiene la forma de la solución del problema (`well_formed` del oráculo, si lo define), o None. Se
+    revisa en todo lo que produce un componente: una salida con otra forma (SSCFLP, corrida 163: una lista de clientes
+    por centro donde va una fila con el centro de cada cliente) puede pasar las demás capas, p.ej. una perturbación,
+    que puede dejar infactible."""
+    fn = getattr(ctx.problem, "malformed", None)
+    return fn(sol) if callable(fn) else None
+
+
 def _sample_solutions(ctx: ValidationContext, inst_idx: int, constructor=None) -> list[Any]:
     sols = [ctx.trivial_solutions[inst_idx]]
     if constructor is not None:
@@ -56,6 +65,10 @@ def check_constructor(impl, ctx: ValidationContext) -> list[CheckResult]:
         for seed in ctx.seeds:
             def _feasible(k=k, inst=inst, seed=seed):
                 sol = impl.build(inst, Random(seed))
+                why = _malformed(ctx, sol)
+                if why:
+                    return fail(LAYER, "constructor.well_formed", f"build(inst_{k}, seed={seed}) devolvió una solución con "
+                                                                  f"otra forma: {why}. sol={_short(sol)}")
                 if not ctx.problem.is_feasible(sol):
                     return fail(LAYER, "constructor.feasible", f"build(inst_{k}, seed={seed}) produjo una solución infactible.{_why_infeasible(ctx, sol)}")
                 return ok(LAYER, "constructor.feasible")
@@ -107,6 +120,12 @@ def check_neighborhood(impl, ctx: ValidationContext) -> list[CheckResult]:
                         out.append(fail(LAYER, f"neighborhood.{step}_runs",
                                         f"{step}(…, m={m!r}) lanzó {describe_exception(exc)}. m salió de moves(sol) con "
                                         f"sol={_short(sol)} en inst_{k}"))
+                        break
+                    why = _malformed(ctx, applied)
+                    if why:
+                        out.append(fail(LAYER, "neighborhood.well_formed",
+                                        f"apply(sol, m={m!r}) devolvió una solución con otra forma: {why}. "
+                                        f"sol={_short(sol)}, apply(sol, m)={_short(applied)} en inst_{k}"))
                         break
                     if back != sol:
                         out.append(fail(LAYER, "neighborhood.undo_apply_identity",
@@ -249,6 +268,18 @@ def check_perturbation(impl, ctx: ValidationContext) -> list[CheckResult]:
                             f"perturb(sol, strength=1) devolvió la misma solución con todas las semillas y todas las soluciones de prueba en inst_{k}")
             return ok(LAYER, "perturbation.changes_solution")
 
+        def _well_formed(k=k):
+            for x in _sample_solutions(ctx, k):
+                for s in ctx.seeds:
+                    for strength in (0.2, 1.0):
+                        y = impl.perturb(x, strength, Random(s))
+                        why = _malformed(ctx, y)
+                        if why:
+                            return fail(LAYER, "perturbation.well_formed",
+                                        f"perturb(sol, strength={strength}, seed={s}) devolvió una solución con otra "
+                                        f"forma: {why}. sol={_short(x)}, perturb(...)={_short(y)} en inst_{k}")
+            return ok(LAYER, "perturbation.well_formed")
+
         def _feasible(k=k, sol=sol):
             if ctx.require_feasible_moves:
                 for s in ctx.seeds:
@@ -256,6 +287,7 @@ def check_perturbation(impl, ctx: ValidationContext) -> list[CheckResult]:
                         return fail(LAYER, "perturbation.feasible", f"perturb produjo infactible (seed={s}) en inst_{k}")
             return ok(LAYER, "perturbation.feasible")
 
+        results += guard(LAYER, "perturbation.well_formed", _well_formed)
         results += guard(LAYER, "perturbation.changes_solution", _changes)
         results += guard(LAYER, "perturbation.feasible", _feasible)
     return _collapse(results)
@@ -291,6 +323,10 @@ def check_relink(impl, ctx: ValidationContext) -> list[CheckResult]:
                 rng, cur, d = Random(s), a, impl.distance(a, b)
                 for step in range(d):
                     nxt = impl.step(cur, b, rng)
+                    why = _malformed(ctx, nxt)
+                    if why:
+                        return fail(LAYER, "relink.well_formed", f"step devolvió una solución con otra forma: {why}. "
+                                                                 f"step(...)={_short(nxt)} en inst_{k}")
                     dn = impl.distance(nxt, b)
                     if dn >= d:
                         return fail(LAYER, "relink.path", f"step no acercó la solución a la guía (distancia {d} → {dn}, "

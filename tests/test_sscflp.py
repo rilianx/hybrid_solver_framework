@@ -116,3 +116,24 @@ def test_published_optima_match_cbc_on_our_conversion():
     # oráculo reproducen los óptimos publicados
     assert solve_cbc(str(BENCH / "H-p1.txt"), 60)["ub"] == 8848
     assert solve_cbc(str(BENCH / "cap61.txt"), 60)["ub"] == pytest.approx(932615.8, abs=0.06)
+
+
+def test_a_perturbation_with_another_shape_is_rejected():
+    # corrida 163: una perturbación devolvía una lista de clientes por centro y pasaba (puede dejar infactible)
+    from core.validation import validate_component
+
+    ctx = PACK.make_contexts(n_contexts=1)[0]
+
+    class PerFacility:
+        def __init__(self, problem):
+            self.inst = problem.inst
+
+        def perturb(self, sol, strength, rng):
+            rows = [[] for _ in self.inst.facilities]
+            for j, i in enumerate(sol[0]):
+                rows[(i + 1) % self.inst.n_facilities].append(j)
+            return tuple(tuple(r) for r in rows)
+
+    comp = {"name": "per_facility", "slot": "perturbation", "compatible_skeletons": ["ILS"], "params": {}}
+    report = validate_component(comp, PerFacility(ctx.problem), ctx)
+    assert not report.passed and "perturbation.well_formed" in report.feedback()

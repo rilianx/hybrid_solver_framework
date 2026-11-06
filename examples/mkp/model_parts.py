@@ -66,3 +66,13 @@ def violations(inst: MKPInstance, sol) -> dict[str, float]:
 def cost_terms(inst: MKPInstance, sol) -> dict[str, float]:
     sol = sol[0]
     return {"beneficio": -float(sum(inst.profit[j] for j in inst.items if sol[j]))}
+
+
+def well_formed(inst: MKPInstance, sol) -> str | None:
+    """La forma de la solución (no su factibilidad): una sola fila con un 0/1 por ítem."""
+    if len(sol) != 1:
+        return f"se esperaba UNA fila (0/1 por ítem) y hay {len(sol)}"
+    if len(sol[0]) != inst.n_items:
+        return f"la fila tiene {len(sol[0])} valores y hay {inst.n_items} ítems"
+    bad = [x for x in sol[0] if x not in (0, 1)]
+    return f"valores distintos de 0/1: {bad[:5]}" if bad else None

@@ -14,6 +14,8 @@ Piezas (funciones de un módulo; `inst` es la instancia):
     from_answer(inst, answer) -> sol          la respuesta en el formato neutral de los casos -> sol
     violations(inst, sol) -> {familia: magnitud}    > 0 = violada; {} o ceros si es factible
     cost_terms(inst, sol) -> {término: valor}       el objetivo, por términos (se minimiza la suma)
+    well_formed(inst, sol) -> None | motivo   OPCIONAL: la forma de la solución (no su factibilidad); la validación la
+                                              revisa en el modelo y en todo lo que producen los componentes
 
   Vista MIP, como datos (el framework arma el modelo del solver: `LinearMIP`)
     variables(inst) -> {nombre: (lo, hi, "binary" | "continuous")}
@@ -176,6 +178,13 @@ class PartsModel:
 
     def is_feasible(self, sol) -> bool:
         return not self.violations(sol)
+
+    def malformed(self, sol) -> str | None:
+        """Por qué `sol` no tiene la forma de la solución del problema (`well_formed` del oráculo, opcional), o None.
+        No es infactibilidad: una solución con otra forma (p.ej. una lista por centro donde va una fila con el centro de
+        cada cliente) puede dar violaciones o costos sin sentido sin que nada falle."""
+        fn = getattr(self.parts, "well_formed", None)
+        return fn(self.inst, sol) if callable(fn) else None
 
     def explain_infeasibility(self, sol) -> str:
         v = self.violations(sol)

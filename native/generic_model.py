@@ -41,10 +41,14 @@ def model_parts(native, mip, model_of=None) -> SimpleNamespace:
         native=native, model=model_of, canonical=canon, from_answer=mip.from_answer,
         trivial_solution=lambda inst: canon(native.trivial_solution(model_of(inst))),
         random_solution=lambda inst, rng: canon(native.random_solution(model_of(inst), seed(rng))),
+        # sin la forma canónica, para revisar la forma de lo que devuelve el modelo (`well_formed`): `canonical` puede
+        # ocultar una forma equivocada (p.ej. quedarse con la primera fila)
+        raw_trivial_solution=lambda inst: native.trivial_solution(model_of(inst)),
+        raw_random_solution=lambda inst, rng: native.random_solution(model_of(inst), seed(rng)),
         violations=lambda inst, sol: native.violations(model_of(inst), sol),
         cost_terms=lambda inst, sol: native.cost_terms(model_of(inst), sol),
     )
-    for name in ("variables", "structural_variables", "to_assignment", "aux_values", "from_assignment",
+    for name in ("well_formed", "variables", "structural_variables", "to_assignment", "aux_values", "from_assignment",
                  "constraint_families", "objective_terms", "variable_groups"):
         if hasattr(mip, name):
             setattr(ns, name, getattr(mip, name))

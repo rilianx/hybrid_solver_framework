@@ -163,3 +163,8 @@ def critical_blocks(inst: JSSPInstance, sol, start=None) -> list[tuple[int, list
         else:
             blocks.append((m, [j]))
     return [b for b in blocks if len(b[1]) > 1]
+
+
+def well_formed(inst: JSSPInstance, sol) -> str | None:
+    """La forma de la solución (no su factibilidad): una fila por máquina."""
+    return None if len(sol) == inst.n_machines else f"se esperaba una fila por máquina ({inst.n_machines}) y hay {len(sol)}"

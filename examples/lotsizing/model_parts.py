@@ -74,3 +74,11 @@ def cost_terms(inst: CLSPInstance, sol) -> dict[str, float]:
     _, s, _ = _plan(inst, canonical(sol))
     setup = sum(inst.setup_cost[i] for i in range(inst.n_items) for t in range(inst.n_periods) if sol[i][t])
     return {"setup": float(setup), "inventario": sum(inst.holding_cost[i] * v for (i, _t), v in s.items())}
+
+
+def well_formed(inst: CLSPInstance, sol) -> str | None:
+    """La forma de la solución: una fila por ítem con un valor por período."""
+    if len(sol) != inst.n_items:
+        return f"se esperaba una fila por ítem ({inst.n_items}) y hay {len(sol)}"
+    lens = {len(r) for r in sol}
+    return None if lens == {inst.n_periods} else f"filas de largo {sorted(lens)} y hay {inst.n_periods} períodos"

@@ -57,3 +57,8 @@ def cost_terms(inst: PFSPInstance, sol) -> dict[str, float]:
             c[i] = max(c[i], c[i - 1]) + inst.p[i][j]
         total += c[m - 1]
     return {"flowtime": float(total)}
+
+
+def well_formed(inst, sol) -> str | None:
+    """La forma de la solución (no su factibilidad: que sea una permutación es la familia `permutacion`): una fila."""
+    return None if len(sol) == 1 else f"se esperaba UNA fila (el orden de los trabajos) y hay {len(sol)}"

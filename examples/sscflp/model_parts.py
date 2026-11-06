@@ -88,3 +88,13 @@ def cost_terms(inst: SSCFLPInstance, sol) -> dict[str, float]:
     used = {i for i in sol[:m] if 0 <= i < n}
     return {"apertura": float(sum(inst.fixed[i] for i in used)),
             "transporte": float(sum(inst.cost[i][j] for j, i in enumerate(sol[:m]) if 0 <= i < n))}
+
+
+def well_formed(inst: SSCFLPInstance, sol) -> str | None:
+    """La forma de la solución (no su factibilidad): una sola fila con un centro (o -1) por cliente."""
+    if len(sol) != 1:
+        return f"se esperaba UNA fila (el centro de cada cliente) y hay {len(sol)}"
+    if len(sol[0]) != inst.n_customers:
+        return f"la fila tiene {len(sol[0])} valores y hay {inst.n_customers} clientes"
+    bad = [i for i in sol[0] if not -1 <= i < inst.n_facilities]
+    return f"centros fuera de -1..{inst.n_facilities - 1}: {bad[:5]}" if bad else None
