@@ -158,6 +158,10 @@ def generation_prompt(pack, gen: dict, slot: str, n: int, avoid: list[str],
         f"\n# Contrato (de native/include/hsf/core.hpp)\n```cpp\n{contract_source(slot)}\n```",
         "\n# Qué se verificará\n" + SLOT_HINTS.get(slot, ""),
         f"\n# Problema: {spec.name}\n{spec.description}",
+        # la representación: con el modelo en prototipos (compacto) no se ve en los cuerpos y el LLM la adivinaba (SSCFLP,
+        # corrida 163: supuso una lista de clientes por centro donde el modelo guarda el centro de cada cliente)
+        f"\n## La solución\n`Solution` es `std::vector<std::vector<int>>` con la forma de la respuesta del problema: "
+        f"{spec.answer_format}",
         f"\n## El modelo C++ (`{gen['model_type']}`; tu componente recibe una referencia const a él)\n```cpp\n{model}\n```",
     ]
     if slot == "destruction":

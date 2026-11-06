@@ -348,3 +348,11 @@ def test_a_destruction_with_indices_out_of_range_is_rejected(pack, tmp_path):
     acc, stats = generate_native_slot(ScriptedClient(responses=[bad]), pack, "destruction", 1, tmp_path,
                                       max_rounds=1, verbose=False)
     assert acc == [] and stats.rejections_by_layer
+
+
+def test_the_component_prompt_states_the_solution_representation(pack):
+    # con el modelo en prototipos, la representación no se ve en los cuerpos (SSCFLP, corrida 163)
+    from llm.native_generator import generation_prompt
+
+    gen = importlib.import_module(pack.native_module).GENERATION
+    assert pack.make_model_spec().answer_format in generation_prompt(pack, gen, "neighborhood", 3, [], compact=True)
