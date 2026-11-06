@@ -22,7 +22,11 @@ def make_model_spec():
             "demandas de los clientes asignados a un centro no puede superar su capacidad. Un centro está abierto si "
             "atiende a algún cliente y paga entonces su costo fijo; uno sin clientes está cerrado y no paga nada. "
             "Objetivo: minimizar la suma de los costos fijos de los centros abiertos más los costos de asignación. Una "
-            "solución infactible debe tener un objetivo finito pero peor que cualquier factible (penalización)."
+            "solución infactible debe tener un objetivo finito pero peor que cualquier factible (penalización). La "
+            "solución trivial es: clientes de mayor a menor demanda (empates: menor índice), cada uno al centro con "
+            "menor `cost[i][j]` (empates: menor índice) entre los que aún tienen capacidad libre para su demanda; si "
+            "algún cliente no cabe, en su lugar first fit decreasing: clientes de mayor a menor demanda, cada uno al "
+            "primer centro con capacidad libre recorriendo los centros de mayor a menor capacidad (empates: menor índice)."
         ),
         instance_source=inspect.getsource(instance.SSCFLPInstance),
         instance_import="examples.sscflp.instance",
