@@ -28,3 +28,14 @@ trae paper, tabla y página, y si se leyó directamente o se infirió. Las dudas
   (en FunSearch y ReEvo no lo dice). En CFLP la demanda es divisible: nuestras i1000 de fuente única son otro problema
   (su óptimo es mayor o igual).
 - ReEvo (paper propio): GPT-3.5-turbo, 100 evaluaciones; CVRP y MKP con ACO solo en figuras.
+
+## Referencias propias para los conjuntos sin óptimo publicado
+
+| conjunto | referencia | media | lo publicado, con gap contra nuestra referencia |
+|---|---|---|---|
+| CVRP50 de MCTS-AHD (64) | HGS, mejor de 3 semillas × 10 s | 8.014 | MCTS-AHD 9.286 (+15.9 %), DeepACO 8.888 (+10.9 %), ReEvo 9.327 (+16.4 %), EoH 9.359 (+16.8 %) |
+| CVRP100 de MCTS-AHD (64) | ídem | 12.838 | MCTS-AHD 15.782 (+22.9 %), DeepACO 14.932 (+16.3 %), ReEvo 16.092 (+25.3 %), EoH 15.681 (+22.1 %) |
+| MKP100 de ReEvo/MCTS-AHD (64) | óptimo (CBC) | 23.346 | MCTS-AHD 23.269 (−0.33 %), ReEvo 23.245, EoH 23.139 |
+| MKP200 (64) | óptimo (CBC) | 42.939 | MCTS-AHD 42.498 (−1.03 %), ReEvo 42.416, EoH 41.994 |
+
+(`examples/cvrp/mcts_ahd/best_known.json`, `examples/cvrp/reevo/best_known.json`, `examples/mkp/reevo_best_known.json`.)
