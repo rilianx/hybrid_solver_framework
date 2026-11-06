@@ -1,0 +1,296 @@
+[
+ {
+  "name": "backward_econ_deferral_fill",
+  "slot": "constructor",
+  "path": "generated/v2/clsp/constructor/backward_econ_deferral_fill_r1.hpp",
+  "component": {
+   "name": "backward_econ_deferral_fill",
+   "slot": "constructor",
+   "params": {
+    "alpha": {
+     "type": "float",
+     "range": [
+      0.0,
+      3.0
+     ]
+    },
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.5
+     ]
+    },
+    "margin": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.3
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "wagner_whitin_backshift_repair",
+  "slot": "constructor",
+  "path": "generated/v2/clsp/constructor/wagner_whitin_backshift_repair_r1.hpp",
+  "component": {
+   "name": "wagner_whitin_backshift_repair",
+   "slot": "constructor",
+   "params": {
+    "bias": {
+     "type": "float",
+     "range": [
+      0.3,
+      1.5
+     ]
+    },
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.5
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "forward_dixon_silver_lookahead",
+  "slot": "constructor",
+  "path": "generated/v2/clsp/constructor/forward_dixon_silver_lookahead_r1.hpp",
+  "component": {
+   "name": "forward_dixon_silver_lookahead",
+   "slot": "constructor",
+   "params": {
+    "lambda": {
+     "type": "float",
+     "range": [
+      0.2,
+      2.0
+     ]
+    },
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.5
+     ]
+    },
+    "st_est": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "setup_time_shift",
+  "slot": "neighborhood",
+  "path": "generated/v2/clsp/neighborhood/setup_time_shift_r1.hpp",
+  "component": {
+   "name": "setup_time_shift",
+   "slot": "neighborhood",
+   "params": {
+    "window": {
+     "type": "int",
+     "range": [
+      1,
+      8
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "lot_merge_interval",
+  "slot": "neighborhood",
+  "path": "generated/v2/clsp/neighborhood/lot_merge_interval_r1.hpp",
+  "component": {
+   "name": "lot_merge_interval",
+   "slot": "neighborhood",
+   "params": {
+    "max_span": {
+     "type": "int",
+     "range": [
+      1,
+      6
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "single_setup_flip",
+  "slot": "neighborhood",
+  "path": "generated/v2/clsp/neighborhood/single_setup_flip_r3.hpp",
+  "component": {
+   "name": "single_setup_flip",
+   "slot": "neighborhood",
+   "params": {},
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "random_feasible_setup_flips",
+  "slot": "perturbation",
+  "path": "generated/v2/clsp/perturbation/random_feasible_setup_flips_r1.hpp",
+  "component": {
+   "name": "random_feasible_setup_flips",
+   "slot": "perturbation",
+   "params": {
+    "flips_per_strength": {
+     "type": "float",
+     "range": [
+      0.5,
+      4.0
+     ]
+    },
+    "p_remove": {
+     "type": "float",
+     "range": [
+      0.2,
+      0.8
+     ]
+    },
+    "tries_factor": {
+     "type": "int",
+     "range": [
+      2,
+      10
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "item_wagner_whitin_reoptimize",
+  "slot": "perturbation",
+  "path": "generated/v2/clsp/perturbation/item_wagner_whitin_reoptimize_r1.hpp",
+  "component": {
+   "name": "item_wagner_whitin_reoptimize",
+   "slot": "perturbation",
+   "params": {
+    "items_per_strength": {
+     "type": "float",
+     "range": [
+      0.5,
+      3.0
+     ]
+    },
+    "cost_noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.8
+     ]
+    },
+    "p_forbid": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "setup_shift_domino",
+  "slot": "perturbation",
+  "path": "generated/v2/clsp/perturbation/setup_shift_domino_r1.hpp",
+  "component": {
+   "name": "setup_shift_domino",
+   "slot": "perturbation",
+   "params": {
+    "shifts_per_strength": {
+     "type": "float",
+     "range": [
+      0.5,
+      4.0
+     ]
+    },
+    "max_radius": {
+     "type": "int",
+     "range": [
+      1,
+      6
+     ]
+    },
+    "p_chain": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.8
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ }
+]
