@@ -1,0 +1,374 @@
+[
+ {
+  "name": "randomized_parallel_savings",
+  "slot": "constructor",
+  "path": "generated/v2/cvrp/constructor/randomized_parallel_savings_r1.hpp",
+  "component": {
+   "name": "randomized_parallel_savings",
+   "slot": "constructor",
+   "params": {
+    "lambda": {
+     "type": "float",
+     "range": [
+      0.6,
+      1.8
+     ]
+    },
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.3
+     ]
+    },
+    "neighbors": {
+     "type": "int",
+     "range": [
+      10,
+      120
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "multi_start_polar_sweep_2opt",
+  "slot": "constructor",
+  "path": "generated/v2/cvrp/constructor/multi_start_polar_sweep_2opt_r1.hpp",
+  "component": {
+   "name": "multi_start_polar_sweep_2opt",
+   "slot": "constructor",
+   "params": {
+    "trials": {
+     "type": "int",
+     "range": [
+      1,
+      16
+     ]
+    },
+    "two_opt_passes": {
+     "type": "int",
+     "range": [
+      0,
+      30
+     ]
+    },
+    "direction": {
+     "type": "cat",
+     "values": [
+      "both",
+      "ccw"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "giant_tour_optimal_split",
+  "slot": "constructor",
+  "path": "generated/v2/cvrp/constructor/giant_tour_optimal_split_r1.hpp",
+  "component": {
+   "name": "giant_tour_optimal_split",
+   "slot": "constructor",
+   "params": {
+    "rcl": {
+     "type": "int",
+     "range": [
+      1,
+      5
+     ]
+    },
+    "neighbors": {
+     "type": "int",
+     "range": [
+      5,
+      40
+     ]
+    },
+    "trials": {
+     "type": "int",
+     "range": [
+      1,
+      8
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "granular_relocate",
+  "slot": "neighborhood",
+  "path": "generated/v2/cvrp/neighborhood/granular_relocate_r1.hpp",
+  "component": {
+   "name": "granular_relocate",
+   "slot": "neighborhood",
+   "params": {
+    "neighbors": {
+     "type": "int",
+     "range": [
+      4,
+      40
+     ]
+    },
+    "cap_filter": {
+     "type": "int",
+     "range": [
+      0,
+      1
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "granular_two_opt_star",
+  "slot": "neighborhood",
+  "path": "generated/v2/cvrp/neighborhood/granular_two_opt_star_r1.hpp",
+  "component": {
+   "name": "granular_two_opt_star",
+   "slot": "neighborhood",
+   "params": {
+    "neighbors": {
+     "type": "int",
+     "range": [
+      4,
+      40
+     ]
+    },
+    "cap_filter": {
+     "type": "int",
+     "range": [
+      0,
+      1
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "granular_cross_exchange",
+  "slot": "neighborhood",
+  "path": "generated/v2/cvrp/neighborhood/granular_cross_exchange_r1.hpp",
+  "component": {
+   "name": "granular_cross_exchange",
+   "slot": "neighborhood",
+   "params": {
+    "neighbors": {
+     "type": "int",
+     "range": [
+      3,
+      25
+     ]
+    },
+    "max_seg": {
+     "type": "int",
+     "range": [
+      2,
+      4
+     ]
+    },
+    "allow_reverse": {
+     "type": "int",
+     "range": [
+      0,
+      1
+     ]
+    },
+    "cap_filter": {
+     "type": "int",
+     "range": [
+      0,
+      1
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "random_removal_regret2_reinsert",
+  "slot": "perturbation",
+  "path": "generated/v2/cvrp/perturbation/random_removal_regret2_reinsert_r1.hpp",
+  "component": {
+   "name": "random_removal_regret2_reinsert",
+   "slot": "perturbation",
+   "params": {
+    "per_strength": {
+     "type": "float",
+     "range": [
+      0.5,
+      4.0
+     ]
+    },
+    "max_frac": {
+     "type": "float",
+     "range": [
+      0.05,
+      0.5
+     ]
+    },
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.3
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "sisr_string_removal_blink_insert",
+  "slot": "perturbation",
+  "path": "generated/v2/cvrp/perturbation/sisr_string_removal_blink_insert_r1.hpp",
+  "component": {
+   "name": "sisr_string_removal_blink_insert",
+   "slot": "perturbation",
+   "params": {
+    "per_strength": {
+     "type": "float",
+     "range": [
+      1.0,
+      6.0
+     ]
+    },
+    "max_frac": {
+     "type": "float",
+     "range": [
+      0.05,
+      0.5
+     ]
+    },
+    "max_string": {
+     "type": "int",
+     "range": [
+      2,
+      15
+     ]
+    },
+    "blink": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.2
+     ]
+    },
+    "knn": {
+     "type": "int",
+     "range": [
+      10,
+      80
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "random_feasible_cross_exchange_walk",
+  "slot": "perturbation",
+  "path": "generated/v2/cvrp/perturbation/random_feasible_cross_exchange_walk_r3.hpp",
+  "component": {
+   "name": "random_feasible_cross_exchange_walk",
+   "slot": "perturbation",
+   "params": {
+    "per_strength": {
+     "type": "float",
+     "range": [
+      0.5,
+      2.0
+     ]
+    },
+    "seg_frac": {
+     "type": "float",
+     "range": [
+      0.25,
+      0.75
+     ]
+    },
+    "p_intra": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.3
+     ]
+    },
+    "cluster_routes": {
+     "type": "int",
+     "range": [
+      2,
+      3
+     ]
+    },
+    "p_tail": {
+     "type": "float",
+     "range": [
+      0.3,
+      0.7
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ }
+]
