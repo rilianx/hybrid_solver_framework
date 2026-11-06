@@ -17,15 +17,20 @@ SKELETONS = ["SA", "ILS", "TS", "VNS", "PR", "HYB"]
 
 
 def make_instances(n: int, seed0: int, size: dict):
-    """Como las de Chu y Beasley (`MKPInstance.random`), con holgura 0.25, 0.5 y 0.75 en rotación."""
+    """Como las de Chu y Beasley (`MKPInstance.random`), con holgura 0.25, 0.5 y 0.75 en rotación; con `n<ítems>x<recursos>`
+    (p.ej. `n100x5`), como las de ReEvo y MCTS-AHD (`MKPInstance.normalized`; otras semillas: no son esas instancias)."""
+    if size.get("normalized"):
+        return [MKPInstance.normalized(size["items"], size["resources"], Random(seed0 + k)) for k in range(n)]
     return [MKPInstance.random(size["items"], size["resources"], Random(seed0 + k), tightness=[0.25, 0.5, 0.75][k % 3])
             for k in range(n)]
 
 
 def parse_size(text: str) -> dict:
-    """`<ítems>x<recursos>`, p.ej. `250x10`."""
-    n, m = text.lower().split("x")
-    return {"items": int(n), "resources": int(m)}
+    """`<ítems>x<recursos>`, p.ej. `250x10`; `n100x5`, normalizadas como las de ReEvo."""
+    text = text.lower()
+    norm = text.startswith("n")
+    n, m = text.lstrip("n").split("x")
+    return {"items": int(n), "resources": int(m), **({"normalized": True} if norm else {})}
 
 
 def _load_cases():

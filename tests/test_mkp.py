@@ -81,3 +81,10 @@ def test_reevo_references_are_proven_optima():
     assert len(refs) == 5 * 64 and all(v["opt"] for v in refs.values())
     mean100 = -sum(v["ub"] for k, v in refs.items() if k.startswith("test100_")) / 64
     assert mean100 == pytest.approx(23.346, abs=1e-3)  # MCTS-AHD publica 23.269 en MKP100 (tabla 2)
+
+
+def test_the_normalized_generator_matches_the_reevo_distribution():
+    inst = PACK.make_instances(1, 0, PACK.parse_size("n100x5"))[0]
+    assert inst.capacity == (1.0,) * 5 and inst.n_items == 100
+    assert all(0 < w <= 1 for row in inst.weight for w in row)
+    assert PACK.parse_size("100x5") == {"items": 100, "resources": 5}

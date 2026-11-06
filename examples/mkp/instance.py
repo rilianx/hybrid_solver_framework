@@ -41,6 +41,16 @@ class MKPInstance:
                   for j in range(n_items)]
         return MKPInstance(tuple(profit), tuple(tuple(r) for r in weight), tuple(capacity))
 
+    @staticmethod
+    def normalized(n_items: int, n_resources: int, rng: Random) -> "MKPInstance":
+        """Como las de ReEvo y MCTS-AHD (`problems/mkp_aco/gen_inst.py`): beneficios y consumos uniformes en (0, 1), la
+        capacidad de cada recurso uniforme entre su mayor consumo y la suma, y todo dividido por ella (capacidad 1)."""
+        profit = [rng.random() for _ in range(n_items)]
+        raw = [[rng.random() for _ in range(n_items)] for _ in range(n_resources)]
+        cap = [rng.uniform(max(row), sum(row)) for row in raw]
+        weight = tuple(tuple(w / c for w in row) for row, c in zip(raw, cap))
+        return MKPInstance(tuple(profit), weight, (1.0,) * n_resources)
+
     def to_text(self) -> str:
         """Formato de entrada (el de la OR-Library sin la cabecera de cantidad de casos): `n m`; una línea con los n
         beneficios; m líneas, una por recurso, con los n consumos; una línea con las m capacidades."""

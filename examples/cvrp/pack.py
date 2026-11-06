@@ -18,9 +18,12 @@ SKELETONS = ["SA", "ILS", "TS", "VNS", "PR", "HYB"]
 
 def make_instances(n: int, seed0: int, size: dict):
     """Mitad uniformes y mitad agrupadas; rutas de ~5 clientes (de ~3 en micro-instancias). Con un tamaño `x<n>`
-    (p.ej. `x150`), como las instancias X de Uchoa (`CVRPInstance.uchoa_like`)."""
+    (p.ej. `x150`), como las instancias X de Uchoa (`CVRPInstance.uchoa_like`); con `u<n>` (p.ej. `u50`), como las de
+    ReEvo y MCTS-AHD (`CVRPInstance.unit_square`)."""
     if size.get("uchoa"):
         return [CVRPInstance.uchoa_like(size["customers"], Random(seed0 + k)) for k in range(n)]
+    if size.get("unit"):  # `u<n>`: como los test de ReEvo y MCTS-AHD (otras semillas: no son esas instancias)
+        return [CVRPInstance.unit_square(size["customers"], Random(seed0 + k)) for k in range(n)]
     route = 3.0 if size["customers"] <= 8 else 5.0
     return [CVRPInstance.random(size["customers"], Random(seed0 + k), route_size=route, clustered=k % 2 == 1) for k in range(n)]
 
@@ -34,6 +37,8 @@ def _load_cases():
 def parse_size(text: str) -> dict:
     if text.startswith("x"):
         return {"customers": int(text[1:]), "uchoa": True}
+    if text.startswith("u"):
+        return {"customers": int(text[1:]), "unit": True}
     return {"customers": int(text)}
 
 

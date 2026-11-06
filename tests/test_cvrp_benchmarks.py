@@ -49,3 +49,12 @@ def test_mcts_ahd_sets_differ_from_reevo_after_test20():
     mcts, reevo = reevo_instances((50, 100)), reevo_instances()
     assert mcts["test50"][0] != reevo["test50"][0]
     assert CVRPInstance.load(str(D / "mcts_ahd" / "test100_63.txt")) == mcts["test100"][63]
+
+
+def test_the_unit_square_generator_matches_the_reevo_distribution():
+    from examples.cvrp.pack import PACK
+
+    inst = PACK.make_instances(1, 0, PACK.parse_size("u50"))[0]
+    assert inst.capacity == 50 and inst.coords[0] == (0.5, 0.5) and not inst.rounded
+    assert all(0 <= x <= 1 and 0 <= y <= 1 for x, y in inst.coords) and all(1 <= q <= 9 for q in inst.demand[1:])
+    assert inst != reevo_instances((50,))["test50"][0]  # otras semillas: no son las de test

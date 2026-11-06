@@ -47,6 +47,14 @@ class CVRPInstance:
         return CVRPInstance(tuple(coords), tuple(demand), capacity)
 
     @staticmethod
+    def unit_square(n_customers: int, rng: Random) -> "CVRPInstance":
+        """Como las de ReEvo, MCTS-AHD y HSEvo (`problems/cvrp_aco/gen_inst.py`): depósito en (0.5, 0.5), clientes
+        uniformes en el cuadrado unitario, demandas enteras 1–9, capacidad 50, distancias reales."""
+        coords = [(0.5, 0.5)] + [(rng.random(), rng.random()) for _ in range(n_customers)]
+        demand = [0.0] + [float(rng.randint(1, 9)) for _ in range(n_customers)]
+        return CVRPInstance(tuple(coords), tuple(demand), 50.0)
+
+    @staticmethod
     def uchoa_like(n_customers: int, rng: Random) -> "CVRPInstance":
         """Como las instancias X (Uchoa et al., 2017), para afinar sin usar las del benchmark: grilla [0, 1000]²
         entera y distancias redondeadas; depósito central, excéntrico o al azar; clientes al azar, agrupados o mitad
