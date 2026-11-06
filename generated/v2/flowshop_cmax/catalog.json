@@ -1,0 +1,297 @@
+[
+ {
+  "name": "neh_taillard_noisy_order",
+  "slot": "constructor",
+  "path": "generated/v2/flowshop_cmax/constructor/neh_taillard_noisy_order_r1.hpp",
+  "component": {
+   "name": "neh_taillard_noisy_order",
+   "slot": "constructor",
+   "params": {
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.3
+     ]
+    },
+    "tie_break": {
+     "type": "cat",
+     "values": [
+      "random",
+      "first"
+     ]
+    },
+    "order": {
+     "type": "cat",
+     "values": [
+      "sum",
+      "sum_std"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "cds_johnson_palmer_best",
+  "slot": "constructor",
+  "path": "generated/v2/flowshop_cmax/constructor/cds_johnson_palmer_best_r1.hpp",
+  "component": {
+   "name": "cds_johnson_palmer_best",
+   "slot": "constructor",
+   "params": {
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.25
+     ]
+    },
+    "max_surrogates": {
+     "type": "int",
+     "range": [
+      1,
+      60
+     ]
+    },
+    "use_palmer": {
+     "type": "cat",
+     "values": [
+      "yes",
+      "no"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "grasp_lr_index_append",
+  "slot": "constructor",
+  "path": "generated/v2/flowshop_cmax/constructor/grasp_lr_index_append_r1.hpp",
+  "component": {
+   "name": "grasp_lr_index_append",
+   "slot": "constructor",
+   "params": {
+    "alpha": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.4
+     ]
+    },
+    "at_weight": {
+     "type": "float",
+     "range": [
+      0.0,
+      2.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "pfsp_job_insertion_taillard",
+  "slot": "neighborhood",
+  "path": "generated/v2/flowshop_cmax/neighborhood/pfsp_job_insertion_taillard_r1.hpp",
+  "component": {
+   "name": "pfsp_job_insertion_taillard",
+   "slot": "neighborhood",
+   "params": {
+    "window": {
+     "type": "int",
+     "range": [
+      0,
+      500
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "pfsp_pairwise_swap_headtail",
+  "slot": "neighborhood",
+  "path": "generated/v2/flowshop_cmax/neighborhood/pfsp_pairwise_swap_headtail_r1.hpp",
+  "component": {
+   "name": "pfsp_pairwise_swap_headtail",
+   "slot": "neighborhood",
+   "params": {
+    "max_dist": {
+     "type": "int",
+     "range": [
+      0,
+      500
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "pfsp_block_reversal_2opt",
+  "slot": "neighborhood",
+  "path": "generated/v2/flowshop_cmax/neighborhood/pfsp_block_reversal_2opt_r1.hpp",
+  "component": {
+   "name": "pfsp_block_reversal_2opt",
+   "slot": "neighborhood",
+   "params": {
+    "max_len": {
+     "type": "int",
+     "range": [
+      2,
+      200
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "random_insert_swap_kick",
+  "slot": "perturbation",
+  "path": "generated/v2/flowshop_cmax/perturbation/random_insert_swap_kick_r1.hpp",
+  "component": {
+   "name": "random_insert_swap_kick",
+   "slot": "perturbation",
+   "params": {
+    "moves_per_strength": {
+     "type": "float",
+     "range": [
+      0.5,
+      4.0
+     ]
+    },
+    "swap_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      1.0
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "ig_destruct_reconstruct_taillard",
+  "slot": "perturbation",
+  "path": "generated/v2/flowshop_cmax/perturbation/ig_destruct_reconstruct_taillard_r1.hpp",
+  "component": {
+   "name": "ig_destruct_reconstruct_taillard",
+   "slot": "perturbation",
+   "params": {
+    "d_base": {
+     "type": "int",
+     "range": [
+      1,
+      8
+     ]
+    },
+    "d_per_strength": {
+     "type": "float",
+     "range": [
+      0.0,
+      4.0
+     ]
+    },
+    "tie_break": {
+     "type": "cat",
+     "values": [
+      "first",
+      "random"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "segment_double_bridge_exchange",
+  "slot": "perturbation",
+  "path": "generated/v2/flowshop_cmax/perturbation/segment_double_bridge_exchange_r1.hpp",
+  "component": {
+   "name": "segment_double_bridge_exchange",
+   "slot": "perturbation",
+   "params": {
+    "max_seg_frac": {
+     "type": "float",
+     "range": [
+      0.05,
+      0.5
+     ]
+    },
+    "bridges_per_strength": {
+     "type": "float",
+     "range": [
+      0.5,
+      3.0
+     ]
+    },
+    "reverse_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.5
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ }
+]
