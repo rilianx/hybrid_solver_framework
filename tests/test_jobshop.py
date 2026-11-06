@@ -54,3 +54,19 @@ def test_the_taillard_instances_load_and_have_a_published_best_known():
         lb = max(max(sum(p for _, p in r) for r in inst.routes),
                  max(sum(p for r in inst.routes for m, p in r if m == mm) for mm in inst.machines))
         assert bk[f"ta{i:02d}"] >= lb
+
+
+def test_the_benchmark_has_taillard_and_orlib_with_references():
+    import json
+    from pathlib import Path
+
+    from examples.jobshop.instance import JSSPInstance
+
+    d = Path("examples/jobshop/bench")
+    names = sorted(p.stem for p in d.glob("*.txt"))
+    assert len(names) == 162 and sum(n.startswith("ta") for n in names) == 80
+    bk = json.loads((d / "best_known.json").read_text())
+    for n in names:
+        inst = JSSPInstance.load(str(d / f"{n}.txt"))
+        assert inst.n_jobs > 0 and bk[n]["lb"] <= bk[n]["ub"]
+    assert bk["ta11"]["ub"] == 1357 and bk["ft10"]["opt"]

@@ -64,7 +64,7 @@ en Python en `skeletons/` (misma semántica y parámetros, `core/assembler.py`; 
 | `flowshop` | flow shop de permutación, flowtime total | Taillard |
 | `flowshop_cmax` | flow shop de permutación, makespan | Taillard |
 | `clsp` | lot sizing capacitado multi-ítem | Trigeiro |
-| `jobshop` | job shop, makespan | Taillard |
+| `jobshop` | job shop, makespan | Taillard ta01–ta80, OR-Library |
 | `cvrp` | CVRP con flota libre | Uchoa X |
 | `sscflp` | localización de centros con capacidad y fuente única | Holmberg, Díaz-Fernández, Yang, TB4, OR-Library; capa–c y TBED1 (`--large`) |
 

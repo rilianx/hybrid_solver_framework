@@ -1707,3 +1707,9 @@ Con el desempate las dos configuraciones quedan peor (+0,11 y +0,24 puntos) y ha
 empate evalúa el desempate sobre la solución completa (un recálculo del plan), y en el job shop los empates son
 frecuentes. irace lo eligió en entrenamiento (10 s, instancias generadas) pero no se sostiene en Taillard con 30 s.
 Pendiente: un desempate incremental (calculado junto con el delta) o probarlo en un problema con mesetas más planas.
+
+## Referencias del job shop corregidas
+
+Las brechas del job shop de arriba usan las mejores conocidas de JSPLIB, desactualizadas en ta11, ta15, ta19 y ta20
+(1361, 1340, 1335 y 1351; los óptimos son 1357, 1339, 1332 y 1348). Desde `examples/jobshop/bench/best_known.json`
+(Weise 2020) las brechas en esas cuatro son algo mayores que las reportadas (hasta 0.3 puntos).

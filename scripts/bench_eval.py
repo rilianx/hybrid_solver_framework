@@ -9,7 +9,7 @@ contra la mejor solución conocida (un gap negativo es una mejor solución nueva
 | problema | instancias | referencia | grupos |
 |---|---|---|---|
 | `flowshop`, `flowshop_cmax` | Taillard (`examples/flowshop/taillard/`) | mejores conocidas de flowtime / makespan | clase n_m |
-| `jobshop` | Taillard ta01–ta20 (`examples/jobshop/taillard/`) | óptimo o mejor cota superior (JSPLIB) | 15×15, 20×15 |
+| `jobshop` | Taillard ta01–ta80 y OR-Library (`examples/jobshop/bench/`) | óptimo o mejor conocida (Weise 2020) | ta por tamaño; abz, ft, la, orb, swv, yn |
 | `cvrp` | X de Uchoa et al. (`examples/cvrp/uchoa/`) | mejor conocida (CVRPLIB) | todas |
 | `clsp` | Trigeiro et al. (`examples/lotsizing/trigeiro/`) | CBC y la tabla 9 de Degraeve y Jans | F; cada G |
 | `sscflp` | Holmberg, Díaz-Fernández, Yang, TB4, OR-Library y TBED1 (`examples/sscflp/bench/`) | óptimo o mejor conocida | H, D, Y, TB4, cap, capa–c, i300 … i3001500 |
@@ -58,6 +58,16 @@ def _pfsp_time(name: str, t: float) -> float:
     return int(n) * int(m) / 2 * t / 1000.0
 
 
+_TA_SIZES = ["15×15", "20×15", "20×20", "30×15", "30×20", "50×15", "50×20", "100×20"]
+
+
+def _jssp_group(name: str) -> str:
+    """Taillard por tamaño (ta01–10 15×15 … ta71–80 100×20); las de la OR-Library por familia (abz, ft, la, orb, swv, yn)."""
+    if re.fullmatch(r"ta\d+", name):
+        return "ta " + _TA_SIZES[(int(name[2:]) - 1) // 10]
+    return name.rstrip("0123456789")
+
+
 def _sscflp_group(name: str) -> str:
     """H, D, Y, TB4, cap (16–50 centros), capa/capb/capc, i300, i500, i700, i1000, i3001500."""
     if "-" in name:
@@ -80,9 +90,9 @@ BENCHES = {
                       lambda: _json(ROOT / "flowshop" / "taillard" / "best_known.json"), _pfsp_class, _pfsp_time),
     "flowshop_cmax": Bench("flowshop_cmax", ROOT / "flowshop" / "taillard", ".txt",
                            lambda: _json(ROOT / "flowshop_cmax" / "best_known.json"), _pfsp_class, _pfsp_time),
-    "jobshop": Bench("jobshop", ROOT / "jobshop" / "taillard", ".txt",
-                     lambda: _json(ROOT / "jobshop" / "taillard" / "best_known.json"),
-                     lambda n: "15×15" if int(n[2:]) <= 10 else "20×15"),
+    "jobshop": Bench("jobshop", ROOT / "jobshop" / "bench", ".txt",
+                     lambda: {k: v["ub"] for k, v in _json(ROOT / "jobshop" / "bench" / "best_known.json").items()},
+                     _jssp_group),
     "cvrp": Bench("cvrp", ROOT / "cvrp" / "uchoa", ".vrp", lambda: _json(ROOT / "cvrp" / "uchoa" / "best_known.json"),
                   lambda n: "X"),
     "sscflp": Bench("sscflp", ROOT / "sscflp" / "bench", ".txt",
