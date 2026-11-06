@@ -42,7 +42,7 @@ def _job(args):
     path, seconds = args
     inst = MKPInstance.load(str(path))
     sol, opt = solve_cbc(inst, seconds)
-    sol = ref.canonical(sol)
+    sol = ref.wrap(sol)
     assert not any(ref.violations(inst, sol).values()), path
     # la greedy como respaldo si CBC no llegó a algo mejor en el tiempo
     triv = ref.trivial_solution(inst)

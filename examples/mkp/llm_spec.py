@@ -25,8 +25,8 @@ def make_model_spec():
         instance_source=inspect.getsource(instance.MKPInstance),
         instance_import="examples.mkp.instance",
         forbidden_modules=FORBIDDEN,
-        answer_format=("Una lista de `inst.n_items` ceros y unos: en la posición j, 1 si el ítem j está en la mochila. "
-                       "Ejemplo con 4 ítems: [1, 0, 0, 1] (elegidos los ítems 0 y 3)."),
+        answer_format=("Una lista con UNA sola lista de `inst.n_items` ceros y unos: en la posición j, 1 si el ítem j "
+                       "está en la mochila. Ejemplo con 4 ítems: [[1, 0, 0, 1]] (elegidos los ítems 0 y 3)."),
         families=("Familia de restricciones: `capacidad` (el consumo de cada recurso no supera su capacidad; magnitud > 0 "
                   "si algún recurso se excede). Término del objetivo: `beneficio` (el beneficio total con signo menos)."),
     )

@@ -4,8 +4,8 @@ un modelo generado (`core.validation.model_parts`).
     python -m examples.sscflp.cases        # regenera cases.json
 
 Cada caso trae la instancia en el formato de entrada (`SSCFLPInstance.to_text`), soluciones en el formato neutral (el
-centro de cada cliente) con su factibilidad, la familia violada o el costo, y el óptimo por FUERZA BRUTA (las n^m
-asignaciones). Las instancias tienen poca holgura de capacidad (1.3 veces la demanda) para que la capacidad decida.
+centro de cada cliente, en una lista de una lista) con su factibilidad, la familia violada o el costo, y el óptimo por
+FUERZA BRUTA (las n^m asignaciones). Las instancias tienen poca holgura de capacidad (1.3 veces la demanda) para que la capacidad decida.
 """
 
 from __future__ import annotations
@@ -24,12 +24,13 @@ CASES_PATH = Path(__file__).with_name("cases.json")
 
 
 def _total(inst, sol) -> float:
-    return sum(ref.cost_terms(inst, sol).values())
+    """Costo de una asignación plana."""
+    return sum(ref.cost_terms(inst, ref.wrap(sol)).values())
 
 
 def _feasible_assignments(inst: SSCFLPInstance):
     for sol in itertools.product(inst.facilities, repeat=inst.n_customers):
-        if not any(ref.violations(inst, sol).values()):
+        if not any(ref.violations(inst, ref.wrap(sol)).values()):
             yield list(sol)
 
 
@@ -60,18 +61,18 @@ def build_cases(sizes=((3, 5), (3, 6), (4, 6), (3, 7), (4, 7), (4, 7)), seed: in
     for k, (n, m) in enumerate(sizes):
         inst = micro_instance(n, m, seed + k)
         opt, opt_sol = brute_force_optimum(inst)
-        triv = list(ref.trivial_solution(inst))
+        triv = list(ref.trivial_solution(inst)[0])
         big = max(inst.facilities, key=lambda i: (inst.capacity[i], -i))
         unserved = triv[:-1] + [-1]  # el último cliente sin atender
         sols = [
-            {"answer": triv, "feasible": True, "cost": round(_total(inst, triv), 6)},
-            {"answer": opt_sol, "feasible": True, "cost": round(opt, 6)},
-            {"answer": [big] * m, "feasible": False, "violates": ["capacidad"]},  # todos al centro más grande
-            {"answer": unserved, "feasible": False, "violates": ["asignacion"]},
+            {"answer": [triv], "feasible": True, "cost": round(_total(inst, triv), 6)},
+            {"answer": [opt_sol], "feasible": True, "cost": round(opt, 6)},
+            {"answer": [[big] * m], "feasible": False, "violates": ["capacidad"]},  # todos al centro más grande
+            {"answer": [unserved], "feasible": False, "violates": ["asignacion"]},
         ]
         # la factible más cara (abre muchos centros: prueba los costos fijos de los abiertos)
         worst = max(_feasible_assignments(inst), key=lambda s: (_total(inst, s), s))
-        sols.insert(2, {"answer": worst, "feasible": True, "cost": round(_total(inst, worst), 6)})
+        sols.insert(2, {"answer": [worst], "feasible": True, "cost": round(_total(inst, worst), 6)})
         out.append({"name": f"sscflp_{k}_{n}x{m}", "instance": inst.to_text(), "optimum": round(opt, 6),
                     "solutions": sols, "visible": k == 0})
     return out

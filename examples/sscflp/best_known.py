@@ -127,6 +127,7 @@ def literature() -> dict[str, list[dict]]:
             path = BENCH / f"{k}.txt"
             if path.exists():  # las TBED1 se bajan con `fetch --large`; sin la instancia no se puede evaluar
                 inst = SSCFLPInstance.load(str(path))
+                sol = ref.wrap(sol)
                 assert not any(ref.violations(inst, sol).values()), k
                 add(k, None, round(sum(ref.cost_terms(inst, sol).values()), 6), False, KONG + ", solución")
     return refs
@@ -163,7 +164,7 @@ def solve_cbc(path: str, seconds: float) -> dict:
     t0 = time.time()
     solver = pulp.PULP_CBC_CMD(msg=False, timeLimit=seconds, gapRel=0.0, gapAbs=0.0)
     prob.solve(solver)
-    sol = [max(I, key=lambda i: x[i, j].value() or 0.0) for j in J]
+    sol = ref.wrap([max(I, key=lambda i: x[i, j].value() or 0.0) for j in J])
     v = ref.violations(inst, sol)
     assert not any(val > 1e-6 for val in v.values()), (path, v)
     ub = sum(ref.cost_terms(inst, sol).values())

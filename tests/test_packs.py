@@ -22,6 +22,10 @@ def test_pack(name):
     assert not hasattr(parts, "constraint_families")  # el oráculo no trae vista MIP: la escribe el LLM
     assert "destruction" not in by_slot
     assert check_heuristic_view(parts, pack.load_cases()).passed
+    # el contrato del modelo C++ (hsf/generic.hpp): la solución y la respuesta son una lista de listas de enteros
+    for case in pack.load_cases():
+        for sc in case.solutions:
+            assert all(isinstance(row, list) for row in sc["answer"]), (name, case.name)
     inst = pack.make_instances(1, 0, pack.parse_size(pack.default_size))[0]
     assert pack.baseline_cost(inst) != 0  # negativo en los de maximización (MKP: -beneficio)
 

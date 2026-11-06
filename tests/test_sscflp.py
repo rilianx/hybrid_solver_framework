@@ -41,11 +41,11 @@ def test_trailing_data_after_the_cost_matrix_is_ignored():
 
 def test_oracle_costs_and_violations():
     inst = _tiny()
-    assert ref.cost_terms(inst, (0, 0, 1)) == {"apertura": 40.0, "transporte": 7.0}
-    assert ref.violations(inst, (0, 0, 1)) == {"asignacion": 0.0, "capacidad": 0.0}
-    assert ref.violations(inst, (0, 0, 0)) == {"asignacion": 0.0, "capacidad": 4.0}
-    assert ref.violations(inst, (0, 0, -1)) == {"asignacion": 1.0, "capacidad": 0.0}
-    assert ref.cost_terms(inst, (0, 0, -1)) == {"apertura": 10.0, "transporte": 2.0}
+    assert ref.cost_terms(inst, ((0, 0, 1),)) == {"apertura": 40.0, "transporte": 7.0}
+    assert ref.violations(inst, ((0, 0, 1),)) == {"asignacion": 0.0, "capacidad": 0.0}
+    assert ref.violations(inst, ((0, 0, 0),)) == {"asignacion": 0.0, "capacidad": 4.0}
+    assert ref.violations(inst, ((0, 0, -1),)) == {"asignacion": 1.0, "capacidad": 0.0}
+    assert ref.cost_terms(inst, ((0, 0, -1),)) == {"apertura": 10.0, "transporte": 2.0}
     # abrir solo el 1 cuesta 30 + 15 = 45: más barato que repartir entre los dos (47)
     assert brute_force_optimum(inst) == (45.0, [1, 1, 1])
 
@@ -75,7 +75,7 @@ def test_generated_instances_have_a_feasible_trivial():
     for inst in PACK.make_instances(4, 0, PACK.parse_size("10x40")) + PACK.make_instances(3, 7, PACK.parse_size(PACK.micro_size)):
         assert not any(ref.violations(inst, ref.trivial_solution(inst)).values())
         sol = ref.random_solution(inst, Random(1))
-        assert len(sol) == inst.n_customers and all(i in inst.facilities for i in sol)
+        assert len(sol) == 1 and len(sol[0]) == inst.n_customers and all(i in inst.facilities for i in sol[0])
 
 
 def _in_git():

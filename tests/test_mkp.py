@@ -31,11 +31,11 @@ def test_text_roundtrip_and_orlib_format():
 
 def test_oracle_costs_and_violations():
     inst = _tiny()
-    assert ref.cost_terms(inst, (1, 0, 1)) == {"beneficio": -14.0}
-    assert ref.violations(inst, (1, 0, 1)) == {"capacidad": 0.0}
-    assert ref.violations(inst, (1, 1, 0))["capacidad"] == pytest.approx(1 + 1 / 10)
+    assert ref.cost_terms(inst, ((1, 0, 1),)) == {"beneficio": -14.0}
+    assert ref.violations(inst, ((1, 0, 1),)) == {"capacidad": 0.0}
+    assert ref.violations(inst, ((1, 1, 0),))["capacidad"] == pytest.approx(1 + 1 / 10)
     assert brute_force_optimum(inst) == (-14.0, [1, 0, 1])
-    assert ref.trivial_solution(inst) in {(1, 0, 1), (0, 1, 1)}
+    assert ref.trivial_solution(inst) in {((1, 0, 1),), ((0, 1, 1),)}
 
 
 def test_cases_match_brute_force():
@@ -52,7 +52,7 @@ def test_cases_match_brute_force():
 def test_generated_instances():
     for inst in PACK.make_instances(3, 0, PACK.parse_size("50x5")):
         assert not any(ref.violations(inst, ref.trivial_solution(inst)).values())
-        assert len(ref.random_solution(inst, Random(1))) == inst.n_items
+        assert len(ref.random_solution(inst, Random(1))[0]) == inst.n_items
 
 
 def test_orlib_is_complete_and_consistent_with_its_references():
