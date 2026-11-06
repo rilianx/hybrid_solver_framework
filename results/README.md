@@ -1685,3 +1685,25 @@ En el job shop 15×15 (solo variantes con componentes nuevos), las perturbacione
 vecindario nuevo queda en 9,2 % de media con prompts compactos y 11,3 % con completos. Con 3 repeticiones las
 diferencias están dentro del ruido: los prompts compactos no empeoran ni la validación ni la calidad, y en el CLSP
 cuestan 42 % menos.
+
+## Job shop: desempate generado (slot `tiebreak`, run 157, tunings 100 y 101)
+
+El LLM escribió 3 desempates para el job shop (0,48 USD); se aceptaron 2: `critical_ops_count_tiebreak` (cuántas
+operaciones están en el camino crítico, el desempate clásico) y `job_flowtime_power_tiebreak` (tiempos de término de
+los trabajos). Dos tunings iguales (irace, 80 experimentos, 10 s, 15×15 y 20×15, 2 réplicas): 100 sin desempates en el
+catálogo, 101 con ellos; las dos réplicas del 101 eligen `critical_ops_count_tiebreak`. Taillard ta01–ta20, 30 s, 3
+semillas (`taillard_jobshop_run{100,101}.json`), y las configuraciones del 101 con `tiebreak = none`:
+
+| configuración | 15×15 | 20×15 | media | iteraciones medias |
+|---|---|---|---|---|
+| tune 100 r0 (ILS) | 0,44 % | 2,09 % | 1,27 % | — |
+| tune 100 r1 (HYB) | 0,44 % | 1,60 % | 1,02 % | — |
+| tune 101 r0 (ILS, con desempate) | 0,68 % | 2,06 % | 1,37 % | 32 253 |
+| la misma sin desempate | 0,73 % | 1,79 % | 1,26 % | 40 145 |
+| tune 101 r1 (PR, con desempate) | 0,54 % | 1,80 % | 1,17 % | 95 160 |
+| la misma sin desempate | **0,34 %** | **1,53 %** | **0,93 %** | 132 986 |
+
+Con el desempate las dos configuraciones quedan peor (+0,11 y +0,24 puntos) y hacen 20–28 % menos iteraciones: cada
+empate evalúa el desempate sobre la solución completa (un recálculo del plan), y en el job shop los empates son
+frecuentes. irace lo eligió en entrenamiento (10 s, instancias generadas) pero no se sostiene en Taillard con 30 s.
+Pendiente: un desempate incremental (calculado junto con el delta) o probarlo en un problema con mesetas más planas.
