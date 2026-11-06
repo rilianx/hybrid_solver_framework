@@ -1,0 +1,290 @@
+[
+ {
+  "name": "lr_index_greedy_rcl",
+  "slot": "constructor",
+  "path": "generated/v2/flowshop/constructor/lr_index_greedy_rcl_r1.hpp",
+  "component": {
+   "name": "lr_index_greedy_rcl",
+   "slot": "constructor",
+   "params": {
+    "first_rcl": {
+     "type": "int",
+     "range": [
+      1,
+      10
+     ]
+    },
+    "rcl_alpha": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.3
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "neh_flowtime_insertion_pruned",
+  "slot": "constructor",
+  "path": "generated/v2/flowshop/constructor/neh_flowtime_insertion_pruned_r1.hpp",
+  "component": {
+   "name": "neh_flowtime_insertion_pruned",
+   "slot": "constructor",
+   "params": {
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.4
+     ]
+    },
+    "order": {
+     "type": "cat",
+     "values": [
+      "asc",
+      "desc"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "beam_search_append_idle",
+  "slot": "constructor",
+  "path": "generated/v2/flowshop/constructor/beam_search_append_idle_r1.hpp",
+  "component": {
+   "name": "beam_search_append_idle",
+   "slot": "constructor",
+   "params": {
+    "beam_width": {
+     "type": "int",
+     "range": [
+      1,
+      12
+     ]
+    },
+    "idle_weight": {
+     "type": "float",
+     "range": [
+      0.0,
+      3.0
+     ]
+    },
+    "noise": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.1
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "job_insertion_shift",
+  "slot": "neighborhood",
+  "path": "generated/v2/flowshop/neighborhood/job_insertion_shift_r1.hpp",
+  "component": {
+   "name": "job_insertion_shift",
+   "slot": "neighborhood",
+   "params": {
+    "window": {
+     "type": "int",
+     "range": [
+      0,
+      500
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "pairwise_job_interchange",
+  "slot": "neighborhood",
+  "path": "generated/v2/flowshop/neighborhood/pairwise_job_interchange_r1.hpp",
+  "component": {
+   "name": "pairwise_job_interchange",
+   "slot": "neighborhood",
+   "params": {
+    "max_gap": {
+     "type": "int",
+     "range": [
+      0,
+      500
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "bounded_segment_reversal",
+  "slot": "neighborhood",
+  "path": "generated/v2/flowshop/neighborhood/bounded_segment_reversal_r1.hpp",
+  "component": {
+   "name": "bounded_segment_reversal",
+   "slot": "neighborhood",
+   "params": {
+    "max_len": {
+     "type": "int",
+     "range": [
+      2,
+      100
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "SA",
+    "ILS",
+    "TS",
+    "VNS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "random_insertion_chain_kick",
+  "slot": "perturbation",
+  "path": "generated/v2/flowshop/perturbation/random_insertion_chain_kick_r1.hpp",
+  "component": {
+   "name": "random_insertion_chain_kick",
+   "slot": "perturbation",
+   "params": {
+    "moves_per_strength": {
+     "type": "float",
+     "range": [
+      0.5,
+      3.0
+     ]
+    },
+    "locality": {
+     "type": "int",
+     "range": [
+      0,
+      30
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "iterated_greedy_destruct_reconstruct",
+  "slot": "perturbation",
+  "path": "generated/v2/flowshop/perturbation/iterated_greedy_destruct_reconstruct_r1.hpp",
+  "component": {
+   "name": "iterated_greedy_destruct_reconstruct",
+   "slot": "perturbation",
+   "params": {
+    "removed_per_strength": {
+     "type": "float",
+     "range": [
+      1.0,
+      4.0
+     ]
+    },
+    "max_removed": {
+     "type": "int",
+     "range": [
+      2,
+      20
+     ]
+    },
+    "removal": {
+     "type": "cat",
+     "values": [
+      "random",
+      "block"
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ },
+ {
+  "name": "adjacent_block_exchange_double_bridge",
+  "slot": "perturbation",
+  "path": "generated/v2/flowshop/perturbation/adjacent_block_exchange_double_bridge_r3.hpp",
+  "component": {
+   "name": "adjacent_block_exchange_double_bridge",
+   "slot": "perturbation",
+   "params": {
+    "bridges_per_strength": {
+     "type": "float",
+     "range": [
+      0.5,
+      2.0
+     ]
+    },
+    "max_block": {
+     "type": "int",
+     "range": [
+      1,
+      6
+     ]
+    },
+    "reverse_prob": {
+     "type": "float",
+     "range": [
+      0.0,
+      0.5
+     ]
+    }
+   },
+   "compatible_skeletons": [
+    "ILS",
+    "PR",
+    "HYB"
+   ]
+  }
+ }
+]

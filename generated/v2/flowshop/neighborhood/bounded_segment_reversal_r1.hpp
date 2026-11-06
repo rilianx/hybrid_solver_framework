@@ -1,0 +1,106 @@
+// COMPONENT: {"name": "bounded_segment_reversal", "slot": "neighborhood", "params": {"max_len": {"type": "int", "range": [2, 100]}}}
+class FlowCache {
+public:
+    const Model& md;
+    int n, m;
+    std::vector<int> seq;
+    std::vector<long long> C, F, row;
+    std::vector<char> seen;
+    bool valid = false, fast = false;
+    explicit FlowCache(const Model& md_) : md(md_), n(md_.n), m(md_.m) {}
+    bool ensure(const Model::Solution& s) {
+        if (s.size() != 1) return false;
+        if (valid && s[0] == seq) return fast;
+        seq = s[0]; valid = true; fast = false;
+        if ((int)seq.size() != n || m <= 0 || n <= 0) return false;
+        seen.assign(n, 0);
+        for (int j : seq) { if (j < 0 || j >= n || seen[j]) return false; seen[j] = 1; }
+        C.assign((size_t)(n + 1) * m, 0); F.assign(n + 1, 0);
+        for (int k = 0; k < n; ++k) {
+            const long long* p = &md.pj[(size_t)seq[k] * m];
+            const long long* pr = &C[(size_t)k * m];
+            long long* cr = &C[(size_t)(k + 1) * m];
+            long long c = pr[0] + p[0]; cr[0] = c;
+            for (int i = 1; i < m; ++i) { c = std::max(c, pr[i]) + p[i]; cr[i] = c; }
+            F[k + 1] = F[k] + c;
+        }
+        fast = (md.objective(s) == (double)F[n]);
+        return fast;
+    }
+    template <class G>
+    long long tail(int st, int same_from, G job) {
+        row.assign(C.begin() + (size_t)st * m, C.begin() + (size_t)(st + 1) * m);
+        long long tot = F[st];
+        for (int k = st; k < n; ++k) {
+            const long long* p = &md.pj[(size_t)job(k) * m];
+            long long c = row[0] + p[0]; row[0] = c;
+            for (int i = 1; i < m; ++i) { c = std::max(c, row[i]) + p[i]; row[i] = c; }
+            tot += c;
+            if (k + 1 >= same_from && k + 1 < n) {
+                const long long* o = &C[(size_t)(k + 1) * m];
+                bool eq = true;
+                for (int i = 0; i < m; ++i) if (o[i] != row[i]) { eq = false; break; }
+                if (eq) return tot + (F[n] - F[k + 1]);
+            }
+        }
+        return tot;
+    }
+};
+
+class BoundedSegmentReversal : public hsf::Neighborhood<Model> {
+    const Model& md;
+    FlowCache fc;
+    int max_len;
+    std::unordered_set<long long> used;
+    int lenmax(int L) const { return std::max(2, std::min(max_len, L)); }
+public:
+    using Sol = Model::Solution;
+    BoundedSegmentReversal(const Model& m_, int ml) : md(m_), fc(m_), max_len(ml) {}
+    void moves(const Sol& s, std::vector<Move>& out) override {
+        if (s.empty()) return;
+        int L = (int)s[0].size();
+        if (L < 2) return;
+        int ml = lenmax(L);
+        for (int i = 0; i < L; ++i)
+            for (int j = i + 1; j < std::min(L, i + ml); ++j) {
+                Move mv{}; mv[0] = i; mv[1] = j; out.push_back(mv);
+            }
+    }
+    Sol apply(const Sol& s, const Move& mv) override {
+        Sol r = s;
+        int i = std::min(mv[0], mv[1]), j = std::max(mv[0], mv[1]);
+        std::reverse(r[0].begin() + i, r[0].begin() + j + 1);
+        return r;
+    }
+    double delta(const Sol& s, const Move& mv) override {
+        if (!fc.ensure(s)) return md.objective(apply(s, mv)) - md.objective(s);
+        const std::vector<int>& q = fc.seq;
+        int i = std::min(mv[0], mv[1]), j = std::max(mv[0], mv[1]);
+        if (i == j) return 0.0;
+        long long nt = fc.tail(i, j + 1, [&](int k) { return (k >= i && k <= j) ? q[i + j - k] : q[k]; });
+        return (double)(nt - fc.F[fc.n]);
+    }
+    void sample(const Sol& s, int k, Rng& rng, std::vector<Move>& out) override {
+        out.clear();
+        if (s.empty()) return;
+        int L = (int)s[0].size();
+        if (L < 2) return;
+        int ml = lenmax(L);
+        long long total = 0;
+        for (int i = 0; i < L; ++i) total += std::min(L, i + ml) - (i + 1);
+        if (k < 0 || k >= total || 2LL * k > total) { hsf::Neighborhood<Model>::sample(s, k, rng, out); return; }
+        used.clear();
+        while ((int)out.size() < k) {
+            int i = rng.below(L), len = 2 + rng.below(ml - 1);
+            int j = i + len - 1;
+            if (j >= L) continue;
+            if (!used.insert((long long)i * L + j).second) continue;
+            Move mv{}; mv[0] = i; mv[1] = j; out.push_back(mv);
+        }
+    }
+};
+
+std::unique_ptr<hsf::Neighborhood<Model>> make_component(const Model& model, const hsf::Config& params) {
+    int ml = (int)params.get("max_len", 12);
+    return std::make_unique<BoundedSegmentReversal>(model, ml);
+}
