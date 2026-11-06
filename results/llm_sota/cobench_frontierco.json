@@ -1,0 +1,326 @@
+{
+ "_meta": {
+  "generated": "2026-11-06",
+  "provenance_legend": {
+   "paper": "read directly from the PDF text/table",
+   "figure_label": "printed numeric data label inside a figure (not estimated from bar length)",
+   "repo": "read from code/data (CO-Bench GitHub HEAD 2f6620b, 2026-05-17, or HF dataset config.py); may differ from what was used for the paper runs",
+   "inferred": "my inference, not stated explicitly"
+  },
+  "values_transcription": "Per-problem values copied verbatim with all printed digits."
+ },
+ "CO-Bench": {
+  "paper": {
+   "title": "CO-Bench: Benchmarking Language Model Agents in Algorithm Search for Combinatorial Optimization",
+   "authors": "Sun, Feng, Li, Yang",
+   "arxiv": "2504.04310v3 (22 Aug 2025), latest version",
+   "venue": "AAAI 2026 (per request; the v3 PDF has no venue header)"
+  },
+  "metric": {
+   "name": "Avg Score (normalized score)",
+   "definition_paper": "s(x,p) = min{|h(x,p)|,|h*_p|} / max{|h(x,p)|,|h*_p|}, h*_p = pre-computed optimal or best-known objective value; errors/infeasible/timeout -> 0; problem score = mean over test instances; overall = mean over the 36 problems (Eq. 6, Evaluation Metrics, p.3)",
+   "definition_paper_source": "paper",
+   "actual_implementation": "Per-problem config.py norm_score: minimisation -> ref/obj, maximisation -> obj/ref (NOT capped at 1, hence values >1 in tables such as MKP ReEvo 1.0019). Averaging (evaluation/utils.py average_score): mean within each data file, then mean over files (files weigh equally, not instances); any error on a file -> 0 for that file.",
+   "actual_implementation_source": "repo",
+   "references_by_problem_repo": {
+    "Capacitated warehouse location": "hard-coded optimal values per OR-Library cap* file (e.g. cap41 1040444.375; capa-8000 19240822.449); score = ref/cost",
+    "Multidimensional knapsack problem": "hard-coded optimal/best-known per instance (mknap1, mknap2, mknapcb1-9); score = profit/ref",
+    "Job shop scheduling": "score = lower_bound/makespan, where lower_bound is the LB in the Taillard file header (not BKS/optimum) -> an optimal schedule can score <1",
+    "Flow shop scheduling": "score = lower_bound/makespan, Taillard header LB (same caveat)",
+    "Vehicle routing: period routing": "hard-coded per file prvp1-10 (e.g. prvp1 547.9); score = ref/distance"
+   },
+   "other_metrics": "Valid Solution (share of problems with all test instances valid), Above Classical, Survival Rate (share of test instances >=99% of reference score) (p.3)"
+  },
+  "setup": {
+   "test_time_limit": "10 s per test instance, single CPU core (dual AMD EPYC 7313) (Implementation Details, p.4) [paper]",
+   "agent_llm": "o3-mini-medium for all agents (Implementation Details p.4; Figure 3 caption p.5) [paper]. Per-problem appendix tables do not repeat the LLM; that they are o3-mini-medium is [inferred] (their averages reproduce Figure 3, see consistency_check).",
+   "agent_budget": "64 iteration steps; each step = one candidate code evaluated on the dev set; best-on-dev of the 64 is evaluated on test (p.4) [paper]. Tokens, number of LLM calls per step and wall-clock cost are NOT reported. Dev-evaluation timeout is not stated in the paper; README example uses Evaluator(timeout=10) [repo].",
+   "classical_solver": "Authors spent ~30 min per problem picking/tuning the best classical solver on the dev set (examples: LKH for TSP, CPLEX for scheduling, Gurobi for MIS) (p.3) [paper]; evaluated under the same 10 s limit ('equivalent time constraints', p.2) [paper]. The specific solver per problem is NOT listed (CPLEX for JSSP/FSSP is [inferred] from 'CPLEX for scheduling'). No classical-solver code in the repo [repo].",
+   "agents_evaluated": "Direct Answer (15 LLMs), BestOfN, Chain of Experts, Greedy Refinement (cites Shinn 2023 / Madaan 2023 = Reflexion/Self-Refine), FunSearch, EoH, AIDE, ReEvo, MCTS-AHD [paper]. No agent named 'Self-Refine' in CO-Bench; Greedy Refine is the analogue.",
+   "per_problem_methods": "Appendix tables contain only: Classical Solver, BestOfN, Refine, FunSearch, AIDE, ReEvo, MCTS, EoH. Chain of Experts and the direct-answer LLMs have no per-problem values (only aggregates in Figure 3)."
+  },
+  "problems": {
+   "Capacitated warehouse location": {
+    "source": "Appendix 'Problem Description and Scores', Table 7, p.12 [paper]",
+    "variant": "Splittable demand (paper description p.12)",
+    "data": "OR-Library cap41-cap134 + capa/capb/capc (4 sizes each), 49 files of 1 instance; dev = 12 files -> 37 test instances [repo]",
+    "scores": {
+     "Classical Solver": 0.6976400141361688,
+     "BestOfN": 0.0,
+     "Greedy Refine (\"Refine\" in table)": 0.7518838886310322,
+     "FunSearch": 0.7196713948459038,
+     "AIDE": 0.6647355906610447,
+     "ReEvo": 0.6715266955394039,
+     "MCTS-AHD (\"MCTS\" in table)": 0.6891495773105485,
+     "EoH": 0.7502493181324346
+    }
+   },
+   "Multidimensional knapsack problem": {
+    "source": "Table 24, p.16 [paper]",
+    "data": "mknap1 (7), mknap2 (48), mknapcb1-9 (30 each); dev indices per file -> test = 4 + 24 + 9x15 = 163 instances [repo]",
+    "scores": {
+     "Classical Solver": 0.9903523477639424,
+     "BestOfN": 0.9401685100749627,
+     "Greedy Refine (\"Refine\" in table)": 0.9947726903727786,
+     "FunSearch": 0.9773347714972982,
+     "AIDE": 0.925117898068383,
+     "ReEvo": 1.0018885951740353,
+     "MCTS-AHD (\"MCTS\" in table)": 1.0057751617808324,
+     "EoH": 1.0010112897238341
+    },
+    "note": "Values >1 = better than the hard-coded reference (uncapped ratio) [repo/inferred]"
+   },
+   "Job shop scheduling": {
+    "source": "Table 21, p.15 [paper]",
+    "data": "Taillard tai15_15 ... tai100_20, 8 files x 10; dev 5 per file -> 40 test instances [repo]",
+    "scores": {
+     "Classical Solver": 0.8202016779421567,
+     "BestOfN": 0.7060712883377539,
+     "Greedy Refine (\"Refine\" in table)": 0.7696287350855926,
+     "FunSearch": 0.8192815531664928,
+     "AIDE": 0.6498336005961379,
+     "ReEvo": 0.7982807066317813,
+     "MCTS-AHD (\"MCTS\" in table)": 0.7293663754433233,
+     "EoH": 0.7770594374788831
+    },
+    "note": "Reference = Taillard header lower bound [repo]"
+   },
+   "Flow shop scheduling": {
+    "source": "Table 17, p.14 [paper]",
+    "data": "Taillard PFSP tai20_5 ... tai500_20, 12 files x 10; dev 5 per file -> 60 test instances [repo]",
+    "scores": {
+     "Classical Solver": 0.9222700445897257,
+     "BestOfN": 0.874217493803887,
+     "Greedy Refine (\"Refine\" in table)": 0.8463439348165006,
+     "FunSearch": 0.8537338049420798,
+     "AIDE": 0.9144895115672386,
+     "ReEvo": 0.8424667927400846,
+     "MCTS-AHD (\"MCTS\" in table)": 0.9242143967817102,
+     "EoH": 0.940154419652199
+    },
+    "note": "Reference = Taillard header lower bound [repo]"
+   },
+   "Vehicle routing: period routing": {
+    "source": "Table 36, p.19 [paper]",
+    "data": "prvp1-prvp10 (Christofides & Beasley 1984), 1 instance each; dev = prvp1,3,5,7,9 -> 5 test instances [repo]",
+    "scores": {
+     "Classical Solver": 0.12437943290991642,
+     "BestOfN": 0.42032326191804853,
+     "Greedy Refine (\"Refine\" in table)": 0.48371172427664344,
+     "FunSearch": 0.32385035648314586,
+     "AIDE": 0.5362363612554435,
+     "ReEvo": 0.0,
+     "MCTS-AHD (\"MCTS\" in table)": 0.0,
+     "EoH": 0.0
+    },
+    "note": "Only vehicle-routing problem in CO-Bench (TSP and resource-constrained shortest path are the other routing problems)"
+   }
+  },
+  "aggregate_figure3_p5": {
+   "source": "Figure 3, p.5 (printed data labels) [figure_label]",
+   "avg_score": {
+    "Classical Solver": 0.797,
+    "Chain of Experts": 0.295,
+    "AIDE": 0.753,
+    "MSTC-AHD": 0.762,
+    "BestOfN": 0.774,
+    "ReEvo": 0.774,
+    "Greedy Refine": 0.84,
+    "EoH": 0.84,
+    "FunSearch": 0.842,
+    "best direct LLM Claude-3.7 Sonnet": 0.651,
+    "o3-mini-medium direct": 0.571,
+    "o3-mini-high direct": 0.65
+   },
+   "valid_solution": {
+    "Classical Solver": 0.611,
+    "Chain of Experts": 0.139,
+    "AIDE": 0.528,
+    "MSTC-AHD": 0.555,
+    "BestOfN": 0.472,
+    "ReEvo": 0.555,
+    "Greedy Refine": 0.555,
+    "EoH": 0.555,
+    "FunSearch": 0.5
+   },
+   "above_classical": {
+    "Chain of Experts": 0.083,
+    "AIDE": 0.278,
+    "MSTC-AHD": 0.444,
+    "BestOfN": 0.417,
+    "ReEvo": 0.444,
+    "Greedy Refine": 0.694,
+    "EoH": 0.555,
+    "FunSearch": 0.639
+   },
+   "survival_rate": {
+    "Classical Solver": 0.394,
+    "Chain of Experts": 0.188,
+    "AIDE": 0.227,
+    "MSTC-AHD": 0.315,
+    "BestOfN": 0.285,
+    "ReEvo": 0.32,
+    "Greedy Refine": 0.448,
+    "EoH": 0.39,
+    "FunSearch": 0.426
+   }
+  },
+  "consistency_check": "Mean of the 36 appendix tables (my parse): Classical 0.7973, BestOfN 0.7744, Refine 0.8401, FunSearch 0.8423, AIDE 0.7534, ReEvo 0.7741, MCTS 0.7627 -> match Figure 3; EoH 0.8007 vs 0.840 in Figure 3 -> MISMATCH (one of the two is wrong in the paper) [inferred]."
+ },
+ "FrontierCO": {
+  "paper": {
+   "title": "FrontierCO: Real-World and Large-Scale Evaluation of Machine Learning Solvers for Combinatorial Optimization",
+   "authors": "Feng, Sun, Li, Talwalkar, Yang",
+   "arxiv": "2505.16952v3 (9 Mar 2026), 'Published as a conference paper at ICLR 2026'",
+   "note": "v1 (May 2025) had a different title; CFLP/CVRP numbers identical in v1 and v3 [paper]"
+  },
+  "metric": {
+   "name": "Primal gap (%), lower is better",
+   "definition": "pg = |cost - c*| / max{|cost|,|c*|}; pg = 1 if infeasible or cost*c*<0; bounded in [0,1] (Eq. 2, p.3). Reported as arithmetic mean +- std over instances; time = geometric mean (x/÷ std). Infeasible -> gap 1 and 3600 s (Sec 3.1 p.5; App. D p.22) [paper]",
+   "reference_c_star": "BKS from literature/leaderboards, validated with the SOTA solver; where missing/outdated (MDS, CFLP) the designated SOTA solver run up to 2 h (Sec 2.4 p.4-5) [paper]",
+   "footnote": "Not the routing-literature gap (which can exceed 100%) (footnote 1, p.3) [paper]"
+  },
+  "setup": {
+   "time_limit": "Max 3600 s per test instance for all solvers (classical, neural, LLM-generated code); single CPU core of dual AMD EPYC 7313; neural on one RTX A6000 (Sec 3.1, p.5) [paper]",
+   "llm_agents": "FunSearch, Self-Refine (Madaan 2023 / Shinn 2023), ReEvo, following CO-Bench protocol (Sec 3.3 p.6) [paper]",
+   "llm": "Self-Refine: o4-mini, medium reasoning budget, default sampling (App. C.2 p.21) [paper]. FunSearch and ReEvo: LLM NOT stated; o4-mini medium is [inferred].",
+   "budget": {
+    "Self-Refine": "64 iterations, each gets previous best code + dev results; dev eval timeout 300 s (prompted to write for 3600 s); best-on-dev evaluated on test with 3600 s (C.2 p.21) [paper]",
+    "FunSearch": "official implementation, prompt adapted; 10 islands, 2 functions per prompt, reset period 2 h, 64 iterations, dev timeout 300 s, test 3600 s (C.2 p.21) [paper]",
+    "ReEvo": "official implementation; population 10, initial population 4, mutation rate 0.5, 64 iterations, dev timeout 300 s, test 3600 s (C.2 p.21) [paper]",
+    "tokens_cost": "not reported"
+   },
+   "LLM_reported_times": "All LLM-agent runtimes are 3600 +-x 1.00 s (code is a generator yielding improving solutions until the limit; prompt C.3 p.21-22) [paper]"
+  },
+  "problems": {
+   "CFLP": {
+    "source": "Table 8, p.23 (App. D) [paper]; also Figure 2 p.7 (bars only) and Table 3 p.8 (CFLP-Easy Gurobi 0.00%, SCIP 6.50%, GCNN 3.22%)",
+    "instances": "Easy: 20 largest of Avella & Boccia (2009) Test Bed 1, 1000x1000 (i1000_1..20). Hard: 30 largest of Avella et al. (2009) Test Bed B, 2000x2000 (p2000-2000-31..60) (Table 1 p.4; B.5 p.18) [paper]. Splittable demand ('standard CFLP ... each customer may be served by multiple facilities', B.5) [paper]; config description confirms fractional allocation [repo]",
+    "reference": "Easy: all solved exactly by Gurobi. Hard: literature BKS (Caserta & Voss 2020) worse than Gurobi, so Gurobi re-run 2 h to get references (B.5 p.18) [paper]",
+    "SOTA_solver": "Gurobi (MIP) (Sec 2.4 p.4) [paper]",
+    "dev_set": "20 Cornuejols-generator instances 100x100 (B.5) [paper]",
+    "results": {
+     "Gurobi": {
+      "easy_gap": "0.00 ± 0.00 %",
+      "easy_time": "308 ±× 1.93 s",
+      "hard_gap": "0.01 ± 0.02 %",
+      "hard_time": "3136 ±× 1.34 s"
+     },
+     "tMDP": {
+      "easy_gap": "3.54 ± 3.14 %",
+      "easy_time": "3581 ±× 1.00 s",
+      "hard_gap": "55.35 ± 21.7 %",
+      "hard_time": "3600 ±× 1.00 s"
+     },
+     "SORREL": {
+      "easy_gap": "3.46 ± 2.51%",
+      "easy_time": "3600 ±× 1.00 s",
+      "hard_gap": "55.35 ± 21.7 %",
+      "hard_time": "3600 ±× 1.00 s"
+     },
+     "GCNN": {
+      "easy_gap": "3.22 ± 3.10 %",
+      "easy_time": "3551 ±× 1.07 s",
+      "hard_gap": "55.35 ± 21.7 %",
+      "hard_time": "3600 ±× 1.00 s"
+     },
+     "FunSearch": {
+      "easy_gap": "7.31 ± 0.75 %",
+      "easy_time": "3600 ±× 1.00 s",
+      "hard_gap": "7.41 ± 3.26 %",
+      "hard_time": "3600 ±× 1.00 s"
+     },
+     "Self-Refine": {
+      "easy_gap": "27.08 ± 10.79 %",
+      "easy_time": "3600 ±× 1.00 s",
+      "hard_gap": "24.93 ± 21.56 %",
+      "hard_time": "3600 ±× 1.00 s"
+     },
+     "ReEvo": {
+      "easy_gap": "12.89 ± 1.70 %",
+      "easy_time": "3600 ±× 1.00 s",
+      "hard_gap": "12.79 ± 6.40 %",
+      "hard_time": "3600 ±× 1.00 s"
+     }
+    }
+   },
+   "CVRP": {
+    "source": "Table 7, p.23 [paper]",
+    "instances": "Easy: 20 Golden et al. (1998), 200-483 customers; route-length constraints of the first eight Golden instances discarded. Hard: 10 Belgium instances of Arnold et al. (2019), 3000-30000 (Table 1 p.4; B.4 p.18) [paper]",
+    "reference": "All BKS from CVRPLib (B.4) [paper]. Evaluator uses unrounded Euclidean distances, while the Belgium BKS in config are integers (e.g. Leuven1 192848) [repo]",
+    "SOTA_solver": "HGS (Vidal et al. 2012) (Sec 2.4) [paper]",
+    "dev_set": "paper: 15 instances, 5 each of 20/100/500 cities (B.4); HF valid_instances has 20/50/100 [repo] -> discrepancy",
+    "results": {
+     "HGS": {
+      "easy_gap": "0.11 ± 0.18 %",
+      "easy_time": "3600 ±× 1.00 s",
+      "hard_gap": "6.74 ± 2.50 %",
+      "hard_time": "*3600 ±× 1.00 s (asterisk printed on the hard time only)"
+     },
+     "LEHD": {
+      "easy_gap": "1.97 ± 0.92 %",
+      "easy_time": "893 ±× 1.74 s",
+      "hard_gap": "*100.00 ± 0.00%",
+      "hard_time": "*3600 ±× 1.00 s"
+     },
+     "DeepACO": {
+      "easy_gap": "4.42 ± 1.56 %",
+      "easy_time": "50 ±× 1.64 s",
+      "hard_gap": "*27.69 ± 36.18 %",
+      "hard_time": "*3333 ±× 1.12s"
+     },
+     "SIL": {
+      "easy_gap": "10.90 ± 8.17 %",
+      "easy_time": "3600 ±× 1.00 s",
+      "hard_gap": "11.35 ± 4.46 %",
+      "hard_time": "3600 ±× 1.00 s"
+     },
+     "FunSearch": {
+      "easy_gap": "5.27 ± 3.70 %",
+      "easy_time": "3600 ±× 1.00 s",
+      "hard_gap": "6.52 ± 2.67 % (bold, best)",
+      "hard_time": "3600 ±× 1.00 s"
+     },
+     "Self-Refine": {
+      "easy_gap": "3.86 ± 1.63 %",
+      "easy_time": "3600 ±× 1.00 s",
+      "hard_gap": "27.50 ± 6.19 %",
+      "hard_time": "3600 ±× 1.00 s"
+     },
+     "ReEvo": {
+      "easy_gap": "7.16 ± 3.42 %",
+      "easy_time": "3600 ±× 1.00 s",
+      "hard_gap": "10.01 ± 2.83 %",
+      "hard_time": "3600 ±× 1.00 s"
+     }
+    }
+   },
+   "other_problems_one_line": {
+    "_format": "SOTA solver easy/hard | FunSearch easy/hard | Self-Refine easy/hard | ReEvo easy/hard (gap %, mean; ± std omitted here, see tables)",
+    "MIS (Table 4, p.22)": "KaMIS 1.51/2.65 | FunSearch 1.87/4.97 | Self-Refine 1.30/4.02 | ReEvo 1.44/4.81",
+    "MDS (Table 5, p.22)": "Gurobi 0.00/0.63 | FunSearch 41.83/95.21 | Self-Refine 6.19/5.71 | ReEvo 7.52/5.81",
+    "TSP (Table 6, p.23)": "LKH-3 0.03/2.89 | FunSearch 6.79/35.82 | Self-Refine 6.29/32.00 | ReEvo 5.65/37.77",
+    "CPMP (Table 9, p.23)": "GB21-MH 0.53/0.32 | FunSearch 3.96/*77.32 | Self-Refine 2.84/*74.05 | ReEvo 3.40/*70.64 (* = at least one infeasible/OOM)",
+    "FJSP (Table 10, p.24)": "CPLEX (CP) 0.00/0.01 | FunSearch 5.05/12.10 | Self-Refine 6.66/1.14 | ReEvo 5.61/2.16",
+    "STP (Table 11, p.24)": "SCIP-Jack 0.00/0.50 | FunSearch 8.29/5.82 | Self-Refine 11.23/6.93 | ReEvo 14.36/10.03"
+   }
+  },
+  "aggregate_table2_p8": {
+   "FunSearch": {
+    "all": "20.35%",
+    "easy": "10.05%",
+    "hard": "30.65%"
+   },
+   "Self-Refine": {
+    "all": "15.11%",
+    "easy": "8.18%",
+    "hard": "22.03%"
+   },
+   "ReEvo": {
+    "all": "13.25%",
+    "easy": "7.25%",
+    "hard": "19.25%"
+   }
+  }
+ }
+}

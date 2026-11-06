@@ -1,0 +1,989 @@
+[
+  {
+    "id": "MCTS-AHD_T2_CVRP",
+    "paper": "MCTS-AHD (Zheng et al., ICML 2025), arXiv 2501.08603 (latest version, v3)",
+    "table": "Table 2",
+    "page": "PDF p.7 (printed p.7)",
+    "problem": "CVRP",
+    "heuristic_framework": "ACO (DeepACO implementation); LLM designs the heuristic matrix eta from distance matrix, coordinates, demands, capacity",
+    "sizes": [
+      "CVRP50 (N=50, C=50)",
+      "CVRP100 (N=100, C=50)"
+    ],
+    "instances_per_size": 64,
+    "in_domain_size": "N=50 (evaluation dataset D = 10 CVRP50 instances, Table 6)",
+    "metric": "Mean objective (total route length, lower is better) over 64 test instances, plus Gap %",
+    "gap_reference": "NOT defined in the paper. Inferred from the numbers: gap relative to the best method in the same column (DeepACO = 0.00% for both CVRP sizes; e.g. ACO 11.355/8.888-1 = 27.76% ~ 27.77%). No exact solver/optimum (HGS/LKH) is used.",
+    "columns": [
+      "CVRP50 Obj",
+      "CVRP50 Gap",
+      "CVRP100 Obj",
+      "CVRP100 Gap"
+    ],
+    "rows": [
+      {
+        "method": "ACO (hand-designed heuristic)",
+        "type": "non-LLM baseline",
+        "values": [
+          "11.355",
+          "27.77%",
+          "18.778",
+          "25.76%"
+        ]
+      },
+      {
+        "method": "DeepACO",
+        "type": "non-LLM baseline (NCO)",
+        "values": [
+          "8.888",
+          "0.00%",
+          "14.932",
+          "0.00%"
+        ]
+      },
+      {
+        "method": "EoH",
+        "type": "LLM-AHD (GPT-4o-mini)",
+        "values": [
+          "9.359",
+          "5.31%",
+          "15.681",
+          "5.02%"
+        ]
+      },
+      {
+        "method": "ReEvo",
+        "type": "LLM-AHD (GPT-4o-mini)",
+        "values": [
+          "9.327",
+          "4.94%",
+          "16.092",
+          "7.77%"
+        ]
+      },
+      {
+        "method": "MCTS-AHD (Ours)",
+        "type": "LLM-AHD (GPT-4o-mini)",
+        "values": [
+          "9.286",
+          "4.48%",
+          "15.782",
+          "5.70%"
+        ]
+      }
+    ],
+    "llm_and_budget": "gpt-4o-mini-2024-07-18 for all LLM-based methods in this table (paper App. D). Budget: T = 1,000 heuristic evaluations per run ('for almost all tasks', Sec. 4; App. D), 3 independent runs, values averaged over the 3 runs. Baselines (EoH, ReEvo) re-run by the MCTS-AHD authors with 'all their parameter settings' (population M=10) and the ReEvo seed functions for ACO (App. H). Cost reference given only for KP step-by-step: ~3 h, 1M input tokens, 0.2M output tokens, ~0.3 USD with GPT-4o-mini.",
+    "aco_settings": "30 ants; 100 iterations during heuristic evaluation; 500 iterations at test time (App. C: 'Numbers of ants and iterations are set the same as TSP'; code eval-test.py: N_ITERATIONS=500, N_ANTS=30).",
+    "test_instance_generation": "Paper (App. B): follows ReEvo settings, depot fixed at (0.5,0.5). Code (MCTS-AHD repo problems/cvrp_aco/gen_inst.py): capacity 50, demands U{1..9}, locations U[0,1]^2, np.random.seed(1234); order train50(10) -> val20/50/100(64 each) -> test50, test100 (64 each). VERIFIED BY ME: the test50/test100 .npy files committed in the MCTS-AHD repo are NOT the same as ReEvo's test50/test100 (ReEvo generates test20 before test50, shifting the RNG stream); the committed test20 file equals ReEvo's test20 but is not used in Table 2.",
+    "provenance": "Values read directly from the PDF text (pdftotext -layout); gap reference inferred; dataset mismatch verified by regenerating from the documented spec with my own numpy script and comparing to the committed files."
+  },
+  {
+    "id": "MCTS-AHD_T2_MKP",
+    "paper": "MCTS-AHD (Zheng et al., ICML 2025), arXiv 2501.08603 (latest version, v3)",
+    "table": "Table 2",
+    "page": "PDF p.7 (printed p.7)",
+    "problem": "Multidimensional knapsack (the paper calls it 'Multiple Knapsack Problem (MKP)', but the instances are n items x m=5 constraints, i.e. multidimensional 0-1 knapsack, same as ReEvo/DeepACO)",
+    "heuristic_framework": "ACO (DeepACO implementation); LLM designs the heuristic vector from prizes and weights",
+    "sizes": [
+      "MKP100 (N=100, m=5)",
+      "MKP200 (N=200, m=5)"
+    ],
+    "instances_per_size": 64,
+    "in_domain_size": "N=100 (evaluation dataset D = 5 MKP100 instances, m=5; Table 6)",
+    "metric": "Mean objective (total prize, higher is better) over 64 test instances, plus Gap %",
+    "gap_reference": "NOT defined in the paper. Inferred: gap relative to the best method in the same column (MCTS-AHD = 0.00%; e.g. ACO 1-22.738/23.269 = 2.28%). No exact solver/optimum is used.",
+    "columns": [
+      "MKP100 Obj",
+      "MKP100 Gap",
+      "MKP200 Obj",
+      "MKP200 Gap"
+    ],
+    "rows": [
+      {
+        "method": "ACO (hand-designed heuristic)",
+        "type": "non-LLM baseline",
+        "values": [
+          "22.738",
+          "2.28%",
+          "40.672",
+          "4.30%"
+        ]
+      },
+      {
+        "method": "DeepACO",
+        "type": "non-LLM baseline (NCO)",
+        "values": [
+          "23.093",
+          "0.75%",
+          "41.988",
+          "1.20%"
+        ]
+      },
+      {
+        "method": "EoH",
+        "type": "LLM-AHD (GPT-4o-mini)",
+        "values": [
+          "23.139",
+          "0.56%",
+          "41.994",
+          "1.19%"
+        ]
+      },
+      {
+        "method": "ReEvo",
+        "type": "LLM-AHD (GPT-4o-mini)",
+        "values": [
+          "23.245",
+          "0.10%",
+          "42.416",
+          "0.19%"
+        ]
+      },
+      {
+        "method": "MCTS-AHD (Ours)",
+        "type": "LLM-AHD (GPT-4o-mini)",
+        "values": [
+          "23.269",
+          "0.00%",
+          "42.498",
+          "0.00%"
+        ]
+      }
+    ],
+    "llm_and_budget": "gpt-4o-mini-2024-07-18 for all LLM-based methods in this table (paper App. D). Budget: T = 1,000 heuristic evaluations per run ('for almost all tasks', Sec. 4; App. D), 3 independent runs, values averaged over the 3 runs. Baselines (EoH, ReEvo) re-run by the MCTS-AHD authors with 'all their parameter settings' (population M=10) and the ReEvo seed functions for ACO (App. H). Cost reference given only for KP step-by-step: ~3 h, 1M input tokens, 0.2M output tokens, ~0.3 USD with GPT-4o-mini.",
+    "aco_settings": "10 ants; 50 iterations during heuristic evaluation; paper says 100 iterations for test sets (App. C). NOTE: the repo's mkp_aco/eval-test.py has N_ITERATIONS=50 and loops over sizes [100,300,500] -> code/paper mismatch, cannot tell which was used for Table 2.",
+    "test_instance_generation": "Paper (App. B): follows ReEvo; v ~ U(0,1), w_ij ~ U(0,1), C_i ~ U(max_j w_ij, sum_j w_ij). Code: m=5, test seed 4567, 64 instances per size, weights normalized by capacity. VERIFIED BY ME: the committed test100/200/300/500/1000 .npz files in the MCTS-AHD repo are identical to what ReEvo's generator (seed 4567, sizes 100,200,300,500,1000) produces, so MKP100/MKP200 here are the same test sets as ReEvo's.",
+    "provenance": "Values read directly; gap reference inferred; dataset identity verified."
+  },
+  {
+    "id": "MCTS-AHD_T2_OfflineBPP",
+    "paper": "MCTS-AHD (Zheng et al., ICML 2025), arXiv 2501.08603 (latest version, v3)",
+    "table": "Table 2",
+    "page": "PDF p.7 (printed p.7)",
+    "problem": "Offline 1D bin packing (packing)",
+    "heuristic_framework": "ACO (DeepACO implementation)",
+    "sizes": [
+      "BPP500 (N=500, C=150)",
+      "BPP1000 (N=1,000, C=150)"
+    ],
+    "instances_per_size": 64,
+    "in_domain_size": "N=500 (D = 5 BPP500 instances, W=150)",
+    "metric": "Mean number of bins (lower is better) over 64 instances, plus Gap %",
+    "gap_reference": "NOT defined; inferred relative to best method in column (DeepACO = 0.00%).",
+    "columns": [
+      "BPP500 Obj",
+      "BPP500 Gap",
+      "BPP1000 Obj",
+      "BPP1000 Gap"
+    ],
+    "rows": [
+      {
+        "method": "ACO",
+        "type": "non-LLM baseline",
+        "values": [
+          "208.828",
+          "2.81%",
+          "417.938",
+          "3.15%"
+        ]
+      },
+      {
+        "method": "DeepACO",
+        "type": "non-LLM baseline (NCO)",
+        "values": [
+          "203.125",
+          "0.00%",
+          "405.172",
+          "0.00%"
+        ]
+      },
+      {
+        "method": "EoH",
+        "type": "LLM-AHD (GPT-4o-mini)",
+        "values": [
+          "204.646",
+          "0.75%",
+          "408.599",
+          "0.85%"
+        ]
+      },
+      {
+        "method": "ReEvo",
+        "type": "LLM-AHD (GPT-4o-mini)",
+        "values": [
+          "206.693",
+          "1.76%",
+          "413.510",
+          "2.06%"
+        ]
+      },
+      {
+        "method": "MCTS-AHD (Ours)",
+        "type": "LLM-AHD (GPT-4o-mini)",
+        "values": [
+          "204.094",
+          "0.48%",
+          "407.323",
+          "0.53%"
+        ]
+      }
+    ],
+    "llm_and_budget": "gpt-4o-mini-2024-07-18 for all LLM-based methods in this table (paper App. D). Budget: T = 1,000 heuristic evaluations per run ('for almost all tasks', Sec. 4; App. D), 3 independent runs, values averaged over the 3 runs. Baselines (EoH, ReEvo) re-run by the MCTS-AHD authors with 'all their parameter settings' (population M=10) and the ReEvo seed functions for ACO (App. H). Cost reference given only for KP step-by-step: ~3 h, 1M input tokens, 0.2M output tokens, ~0.3 USD with GPT-4o-mini.",
+    "aco_settings": "20 ants; 15 iterations during evaluation, 100 at test (App. C).",
+    "test_instance_generation": "Follows ReEvo (capacity 150, item sizes U[20,100]); test-set identity with ReEvo NOT checked.",
+    "provenance": "Values read directly; gap reference inferred."
+  },
+  {
+    "id": "MCTS-AHD_T14_blackbox_ACO",
+    "paper": "MCTS-AHD (Zheng et al., ICML 2025), arXiv 2501.08603 (latest version, v3)",
+    "table": "Table 14",
+    "page": "PDF p.33 (printed p.32)",
+    "problem": "TSP50, CVRP50, MKP100, offline BPP500 (only in-domain sizes)",
+    "heuristic_framework": "ACO; white-box vs black-box prompting (black-box setting from ReEvo); MCTS-AHD uses N_I=10 in black-box",
+    "sizes": [
+      "TSP50",
+      "CVRP50 (C=50)",
+      "MKP100 (m=5)",
+      "BPP500 (C=150)"
+    ],
+    "instances_per_size": 64,
+    "metric": "Mean objective only (no gap). TSP/CVRP/BPP lower is better, MKP higher is better",
+    "gap_reference": "n/a",
+    "columns": [
+      "TSP50",
+      "CVRP50",
+      "MKP100",
+      "BPP500"
+    ],
+    "rows": [
+      {
+        "method": "ACO",
+        "type": "non-LLM baseline",
+        "values": [
+          "5.992",
+          "11.355",
+          "22.738",
+          "208.828"
+        ]
+      },
+      {
+        "method": "DeepACO",
+        "type": "non-LLM baseline (NCO)",
+        "values": [
+          "5.842",
+          "8.888",
+          "23.093",
+          "203.125"
+        ]
+      },
+      {
+        "method": "EoH (white-box)",
+        "type": "LLM-AHD (GPT-4o-mini)",
+        "values": [
+          "5.828",
+          "9.359",
+          "23.139",
+          "204.646"
+        ]
+      },
+      {
+        "method": "ReEvo (white-box)",
+        "type": "LLM-AHD (GPT-4o-mini)",
+        "values": [
+          "5.856",
+          "9.327",
+          "23.245",
+          "206.693"
+        ]
+      },
+      {
+        "method": "MCTS-AHD (white-box)",
+        "type": "LLM-AHD (GPT-4o-mini)",
+        "values": [
+          "5.801",
+          "9.286",
+          "23.269",
+          "204.094"
+        ]
+      },
+      {
+        "method": "EoH (black-box)",
+        "type": "LLM-AHD (GPT-4o-mini)",
+        "values": [
+          "5.831",
+          "9.401",
+          "23.240",
+          "204.615"
+        ]
+      },
+      {
+        "method": "ReEvo (black-box)",
+        "type": "LLM-AHD (GPT-4o-mini)",
+        "values": [
+          "5.860",
+          "9.404",
+          "23.196",
+          "206.021"
+        ]
+      },
+      {
+        "method": "MCTS-AHD (black-box)",
+        "type": "LLM-AHD (GPT-4o-mini)",
+        "values": [
+          "5.830",
+          "9.444",
+          "23.191",
+          "205.375"
+        ]
+      }
+    ],
+    "llm_and_budget": "GPT-4o-mini; 'We follow the settings of Ye et al. (2024a) in heuristic evolution', 3 runs averaged. Exact budget for black-box runs not restated (presumably T=1,000; not confirmed).",
+    "test_instance_generation": "Same test sets as Table 2 (white-box rows are 'the same as Table 2').",
+    "provenance": "Read directly."
+  },
+  {
+    "id": "MCTS-AHD_T9_MKP_runs",
+    "paper": "MCTS-AHD (Zheng et al., ICML 2025), arXiv 2501.08603 (latest version, v3)",
+    "table": "Table 9 (ACO part)",
+    "page": "PDF p.30 (printed p.29)",
+    "problem": "MKP100 (m=5), ACO; also TSP50 ACO and TSP50/KP100 step-by-step (summarized only)",
+    "heuristic_framework": "ACO",
+    "sizes": [
+      "MKP100, m=5"
+    ],
+    "instances_per_size": "not restated in the table; presumably the 64-instance test set of Table 2 (inferred)",
+    "metric": "Per-run mean objective (higher is better), avg, std, one-tailed t-test p-value",
+    "gap_reference": "n/a",
+    "columns": [
+      "run1",
+      "run2",
+      "run3",
+      "run4",
+      "run5",
+      "avg",
+      "std",
+      "p-value"
+    ],
+    "rows": [
+      {
+        "method": "EoH",
+        "type": "LLM-AHD (GPT-4o-mini)",
+        "values": [
+          "23.149",
+          "23.133",
+          "23.136",
+          "23.311",
+          "23.266",
+          "23.199",
+          "0.083",
+          ""
+        ]
+      },
+      {
+        "method": "MCTS-AHD",
+        "type": "LLM-AHD (GPT-4o-mini)",
+        "values": [
+          "23.235",
+          "23.284",
+          "23.287",
+          "23.294",
+          "23.294",
+          "23.279",
+          "0.025",
+          "0.037268388"
+        ]
+      }
+    ],
+    "llm_and_budget": "GPT-4o-mini; 5 runs (ACO). Note: 5-run avg of MCTS-AHD (23.279) differs from 3-run avg in Table 2 (23.269).",
+    "test_instance_generation": "As Table 2 (inferred).",
+    "provenance": "Read directly."
+  },
+  {
+    "id": "MCTS-AHD_T1_KP",
+    "paper": "MCTS-AHD (Zheng et al., ICML 2025), arXiv 2501.08603 (latest version, v3)",
+    "table": "Table 1 (KP columns)",
+    "page": "PDF p.6 (printed p.6)",
+    "problem": "0-1 Knapsack (single constraint) - included as knapsack/packing-related",
+    "heuristic_framework": "Step-by-step construction (LLM writes the next-item selection function)",
+    "sizes": [
+      "KP50 (W=12.5)",
+      "KP100 (W=25)",
+      "KP200 (W=25)"
+    ],
+    "instances_per_size": 1000,
+    "in_domain_size": "KP100, W=25 (D = 64 KP100 instances)",
+    "metric": "Mean total value (higher is better) and Gap % to Optimal",
+    "gap_reference": "Optimal computed with Google OR-Tools (App. H)",
+    "columns": [
+      "KP50 Obj",
+      "KP50 Gap",
+      "KP100 Obj",
+      "KP100 Gap",
+      "KP200 Obj",
+      "KP200 Gap"
+    ],
+    "rows": [
+      {
+        "method": "Optimal (OR-Tools)",
+        "type": "reference",
+        "values": [
+          "20.037",
+          "-",
+          "40.271",
+          "-",
+          "57.448",
+          "-"
+        ]
+      },
+      {
+        "method": "Greedy Construct (max value/weight)",
+        "type": "non-LLM baseline",
+        "values": [
+          "19.985",
+          "0.26%",
+          "40.225",
+          "0.12%",
+          "57.395",
+          "0.09%"
+        ]
+      },
+      {
+        "method": "POMO (single start, no aug.)",
+        "type": "non-LLM baseline (NCO)",
+        "values": [
+          "19.612",
+          "2.12%",
+          "39.676",
+          "1.48%",
+          "57.271",
+          "0.09%"
+        ]
+      },
+      {
+        "method": "FunSearch (GPT-3.5-turbo)",
+        "type": "LLM-AHD",
+        "values": [
+          "19.985",
+          "0.26%",
+          "40.225",
+          "0.12%",
+          "57.395",
+          "0.09%"
+        ]
+      },
+      {
+        "method": "EoH (GPT-3.5-turbo)",
+        "type": "LLM-AHD",
+        "values": [
+          "19.994",
+          "0.21%",
+          "40.231",
+          "0.10%",
+          "57.400",
+          "0.08%"
+        ]
+      },
+      {
+        "method": "MCTS-AHD (GPT-3.5-turbo)",
+        "type": "LLM-AHD",
+        "values": [
+          "19.997",
+          "0.20%",
+          "40.233",
+          "0.09%",
+          "57.393",
+          "0.10%"
+        ]
+      },
+      {
+        "method": "FunSearch (GPT-4o-mini)",
+        "type": "LLM-AHD",
+        "values": [
+          "19.988",
+          "0.24%",
+          "40.227",
+          "0.11%",
+          "57.398",
+          "0.09%"
+        ]
+      },
+      {
+        "method": "EoH (GPT-4o-mini)",
+        "type": "LLM-AHD",
+        "values": [
+          "19.993",
+          "0.22%",
+          "40.231",
+          "0.10%",
+          "57.399",
+          "0.09%"
+        ]
+      },
+      {
+        "method": "MCTS-AHD (GPT-4o-mini)",
+        "type": "LLM-AHD",
+        "values": [
+          "20.015",
+          "0.11%",
+          "40.252",
+          "0.05%",
+          "57.423",
+          "0.04%"
+        ]
+      }
+    ],
+    "llm_and_budget": "GPT-3.5-turbo-0125 and GPT-4o-mini-2024-07-18; T=1,000 evaluations; 3 runs averaged. ReEvo/HSEvo not reported for KP (no usable seed function, App. H). Table 10 adds MCTS-AHD with Claude-3.5-sonnet, DeepSeek-v3, Qwen2.5-Coder-32B on KP100/KP200 (KP100 Obj 40.233/40.233/40.235).",
+    "test_instance_generation": "Kool et al. (2018): v_i, w_i ~ U(0,1), W=12.5 for 50 items, 25 for 100/200. 1,000 test instances per size. Seeds not stated.",
+    "provenance": "Read directly."
+  },
+  {
+    "id": "ReEvo_T3_CVRP_NCO",
+    "paper": "ReEvo (Ye et al., NeurIPS 2024), arXiv 2402.01145 (latest version, v3)",
+    "table": "Table 3 (CVRP rows)",
+    "page": "PDF p.8 (printed p.8)",
+    "problem": "CVRP",
+    "heuristic_framework": "Attention reshaping for autoregressive NCO solvers: POMO (heavy encoder/light decoder) and LEHD (light encoder/heavy decoder); LLM designs a heuristic matrix added to logits. Models trained on CVRP100, generalized to larger sizes; distinct ReEvo heuristic per CVRP size.",
+    "sizes": [
+      "CVRP200",
+      "CVRP500",
+      "CVRP1000"
+    ],
+    "instances_per_size": "Not stated in ReEvo ('we use the test instances provided by LEHD'); LEHD's CVRP200/500/1000 sets have 128 instances each (from LEHD paper, NOT confirmed in ReEvo)",
+    "metric": "Mean objective (route length) and Opt. gap (%)",
+    "gap_reference": "Not stated in ReEvo. Presumably the reference solutions shipped with LEHD's test sets (HGS in the LEHD paper) - inferred, not confirmed.",
+    "columns": [
+      "n=200 Obj",
+      "n=200 Gap",
+      "n=500 Obj",
+      "n=500 Gap",
+      "n=1000 Obj",
+      "n=1000 Gap"
+    ],
+    "rows": [
+      {
+        "method": "POMO",
+        "type": "non-LLM baseline (NCO)",
+        "values": [
+          "22.39",
+          "10.93",
+          "50.12",
+          "33.76",
+          "145.40",
+          "289.48"
+        ]
+      },
+      {
+        "method": "POMO + DAR",
+        "type": "non-LLM (expert-designed reshaping)",
+        "values": [
+          "22.36",
+          "10.78",
+          "50.23",
+          "34.05",
+          "144.24",
+          "286.37"
+        ]
+      },
+      {
+        "method": "POMO + ReEvo",
+        "type": "LLM-AHD",
+        "values": [
+          "22.30",
+          "10.48",
+          "47.10",
+          "25.70",
+          "118.80",
+          "218.22"
+        ]
+      },
+      {
+        "method": "LEHD",
+        "type": "non-LLM baseline (NCO)",
+        "values": [
+          "20.92",
+          "3.68",
+          "38.61",
+          "3.03",
+          "39.12",
+          "4.79"
+        ]
+      },
+      {
+        "method": "LEHD + DAR",
+        "type": "non-LLM (expert-designed reshaping)",
+        "values": [
+          "21.13",
+          "4.67",
+          "39.16",
+          "4.49",
+          "39.70",
+          "6.35"
+        ]
+      },
+      {
+        "method": "LEHD + ReEvo",
+        "type": "LLM-AHD",
+        "values": [
+          "20.85",
+          "3.30",
+          "38.57",
+          "2.94",
+          "39.11",
+          "4.76"
+        ]
+      }
+    ],
+    "llm_and_budget": "gpt-3.5-turbo (generator and reflector), temperature 1, population 10, 30 initial, max 100 heuristic evaluations (Table 8, default for all ReEvo runs); 3 runs, best on validation tested. ~0.06 USD/run.",
+    "test_instance_generation": "Test instances from LEHD (App. D.2).",
+    "provenance": "Values read directly. Instance counts and gap reference inferred from external knowledge of LEHD."
+  },
+  {
+    "id": "EoH_T3_FSSP_Taillard_main",
+    "paper": "EoH (Liu et al., ICML 2024), arXiv 2401.02051 (latest version, v3)",
+    "table": "Table 3",
+    "page": "PDF p.7 (printed p.7)",
+    "problem": "Permutation flow shop (FSSP/PFSP), makespan",
+    "heuristic_framework": "Guided Local Search (GLS): LLM designs a function that updates the processing-time matrix and selects jobs to perturb; local search operators relocate and swap; max 1,000 LS iterations, 60 s per instance",
+    "sizes": [
+      "Taillard n20m10",
+      "n20m20",
+      "n50m10",
+      "n50m20",
+      "n100m10",
+      "n100m20"
+    ],
+    "instances_per_size": 10,
+    "metric": "Caption: 'average relative makespan (%) to the baseline'; text: 'average gap (%) to the upper bound provided in Taillard (1993)'",
+    "gap_reference": "Upper bounds from Taillard (1993) per the text (Table 12 caption says 'best-known solutions') - ambiguous",
+    "columns": [
+      "n20m10",
+      "n20m20",
+      "n50m10",
+      "n50m20",
+      "n100m10",
+      "n100m20"
+    ],
+    "rows": [
+      {
+        "method": "GUPTA",
+        "type": "non-LLM baseline",
+        "values": [
+          "23.42",
+          "21.79",
+          "20.11",
+          "22.78",
+          "15.03",
+          "21.00"
+        ]
+      },
+      {
+        "method": "CDS",
+        "type": "non-LLM baseline",
+        "values": [
+          "12.87",
+          "10.35",
+          "12.72",
+          "15.03",
+          "9.36",
+          "13.55"
+        ]
+      },
+      {
+        "method": "NEH",
+        "type": "non-LLM baseline",
+        "values": [
+          "4.05",
+          "3.06",
+          "3.47",
+          "5.48",
+          "2.07",
+          "3.58"
+        ]
+      },
+      {
+        "method": "NEHFF",
+        "type": "non-LLM baseline",
+        "values": [
+          "4.15",
+          "2.72",
+          "3.62",
+          "5.10",
+          "1.88",
+          "3.73"
+        ]
+      },
+      {
+        "method": "PFSPNet",
+        "type": "non-LLM baseline (DL)",
+        "values": [
+          "14.78",
+          "14.69",
+          "11.95",
+          "16.95",
+          "8.21",
+          "16.47"
+        ]
+      },
+      {
+        "method": "PFSPNet NEH",
+        "type": "non-LLM baseline (DL)",
+        "values": [
+          "4.04",
+          "2.96",
+          "3.48",
+          "5.05",
+          "1.72",
+          "3.56"
+        ]
+      },
+      {
+        "method": "EoH (ours)",
+        "type": "LLM-AHD",
+        "values": [
+          "0.30",
+          "0.10",
+          "0.19",
+          "0.60",
+          "0.14",
+          "0.41"
+        ]
+      }
+    ],
+    "llm_and_budget": "GPT-3.5-turbo. 20 generations, population 10 for FSSP, p=5 parents for E1/E2, 5 prompt strategies. Number of heuristic evaluations not stated by EoH for FSSP; MCTS-AHD (App. D) computes it as 810 evaluations for TSP/FSSP (inferred by them from EoH's settings). EoH states ~2,000 LLM queries for online BPP (pop. 20).",
+    "test_instance_generation": "Training/evolution: 64 random instances, 50 jobs, 2-20 machines, processing times U(0,1) (Pan et al., 2021). Test: Taillard benchmark, 10 instances per set.",
+    "provenance": "Read directly. NOTE: only one EoH run reported (no mean over runs stated)."
+  },
+  {
+    "id": "EoH_T12_FSSP_Taillard_full",
+    "paper": "EoH (Liu et al., ICML 2024), arXiv 2401.02051 (latest version, v3)",
+    "table": "Table 12",
+    "page": "PDF p.24 (printed p.23)",
+    "problem": "Permutation flow shop (FSSP/PFSP), makespan",
+    "heuristic_framework": "GLS (same as Table 3); LS = plain local search with the same operators; ILS1 = Stützle (1998) iterated local search; ILS2 = same framework as EoH with hand-crafted perturbation",
+    "sizes": [
+      "20x5",
+      "20x10",
+      "20x20",
+      "50x5",
+      "50x10",
+      "50x20",
+      "100x5",
+      "100x10",
+      "100x20",
+      "200x10",
+      "200x20"
+    ],
+    "instances_per_size": 10,
+    "metric": "Average gap (%) on 10 instances per set",
+    "gap_reference": "Caption: 'best-known solutions'; text above: 'upper bounds provided in Taillard (1993)'. EoH gets -0.04 on 100x5, which suggests a reference that is not the current BKS (e.g. Taillard 1993 UB) - ambiguous",
+    "columns": [
+      "GUPTA",
+      "CDS",
+      "NEH",
+      "NEHFF",
+      "PFSPNet",
+      "LS",
+      "ILS1",
+      "ILS2",
+      "EoH"
+    ],
+    "rows_are_sizes": true,
+    "rows": [
+      {
+        "method": "20 5",
+        "values": [
+          "12.89",
+          "9.03",
+          "3.24",
+          "2.30",
+          "2.30",
+          "1.91",
+          "0.42",
+          "0.18",
+          "0.09"
+        ]
+      },
+      {
+        "method": "20 10",
+        "values": [
+          "23.42",
+          "12.87",
+          "4.05",
+          "4.15",
+          "4.04",
+          "2.77",
+          "0.33",
+          "0.25",
+          "0.30"
+        ]
+      },
+      {
+        "method": "20 20",
+        "values": [
+          "21.79",
+          "10.35",
+          "3.06",
+          "2.72",
+          "2.96",
+          "2.60",
+          "0.29",
+          "0.25",
+          "0.10"
+        ]
+      },
+      {
+        "method": "50 5",
+        "values": [
+          "12.23",
+          "6.98",
+          "0.57",
+          "0.40",
+          "0.51",
+          "0.32",
+          "0.15",
+          "0.32",
+          "0.02"
+        ]
+      },
+      {
+        "method": "50 10",
+        "values": [
+          "20.11",
+          "12.72",
+          "3.47",
+          "3.62",
+          "3.48",
+          "3.33",
+          "1.47",
+          "0.29",
+          "0.19"
+        ]
+      },
+      {
+        "method": "50 20",
+        "values": [
+          "22.78",
+          "15.03",
+          "5.48",
+          "5.10",
+          "5.05",
+          "4.67",
+          "2.13",
+          "0.34",
+          "0.60"
+        ]
+      },
+      {
+        "method": "100 5",
+        "values": [
+          "5.98",
+          "5.10",
+          "0.39",
+          "0.31",
+          "0.31",
+          "0.28",
+          "0.20",
+          "0.38",
+          "-0.04"
+        ]
+      },
+      {
+        "method": "100 10",
+        "values": [
+          "15.03",
+          "9.36",
+          "2.07",
+          "1.88",
+          "1.72",
+          "1.38",
+          "0.77",
+          "0.34",
+          "0.14"
+        ]
+      },
+      {
+        "method": "100 20",
+        "values": [
+          "21.00",
+          "13.55",
+          "3.58",
+          "3.73",
+          "3.56",
+          "3.51",
+          "2.27",
+          "0.43",
+          "0.41"
+        ]
+      },
+      {
+        "method": "200 10",
+        "values": [
+          "11.59",
+          "7.22",
+          "0.98",
+          "0.70",
+          "0.82",
+          "0.87",
+          "0.74",
+          "0.54",
+          "0.12"
+        ]
+      },
+      {
+        "method": "200 20",
+        "values": [
+          "18.09",
+          "11.89",
+          "2.90",
+          "2.52",
+          "2.49",
+          "2.53",
+          "2.26",
+          "0.59",
+          "0.61"
+        ]
+      },
+      {
+        "method": "Average",
+        "values": [
+          "16.81",
+          "10.37",
+          "2.71",
+          "2.49",
+          "2.48",
+          "2.20",
+          "1.00",
+          "0.36",
+          "0.23"
+        ]
+      }
+    ],
+    "llm_and_budget": "Same as Table 3 (GPT-3.5-turbo, 20 generations x population 10).",
+    "test_instance_generation": "Taillard (1993) instances, 11 sets (no 500-job sets).",
+    "provenance": "Read directly. Layout transposed here: each row is an instance class, columns are methods. NOTE: the 'PFSPNet' column equals the 'PFSPNet NEH' row of Table 3 (e.g. 20x10 4.04, 50x10 3.48), so it is very likely PFSPNet_NEH, not plain PFSPNet (inferred)."
+  },
+  {
+    "id": "SUMMARY_TSP",
+    "detail": "summary_only",
+    "problem": "TSP",
+    "summary": "ReEvo T1 (p.5): GLS penalty heuristics, TSP20/50/100/200, opt. gap: KGLS-ReEvo 0.000/0.000/0.000/0.216 vs EoH 0.000/0.000/0.025/0.338, KGLS 0.004/0.017/0.002/0.284. ReEvo T2 (p.7): constructive TSP on 21 TSPLIB instances, avg opt gap NN 25.4, GHPP 16.7, ReEvo 14.6. ReEvo T3: POMO/LEHD + ReEvo on TSP200/500/1000. ReEvo ACO TSP results only in Fig. 2. MCTS-AHD T1 (p.6): step-by-step TSP50/100/200 (1,000 inst., gap to LKH3), GPT-4o-mini MCTS-AHD 9.69%/11.79%/13.71% vs EoH 12.67/14.49/16.68, FunSearch 12.00/13.93/15.54. MCTS-AHD T2: ACO TSP50/100 (64 inst.) MCTS-AHD 5.801/8.179, EoH 5.828/8.263, ReEvo 5.856/8.340, DeepACO 5.842/8.282. MCTS-AHD T8 GLS TSP, T11 TSPLIB, T12 vs LLM-as-optimizer. HSEvo T2 (p.6): GLS TSP100 (64 inst., gap to Concorde) Obj 0.02±0.03 vs ReEvo 0.05±0.06, FunSearch 0.09±0.06, EoH 1.09±3.11. EoH T2/T10/T11: GLS TSP, TSP20/50/100 gap 0.000/0.000/0.025 (1,000 inst.), TSPLIB."
+  },
+  {
+    "id": "SUMMARY_ONLINE_BPP",
+    "detail": "summary_only",
+    "problem": "Online bin packing",
+    "summary": "EoH T1 (p.7) / T9: Weibull 1k-10k items, C100/C500, gap to L2 lower bound; EoH 0.80% on 5k C100 (= FunSearch), avg 1.18% in T9. EoH T7: different LLMs (GPT-3.5 0.66, Gemini Pro 0.71, CodeLlama 1.07, DeepSeek 1.41 on 5k Weibull). MCTS-AHD T3 (p.7, GPT-4o-mini, T=2,000): avg gap MCTS-AHD 0.89%, FunSearch 0.99%, EoH 1.17%, HSEvo 1.13%, ReEvo 1.71%. HSEvo T2: BPO (5 Weibull 5k, C=100) Obj 1.07±1.11 vs FunSearch 2.05±2.01, ReEvo 2.48±3.74, EoH 3.17±2.97."
+  },
+  {
+    "id": "SUMMARY_OP",
+    "detail": "summary_only",
+    "problem": "Orienteering",
+    "summary": "ReEvo: ACO for OP50-500 only in Fig. 2/Fig. 4 (no table). HSEvo T2/T3/T4: ACO OP50, Obj (negated prize) HSEvo -14.62±0.12, EoH -14.62±0.22, ReEvo -14.54±0.21; FunSearch not run on OP. MCTS-AHD and EoH: no OP."
+  },
+  {
+    "id": "SUMMARY_NOT_FOUND",
+    "detail": "summary_only",
+    "problem": "Job shop, facility location, CVRP/MKP in ReEvo tables, anything in HSEvo beyond BPO/TSP/OP",
+    "summary": "No job shop or facility location results in any of the four papers. ReEvo reports ACO results for CVRP (CVRP50-500) and MKP (MKP100-1000) ONLY as plots (Fig. 2, p.6; Fig. 4, p.9 vs EoH with GPT-3.5/GPT-4 Turbo/Llama-3-70B), no numeric table. HSEvo reports no CVRP/MKP/FSSP results (its repo inherits ReEvo's cvrp_aco/mkp_aco generators unchanged, but no published numbers). MCTS-AHD has no FSSP table (only mentions EoH's FSSP budget). Other in-scope extra: MCTS-AHD T7 ASP (admissible set), T4 BO cost-aware acquisition functions (not packing/scheduling)."
+  }
+]

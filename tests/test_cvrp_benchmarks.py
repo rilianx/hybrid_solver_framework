@@ -43,3 +43,9 @@ def test_reevo_sets_are_the_generator_output():
             assert CVRPInstance.load(str(D / "reevo" / f"{group}_{k:02d}.txt")) == insts[k]
     inst = gen["test50"][0]
     assert inst.capacity == 50 and inst.coords[0] == (0.5, 0.5) and all(1 <= q <= 9 for q in inst.demand[1:])
+
+
+def test_mcts_ahd_sets_differ_from_reevo_after_test20():
+    mcts, reevo = reevo_instances((50, 100)), reevo_instances()
+    assert mcts["test50"][0] != reevo["test50"][0]
+    assert CVRPInstance.load(str(D / "mcts_ahd" / "test100_63.txt")) == mcts["test100"][63]

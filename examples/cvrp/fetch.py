@@ -1,17 +1,19 @@
 """Los benchmarks del CVRP: los de la literatura de OR y los de los trabajos de diseño de heurísticas con LLM.
 
-    python -m examples.cvrp.fetch            # X completo, FrontierCO y ReEvo
+    python -m examples.cvrp.fetch            # X completo, FrontierCO, ReEvo y MCTS-AHD
 
 | directorio | conjunto | instancias | distancias | referencia |
 |---|---|---|---|---|
 | `uchoa/` | X de Uchoa et al. (2017) | 100 (101–1001 clientes) | redondeadas | mejor conocida de CVRPLIB |
 | `frontierco/` | CVRP de FrontierCO (ICLR 2026): Golden et al. (1998) "easy", aleatorias "valid" | 20 + 15 | reales | la de FrontierCO |
 | `frontierco/` | FrontierCO "hard": Arnold, Gendreau y Sörensen (2019), Bélgica | 10 | redondeadas | mejor conocida de CVRPLIB |
-| `reevo/` | test20/50/100 de ReEvo (NeurIPS 2024; los usan también MCTS-AHD y HSEvo) | 3 × 64 | reales | sin referencia publicada |
+| `reevo/` | test20/50/100 de ReEvo (NeurIPS 2024; HSEvo usa el mismo generador) | 3 × 64 | reales | HGS (`reference.py`) |
+| `mcts_ahd/` | test50/100 de MCTS-AHD (ICML 2025; su tabla 2) | 2 × 64 | reales | HGS (`reference.py`) |
 
 FrontierCO ignora el largo máximo de ruta (DISTANCE) de las Golden 1–8; aquí también. Las de ReEvo se reproducen con
 su generador (`problems/cvrp_aco/gen_inst.py`: numpy, semilla 1234; depósito en (0.5, 0.5), clientes uniformes en el
-cuadrado unitario, demandas 1–9, capacidad 50), en el mismo orden de llamadas, así que son las mismas instancias.
+cuadrado unitario, demandas 1–9, capacidad 50), en el mismo orden de llamadas, así que son las mismas instancias. MCTS-AHD
+usa el mismo generador pero sin el test20, así que su test50 y test100 son otros (verificado contra sus .npy).
 """
 
 from __future__ import annotations
@@ -78,8 +80,10 @@ def fetch_frontierco() -> None:
                         "Golden 1–8); las de Arnold (Antwerp…Leuven), redondeadas como en CVRPLIB.")
 
 
-def reevo_instances() -> dict[str, list[CVRPInstance]]:
-    """Los conjuntos test20/50/100 de ReEvo, reproducidos con su generador y su semilla."""
+def reevo_instances(test_sizes=(20, 50, 100)) -> dict[str, list[CVRPInstance]]:
+    """Los conjuntos test de ReEvo, reproducidos con su generador y su semilla. Con `test_sizes=(50, 100)`, los de
+    MCTS-AHD: el mismo generador sin el test20 previo, así que sus test50 y test100 son otros (coinciden con los .npy de
+    su repositorio)."""
     import numpy as np
 
     def gen(n):
@@ -94,28 +98,30 @@ def reevo_instances() -> dict[str, list[CVRPInstance]]:
     for n in (20, 50, 100):  # val
         for _ in range(64):
             gen(n)
-    return {f"test{n}": [gen(n) for _ in range(64)] for n in (20, 50, 100)}
+    return {f"test{n}": [gen(n) for _ in range(64)] for n in test_sizes}
 
 
-def fetch_reevo() -> None:
-    d = HERE / "reevo"
+def fetch_reevo(name: str = "reevo", test_sizes=(20, 50, 100)) -> None:
+    d = HERE / name
     d.mkdir(exist_ok=True)
-    for group, insts in reevo_instances().items():
+    for group, insts in reevo_instances(test_sizes).items():
         for k, inst in enumerate(insts):
             inst.save(str(d / f"{group}_{k:02d}.txt"))
 
 
 def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--only", nargs="*", default=None, help="x frontierco reevo")
+    ap.add_argument("--only", nargs="*", default=None, help="x frontierco reevo mcts_ahd")
     args = ap.parse_args(argv)
-    only = set(args.only or ["x", "frontierco", "reevo"])
+    only = set(args.only or ["x", "frontierco", "reevo", "mcts_ahd"])
     if "x" in only:
         fetch_x()
     if "frontierco" in only:
         fetch_frontierco()
     if "reevo" in only:
         fetch_reevo()
+    if "mcts_ahd" in only:
+        fetch_reevo("mcts_ahd", (50, 100))
 
 
 if __name__ == "__main__":
