@@ -265,7 +265,9 @@ def _existing(ws: Path, slot: str) -> list[NativeComponent]:
 
 def generate_native_slot(client, pack, slot: str, n: int, workspace: str | Path, max_rounds: int = 3,
                          verbose: bool = True, hint: str = "") -> tuple[list[NativeComponent], NativeStats]:
-    gen = importlib.import_module(pack.native_module).GENERATION
+    from native.generic_model import generation_for
+
+    gen = generation_for(pack, workspace)
     ws = Path(workspace)
     (ws / slot).mkdir(parents=True, exist_ok=True)
     stats = NativeStats(slot=slot, requested=n)
@@ -395,7 +397,9 @@ def load_native_catalog(pack, workspace: str | Path):
     (módulo nativo, model_of, [(COMPONENT, fábrica)])."""
     from native.generated import ModelCache, build_components, factory, load, parse_component
 
-    gen = importlib.import_module(pack.native_module).GENERATION
+    from native.generic_model import generation_for
+
+    gen = generation_for(pack, workspace)
     entries = json.loads((Path(workspace) / "catalog.json").read_text())
     comps = []
     for e in entries:

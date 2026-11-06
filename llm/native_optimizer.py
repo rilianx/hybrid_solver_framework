@@ -182,7 +182,9 @@ def optimize_native(client, pack, workspace: str | Path, slots=("neighborhood",)
     """Pasadas encadenadas: en cada una, los componentes que mejoraron en la anterior se vuelven a optimizar con su
     versión nueva como oráculo (pidiendo `later_speedup` en vez de `min_speedup`); el resto ya no. Los componentes del
     mismo slot que ya se optimizaron se muestran como referencia."""
-    gen = importlib.import_module(pack.native_module).GENERATION
+    from native.generic_model import generation_for
+
+    gen = generation_for(pack, workspace)
     ws = Path(workspace)
     tokens = TokenUsage()
     out: dict = {}

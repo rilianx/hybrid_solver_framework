@@ -30,6 +30,18 @@ def generation(model_dir: str | Path, mip_parts: str) -> dict:
     }
 
 
+def generation_for(pack, workspace=None) -> dict:
+    """El `GENERATION` del problema con el modelo del workspace si lo trae (`<workspace>/model/model.hpp`): componentes,
+    optimizaciones y tuning de un workspace propio (p.ej. `generated/v2/<problema>`) van sobre SU modelo, no sobre el
+    del workspace por defecto (`examples/<problema>/native_parts.py`, o `HSF_<PROBLEMA>_NATIVE_MODEL`)."""
+    import importlib
+
+    gen = dict(importlib.import_module(pack.native_module).GENERATION)
+    if workspace is not None and (Path(workspace) / "model" / gen["model_header"]).exists():
+        gen["dir"] = Path(workspace) / "model"
+    return gen
+
+
 def model_parts(native, mip, model_of=None) -> SimpleNamespace:
     """Las piezas: vista heurística del módulo C++ `native` (forma canónica aplicada) y el resto de `mip`."""
     from native.generated import ModelCache
@@ -55,4 +67,4 @@ def model_parts(native, mip, model_of=None) -> SimpleNamespace:
     return ns
 
 
-__all__ = ["GENERIC_HEADER", "generation", "model_parts"]
+__all__ = ["GENERIC_HEADER", "generation", "generation_for", "model_parts"]

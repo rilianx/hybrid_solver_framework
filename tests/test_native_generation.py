@@ -356,3 +356,16 @@ def test_the_component_prompt_states_the_solution_representation(pack):
 
     gen = importlib.import_module(pack.native_module).GENERATION
     assert pack.make_model_spec().answer_format in generation_prompt(pack, gen, "neighborhood", 3, [], compact=True)
+
+
+def test_a_workspace_with_its_own_model_uses_it(tmp_path):
+    # generated/v2/<problema>: los componentes y el tuning van sobre el modelo del workspace, no sobre el por defecto
+    from core.packs import base_pack
+    from native.generic_model import generation_for
+
+    pack = base_pack("mkp")
+    default = generation_for(pack, tmp_path)
+    assert default["dir"] != tmp_path / "model"
+    (tmp_path / "model").mkdir()
+    (tmp_path / "model" / "model.hpp").write_text("// otro modelo\n")
+    assert generation_for(pack, tmp_path)["dir"] == tmp_path / "model"
