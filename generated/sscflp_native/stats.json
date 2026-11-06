@@ -1,0 +1,100 @@
+{
+  "constructor": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 3,
+    "llm_calls": 1,
+    "llm_seconds": 180.5,
+    "rejections_by_layer": {},
+    "rounds_per_accepted": {
+      "dynamic_regret_amortized_fixed": 1,
+      "unit_fill_cost_locate_then_allocate": 1,
+      "lagrangian_knapsack_relaxation_primal": 1
+    },
+    "abandoned": [],
+    "patches": 0,
+    "accepted_files": [
+      "generated/sscflp_native/constructor/dynamic_regret_amortized_fixed_r1.hpp",
+      "generated/sscflp_native/constructor/unit_fill_cost_locate_then_allocate_r1.hpp",
+      "generated/sscflp_native/constructor/lagrangian_knapsack_relaxation_primal_r1.hpp"
+    ],
+    "tokens": {
+      "calls": 1,
+      "input_tokens": 2571,
+      "output_tokens": 21651,
+      "total_tokens": 24222,
+      "cost_usd": 0.4433
+    }
+  },
+  "neighborhood": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 0,
+    "llm_calls": 7,
+    "llm_seconds": 474.0,
+    "rejections_by_layer": {
+      "quality": 9
+    },
+    "rounds_per_accepted": {},
+    "abandoned": [
+      "customer_shift_knn",
+      "customer_pair_swap_nearby",
+      "facility_close_open_greedy_repair"
+    ],
+    "patches": 5,
+    "accepted_files": [],
+    "tokens": {
+      "calls": 7,
+      "input_tokens": 31615,
+      "output_tokens": 50271,
+      "total_tokens": 81886,
+      "cost_usd": 1.1319
+    }
+  },
+  "perturbation": {
+    "requested": 3,
+    "parsed": 3,
+    "accepted": 1,
+    "llm_calls": 6,
+    "llm_seconds": 280.1,
+    "rejections_by_layer": {
+      "quality": 7
+    },
+    "rounds_per_accepted": {
+      "random_relocate_swap_kick": 2
+    },
+    "abandoned": [
+      "facility_close_open_reassign",
+      "pivot_ruin_regret_recreate"
+    ],
+    "patches": 5,
+    "accepted_files": [
+      "generated/sscflp_native/perturbation/random_relocate_swap_kick_r2.hpp"
+    ],
+    "tokens": {
+      "calls": 6,
+      "input_tokens": 26243,
+      "output_tokens": 31499,
+      "total_tokens": 57742,
+      "cost_usd": 0.735
+    }
+  },
+  "_run": {
+    "problem": "sscflp",
+    "model": "claude-opus-5-5",
+    "provider": "anthropic",
+    "language": "cpp",
+    "from_scratch": true,
+    "wall_seconds": 1115.3,
+    "tokens": {
+      "calls": 14,
+      "input_tokens": 60429,
+      "output_tokens": 103421,
+      "total_tokens": 163850,
+      "cost_usd": 2.3101
+    },
+    "hint": "",
+    "compact_prompts": true,
+    "bench_size": "30x200"
+  }
+}
