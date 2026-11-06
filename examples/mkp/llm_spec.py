@@ -20,7 +20,10 @@ def make_model_spec():
             "subconjunto de ítems (cada uno a lo sumo una vez). Para cada recurso, el consumo total de los ítems "
             "elegidos no puede superar su capacidad. Objetivo: MAXIMIZAR el beneficio total de los ítems elegidos; como "
             "el framework minimiza, el objetivo es el beneficio total con signo menos. Una solución infactible debe "
-            "tener un objetivo finito pero peor que cualquier factible (penalización)."
+            "tener un objetivo finito pero peor que cualquier factible (penalización). La solución trivial es la greedy "
+            "(no la mochila vacía): se recorren los ítems por razón beneficio / Σ_i (consumo del recurso i / capacidad "
+            "del recurso i) decreciente (empates: menor índice primero; si la suma es 0, la razón es infinita) y cada "
+            "uno se agrega si cabe en todos los recursos con lo que queda libre."
         ),
         instance_source=inspect.getsource(instance.MKPInstance),
         instance_import="examples.mkp.instance",
