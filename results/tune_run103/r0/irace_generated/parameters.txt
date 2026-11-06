@@ -1,0 +1,58 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("SA", "ILS", "VNS", "TS")
+constructor "--constructor=" c ("trivial", "random", "neh_taillard_noisy_order", "cds_johnson_palmer_best", "grasp_lr_index_append") | skeleton %in% c("SA", "ILS", "VNS", "TS")
+neh_taillard_noisy_order.noise "--neh_taillard_noisy_order.noise=" r (0.0, 0.3) | skeleton %in% c("SA", "ILS", "VNS", "TS") & constructor == "neh_taillard_noisy_order"
+neh_taillard_noisy_order.tie_break "--neh_taillard_noisy_order.tie_break=" c ("random", "first") | skeleton %in% c("SA", "ILS", "VNS", "TS") & constructor == "neh_taillard_noisy_order"
+neh_taillard_noisy_order.order "--neh_taillard_noisy_order.order=" c ("sum", "sum_std") | skeleton %in% c("SA", "ILS", "VNS", "TS") & constructor == "neh_taillard_noisy_order"
+cds_johnson_palmer_best.noise "--cds_johnson_palmer_best.noise=" r (0.0, 0.25) | skeleton %in% c("SA", "ILS", "VNS", "TS") & constructor == "cds_johnson_palmer_best"
+cds_johnson_palmer_best.max_surrogates "--cds_johnson_palmer_best.max_surrogates=" i (1, 60) | skeleton %in% c("SA", "ILS", "VNS", "TS") & constructor == "cds_johnson_palmer_best"
+cds_johnson_palmer_best.use_palmer "--cds_johnson_palmer_best.use_palmer=" c ("yes", "no") | skeleton %in% c("SA", "ILS", "VNS", "TS") & constructor == "cds_johnson_palmer_best"
+grasp_lr_index_append.alpha "--grasp_lr_index_append.alpha=" r (0.0, 0.4) | skeleton %in% c("SA", "ILS", "VNS", "TS") & constructor == "grasp_lr_index_append"
+grasp_lr_index_append.at_weight "--grasp_lr_index_append.at_weight=" r (0.0, 2.0) | skeleton %in% c("SA", "ILS", "VNS", "TS") & constructor == "grasp_lr_index_append"
+neighborhood "--neighborhood=" c ("pfsp_job_insertion_taillard", "pfsp_pairwise_swap_headtail", "pfsp_block_reversal_2opt", "composite") | skeleton %in% c("SA", "ILS", "VNS", "TS")
+pfsp_job_insertion_taillard.window "--pfsp_job_insertion_taillard.window=" i (0, 500) | skeleton %in% c("SA", "ILS", "VNS", "TS") & neighborhood == "pfsp_job_insertion_taillard"
+pfsp_pairwise_swap_headtail.max_dist "--pfsp_pairwise_swap_headtail.max_dist=" i (0, 500) | skeleton %in% c("SA", "ILS", "VNS", "TS") & neighborhood == "pfsp_pairwise_swap_headtail"
+pfsp_block_reversal_2opt.max_len "--pfsp_block_reversal_2opt.max_len=" i (2, 200) | skeleton %in% c("SA", "ILS", "VNS", "TS") & neighborhood == "pfsp_block_reversal_2opt"
+perturbation "--perturbation=" c ("random_insert_swap_kick", "ig_destruct_reconstruct_taillard", "segment_double_bridge_exchange") | skeleton %in% c("ILS")
+random_insert_swap_kick.moves_per_strength "--random_insert_swap_kick.moves_per_strength=" r (0.5, 4.0) | skeleton %in% c("ILS") & perturbation == "random_insert_swap_kick"
+random_insert_swap_kick.swap_prob "--random_insert_swap_kick.swap_prob=" r (0.0, 1.0) | skeleton %in% c("ILS") & perturbation == "random_insert_swap_kick"
+ig_destruct_reconstruct_taillard.d_base "--ig_destruct_reconstruct_taillard.d_base=" i (1, 8) | skeleton %in% c("ILS") & perturbation == "ig_destruct_reconstruct_taillard"
+ig_destruct_reconstruct_taillard.d_per_strength "--ig_destruct_reconstruct_taillard.d_per_strength=" r (0.0, 4.0) | skeleton %in% c("ILS") & perturbation == "ig_destruct_reconstruct_taillard"
+ig_destruct_reconstruct_taillard.tie_break "--ig_destruct_reconstruct_taillard.tie_break=" c ("first", "random") | skeleton %in% c("ILS") & perturbation == "ig_destruct_reconstruct_taillard"
+segment_double_bridge_exchange.max_seg_frac "--segment_double_bridge_exchange.max_seg_frac=" r (0.05, 0.5) | skeleton %in% c("ILS") & perturbation == "segment_double_bridge_exchange"
+segment_double_bridge_exchange.bridges_per_strength "--segment_double_bridge_exchange.bridges_per_strength=" r (0.5, 3.0) | skeleton %in% c("ILS") & perturbation == "segment_double_bridge_exchange"
+segment_double_bridge_exchange.reverse_prob "--segment_double_bridge_exchange.reverse_prob=" r (0.0, 0.5) | skeleton %in% c("ILS") & perturbation == "segment_double_bridge_exchange"
+SA.T0 "--SA.T0=" r (1.0, 1000.0) | skeleton == "SA"  # log-scale
+SA.cooling "--SA.cooling=" c ("time", "iterations") | skeleton == "SA"
+SA.T_end "--SA.T_end=" r (1e-05, 0.1) | skeleton == "SA"  # log-scale
+SA.alpha "--SA.alpha=" r (0.8, 0.999) | skeleton == "SA"
+SA.iters_per_T "--SA.iters_per_T=" i (1, 50) | skeleton == "SA"
+SA.eval "--SA.eval=" c ("objective", "delta") | skeleton == "SA"
+SA.pen_scale "--SA.pen_scale=" r (0.0001, 1.0) | skeleton == "SA"  # log-scale
+SA.pen_adapt "--SA.pen_adapt=" c ("no", "yes") | skeleton == "SA"
+SA.pen_target "--SA.pen_target=" r (0.05, 0.5) | skeleton == "SA"
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+ILS.ls_sample "--ILS.ls_sample=" i (4, 256) | skeleton == "ILS"  # log-scale
+ILS.ls_scope "--ILS.ls_scope=" c ("sample", "full") | skeleton == "ILS"
+ILS.accept "--ILS.accept=" c ("better", "anneal") | skeleton == "ILS"
+ILS.T_rel "--ILS.T_rel=" r (0.0001, 0.05) | skeleton == "ILS"  # log-scale
+ILS.pen_scale "--ILS.pen_scale=" r (0.0001, 1.0) | skeleton == "ILS"  # log-scale
+ILS.pen_adapt "--ILS.pen_adapt=" c ("no", "yes") | skeleton == "ILS"
+ILS.pen_target "--ILS.pen_target=" r (0.05, 0.5) | skeleton == "ILS"
+VNS.shake_strength "--VNS.shake_strength=" i (1, 4) | skeleton == "VNS"
+VNS.ls_time_share "--VNS.ls_time_share=" r (0.02, 0.3) | skeleton == "VNS"
+VNS.ls_sample "--VNS.ls_sample=" i (4, 256) | skeleton == "VNS"  # log-scale
+VNS.pen_scale "--VNS.pen_scale=" r (0.0001, 1.0) | skeleton == "VNS"  # log-scale
+VNS.pen_adapt "--VNS.pen_adapt=" c ("no", "yes") | skeleton == "VNS"
+VNS.pen_target "--VNS.pen_target=" r (0.05, 0.5) | skeleton == "VNS"
+TS.tenure "--TS.tenure=" i (3, 30) | skeleton == "TS"
+TS.candidate_size "--TS.candidate_size=" i (5, 100) | skeleton == "TS"  # log-scale
+TS.estimate_top "--TS.estimate_top=" i (0, 10) | skeleton == "TS"
+TS.elite_size "--TS.elite_size=" i (0, 8) | skeleton == "TS"
+TS.stall "--TS.stall=" i (20, 5000) | skeleton == "TS"  # log-scale
+TS.pen_scale "--TS.pen_scale=" r (0.0001, 1.0) | skeleton == "TS"  # log-scale
+TS.pen_adapt "--TS.pen_adapt=" c ("no", "yes") | skeleton == "TS"
+TS.pen_target "--TS.pen_target=" r (0.05, 0.5) | skeleton == "TS"
