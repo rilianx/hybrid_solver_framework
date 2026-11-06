@@ -14,6 +14,8 @@ contra la mejor solución conocida (un gap negativo es una mejor solución nueva
 | `cvrp_frontierco` | CVRP de FrontierCO (`examples/cvrp/frontierco/`): Golden, valid, Arnold | la de FrontierCO | Golden, valid, Arnold |
 | `clsp` | Trigeiro et al. (`examples/lotsizing/trigeiro/`) | CBC y la tabla 9 de Degraeve y Jans | F; cada G |
 | `mkp` | OR-Library: mknap1, mknap2, mknapcb1–9 (`examples/mkp/orlib/`) | óptimo o mejor conocida (CO-Bench) | archivo |
+| `mkp_reevo` | test100–1000 de ReEvo = MKP de MCTS-AHD (`examples/mkp/reevo/`, con `fetch --reevo`) | óptimo (CBC) | tamaño |
+| `cvrp_reevo`, `cvrp_mcts_ahd` | test de ReEvo y de MCTS-AHD (`examples/cvrp/reevo/`, `mcts_ahd/`) | HGS (`examples/cvrp/reference.py`) | tamaño |
 | `sscflp` | Holmberg, Díaz-Fernández, Yang, TB4, OR-Library y TBED1 (`examples/sscflp/bench/`) | óptimo o mejor conocida | H, D, Y, TB4, cap, capa–c, i300 … i3001500 |
 
 Cada réplica de cada corrida (`results/tune_runNN/r<k>/generated.json`) es una configuración; `--extra` agrega otras.
@@ -102,6 +104,16 @@ BENCHES = {
                              lambda n: "Golden" if n.startswith("Golden") else ("valid" if n.startswith("instance") else "Arnold")),
     "mkp": Bench("mkp", ROOT / "mkp" / "orlib", ".txt", lambda: _json(ROOT / "mkp" / "orlib" / "best_known.json"),
                  lambda n: n.split("_")[0]),
+    "mkp_reevo": Bench("mkp", ROOT / "mkp" / "reevo", ".txt",
+                       lambda: {k: v["ub"] for k, v in _json(ROOT / "mkp" / "reevo_best_known.json").items()},
+                       lambda n: n.split("_")[0]),
+    "cvrp_reevo": Bench("cvrp", ROOT / "cvrp" / "reevo", ".txt",
+                        lambda: {k: v["ub"] for k, v in _json(ROOT / "cvrp" / "reevo" / "best_known.json").items()},
+                        lambda n: n.split("_")[0]),
+    "cvrp_mcts_ahd": Bench("cvrp", ROOT / "cvrp" / "mcts_ahd", ".txt",
+                           lambda: {k: v["ub"] for k, v in _json(ROOT / "cvrp" / "mcts_ahd" / "best_known.json").items()}
+                           if (ROOT / "cvrp" / "mcts_ahd" / "best_known.json").exists() else {},
+                           lambda n: n.split("_")[0]),
     "sscflp": Bench("sscflp", ROOT / "sscflp" / "bench", ".txt",
                     lambda: {k: v["ub"] for k, v in _json(ROOT / "sscflp" / "bench" / "best_known.json").items()},
                     _sscflp_group),

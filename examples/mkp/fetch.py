@@ -8,7 +8,7 @@
 | `orlib/` | mknapcb1–9, Chu y Beasley (1998) | 270 | 100–500 × 5–30 | mejor conocida (CO-Bench) |
 | `orlib/` | mknap1, Petersen (1967) | 7 | 6–50 × 5–10 | óptimo |
 | `orlib/` | mknap2, 48 de la literatura (consumos leídos por recurso; ver `parse_mknap2`) (Senyu y Toyada, Weingartner y Ness, Shi, Fréville y Plateau…) | 48 | 10–105 × 2–30 | óptimo |
-| `reevo/` (`--reevo`) | test100/200/300/500/1000 de ReEvo (NeurIPS 2024; también MCTS-AHD) | 5 × 64 | 100–1000 × 5 | sin referencia publicada |
+| `reevo/` (`--reevo`) | test100/200/300/500/1000 de ReEvo (NeurIPS 2024; también MCTS-AHD) | 5 × 64 | 100–1000 × 5 | óptimo (CBC, `reference.py`; `reevo_best_known.json`) |
 
 La OR-Library viene del MKP de CO-Bench (huggingface.co/datasets/CO-Bench/CO-Bench), con las referencias con las que
 normaliza (`config.py`). En mknap2 CO-Bench transpone la matriz de consumos; aquí no (`parse_mknap2`). Los de ReEvo se reproducen con su generador (`problems/mkp_aco/gen_inst.py`: numpy,

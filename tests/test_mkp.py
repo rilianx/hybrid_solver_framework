@@ -74,3 +74,10 @@ def test_reevo_sets_reproduce_the_generator():
     reevo = Path("examples/mkp/reevo/test100_00.txt")
     if reevo.exists():
         assert MKPInstance.load(str(reevo)) == inst
+
+
+def test_reevo_references_are_proven_optima():
+    refs = json.loads(Path("examples/mkp/reevo_best_known.json").read_text())
+    assert len(refs) == 5 * 64 and all(v["opt"] for v in refs.values())
+    mean100 = -sum(v["ub"] for k, v in refs.items() if k.startswith("test100_")) / 64
+    assert mean100 == pytest.approx(23.346, abs=1e-3)  # MCTS-AHD publica 23.269 en MKP100 (tabla 2)
