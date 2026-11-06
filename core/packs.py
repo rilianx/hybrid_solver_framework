@@ -11,7 +11,8 @@ from core.model_parts import PartsModel
 from core.problem_pack import ProblemPack
 
 PACKS = {"clsp": "examples.lotsizing.pack", "cvrp": "examples.cvrp.pack", "jobshop": "examples.jobshop.pack",
-         "flowshop": "examples.flowshop.pack", "flowshop_cmax": "examples.flowshop_cmax.pack"}
+         "flowshop": "examples.flowshop.pack", "flowshop_cmax": "examples.flowshop_cmax.pack",
+         "sscflp": "examples.sscflp.pack"}
 
 
 def base_pack(problem: str) -> ProblemPack:

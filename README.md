@@ -66,8 +66,13 @@ en Python en `skeletons/` (misma semántica y parámetros, `core/assembler.py`; 
 | `clsp` | lot sizing capacitado multi-ítem | Trigeiro |
 | `jobshop` | job shop, makespan | Taillard |
 | `cvrp` | CVRP con flota libre | Uchoa X |
+| `sscflp` | localización de centros con capacidad y fuente única | Holmberg, Díaz-Fernández, Yang, TB4; TBED1 i1000 (`--large`) |
 
-En todos, el modelo C++ y los componentes los escribió el LLM (`generated/<problema>_native/`). Un problema nuevo
+En el SSCFLP todavía no hay modelo ni componentes generados: están la instancia, la descripción, los casos y el
+oráculo, y el benchmark (193 instancias en `examples/sscflp/bench/`, con `python -m examples.sscflp.fetch` para
+descargarlas de nuevo y las referencias en `bench/best_known.json`). Las i1000 son las "easy" del CFLP de FrontierCO.
+
+En los demás, el modelo C++ y los componentes los escribió el LLM (`generated/<problema>_native/`). Un problema nuevo
 necesita la instancia (`to_text`/`parse`, generador), la descripción para el LLM (`ModelSpec`), los casos de prueba y
 el oráculo en Python (`model_parts.py`: violaciones por familia y términos del costo);
 `core.packs.parts_pack` arma el pack con los componentes base del framework (`base_components`): las partidas trivial
@@ -92,7 +97,7 @@ python -m llm.native_mip_generator --problem $P --workspace $WS --provider anthr
 python -m examples.flowshop.tune --generated $WS --tuner irace --trials 70 --size 50x10,100x20 --scale-budget
 python -m examples.flowshop.tune --generated $WS --tuner staged --trials 70
 
-# evaluación en el benchmark con la configuración afinada (flowshop, flowshop_cmax, jobshop, cvrp, clsp)
+# evaluación en el benchmark con la configuración afinada (flowshop, flowshop_cmax, jobshop, cvrp, clsp, sscflp)
 python -m scripts.bench_eval flowshop results/tune_runNN --t 60 --seeds 3
 ```
 

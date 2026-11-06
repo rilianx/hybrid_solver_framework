@@ -12,6 +12,7 @@ contra la mejor solución conocida (un gap negativo es una mejor solución nueva
 | `jobshop` | Taillard ta01–ta20 (`examples/jobshop/taillard/`) | óptimo o mejor cota superior (JSPLIB) | 15×15, 20×15 |
 | `cvrp` | X de Uchoa et al. (`examples/cvrp/uchoa/`) | mejor conocida (CVRPLIB) | todas |
 | `clsp` | Trigeiro et al. (`examples/lotsizing/trigeiro/`) | CBC y la tabla 9 de Degraeve y Jans | F; cada G |
+| `sscflp` | Holmberg, Díaz-Fernández, Yang, TB4 y TBED1 i1000 (`examples/sscflp/bench/`) | óptimo o mejor conocida | prefijo (H, D, Y, TB4, i1000) |
 
 Cada réplica de cada corrida (`results/tune_runNN/r<k>/generated.json`) es una configuración; `--extra` agrega otras.
 El tiempo es `--budget` segundos por corrida o, en el flow shop, el protocolo de la literatura n·m/2·t ms (`--t`).
@@ -76,6 +77,9 @@ BENCHES = {
                      lambda n: "15×15" if int(n[2:]) <= 10 else "20×15"),
     "cvrp": Bench("cvrp", ROOT / "cvrp" / "uchoa", ".vrp", lambda: _json(ROOT / "cvrp" / "uchoa" / "best_known.json"),
                   lambda n: "X"),
+    "sscflp": Bench("sscflp", ROOT / "sscflp" / "bench", ".txt",
+                    lambda: {k: v["ub"] for k, v in _json(ROOT / "sscflp" / "bench" / "best_known.json").items()},
+                    lambda n: n.split("-")[0] if "-" in n else n.split("_")[0]),
     "clsp": Bench("clsp", ROOT / "lotsizing" / "trigeiro", ".txt", _trigeiro_reference,
                   lambda n: "F" if n.startswith("F") else n),
 }
