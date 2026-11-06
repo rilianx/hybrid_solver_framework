@@ -70,7 +70,8 @@ en Python en `skeletons/` (misma semántica y parámetros, `core/assembler.py`; 
 
 En el SSCFLP todavía no hay modelo ni componentes generados: están la instancia, la descripción, los casos y el
 oráculo, y el benchmark (193 instancias en `examples/sscflp/bench/`, con `python -m examples.sscflp.fetch` para
-descargarlas de nuevo y las referencias en `bench/best_known.json`). Las i1000 son las "easy" del CFLP de FrontierCO.
+descargarlas de nuevo y las referencias en `bench/best_known.json`: de la literatura en Yang, TB4 e i1000; en
+Holmberg y Díaz-Fernández se calculan con `python -m examples.sscflp.best_known --cbc H- D-`). Las i1000 son las "easy" del CFLP de FrontierCO.
 
 En los demás, el modelo C++ y los componentes los escribió el LLM (`generated/<problema>_native/`). Un problema nuevo
 necesita la instancia (`to_text`/`parse`, generador), la descripción para el LLM (`ModelSpec`), los casos de prueba y
