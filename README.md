@@ -65,7 +65,7 @@ en Python en `skeletons/` (misma semántica y parámetros, `core/assembler.py`; 
 | `flowshop_cmax` | flow shop de permutación, makespan | Taillard |
 | `clsp` | lot sizing capacitado multi-ítem | Trigeiro |
 | `jobshop` | job shop, makespan | Taillard ta01–ta80, OR-Library |
-| `cvrp` | CVRP con flota libre | Uchoa X |
+| `cvrp` | CVRP con flota libre | Uchoa X (100); FrontierCO (Golden, Arnold); test de ReEvo |
 | `sscflp` | localización de centros con capacidad y fuente única | Holmberg, Díaz-Fernández, Yang, TB4, OR-Library; capa–c y TBED1 (`--large`) |
 
 En el SSCFLP todavía no hay modelo ni componentes generados: están la instancia, la descripción, los casos, el

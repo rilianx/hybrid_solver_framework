@@ -80,15 +80,13 @@ class CVRPInstance:
 
     def save(self, path: str) -> None:
         with open(path, "w") as f:
-            f.write(f"{self.n_customers} {self.capacity}\n")
-            for (x, y), d in zip(self.coords, self.demand):
-                f.write(f"{x} {y} {d}\n")
+            f.write(self.to_text())
 
     def to_text(self) -> str:
         """Formato de entrada (como un problema de Codeforces): `n Q` (y `round` si las distancias se redondean),
         luego n+1 líneas `x y d` (la primera es el depósito, con d = 0)."""
-        lines = [f"{self.n_customers} {self.capacity:g}" + (" round" if self.rounded else "")]
-        lines += [f"{x:g} {y:g} {d:g}" for (x, y), d in zip(self.coords, self.demand)]
+        lines = [f"{self.n_customers} {_num(self.capacity)}" + (" round" if self.rounded else "")]
+        lines += [f"{_num(x)} {_num(y)} {_num(d)}" for (x, y), d in zip(self.coords, self.demand)]
         return "\n".join(lines) + "\n"
 
     @staticmethod
@@ -102,8 +100,10 @@ class CVRPInstance:
                             rounded=len(head) > 2 and head[2] == "round")
 
     @staticmethod
-    def parse_vrplib(text: str) -> "CVRPInstance":
-        """El formato VRPLIB de CVRPLIB (EUC_2D, un depósito): las instancias X de Uchoa et al. (2017)."""
+    def parse_vrplib(text: str, rounded: bool = True) -> "CVRPInstance":
+        """El formato VRPLIB de CVRPLIB (EUC_2D, un depósito): las instancias X de Uchoa et al. (2017). `rounded`: la
+        convención de CVRPLIB (distancias redondeadas); las Golden y las aleatorias de FrontierCO usan las reales. Se
+        ignora DISTANCE (largo máximo de ruta), como en FrontierCO."""
         sec, coords, demand, cap, depot = None, {}, {}, None, 1
         for ln in text.splitlines():
             tok = ln.replace(":", " : ").split()
@@ -123,10 +123,15 @@ class CVRPInstance:
                 depot = int(tok[0])
         order = [depot] + [k for k in sorted(coords) if k != depot]
         return CVRPInstance(tuple(coords[k] for k in order), tuple(0.0 if k == depot else demand[k] for k in order),
-                            cap, rounded=True)
+                            cap, rounded=rounded)
 
     @staticmethod
     def load(path: str) -> "CVRPInstance":
         with open(path) as f:
             text = f.read()
         return CVRPInstance.parse_vrplib(text) if "NODE_COORD_SECTION" in text else CVRPInstance.parse(text)
+
+
+def _num(v: float) -> str:
+    """Sin pérdida: entero si lo es, si no la representación exacta del float."""
+    return str(int(v)) if float(v).is_integer() else repr(float(v))

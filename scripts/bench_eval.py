@@ -10,7 +10,8 @@ contra la mejor solución conocida (un gap negativo es una mejor solución nueva
 |---|---|---|---|
 | `flowshop`, `flowshop_cmax` | Taillard (`examples/flowshop/taillard/`) | mejores conocidas de flowtime / makespan | clase n_m |
 | `jobshop` | Taillard ta01–ta80 y OR-Library (`examples/jobshop/bench/`) | óptimo o mejor conocida (Weise 2020) | ta por tamaño; abz, ft, la, orb, swv, yn |
-| `cvrp` | X de Uchoa et al. (`examples/cvrp/uchoa/`) | mejor conocida (CVRPLIB) | todas |
+| `cvrp` | X de Uchoa et al. (`examples/cvrp/uchoa/`, 100) | mejor conocida (CVRPLIB) | todas |
+| `cvrp_frontierco` | CVRP de FrontierCO (`examples/cvrp/frontierco/`): Golden, valid, Arnold | la de FrontierCO | Golden, valid, Arnold |
 | `clsp` | Trigeiro et al. (`examples/lotsizing/trigeiro/`) | CBC y la tabla 9 de Degraeve y Jans | F; cada G |
 | `sscflp` | Holmberg, Díaz-Fernández, Yang, TB4, OR-Library y TBED1 (`examples/sscflp/bench/`) | óptimo o mejor conocida | H, D, Y, TB4, cap, capa–c, i300 … i3001500 |
 
@@ -95,6 +96,9 @@ BENCHES = {
                      _jssp_group),
     "cvrp": Bench("cvrp", ROOT / "cvrp" / "uchoa", ".vrp", lambda: _json(ROOT / "cvrp" / "uchoa" / "best_known.json"),
                   lambda n: "X"),
+    "cvrp_frontierco": Bench("cvrp", ROOT / "cvrp" / "frontierco", ".txt",
+                             lambda: _json(ROOT / "cvrp" / "frontierco" / "best_known.json"),
+                             lambda n: "Golden" if n.startswith("Golden") else ("valid" if n.startswith("instance") else "Arnold")),
     "sscflp": Bench("sscflp", ROOT / "sscflp" / "bench", ".txt",
                     lambda: {k: v["ub"] for k, v in _json(ROOT / "sscflp" / "bench" / "best_known.json").items()},
                     _sscflp_group),
