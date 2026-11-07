@@ -1,0 +1,18 @@
+  vista MIP de HYB: generated
+
+=== catálogo `generated`: 85 parámetros, 9 opciones generadas por LLM ===
+  irace: 1008 experimentos en 11846s; élite: ILS[constructor=trivial, neighborhood=composite, perturbation=random_feasible_cross_exchange_walk]; ILS[constructor=randomized_parallel_savings, neighborhood=granular_two_opt_star, perturbation=sisr_string_removal_blink_insert]; ILS[constructor=randomized_parallel_savings, neighborhood=granular_two_opt_star, perturbation=random_removal_regret2_reinsert]; ILS[constructor=trivial, neighborhood=composite, perturbation=random_feasible_cross_exchange_walk]; ILS[constructor=randomized_parallel_savings, neighborhood=granular_two_opt_star, perturbation=sisr_string_removal_blink_insert]; ILS[constructor=trivial, neighborhood=composite, perturbation=random_feasible_cross_exchange_walk]; ILS[constructor=trivial, neighborhood=composite, perturbation=random_feasible_cross_exchange_walk]; HYB[constructor=multi_start_polar_sweep_2opt, neighborhood=granular_relocate, perturbation=random_removal_regret2_reinsert, destruction=random_variables]
+  mejor en train: 0.1396  ILS[constructor=trivial, neighborhood=composite, perturbation=random_feasible_cross_exchange_walk]
+
+=== TEST `generated` (partida trivial sin búsqueda = 154282.0; gap vs mejor conocido por instancia) ===
+    tuned                                            gap   2.16%        19650.2 ±   7763.6   (+87.3% vs partida)   ILS[constructor=trivial, neighborhood=composite, perturbation=random_feasible_cross_exchange_walk]
+    default:HYB                                      gap   3.41%        20056.9 ±   8371.4   (+87.0% vs partida)   HYB[constructor=trivial, neighborhood=granular_relocate, perturbation=random_removal_regret2_reinsert, destruction=group_window]
+    default:ILS                                      gap   3.61%        19948.6 ±   7966.8   (+87.1% vs partida)   ILS[constructor=trivial, neighborhood=granular_relocate, perturbation=random_removal_regret2_reinsert]
+    default:TS                                       gap   3.85%        20042.4 ±   8112.1   (+87.0% vs partida)   TS[constructor=trivial, neighborhood=granular_relocate]
+    default:SA                                       gap   5.21%        20306.0 ±   8219.3   (+86.8% vs partida)   SA[constructor=trivial, neighborhood=granular_relocate]
+    default:VNS                                      gap   6.79%        20576.5 ±   8226.2   (+86.7% vs partida)   VNS[constructor=trivial, neighborhood=granular_relocate]
+    default:GRASP                                    gap  55.06%        29122.1 ±  10461.4   (+81.1% vs partida)   GRASP[constructor=trivial, neighborhood=granular_relocate, perturbation=random_removal_regret2_reinsert]
+  ganancia del afinado vs mejor default: +1.50%; gana en 4/6 instancias
+  afinado vs default:HYB: gap +1.26% a favor del afinado, IC95 [-0.90%, +3.16%] (no se distingue del ruido)
+
+Escenario irace escrito en tuning_out/irace/scenario.txt (correr: irace --scenario tuning_out/irace/scenario.txt)

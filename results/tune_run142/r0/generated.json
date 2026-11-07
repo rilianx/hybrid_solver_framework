@@ -1,0 +1,465 @@
+{
+  "catalog": "generated",
+  "generated_components": [
+    "grasp_amortized_fixed_regret_order",
+    "randomized_add_open_then_regret_assign",
+    "facility_star_packing_greedy",
+    "shift_customer_near_or_open",
+    "swap_customers_between_near_facilities",
+    "facility_close_open_greedy_redistribution",
+    "random_shift_swap_walk",
+    "cluster_ruin_regret_recreate",
+    "facility_close_greedy_repair"
+  ],
+  "settings": {
+    "trials": 80,
+    "budget": 10.0,
+    "train": 6,
+    "test": 6,
+    "problem": "sscflp",
+    "size": "20x100,30x200,60x200",
+    "seed": 0,
+    "tuner_seed": 0,
+    "seeds_test": 3,
+    "objective": "ratio",
+    "skeletons": [
+      "SA",
+      "ILS",
+      "TS",
+      "VNS",
+      "PR",
+      "HYB"
+    ],
+    "ref_time": 0.0,
+    "generated": "generated/v2/sscflp",
+    "tuner": "irace",
+    "mip": "generated",
+    "generated_destructions": false
+  },
+  "tuning": {
+    "tuner": "irace",
+    "best_config": {
+      "skeleton": "VNS",
+      "constructor": "trivial",
+      "neighborhood": "facility_close_open_greedy_redistribution",
+      "facility_close_open_greedy_redistribution.pull_frac": 0.9856,
+      "VNS.shake_strength": 3,
+      "VNS.ls_time_share": 0.0867,
+      "VNS.ls_sample": 125,
+      "VNS.pen_scale": 0.4508,
+      "VNS.pen_adapt": "no",
+      "VNS.pen_target": 0.3679
+    },
+    "best_cost": 0.5698219003839073,
+    "best_summary": "VNS[constructor=trivial, neighborhood=facility_close_open_greedy_redistribution]",
+    "n_trials": 1008,
+    "n_failed": 0,
+    "seconds": 9572.8,
+    "skeleton_usage": {
+      "VNS": 8
+    },
+    "elites": [
+      "VNS[constructor=trivial, neighborhood=facility_close_open_greedy_redistribution]",
+      "VNS[constructor=grasp_amortized_fixed_regret_order, neighborhood=facility_close_open_greedy_redistribution]",
+      "VNS[constructor=trivial, neighborhood=facility_close_open_greedy_redistribution]",
+      "VNS[constructor=trivial, neighborhood=facility_close_open_greedy_redistribution]",
+      "VNS[constructor=trivial, neighborhood=facility_close_open_greedy_redistribution]",
+      "VNS[constructor=trivial, neighborhood=facility_close_open_greedy_redistribution]",
+      "VNS[constructor=trivial, neighborhood=facility_close_open_greedy_redistribution]",
+      "VNS[constructor=trivial, neighborhood=facility_close_open_greedy_redistribution]"
+    ],
+    "elite_configs": [
+      {
+        "skeleton": "VNS",
+        "constructor": "trivial",
+        "neighborhood": "facility_close_open_greedy_redistribution",
+        "facility_close_open_greedy_redistribution.pull_frac": 0.9856,
+        "VNS.shake_strength": 3,
+        "VNS.ls_time_share": 0.0867,
+        "VNS.ls_sample": 125,
+        "VNS.pen_scale": 0.4508,
+        "VNS.pen_adapt": "no",
+        "VNS.pen_target": 0.3679
+      },
+      {
+        "skeleton": "VNS",
+        "constructor": "grasp_amortized_fixed_regret_order",
+        "grasp_amortized_fixed_regret_order.alpha": 1.3051,
+        "grasp_amortized_fixed_regret_order.rcl": 0.2405,
+        "grasp_amortized_fixed_regret_order.noise": 0.2815,
+        "grasp_amortized_fixed_regret_order.passes": 3,
+        "neighborhood": "facility_close_open_greedy_redistribution",
+        "facility_close_open_greedy_redistribution.pull_frac": 0.8794,
+        "VNS.shake_strength": 3,
+        "VNS.ls_time_share": 0.2922,
+        "VNS.ls_sample": 19,
+        "VNS.pen_scale": 0.8095,
+        "VNS.pen_adapt": "yes",
+        "VNS.pen_target": 0.3935
+      },
+      {
+        "skeleton": "VNS",
+        "constructor": "trivial",
+        "neighborhood": "facility_close_open_greedy_redistribution",
+        "facility_close_open_greedy_redistribution.pull_frac": 0.8157,
+        "VNS.shake_strength": 3,
+        "VNS.ls_time_share": 0.2977,
+        "VNS.ls_sample": 230,
+        "VNS.pen_scale": 0.4722,
+        "VNS.pen_adapt": "yes",
+        "VNS.pen_target": 0.274
+      },
+      {
+        "skeleton": "VNS",
+        "constructor": "trivial",
+        "neighborhood": "facility_close_open_greedy_redistribution",
+        "facility_close_open_greedy_redistribution.pull_frac": 0.985,
+        "VNS.shake_strength": 4,
+        "VNS.ls_time_share": 0.2819,
+        "VNS.ls_sample": 113,
+        "VNS.pen_scale": 0.6548,
+        "VNS.pen_adapt": "yes",
+        "VNS.pen_target": 0.1872
+      },
+      {
+        "skeleton": "VNS",
+        "constructor": "trivial",
+        "neighborhood": "facility_close_open_greedy_redistribution",
+        "facility_close_open_greedy_redistribution.pull_frac": 0.8828,
+        "VNS.shake_strength": 3,
+        "VNS.ls_time_share": 0.1817,
+        "VNS.ls_sample": 128,
+        "VNS.pen_scale": 0.4335,
+        "VNS.pen_adapt": "yes",
+        "VNS.pen_target": 0.1322
+      },
+      {
+        "skeleton": "VNS",
+        "constructor": "trivial",
+        "neighborhood": "facility_close_open_greedy_redistribution",
+        "facility_close_open_greedy_redistribution.pull_frac": 0.9258,
+        "VNS.shake_strength": 4,
+        "VNS.ls_time_share": 0.1031,
+        "VNS.ls_sample": 58,
+        "VNS.pen_scale": 0.4091,
+        "VNS.pen_adapt": "no",
+        "VNS.pen_target": 0.4461
+      },
+      {
+        "skeleton": "VNS",
+        "constructor": "trivial",
+        "neighborhood": "facility_close_open_greedy_redistribution",
+        "facility_close_open_greedy_redistribution.pull_frac": 0.7608,
+        "VNS.shake_strength": 2,
+        "VNS.ls_time_share": 0.0302,
+        "VNS.ls_sample": 105,
+        "VNS.pen_scale": 0.4034,
+        "VNS.pen_adapt": "yes",
+        "VNS.pen_target": 0.4433
+      },
+      {
+        "skeleton": "VNS",
+        "constructor": "trivial",
+        "neighborhood": "facility_close_open_greedy_redistribution",
+        "facility_close_open_greedy_redistribution.pull_frac": 0.835,
+        "VNS.shake_strength": 2,
+        "VNS.ls_time_share": 0.0959,
+        "VNS.ls_sample": 183,
+        "VNS.pen_scale": 0.8906,
+        "VNS.pen_adapt": "yes",
+        "VNS.pen_target": 0.4132
+      }
+    ],
+    "reevaluated": [],
+    "log_tail": [
+      "# timeUsed: 0",
+      "# remainingBudget: 18",
+      "# currentBudget: 18",
+      "# number of elites: 8",
+      "# nbConfigurations: 8",
+      "# Total CPU user time: 31390.37, CPU sys time: 685.466, Wall-clock time: 9572.05",
+      "# Best configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):",
+      "    skeleton                        constructor                              neighborhood perturbation destruction SA.T0 SA.cooling SA.T_end SA.alpha SA.iters_per_T SA.eval SA.pen_scale SA.pen_adapt SA.pen_target ILS.strength ILS.ls_strategy ILS.ls_time_share ILS.ls_sample ILS.ls_scope ILS.accept ILS.T_rel ILS.pen_scale ILS.pen_adapt ILS.pen_target TS.tenure TS.candidate_size TS.estimate_top TS.elite_size TS.stall TS.pen_scale TS.pen_adapt TS.pen_target VNS.shake_strength VNS.ls_time_share VNS.ls_sample VNS.pen_scale VNS.pen_adapt VNS.pen_target HYB.ls_share HYB.mip_share HYB.destroy_ratio HYB.strength HYB.ls_sample HYB.T_rel grasp_amortized_fixed_regret_order.alpha grasp_amortized_fixed_regret_order.rcl grasp_amortized_fixed_regret_order.noise grasp_amortized_fixed_regret_order.passes randomized_add_open_then_regret_assign.slack randomized_add_open_then_regret_assign.topk randomized_add_open_then_regret_assign.noise randomized_add_open_then_regret_assign.passes facility_star_packing_greedy.rcl_k facility_star_packing_greedy.ratio_mode facility_star_packing_greedy.passes shift_customer_near_or_open.k_near swap_customers_between_near_facilities.k_near swap_customers_between_near_facilities.max_partners facility_close_open_greedy_redistribution.pull_frac random_shift_swap_walk.moves_per_strength random_shift_swap_walk.swap_prob random_shift_swap_walk.open_bias cluster_ruin_regret_recreate.ruin_per_strength cluster_ruin_regret_recreate.reference cluster_ruin_regret_recreate.insertion cluster_ruin_regret_recreate.noise cluster_ruin_regret_recreate.open_weight facility_close_greedy_repair.close_per_strength facility_close_greedy_repair.selection facility_close_greedy_repair.noise facility_close_greedy_repair.open_weight facility_close_greedy_repair.steal",
+      "105      VNS                            trivial facility_close_open_greedy_redistribution         <NA>        <NA>    NA       <NA>       NA       NA             NA    <NA>           NA         <NA>            NA           NA            <NA>                NA            NA         <NA>       <NA>        NA            NA          <NA>             NA        NA                NA              NA            NA       NA           NA         <NA>            NA                  3            0.0867           125        0.4508            no         0.3679           NA            NA                NA           NA            NA        NA                                       NA                                     NA                                       NA                                        NA                                           NA                                          NA                                           NA                                            NA                                 NA                                    <NA>                                  NA                                 NA                                            NA                                                  NA                                              0.9856                                        NA                               NA                               NA                                             NA                                   <NA>                                   <NA>                                 NA                                       NA                                              NA                                   <NA>                                 NA                                       NA                                 NA",
+      "107      VNS grasp_amortized_fixed_regret_order facility_close_open_greedy_redistribution         <NA>        <NA>    NA       <NA>       NA       NA             NA    <NA>           NA         <NA>            NA           NA            <NA>                NA            NA         <NA>       <NA>        NA            NA          <NA>             NA        NA                NA              NA            NA       NA           NA         <NA>            NA                  3            0.2922            19        0.8095           yes         0.3935           NA            NA                NA           NA            NA        NA                                   1.3051                                 0.2405                                   0.2815                                         3                                           NA                                          NA                                           NA                                            NA                                 NA                                    <NA>                                  NA                                 NA                                            NA                                                  NA                                              0.8794                                        NA                               NA                               NA                                             NA                                   <NA>                                   <NA>                                 NA                                       NA                                              NA                                   <NA>                                 NA                                       NA                                 NA",
+      "90       VNS                            trivial facility_close_open_greedy_redistribution         <NA>        <NA>    NA       <NA>       NA       NA             NA    <NA>           NA         <NA>            NA           NA            <NA>                NA            NA         <NA>       <NA>        NA            NA          <NA>             NA        NA                NA              NA            NA       NA           NA         <NA>            NA                  3            0.2977           230        0.4722           yes         0.2740           NA            NA                NA           NA            NA        NA                                       NA                                     NA                                       NA                                        NA                                           NA                                          NA                                           NA                                            NA                                 NA                                    <NA>                                  NA                                 NA                                            NA                                                  NA                                              0.8157                                        NA                               NA                               NA                                             NA                                   <NA>                                   <NA>                                 NA                                       NA                                              NA                                   <NA>                                 NA                                       NA                                 NA",
+      "112      VNS                            trivial facility_close_open_greedy_redistribution         <NA>        <NA>    NA       <NA>       NA       NA             NA    <NA>           NA         <NA>            NA           NA            <NA>                NA            NA         <NA>       <NA>        NA            NA          <NA>             NA        NA                NA              NA            NA       NA           NA         <NA>            NA                  4            0.2819           113        0.6548           yes         0.1872           NA            NA                NA           NA            NA        NA                                       NA                                     NA                                       NA                                        NA                                           NA                                          NA                                           NA                                            NA                                 NA                                    <NA>                                  NA                                 NA                                            NA                                                  NA                                              0.9850                                        NA                               NA                               NA                                             NA                                   <NA>                                   <NA>                                 NA                                       NA                                              NA                                   <NA>                                 NA                                       NA                                 NA",
+      "95       VNS                            trivial facility_close_open_greedy_redistribution         <NA>        <NA>    NA       <NA>       NA       NA             NA    <NA>           NA         <NA>            NA           NA            <NA>                NA            NA         <NA>       <NA>        NA            NA          <NA>             NA        NA                NA              NA            NA       NA           NA         <NA>            NA                  3            0.1817           128        0.4335           yes         0.1322           NA            NA                NA           NA            NA        NA                                       NA                                     NA                                       NA                                        NA                                           NA                                          NA                                           NA                                            NA                                 NA                                    <NA>                                  NA                                 NA                                            NA                                                  NA                                              0.8828                                        NA                               NA                               NA                                             NA                                   <NA>                                   <NA>                                 NA                                       NA                                              NA                                   <NA>                                 NA                                       NA                                 NA",
+      "71       VNS                            trivial facility_close_open_greedy_redistribution         <NA>        <NA>    NA       <NA>       NA       NA             NA    <NA>           NA         <NA>            NA           NA            <NA>                NA            NA         <NA>       <NA>        NA            NA          <NA>             NA        NA                NA              NA            NA       NA           NA         <NA>            NA                  4            0.1031            58        0.4091            no         0.4461           NA            NA                NA           NA            NA        NA                                       NA                                     NA                                       NA                                        NA                                           NA                                          NA                                           NA                                            NA                                 NA                                    <NA>                                  NA                                 NA                                            NA                                                  NA                                              0.9258                                        NA                               NA                               NA                                             NA                                   <NA>                                   <NA>                                 NA                                       NA                                              NA                                   <NA>                                 NA                                       NA                                 NA",
+      "92       VNS                            trivial facility_close_open_greedy_redistribution         <NA>        <NA>    NA       <NA>       NA       NA             NA    <NA>           NA         <NA>            NA           NA            <NA>                NA            NA         <NA>       <NA>        NA            NA          <NA>             NA        NA                NA              NA            NA       NA           NA         <NA>            NA                  2            0.0302           105        0.4034           yes         0.4433           NA            NA                NA           NA            NA        NA                                       NA                                     NA                                       NA                                        NA                                           NA                                          NA                                           NA                                            NA                                 NA                                    <NA>                                  NA                                 NA                                            NA                                                  NA                                              0.7608                                        NA                               NA                               NA                                             NA                                   <NA>                                   <NA>                                 NA                                       NA                                              NA                                   <NA>                                 NA                                       NA                                 NA",
+      "100      VNS                            trivial facility_close_open_greedy_redistribution         <NA>        <NA>    NA       <NA>       NA       NA             NA    <NA>           NA         <NA>            NA           NA            <NA>                NA            NA         <NA>       <NA>        NA            NA          <NA>             NA        NA                NA              NA            NA       NA           NA         <NA>            NA                  2            0.0959           183        0.8906           yes         0.4132           NA            NA                NA           NA            NA        NA                                       NA                                     NA                                       NA                                        NA                                           NA                                          NA                                           NA                                            NA                                 NA                                    <NA>                                  NA                                 NA                                            NA                                                  NA                                              0.8350                                        NA                               NA                               NA                                             NA                                   <NA>                                   <NA>                                 NA                                       NA                                              NA                                   <NA>                                 NA                                       NA                                 NA",
+      "# Best configurations as commandlines (first number is the configuration ID; same order as above):",
+      "105  --skeleton=VNS --constructor=trivial --neighborhood=facility_close_open_greedy_redistribution --facility_close_open_greedy_redistribution.pull_frac=0.9856 --VNS.shake_strength=3 --VNS.ls_time_share=0.0867 --VNS.ls_sample=125 --VNS.pen_scale=0.4508 --VNS.pen_adapt=no --VNS.pen_target=0.3679",
+      "107  --skeleton=VNS --constructor=grasp_amortized_fixed_regret_order --grasp_amortized_fixed_regret_order.alpha=1.3051 --grasp_amortized_fixed_regret_order.rcl=0.2405 --grasp_amortized_fixed_regret_order.noise=0.2815 --grasp_amortized_fixed_regret_order.passes=3 --neighborhood=facility_close_open_greedy_redistribution --facility_close_open_greedy_redistribution.pull_frac=0.8794 --VNS.shake_strength=3 --VNS.ls_time_share=0.2922 --VNS.ls_sample=19 --VNS.pen_scale=0.8095 --VNS.pen_adapt=yes --VNS.pen_target=0.3935",
+      "90   --skeleton=VNS --constructor=trivial --neighborhood=facility_close_open_greedy_redistribution --facility_close_open_greedy_redistribution.pull_frac=0.8157 --VNS.shake_strength=3 --VNS.ls_time_share=0.2977 --VNS.ls_sample=230 --VNS.pen_scale=0.4722 --VNS.pen_adapt=yes --VNS.pen_target=0.274",
+      "112  --skeleton=VNS --constructor=trivial --neighborhood=facility_close_open_greedy_redistribution --facility_close_open_greedy_redistribution.pull_frac=0.985 --VNS.shake_strength=4 --VNS.ls_time_share=0.2819 --VNS.ls_sample=113 --VNS.pen_scale=0.6548 --VNS.pen_adapt=yes --VNS.pen_target=0.1872",
+      "95   --skeleton=VNS --constructor=trivial --neighborhood=facility_close_open_greedy_redistribution --facility_close_open_greedy_redistribution.pull_frac=0.8828 --VNS.shake_strength=3 --VNS.ls_time_share=0.1817 --VNS.ls_sample=128 --VNS.pen_scale=0.4335 --VNS.pen_adapt=yes --VNS.pen_target=0.1322",
+      "71   --skeleton=VNS --constructor=trivial --neighborhood=facility_close_open_greedy_redistribution --facility_close_open_greedy_redistribution.pull_frac=0.9258 --VNS.shake_strength=4 --VNS.ls_time_share=0.1031 --VNS.ls_sample=58 --VNS.pen_scale=0.4091 --VNS.pen_adapt=no --VNS.pen_target=0.4461",
+      "92   --skeleton=VNS --constructor=trivial --neighborhood=facility_close_open_greedy_redistribution --facility_close_open_greedy_redistribution.pull_frac=0.7608 --VNS.shake_strength=2 --VNS.ls_time_share=0.0302 --VNS.ls_sample=105 --VNS.pen_scale=0.4034 --VNS.pen_adapt=yes --VNS.pen_target=0.4433",
+      "100  --skeleton=VNS --constructor=trivial --neighborhood=facility_close_open_greedy_redistribution --facility_close_open_greedy_redistribution.pull_frac=0.835 --VNS.shake_strength=2 --VNS.ls_time_share=0.0959 --VNS.ls_sample=183 --VNS.pen_scale=0.8906 --VNS.pen_adapt=yes --VNS.pen_target=0.4132",
+      "",
+      "",
+      "# Testing of elite configurations: 1 ",
+      "# Testing iteration configurations: FALSE ",
+      "# 2026-11-07 14:57:21 UTC: No test instances, skip testing"
+    ]
+  },
+  "test": {
+    "tuned": {
+      "label": "tuned",
+      "summary": "VNS[constructor=trivial, neighborhood=facility_close_open_greedy_redistribution]",
+      "mean": 25666.333333333332,
+      "std": 6436.4484168073795,
+      "per_instance": [
+        18152.666666666668,
+        17933.0,
+        26037.0,
+        27376.333333333332,
+        27637.666666666668,
+        36861.333333333336
+      ],
+      "config": {
+        "skeleton": "VNS",
+        "constructor": "trivial",
+        "neighborhood": "facility_close_open_greedy_redistribution",
+        "facility_close_open_greedy_redistribution.pull_frac": 0.9856,
+        "VNS.shake_strength": 3,
+        "VNS.ls_time_share": 0.0867,
+        "VNS.ls_sample": 125,
+        "VNS.pen_scale": 0.4508,
+        "VNS.pen_adapt": "no",
+        "VNS.pen_target": 0.3679
+      },
+      "gap_per_instance": [
+        0.00047766019988248896,
+        0.0,
+        0.00015365113509776054,
+        0.001548742713592307,
+        0.0016550691021552581,
+        0.004067698118689686
+      ],
+      "mean_gap": 0.0013171368782362502
+    },
+    "baselines": [
+      {
+        "label": "default:VNS",
+        "summary": "VNS[constructor=trivial, neighborhood=shift_customer_near_or_open]",
+        "mean": 26055.722222222223,
+        "std": 6608.2536759012,
+        "per_instance": [
+          18593.333333333332,
+          17984.666666666668,
+          26326.0,
+          27647.0,
+          28146.666666666668,
+          37636.666666666664
+        ],
+        "config": {
+          "skeleton": "VNS",
+          "constructor": "trivial",
+          "neighborhood": "shift_customer_near_or_open",
+          "shift_customer_near_or_open.k_near": 52,
+          "VNS.shake_strength": 2,
+          "VNS.ls_time_share": 0.16,
+          "VNS.ls_sample": 32,
+          "VNS.pen_scale": 1.0,
+          "VNS.pen_adapt": "no",
+          "VNS.pen_target": 0.2
+        },
+        "gap_per_instance": [
+          0.024764844209288588,
+          0.002881094444134717,
+          0.011254945645910959,
+          0.011450940220970221,
+          0.02010244515318454,
+          0.025187041475993252
+        ],
+        "mean_gap": 0.015940218524913712
+      },
+      {
+        "label": "default:HYB",
+        "summary": "HYB[constructor=trivial, neighborhood=shift_customer_near_or_open, perturbation=random_shift_swap_walk, destruction=group_window]",
+        "mean": 31001.777777777777,
+        "std": 8847.59909401387,
+        "per_instance": [
+          19228.333333333332,
+          19673.333333333332,
+          32873.333333333336,
+          34480.0,
+          36267.666666666664,
+          43488.0
+        ],
+        "config": {
+          "skeleton": "HYB",
+          "constructor": "trivial",
+          "neighborhood": "shift_customer_near_or_open",
+          "shift_customer_near_or_open.k_near": 52,
+          "perturbation": "random_shift_swap_walk",
+          "random_shift_swap_walk.moves_per_strength": 4,
+          "random_shift_swap_walk.swap_prob": 0.5,
+          "random_shift_swap_walk.open_bias": 0.5,
+          "destruction": "group_window",
+          "HYB.ls_share": 0.1,
+          "HYB.mip_share": 0.05,
+          "HYB.destroy_ratio": 0.2,
+          "HYB.strength": 1,
+          "HYB.ls_sample": 64,
+          "HYB.T_rel": 0.005
+        },
+        "gap_per_instance": [
+          0.05976263962375067,
+          0.09704641350210964,
+          0.2627562452784288,
+          0.2614326479841955,
+          0.3144268870203923,
+          0.1845718021355415
+        ],
+        "mean_gap": 0.19666610592406975
+      },
+      {
+        "label": "default:TS",
+        "summary": "TS[constructor=trivial, neighborhood=shift_customer_near_or_open]",
+        "mean": 30993.833333333332,
+        "std": 7922.049385873723,
+        "per_instance": [
+          20665.333333333332,
+          20920.333333333332,
+          34686.666666666664,
+          33571.0,
+          33286.0,
+          42833.666666666664
+        ],
+        "config": {
+          "skeleton": "TS",
+          "constructor": "trivial",
+          "neighborhood": "shift_customer_near_or_open",
+          "shift_customer_near_or_open.k_near": 52,
+          "TS.tenure": 16,
+          "TS.candidate_size": 52,
+          "TS.estimate_top": 0,
+          "TS.elite_size": 0,
+          "TS.stall": 500,
+          "TS.pen_scale": 1.0,
+          "TS.pen_adapt": "no",
+          "TS.pen_target": 0.2
+        },
+        "gap_per_instance": [
+          0.1389623750734861,
+          0.16658302198925623,
+          0.3324114265227467,
+          0.2281773615277676,
+          0.20636416352565962,
+          0.16674838381637241
+        ],
+        "mean_gap": 0.20654112207588143
+      },
+      {
+        "label": "default:SA",
+        "summary": "SA[constructor=trivial, neighborhood=shift_customer_near_or_open]",
+        "mean": 33850.88888888889,
+        "std": 8748.332068894866,
+        "per_instance": [
+          21658.0,
+          21964.333333333332,
+          40138.333333333336,
+          37666.0,
+          38323.333333333336,
+          43355.333333333336
+        ],
+        "config": {
+          "skeleton": "SA",
+          "constructor": "trivial",
+          "neighborhood": "shift_customer_near_or_open",
+          "shift_customer_near_or_open.k_near": 52,
+          "SA.T0": 31.622776601683793,
+          "SA.cooling": "time",
+          "SA.T_end": 0.001,
+          "SA.alpha": 0.8995,
+          "SA.iters_per_T": 26,
+          "SA.eval": "objective",
+          "SA.pen_scale": 1.0,
+          "SA.pen_adapt": "no",
+          "SA.pen_target": 0.2
+        },
+        "gap_per_instance": [
+          0.19367283950617284,
+          0.22479971746686733,
+          0.5418251193997363,
+          0.37799078071266556,
+          0.3889291582101093,
+          0.18095808818188427
+        ],
+        "mean_gap": 0.31802928391290597
+      },
+      {
+        "label": "default:ILS",
+        "summary": "ILS[constructor=trivial, neighborhood=shift_customer_near_or_open, perturbation=random_shift_swap_walk]",
+        "mean": 40524.27777777778,
+        "std": 12822.06415088874,
+        "per_instance": [
+          23698.333333333332,
+          23556.666666666668,
+          44301.333333333336,
+          43686.0,
+          50186.333333333336,
+          57717.0
+        ],
+        "config": {
+          "skeleton": "ILS",
+          "constructor": "trivial",
+          "neighborhood": "shift_customer_near_or_open",
+          "shift_customer_near_or_open.k_near": 52,
+          "perturbation": "random_shift_swap_walk",
+          "random_shift_swap_walk.moves_per_strength": 4,
+          "random_shift_swap_walk.swap_prob": 0.5,
+          "random_shift_swap_walk.open_bias": 0.5,
+          "ILS.strength": 4,
+          "ILS.ls_strategy": "first",
+          "ILS.ls_time_share": 0.16,
+          "ILS.ls_sample": 32,
+          "ILS.ls_scope": "sample",
+          "ILS.accept": "better",
+          "ILS.T_rel": 0.005,
+          "ILS.pen_scale": 1.0,
+          "ILS.pen_adapt": "no",
+          "ILS.pen_target": 0.2
+        },
+        "gap_per_instance": [
+          0.3061250734861845,
+          0.3135931894644883,
+          0.7017375382527306,
+          0.5982293114802077,
+          0.818872620083116,
+          0.5721562431902375
+        ],
+        "mean_gap": 0.5517856626594941
+      }
+    ],
+    "best_baseline": "default:VNS",
+    "gain_vs_best_baseline": 0.01494446730617934,
+    "wins_per_instance": "6/6",
+    "reference": 46753.333333333336,
+    "best_known": [
+      18144.0,
+      17933.0,
+      26033.0,
+      27334.0,
+      27592.0,
+      36712.0
+    ],
+    "best_baseline_by_gap": "default:VNS",
+    "tuned_vs_best_baseline": {
+      "a": "tuned",
+      "b": "default:VNS",
+      "mean_diff": 0.014623081646677463,
+      "ci95": [
+        0.008660869285222353,
+        0.020311333146183514
+      ],
+      "wins_a": 6,
+      "n": 6,
+      "significant": true
+    },
+    "mip_reference": null
+  }
+}

@@ -1,0 +1,17 @@
+  vista MIP de HYB: generated
+
+=== catálogo `generated`: 72 parámetros, 9 opciones generadas por LLM ===
+  irace: 1008 experimentos en 9573s; élite: VNS[constructor=trivial, neighborhood=facility_close_open_greedy_redistribution]; VNS[constructor=grasp_amortized_fixed_regret_order, neighborhood=facility_close_open_greedy_redistribution]; VNS[constructor=trivial, neighborhood=facility_close_open_greedy_redistribution]; VNS[constructor=trivial, neighborhood=facility_close_open_greedy_redistribution]; VNS[constructor=trivial, neighborhood=facility_close_open_greedy_redistribution]; VNS[constructor=trivial, neighborhood=facility_close_open_greedy_redistribution]; VNS[constructor=trivial, neighborhood=facility_close_open_greedy_redistribution]; VNS[constructor=trivial, neighborhood=facility_close_open_greedy_redistribution]
+  mejor en train: 0.5698  VNS[constructor=trivial, neighborhood=facility_close_open_greedy_redistribution]
+
+=== TEST `generated` (partida trivial sin búsqueda = 46753.3; gap vs mejor conocido por instancia) ===
+    tuned                                            gap   0.13%        25666.3 ±   6436.4   (+45.1% vs partida)   VNS[constructor=trivial, neighborhood=facility_close_open_greedy_redistribution]
+    default:VNS                                      gap   1.59%        26055.7 ±   6608.3   (+44.3% vs partida)   VNS[constructor=trivial, neighborhood=shift_customer_near_or_open]
+    default:HYB                                      gap  19.67%        31001.8 ±   8847.6   (+33.7% vs partida)   HYB[constructor=trivial, neighborhood=shift_customer_near_or_open, perturbation=random_shift_swap_walk, destruction=group_window]
+    default:TS                                       gap  20.65%        30993.8 ±   7922.0   (+33.7% vs partida)   TS[constructor=trivial, neighborhood=shift_customer_near_or_open]
+    default:SA                                       gap  31.80%        33850.9 ±   8748.3   (+27.6% vs partida)   SA[constructor=trivial, neighborhood=shift_customer_near_or_open]
+    default:ILS                                      gap  55.18%        40524.3 ±  12822.1   (+13.3% vs partida)   ILS[constructor=trivial, neighborhood=shift_customer_near_or_open, perturbation=random_shift_swap_walk]
+  ganancia del afinado vs mejor default: +1.49%; gana en 6/6 instancias
+  afinado vs default:VNS: gap +1.46% a favor del afinado, IC95 [+0.87%, +2.03%]
+
+Escenario irace escrito en tuning_out/irace/scenario.txt (correr: irace --scenario tuning_out/irace/scenario.txt)
