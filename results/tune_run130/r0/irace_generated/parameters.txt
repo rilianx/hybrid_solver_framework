@@ -1,0 +1,81 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("SA", "ILS", "VNS", "TS", "HYB", "GRASP")
+constructor "--constructor=" c ("trivial", "random", "grasp_topk_jittered_ratio", "lagrangian_dual_ratio_greedy", "random_overfill_drop_add_congestion") | skeleton %in% c("SA", "ILS", "VNS", "TS", "HYB", "GRASP")
+grasp_topk_jittered_ratio.rcl_size "--grasp_topk_jittered_ratio.rcl_size=" i (1, 8) | skeleton %in% c("SA", "ILS", "VNS", "TS", "HYB", "GRASP") & constructor == "grasp_topk_jittered_ratio"
+grasp_topk_jittered_ratio.weight_jitter "--grasp_topk_jittered_ratio.weight_jitter=" r (0.0, 0.5) | skeleton %in% c("SA", "ILS", "VNS", "TS", "HYB", "GRASP") & constructor == "grasp_topk_jittered_ratio"
+lagrangian_dual_ratio_greedy.iters "--lagrangian_dual_ratio_greedy.iters=" i (20, 300) | skeleton %in% c("SA", "ILS", "VNS", "TS", "HYB", "GRASP") & constructor == "lagrangian_dual_ratio_greedy"
+lagrangian_dual_ratio_greedy.theta "--lagrangian_dual_ratio_greedy.theta=" r (0.1, 2.0) | skeleton %in% c("SA", "ILS", "VNS", "TS", "HYB", "GRASP") & constructor == "lagrangian_dual_ratio_greedy"
+lagrangian_dual_ratio_greedy.score_noise "--lagrangian_dual_ratio_greedy.score_noise=" r (0.0, 0.3) | skeleton %in% c("SA", "ILS", "VNS", "TS", "HYB", "GRASP") & constructor == "lagrangian_dual_ratio_greedy"
+random_overfill_drop_add_congestion.init_density "--random_overfill_drop_add_congestion.init_density=" r (0.3, 1.0) | skeleton %in% c("SA", "ILS", "VNS", "TS", "HYB", "GRASP") & constructor == "random_overfill_drop_add_congestion"
+random_overfill_drop_add_congestion.noise "--random_overfill_drop_add_congestion.noise=" r (0.0, 0.3) | skeleton %in% c("SA", "ILS", "VNS", "TS", "HYB", "GRASP") & constructor == "random_overfill_drop_add_congestion"
+neighborhood "--neighborhood=" c ("swap_1_1_ratio_candidates", "drop_k_greedy_refill", "forced_insert_ejection_repair", "composite") | skeleton %in% c("SA", "ILS", "VNS", "TS", "HYB", "GRASP")
+swap_1_1_ratio_candidates.max_in "--swap_1_1_ratio_candidates.max_in=" i (5, 300) | skeleton %in% c("SA", "ILS", "VNS", "TS", "HYB", "GRASP") & neighborhood == "swap_1_1_ratio_candidates"
+swap_1_1_ratio_candidates.max_out "--swap_1_1_ratio_candidates.max_out=" i (5, 300) | skeleton %in% c("SA", "ILS", "VNS", "TS", "HYB", "GRASP") & neighborhood == "swap_1_1_ratio_candidates"
+drop_k_greedy_refill.max_drop "--drop_k_greedy_refill.max_drop=" i (1, 500) | skeleton %in% c("SA", "ILS", "VNS", "TS", "HYB", "GRASP") & neighborhood == "drop_k_greedy_refill"
+drop_k_greedy_refill.pair_pool "--drop_k_greedy_refill.pair_pool=" i (0, 30) | skeleton %in% c("SA", "ILS", "VNS", "TS", "HYB", "GRASP") & neighborhood == "drop_k_greedy_refill"
+drop_k_greedy_refill.refill_order "--drop_k_greedy_refill.refill_order=" c ("ratio", "profit") | skeleton %in% c("SA", "ILS", "VNS", "TS", "HYB", "GRASP") & neighborhood == "drop_k_greedy_refill"
+forced_insert_ejection_repair.max_add "--forced_insert_ejection_repair.max_add=" i (1, 500) | skeleton %in% c("SA", "ILS", "VNS", "TS", "HYB", "GRASP") & neighborhood == "forced_insert_ejection_repair"
+forced_insert_ejection_repair.refill "--forced_insert_ejection_repair.refill=" i (0, 1) | skeleton %in% c("SA", "ILS", "VNS", "TS", "HYB", "GRASP") & neighborhood == "forced_insert_ejection_repair"
+perturbation "--perturbation=" c ("random_drop_noisy_greedy_refill", "forced_insertion_excess_repair", "surrogate_weighted_ruin_repair") | skeleton %in% c("ILS", "HYB", "GRASP")
+random_drop_noisy_greedy_refill.noise "--random_drop_noisy_greedy_refill.noise=" r (0.0, 1.5) | skeleton %in% c("ILS", "HYB", "GRASP") & perturbation == "random_drop_noisy_greedy_refill"
+random_drop_noisy_greedy_refill.extra_drop_prob "--random_drop_noisy_greedy_refill.extra_drop_prob=" r (0.0, 0.5) | skeleton %in% c("ILS", "HYB", "GRASP") & perturbation == "random_drop_noisy_greedy_refill"
+forced_insertion_excess_repair.tournament "--forced_insertion_excess_repair.tournament=" i (1, 6) | skeleton %in% c("ILS", "HYB", "GRASP") & perturbation == "forced_insertion_excess_repair"
+forced_insertion_excess_repair.allow_readd "--forced_insertion_excess_repair.allow_readd=" i (0, 1) | skeleton %in% c("ILS", "HYB", "GRASP") & perturbation == "forced_insertion_excess_repair"
+forced_insertion_excess_repair.cluster_mult "--forced_insertion_excess_repair.cluster_mult=" r (1.0, 3.0) | skeleton %in% c("ILS", "HYB", "GRASP") & perturbation == "forced_insertion_excess_repair"
+forced_insertion_excess_repair.sim_noise "--forced_insertion_excess_repair.sim_noise=" r (0.0, 0.3) | skeleton %in% c("ILS", "HYB", "GRASP") & perturbation == "forced_insertion_excess_repair"
+surrogate_weighted_ruin_repair.sigma "--surrogate_weighted_ruin_repair.sigma=" r (0.1, 2.0) | skeleton %in% c("ILS", "HYB", "GRASP") & perturbation == "surrogate_weighted_ruin_repair"
+surrogate_weighted_ruin_repair.tight_power "--surrogate_weighted_ruin_repair.tight_power=" r (0.0, 4.0) | skeleton %in% c("ILS", "HYB", "GRASP") & perturbation == "surrogate_weighted_ruin_repair"
+surrogate_weighted_ruin_repair.align_prob "--surrogate_weighted_ruin_repair.align_prob=" r (0.0, 1.0) | skeleton %in% c("ILS", "HYB", "GRASP") & perturbation == "surrogate_weighted_ruin_repair"
+surrogate_weighted_ruin_repair.core_mult "--surrogate_weighted_ruin_repair.core_mult=" r (0.5, 4.0) | skeleton %in% c("ILS", "HYB", "GRASP") & perturbation == "surrogate_weighted_ruin_repair"
+destruction "--destruction=" c ("group_window", "random_variables") | skeleton %in% c("HYB")
+SA.T0 "--SA.T0=" r (1.0, 1000.0) | skeleton == "SA"  # log-scale
+SA.cooling "--SA.cooling=" c ("time", "iterations") | skeleton == "SA"
+SA.T_end "--SA.T_end=" r (1e-05, 0.1) | skeleton == "SA"  # log-scale
+SA.alpha "--SA.alpha=" r (0.8, 0.999) | skeleton == "SA"
+SA.iters_per_T "--SA.iters_per_T=" i (1, 50) | skeleton == "SA"
+SA.eval "--SA.eval=" c ("objective", "delta") | skeleton == "SA"
+SA.pen_scale "--SA.pen_scale=" r (0.0001, 1.0) | skeleton == "SA"  # log-scale
+SA.pen_adapt "--SA.pen_adapt=" c ("no", "yes") | skeleton == "SA"
+SA.pen_target "--SA.pen_target=" r (0.05, 0.5) | skeleton == "SA"
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+ILS.ls_sample "--ILS.ls_sample=" i (4, 256) | skeleton == "ILS"  # log-scale
+ILS.ls_scope "--ILS.ls_scope=" c ("sample", "full") | skeleton == "ILS"
+ILS.accept "--ILS.accept=" c ("better", "anneal") | skeleton == "ILS"
+ILS.T_rel "--ILS.T_rel=" r (0.0001, 0.05) | skeleton == "ILS"  # log-scale
+ILS.pen_scale "--ILS.pen_scale=" r (0.0001, 1.0) | skeleton == "ILS"  # log-scale
+ILS.pen_adapt "--ILS.pen_adapt=" c ("no", "yes") | skeleton == "ILS"
+ILS.pen_target "--ILS.pen_target=" r (0.05, 0.5) | skeleton == "ILS"
+VNS.shake_strength "--VNS.shake_strength=" i (1, 4) | skeleton == "VNS"
+VNS.ls_time_share "--VNS.ls_time_share=" r (0.02, 0.3) | skeleton == "VNS"
+VNS.ls_sample "--VNS.ls_sample=" i (4, 256) | skeleton == "VNS"  # log-scale
+VNS.pen_scale "--VNS.pen_scale=" r (0.0001, 1.0) | skeleton == "VNS"  # log-scale
+VNS.pen_adapt "--VNS.pen_adapt=" c ("no", "yes") | skeleton == "VNS"
+VNS.pen_target "--VNS.pen_target=" r (0.05, 0.5) | skeleton == "VNS"
+TS.tenure "--TS.tenure=" i (3, 30) | skeleton == "TS"
+TS.candidate_size "--TS.candidate_size=" i (5, 100) | skeleton == "TS"  # log-scale
+TS.estimate_top "--TS.estimate_top=" i (0, 10) | skeleton == "TS"
+TS.elite_size "--TS.elite_size=" i (0, 8) | skeleton == "TS"
+TS.stall "--TS.stall=" i (20, 5000) | skeleton == "TS"  # log-scale
+TS.pen_scale "--TS.pen_scale=" r (0.0001, 1.0) | skeleton == "TS"  # log-scale
+TS.pen_adapt "--TS.pen_adapt=" c ("no", "yes") | skeleton == "TS"
+TS.pen_target "--TS.pen_target=" r (0.05, 0.5) | skeleton == "TS"
+HYB.ls_share "--HYB.ls_share=" r (0.02, 0.5) | skeleton == "HYB"  # log-scale
+HYB.mip_share "--HYB.mip_share=" r (0.01, 0.3) | skeleton == "HYB"  # log-scale
+HYB.destroy_ratio "--HYB.destroy_ratio=" r (0.05, 0.6) | skeleton == "HYB"
+HYB.strength "--HYB.strength=" i (1, 6) | skeleton == "HYB"
+HYB.ls_sample "--HYB.ls_sample=" i (4, 256) | skeleton == "HYB"  # log-scale
+HYB.T_rel "--HYB.T_rel=" r (0.0001, 0.05) | skeleton == "HYB"  # log-scale
+GRASP.ls_strategy "--GRASP.ls_strategy=" c ("first", "best") | skeleton == "GRASP"
+GRASP.ls_time_share "--GRASP.ls_time_share=" r (0.01, 0.3) | skeleton == "GRASP"  # log-scale
+GRASP.ls_sample "--GRASP.ls_sample=" i (4, 256) | skeleton == "GRASP"  # log-scale
+GRASP.ls_scope "--GRASP.ls_scope=" c ("sample", "full") | skeleton == "GRASP"
+GRASP.improve "--GRASP.improve=" c ("descent", "ts", "ils") | skeleton == "GRASP"
+GRASP.improve_iters "--GRASP.improve_iters=" i (10, 20000) | skeleton == "GRASP"  # log-scale
+GRASP.tenure "--GRASP.tenure=" i (3, 30) | skeleton == "GRASP"
+GRASP.candidate_size "--GRASP.candidate_size=" i (5, 100) | skeleton == "GRASP"  # log-scale
+GRASP.estimate_top "--GRASP.estimate_top=" i (0, 10) | skeleton == "GRASP"
+GRASP.strength "--GRASP.strength=" i (1, 6) | skeleton == "GRASP"
+GRASP.T_rel "--GRASP.T_rel=" r (0.0001, 0.05) | skeleton == "GRASP"  # log-scale
