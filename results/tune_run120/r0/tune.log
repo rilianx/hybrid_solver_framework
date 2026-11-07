@@ -1,0 +1,45 @@
+  vista MIP de HYB: generated
+
+=== catálogo `generated`: 73 parámetros, 9 opciones generadas por LLM ===
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/runner/work/hybrid_solver_framework/hybrid_solver_framework/examples/jobshop/tune.py", line 18, in <module>
+    main()
+  File "/home/runner/work/hybrid_solver_framework/hybrid_solver_framework/examples/jobshop/tune.py", line 14, in main
+    _main(PACK, argv)
+  File "/home/runner/work/hybrid_solver_framework/hybrid_solver_framework/tuning/cli.py", line 209, in main
+    payload, report, penalty = run_experiment(pack, args, train, test, out_dir)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/hybrid_solver_framework/hybrid_solver_framework/tuning/cli.py", line 102, in run_experiment
+    result = _run_irace(pack, catalog, args, assembler, train, normalizers, out_dir)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/hybrid_solver_framework/hybrid_solver_framework/tuning/cli.py", line 148, in _run_irace
+    return tune_with_irace(assembler, scenario, train, args.budget, experiments, seed=args.tuner_seed,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/hybrid_solver_framework/hybrid_solver_framework/tuning/irace_runner.py", line 105, in tune_with_irace
+    raise RuntimeError(f"irace terminó con código {proc.returncode}:\n{(proc.stdout + proc.stderr)[-4000:]}")
+RuntimeError: irace terminó con código 1:
+#------------------------------------------------------------------------------
+# irace: An implementation in R of (Elitist) Iterated Racing
+# Version: 4.4.0.f55adc4
+# Copyright (C) 2010-2025
+# Manuel Lopez-Ibanez     <manuel.lopez-ibanez@manchester.ac.uk>
+# Jeremie Dubois-Lacoste
+# Leslie Perez Caceres    <leslie.perez.caceres@ulb.ac.be>
+#
+# This is free software, and you are welcome to redistribute it under certain
+# conditions.  See the GNU General Public License for details. There is NO
+# WARRANTY; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+# irace builds upon previous code from the race package:
+#     race: Racing methods for the selection of the best
+#     Copyright (C) 2003 Mauro Birattari
+#------------------------------------------------------------------------------
+# installed at: /usr/lib/R/site-library/irace
+# called with: --scenario /home/runner/work/hybrid_solver_framework/hybrid_solver_framework/tuning_out/irace_generated/scenario.txt --seed 0 --max-experiments 480
+Error: == irace == Scenario file '/home/runner/work/hybrid_solver_framework/hybrid_solver_framework/tuning_out/irace_generated/scenario.txt' contains unknown variables: digits
+MAKE SURE NO VARIABLE NAME IS MISSPELL (for example, 'parameterFile' is correct, while 'parametersFile' is not)
+If you wish to use your own variables in the scenario file, use names beginning with a dot `.'
+Execution halted
+
