@@ -1,0 +1,16 @@
+  vista MIP de HYB: none
+
+=== catálogo `generated`: 55 parámetros, 9 opciones generadas por LLM ===
+  irace: 1008 experimentos en 11097s; élite: ILS[constructor=lr_index_greedy_rcl, neighborhood=job_insertion_shift, perturbation=iterated_greedy_destruct_reconstruct]; ILS[constructor=lr_index_greedy_rcl, neighborhood=job_insertion_shift, perturbation=iterated_greedy_destruct_reconstruct]; ILS[constructor=neh_flowtime_insertion_pruned, neighborhood=job_insertion_shift, perturbation=iterated_greedy_destruct_reconstruct]; ILS[constructor=lr_index_greedy_rcl, neighborhood=job_insertion_shift, perturbation=iterated_greedy_destruct_reconstruct]
+  mejor en train: 0.7807  ILS[constructor=lr_index_greedy_rcl, neighborhood=job_insertion_shift, perturbation=iterated_greedy_destruct_reconstruct]
+
+=== TEST `generated` (partida trivial sin búsqueda = 708821.5; gap vs mejor conocido por instancia) ===
+    tuned                                            gap   0.19%       570894.4 ± 492797.2   (+19.5% vs partida)   ILS[constructor=lr_index_greedy_rcl, neighborhood=job_insertion_shift, perturbation=iterated_greedy_destruct_reconstruct]
+    default:TS                                       gap   0.91%       577697.4 ± 500842.4   (+18.5% vs partida)   TS[constructor=trivial, neighborhood=job_insertion_shift]
+    default:VNS                                      gap   2.68%       589766.7 ± 512560.3   (+16.8% vs partida)   VNS[constructor=trivial, neighborhood=job_insertion_shift]
+    default:ILS                                      gap   3.18%       591194.6 ± 512135.8   (+16.6% vs partida)   ILS[constructor=trivial, neighborhood=job_insertion_shift, perturbation=random_insertion_chain_kick]
+    default:SA                                       gap   3.58%       592781.7 ± 514596.2   (+16.4% vs partida)   SA[constructor=trivial, neighborhood=job_insertion_shift]
+  ganancia del afinado vs mejor default: +1.18%; gana en 6/6 instancias
+  afinado vs default:TS: gap +0.72% a favor del afinado, IC95 [+0.28%, +1.20%]
+
+Escenario irace escrito en tuning_out/irace/scenario.txt (correr: irace --scenario tuning_out/irace/scenario.txt)
