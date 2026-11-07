@@ -14,6 +14,7 @@ Nada aquí conoce el problema: todo pasa por el registro y el ProblemModel.
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
 from random import Random
 from statistics import mean
@@ -23,7 +24,7 @@ from config_space.space import ConfigSpace, build_config_space
 from core.common_components import BetterAcceptance, MIPModelRepair, MaxTimeStop
 from core.component import ComponentRegistry, ComponentSpec
 from core.skeleton import RunResult
-from skeletons.grasp import run_grasp
+from skeletons.grasp import make_improve, run_grasp
 from skeletons.ils import RelativeAnnealingAcceptance, build_ils, hill_climb
 from skeletons.hybrid import run_hybrid
 from skeletons.pr import _Given, run_pr
@@ -126,12 +127,21 @@ SKELETONS: dict[str, SkeletonDef] = {
     ),
     "GRASP": SkeletonDef(
         # varios arranques (skeletons/grasp.py): constructor (aleatorizado si usa el rng) + búsqueda local, la mejor
-        "GRASP", ("constructor", "neighborhood"), optional_slots=("tiebreak",),
+        "GRASP", ("constructor", "neighborhood"), optional_slots=("perturbation", "tiebreak"),
         params={
             "ls_strategy": {"type": "cat", "values": ["first", "best"]},
             "ls_time_share": {"type": "float", "range": [0.01, 0.3], "log": True, "default": 0.05},
             "ls_sample": {"type": "int", "range": [4, 256], "log": True, "default": 32},
             "ls_scope": {"type": "cat", "values": ["sample", "full"]},
+            # la mejora de cada arranque: el descenso de arriba, o improve_iters iteraciones de tabú o de ILS con
+            # recocido (como la mejora de PR); con ils, la perturbación del catálogo
+            "improve": {"type": "cat", "values": ["descent", "ts", "ils"]},
+            "improve_iters": {"type": "int", "range": [10, 20000], "log": True, "default": 500},
+            "tenure": {"type": "int", "range": [3, 30], "default": 10},
+            "candidate_size": {"type": "int", "range": [5, 100], "log": True, "default": 30},
+            "estimate_top": {"type": "int", "range": [0, 10], "default": 0},
+            "strength": {"type": "int", "range": [1, 6], "default": 1},
+            "T_rel": {"type": "float", "range": [1e-4, 0.05], "log": True, "default": 0.005},
         },
     ),
     "VNS": SkeletonDef(
@@ -258,7 +268,13 @@ class Assembler:
                 nbh = self._component(config, "neighborhood", skeleton, P)
                 ls = hill_climb(P, nbh, strategy=sp("ls_strategy"), max_seconds=budget * sp("ls_time_share"),
                                 sample_size=None if sp("ls_scope") == "full" else sp("ls_sample"))
-                return run_grasp(P, constructor, ls, MaxTimeStop(budget), inst, rng)
+                pert = self._component(config, "perturbation", skeleton, P, required=False) if sp("improve") == "ils" else None
+                t0 = time.monotonic()
+                improve = make_improve(P, nbh, inst, sp("improve"), ls, iters=sp("improve_iters"), perturbation=pert,
+                                       strength=sp("strength"), T_rel=sp("T_rel"), tenure=sp("tenure"),
+                                       candidate_size=sp("candidate_size"), estimate_top=sp("estimate_top"),
+                                       left=lambda: budget - (time.monotonic() - t0))
+                return run_grasp(P, constructor, improve, MaxTimeStop(budget), inst, rng)
             if skeleton == "TS":
                 nbh = self._component(config, "neighborhood", skeleton, P)
                 sk = build_ts(P, constructor, nbh, MaxTimeStop(budget), tenure=sp("tenure"), candidate_size=sp("candidate_size"),

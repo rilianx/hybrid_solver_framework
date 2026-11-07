@@ -45,7 +45,8 @@ oráculo en Python (model_parts:      └ más rápidos    native_optimizer     
    de test contra los defaults de cada esqueleto. Las corridas son enteras en C++ (`core/native_runner.py`).
 
 Los **esqueletos** son SA, ILS, VNS, TS, PR (path relinking con mejora tabú o ILS), GRASP (varios arranques: el
-constructor, aleatorizado si usa el `rng`, más búsqueda local; se queda con la mejor) y HYB (ILS en C++ alternado con
+constructor, aleatorizado si usa el `rng`, y una mejora que irace elige entre descenso, tabú o ILS con recocido; se queda
+con la mejor) y HYB (ILS en C++ alternado con
 sub-MIPs en Python sobre la vista MIP generada: destrucción + `MIPModelRepair`), en `native/include/hsf/core.hpp`, con su versión de referencia
 en Python en `skeletons/` (misma semántica y parámetros, `core/assembler.py`; la usa la validación por combinación).
 

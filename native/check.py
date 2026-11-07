@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 
 NATIVE_SKELETONS_FOR_SLOT = {"constructor": ["SA", "ILS", "TS", "VNS", "PR", "HYB", "GRASP"],
-                             "neighborhood": ["SA", "ILS", "TS", "VNS", "PR", "HYB", "GRASP"], "perturbation": ["ILS", "PR", "HYB"],
+                             "neighborhood": ["SA", "ILS", "TS", "VNS", "PR", "HYB", "GRASP"], "perturbation": ["ILS", "PR", "HYB", "GRASP"],
                              "relink": ["PR"], "destruction": ["HYB"], "tiebreak": ["ILS", "TS", "VNS", "PR", "HYB", "GRASP"]}
 
 

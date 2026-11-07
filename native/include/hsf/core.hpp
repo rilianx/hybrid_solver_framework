@@ -717,15 +717,53 @@ Result<M> solve_with(const Catalog<M>& cat, const M& model, const Config& cfg, c
         return trajectory(model, start, budget, gen, accept, cool, pen, ties);
     }
     if (sk == "GRASP") {
-        // varios arranques (skeletons/grasp.py): cada iteración construye una solución nueva con el constructor (un
-        // constructor aleatorizado da una distinta por iteración) y la lleva a un óptimo local; se queda con la mejor
+        // varios arranques (skeletons/grasp.py): cada iteración construye una solución nueva con el constructor (uno
+        // aleatorizado da una distinta por iteración) y la mejora; se queda con la mejor. La mejora (`GRASP.improve`):
+        // "descent" (búsqueda local hasta el óptimo local), "ts" (`GRASP.improve_iters` iteraciones de tabú) o "ils"
+        // (`GRASP.improve_iters` iteraciones de ILS con recocido, con la perturbación del catálogo), como la de PR
         auto nbh = cat.neighborhood(cfg.text("neighborhood"), model, cfg);
+        std::string how = cfg.text("GRASP.improve", "descent");
+        std::unique_ptr<Perturbation<M>> pert;
+        if (how == "ils") {
+            if (cfg.text("perturbation", "").empty()) throw std::invalid_argument("GRASP con improve = ils necesita una perturbación");
+            pert = cat.perturbation(cfg.text("perturbation"), model, cfg);
+        }
         bool first = cfg.text("GRASP.ls_strategy") == "first";
         int sample = cfg.text("GRASP.ls_scope", "sample") == "full" ? -1 : (int)cfg.get("GRASP.ls_sample");
         double ls_s = budget * cfg.get("GRASP.ls_time_share");
+        long iters = (long)cfg.get("GRASP.improve_iters", 500);
+        double strength = cfg.get("GRASP.strength", 1), T_rel = cfg.get("GRASP.T_rel", 0.005);
+        TabuStep<M> step(*nbh, (size_t)cfg.get("GRASP.tenure", 10), (int)cfg.get("GRASP.candidate_size", 30),
+                         (int)cfg.get("GRASP.estimate_top", 0), ties);
+        Clock clock;
+        using Sol = typename M::Solution;
+        auto improve = [&](Sol s) -> Sol {
+            if (how == "descent") return hill_climb(*nbh, std::move(s), first, sample, ls_s, rng, ties);
+            double f = model.objective(s), fb = f;
+            Sol best = s, cand;
+            if (how == "ils") {
+                s = hill_climb(*nbh, std::move(s), first, sample, ls_s, rng, ties), f = model.objective(s);
+                best = s, fb = f;
+                for (long i = 0; i < iters && clock.elapsed() < budget; ++i) {
+                    cand = hill_climb(*nbh, pert->perturb(s, strength, rng), first, sample, ls_s, rng, ties);
+                    double fc = model.objective(cand), T = T_rel * std::pow(0.01, (double)i / iters) * std::abs(f);
+                    if (fc <= f || (T > 0 && rng.uniform() < std::exp(-(fc - f) / T))) s = std::move(cand), f = fc;
+                    if (f < fb) best = s, fb = f;
+                }
+            } else {
+                step.clear();
+                for (long i = 0; i < iters && clock.elapsed() < budget; ++i) {
+                    double fc;
+                    if (!step(s, f, fb, rng, cand, fc)) break;
+                    s = std::move(cand), f = fc;
+                    if (f < fb) best = s, fb = f;
+                }
+            }
+            return best;
+        };
         bool started = false;
         auto gen = [&](const auto& s, double, double, double, auto& cand, double&) {
-            cand = hill_climb(*nbh, started ? ctor->build(rng) : s, first, sample, ls_s, rng, ties);
+            cand = improve(started ? ctor->build(rng) : s);
             started = true;
             return true;
         };

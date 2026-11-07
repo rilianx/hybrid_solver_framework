@@ -77,7 +77,7 @@ def test_each_skeleton_runs_entirely_in_cpp_with_the_generated_catalog(assembler
     _check(assembler, cfg, PACK.make_instances(1, 3, PACK.parse_size("8x5"))[0], budget=1.0 if skeleton == "HYB" else 0.3)
 
 
-@pytest.mark.parametrize("variant", ["ILS anneal", "PR ils", "TS estimate", "penalty", "GRASP full"])
+@pytest.mark.parametrize("variant", ["ILS anneal", "PR ils", "TS estimate", "penalty", "GRASP full", "GRASP ts", "GRASP ils"])
 def test_skeleton_variants_run_in_python_and_in_cpp(assembler, variant):
     inst = PACK.make_instances(1, 3, PACK.parse_size("6x5"))[0]
     for python in (False, True):
@@ -87,6 +87,12 @@ def test_skeleton_variants_run_in_python_and_in_cpp(assembler, variant):
             cfg = dict(assembler.default_config("PR"), **{"PR.improve": "ils", "PR.pop_size": 4, "PR.ts_iters": 20, "PR.T_rel": 0.01})
         elif variant == "GRASP full":  # varios arranques con el constructor GRASP del LLM y primera mejora completa
             cfg = dict(assembler.default_config("GRASP"), **{"GRASP.ls_scope": "full", "GRASP.ls_strategy": "first"})
+        elif variant == "GRASP ts":  # cada arranque mejorado con tabú
+            cfg = dict(assembler.default_config("GRASP"), **{"GRASP.improve": "ts", "GRASP.improve_iters": 50})
+        elif variant == "GRASP ils":  # cada arranque mejorado con ILS con recocido
+            cfg = dict(assembler.default_config("GRASP"), **{"GRASP.improve": "ils", "GRASP.improve_iters": 10,
+                                                             "GRASP.T_rel": 0.01})
+            assert cfg.get("perturbation")
         elif variant == "TS estimate":
             cfg = dict(assembler.default_config("TS"), **{"TS.estimate_top": 3, "TS.elite_size": 4, "TS.stall": 20})
         else:  # peso bajo de las violaciones: pasa por infactibles pero devuelve la mejor factible (solo en C++)
