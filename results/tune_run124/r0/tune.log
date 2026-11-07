@@ -1,0 +1,18 @@
+  vista MIP de HYB: generated
+
+=== catálogo `generated`: 73 parámetros, 9 opciones generadas por LLM ===
+  irace: 1008 experimentos en 11957s; élite: TS[constructor=random, neighborhood=critical_arc_adjacent_swap_n1]; TS[constructor=random, neighborhood=critical_arc_adjacent_swap_n1]; TS[constructor=random, neighborhood=critical_arc_adjacent_swap_n1]; TS[constructor=random, neighborhood=critical_arc_adjacent_swap_n1]; TS[constructor=random, neighborhood=critical_arc_adjacent_swap_n1]; TS[constructor=random, neighborhood=critical_arc_adjacent_swap_n1]; TS[constructor=random, neighborhood=critical_arc_adjacent_swap_n1]; TS[constructor=random, neighborhood=critical_arc_adjacent_swap_n1]
+  mejor en train: 0.1272  TS[constructor=random, neighborhood=critical_arc_adjacent_swap_n1]
+
+=== TEST `generated` (partida trivial sin búsqueda = 10724.3; gap vs mejor conocido por instancia) ===
+    tuned                                            gap   0.35%         1308.0 ±     99.9   (+87.8% vs partida)   TS[constructor=random, neighborhood=critical_arc_adjacent_swap_n1]
+    default:TS                                       gap   0.96%         1315.6 ±     96.0   (+87.7% vs partida)   TS[constructor=trivial, neighborhood=critical_arc_adjacent_swap_n1]
+    default:SA                                       gap   1.10%         1317.8 ±    100.2   (+87.7% vs partida)   SA[constructor=trivial, neighborhood=critical_arc_adjacent_swap_n1]
+    default:VNS                                      gap  17.89%         1542.3 ±    219.5   (+85.6% vs partida)   VNS[constructor=trivial, neighborhood=critical_arc_adjacent_swap_n1]
+    default:HYB                                      gap  21.93%         1597.3 ±    268.3   (+85.1% vs partida)   HYB[constructor=trivial, neighborhood=critical_arc_adjacent_swap_n1, perturbation=critical_block_adjacent_swap, destruction=group_window]
+    default:ILS                                      gap  34.15%         1756.7 ±    298.4   (+83.6% vs partida)   ILS[constructor=trivial, neighborhood=critical_arc_adjacent_swap_n1, perturbation=critical_block_adjacent_swap]
+    default:GRASP                                    gap 292.58%         5142.8 ±    817.6   (+52.0% vs partida)   GRASP[constructor=trivial, neighborhood=critical_arc_adjacent_swap_n1, perturbation=critical_block_adjacent_swap]
+  ganancia del afinado vs mejor default: +0.58%; gana en 5/6 instancias
+  afinado vs default:TS: gap +0.61% a favor del afinado, IC95 [+0.09%, +1.20%]
+
+Escenario irace escrito en tuning_out/irace/scenario.txt (correr: irace --scenario tuning_out/irace/scenario.txt)

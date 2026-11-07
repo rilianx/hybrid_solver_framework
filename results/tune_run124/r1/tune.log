@@ -1,0 +1,18 @@
+  vista MIP de HYB: generated
+
+=== catálogo `generated`: 73 parámetros, 9 opciones generadas por LLM ===
+  irace: 1008 experimentos en 11669s; élite: HYB[constructor=multistart_nondelay_composite_rule, neighborhood=critical_arc_adjacent_swap_n1, perturbation=critical_block_adjacent_swap, destruction=random_variables]; HYB[constructor=multistart_nondelay_composite_rule, neighborhood=critical_arc_adjacent_swap_n1, perturbation=critical_block_adjacent_swap, destruction=random_variables]; HYB[constructor=multistart_nondelay_composite_rule, neighborhood=critical_arc_adjacent_swap_n1, perturbation=critical_block_adjacent_swap, destruction=random_variables]; HYB[constructor=multistart_nondelay_composite_rule, neighborhood=critical_arc_adjacent_swap_n1, perturbation=critical_block_adjacent_swap, destruction=random_variables]; HYB[constructor=multistart_nondelay_composite_rule, neighborhood=critical_arc_adjacent_swap_n1, perturbation=critical_block_adjacent_swap, destruction=group_window]; HYB[constructor=multistart_nondelay_composite_rule, neighborhood=critical_arc_adjacent_swap_n1, perturbation=critical_block_adjacent_swap, destruction=group_window]; HYB[constructor=multistart_nondelay_composite_rule, neighborhood=critical_arc_adjacent_swap_n1, perturbation=critical_block_adjacent_swap, destruction=random_variables]; HYB[constructor=multistart_nondelay_composite_rule, neighborhood=critical_arc_adjacent_swap_n1, perturbation=critical_block_adjacent_swap, destruction=random_variables]
+  mejor en train: 0.1274  HYB[constructor=multistart_nondelay_composite_rule, neighborhood=critical_arc_adjacent_swap_n1, perturbation=critical_block_adjacent_swap, destruction=random_variables]
+
+=== TEST `generated` (partida trivial sin búsqueda = 10724.3; gap vs mejor conocido por instancia) ===
+    tuned                                            gap   0.36%         1298.3 ±     96.6   (+87.9% vs partida)   HYB[constructor=multistart_nondelay_composite_rule, neighborhood=critical_arc_adjacent_swap_n1, perturbation=critical_block_adjacent_swap, destruction=random_variables]
+    default:SA                                       gap   1.41%         1312.1 ±    100.1   (+87.8% vs partida)   SA[constructor=trivial, neighborhood=critical_arc_adjacent_swap_n1]
+    default:TS                                       gap   1.64%         1314.7 ±     95.7   (+87.7% vs partida)   TS[constructor=trivial, neighborhood=critical_arc_adjacent_swap_n1]
+    default:VNS                                      gap  18.77%         1542.3 ±    219.5   (+85.6% vs partida)   VNS[constructor=trivial, neighborhood=critical_arc_adjacent_swap_n1]
+    default:HYB                                      gap  20.97%         1574.2 ±    263.2   (+85.3% vs partida)   HYB[constructor=trivial, neighborhood=critical_arc_adjacent_swap_n1, perturbation=critical_block_adjacent_swap, destruction=group_window]
+    default:ILS                                      gap  34.68%         1749.8 ±    294.8   (+83.7% vs partida)   ILS[constructor=trivial, neighborhood=critical_arc_adjacent_swap_n1, perturbation=critical_block_adjacent_swap]
+    default:GRASP                                    gap 295.44%         5142.8 ±    817.6   (+52.0% vs partida)   GRASP[constructor=trivial, neighborhood=critical_arc_adjacent_swap_n1, perturbation=critical_block_adjacent_swap]
+  ganancia del afinado vs mejor default: +1.05%; gana en 6/6 instancias
+  afinado vs default:SA: gap +1.05% a favor del afinado, IC95 [+0.67%, +1.38%]
+
+Escenario irace escrito en tuning_out/irace/scenario.txt (correr: irace --scenario tuning_out/irace/scenario.txt)
