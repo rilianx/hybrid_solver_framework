@@ -1,0 +1,68 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("SA", "ILS", "VNS", "TS", "GRASP")
+constructor "--constructor=" c ("trivial", "random", "lr_index_greedy_rcl", "neh_flowtime_insertion_pruned", "beam_search_append_idle") | skeleton %in% c("SA", "ILS", "VNS", "TS", "GRASP")
+lr_index_greedy_rcl.first_rcl "--lr_index_greedy_rcl.first_rcl=" i (1, 10) | skeleton %in% c("SA", "ILS", "VNS", "TS", "GRASP") & constructor == "lr_index_greedy_rcl"
+lr_index_greedy_rcl.rcl_alpha "--lr_index_greedy_rcl.rcl_alpha=" r (0.0, 0.3) | skeleton %in% c("SA", "ILS", "VNS", "TS", "GRASP") & constructor == "lr_index_greedy_rcl"
+neh_flowtime_insertion_pruned.noise "--neh_flowtime_insertion_pruned.noise=" r (0.0, 0.4) | skeleton %in% c("SA", "ILS", "VNS", "TS", "GRASP") & constructor == "neh_flowtime_insertion_pruned"
+neh_flowtime_insertion_pruned.order "--neh_flowtime_insertion_pruned.order=" c ("asc", "desc") | skeleton %in% c("SA", "ILS", "VNS", "TS", "GRASP") & constructor == "neh_flowtime_insertion_pruned"
+beam_search_append_idle.beam_width "--beam_search_append_idle.beam_width=" i (1, 12) | skeleton %in% c("SA", "ILS", "VNS", "TS", "GRASP") & constructor == "beam_search_append_idle"
+beam_search_append_idle.idle_weight "--beam_search_append_idle.idle_weight=" r (0.0, 3.0) | skeleton %in% c("SA", "ILS", "VNS", "TS", "GRASP") & constructor == "beam_search_append_idle"
+beam_search_append_idle.noise "--beam_search_append_idle.noise=" r (0.0, 0.1) | skeleton %in% c("SA", "ILS", "VNS", "TS", "GRASP") & constructor == "beam_search_append_idle"
+neighborhood "--neighborhood=" c ("job_insertion_shift", "pairwise_job_interchange", "bounded_segment_reversal", "composite") | skeleton %in% c("SA", "ILS", "VNS", "TS", "GRASP")
+job_insertion_shift.window "--job_insertion_shift.window=" i (0, 500) | skeleton %in% c("SA", "ILS", "VNS", "TS", "GRASP") & neighborhood == "job_insertion_shift"
+pairwise_job_interchange.max_gap "--pairwise_job_interchange.max_gap=" i (0, 500) | skeleton %in% c("SA", "ILS", "VNS", "TS", "GRASP") & neighborhood == "pairwise_job_interchange"
+bounded_segment_reversal.max_len "--bounded_segment_reversal.max_len=" i (2, 100) | skeleton %in% c("SA", "ILS", "VNS", "TS", "GRASP") & neighborhood == "bounded_segment_reversal"
+perturbation "--perturbation=" c ("random_insertion_chain_kick", "iterated_greedy_destruct_reconstruct", "adjacent_block_exchange_double_bridge") | skeleton %in% c("ILS", "GRASP")
+random_insertion_chain_kick.moves_per_strength "--random_insertion_chain_kick.moves_per_strength=" r (0.5, 3.0) | skeleton %in% c("ILS", "GRASP") & perturbation == "random_insertion_chain_kick"
+random_insertion_chain_kick.locality "--random_insertion_chain_kick.locality=" i (0, 30) | skeleton %in% c("ILS", "GRASP") & perturbation == "random_insertion_chain_kick"
+iterated_greedy_destruct_reconstruct.removed_per_strength "--iterated_greedy_destruct_reconstruct.removed_per_strength=" r (1.0, 4.0) | skeleton %in% c("ILS", "GRASP") & perturbation == "iterated_greedy_destruct_reconstruct"
+iterated_greedy_destruct_reconstruct.max_removed "--iterated_greedy_destruct_reconstruct.max_removed=" i (2, 20) | skeleton %in% c("ILS", "GRASP") & perturbation == "iterated_greedy_destruct_reconstruct"
+iterated_greedy_destruct_reconstruct.removal "--iterated_greedy_destruct_reconstruct.removal=" c ("random", "block") | skeleton %in% c("ILS", "GRASP") & perturbation == "iterated_greedy_destruct_reconstruct"
+adjacent_block_exchange_double_bridge.bridges_per_strength "--adjacent_block_exchange_double_bridge.bridges_per_strength=" r (0.5, 2.0) | skeleton %in% c("ILS", "GRASP") & perturbation == "adjacent_block_exchange_double_bridge"
+adjacent_block_exchange_double_bridge.max_block "--adjacent_block_exchange_double_bridge.max_block=" i (1, 6) | skeleton %in% c("ILS", "GRASP") & perturbation == "adjacent_block_exchange_double_bridge"
+adjacent_block_exchange_double_bridge.reverse_prob "--adjacent_block_exchange_double_bridge.reverse_prob=" r (0.0, 0.5) | skeleton %in% c("ILS", "GRASP") & perturbation == "adjacent_block_exchange_double_bridge"
+SA.T0 "--SA.T0=" r (1.0, 1000.0) | skeleton == "SA"  # log-scale
+SA.cooling "--SA.cooling=" c ("time", "iterations") | skeleton == "SA"
+SA.T_end "--SA.T_end=" r (1e-05, 0.1) | skeleton == "SA"  # log-scale
+SA.alpha "--SA.alpha=" r (0.8, 0.999) | skeleton == "SA"
+SA.iters_per_T "--SA.iters_per_T=" i (1, 50) | skeleton == "SA"
+SA.eval "--SA.eval=" c ("objective", "delta") | skeleton == "SA"
+SA.pen_scale "--SA.pen_scale=" r (0.0001, 1.0) | skeleton == "SA"  # log-scale
+SA.pen_adapt "--SA.pen_adapt=" c ("no", "yes") | skeleton == "SA"
+SA.pen_target "--SA.pen_target=" r (0.05, 0.5) | skeleton == "SA"
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+ILS.ls_sample "--ILS.ls_sample=" i (4, 256) | skeleton == "ILS"  # log-scale
+ILS.ls_scope "--ILS.ls_scope=" c ("sample", "full") | skeleton == "ILS"
+ILS.accept "--ILS.accept=" c ("better", "anneal") | skeleton == "ILS"
+ILS.T_rel "--ILS.T_rel=" r (0.0001, 0.05) | skeleton == "ILS"  # log-scale
+ILS.pen_scale "--ILS.pen_scale=" r (0.0001, 1.0) | skeleton == "ILS"  # log-scale
+ILS.pen_adapt "--ILS.pen_adapt=" c ("no", "yes") | skeleton == "ILS"
+ILS.pen_target "--ILS.pen_target=" r (0.05, 0.5) | skeleton == "ILS"
+VNS.shake_strength "--VNS.shake_strength=" i (1, 4) | skeleton == "VNS"
+VNS.ls_time_share "--VNS.ls_time_share=" r (0.02, 0.3) | skeleton == "VNS"
+VNS.ls_sample "--VNS.ls_sample=" i (4, 256) | skeleton == "VNS"  # log-scale
+VNS.pen_scale "--VNS.pen_scale=" r (0.0001, 1.0) | skeleton == "VNS"  # log-scale
+VNS.pen_adapt "--VNS.pen_adapt=" c ("no", "yes") | skeleton == "VNS"
+VNS.pen_target "--VNS.pen_target=" r (0.05, 0.5) | skeleton == "VNS"
+TS.tenure "--TS.tenure=" i (3, 30) | skeleton == "TS"
+TS.candidate_size "--TS.candidate_size=" i (5, 100) | skeleton == "TS"  # log-scale
+TS.estimate_top "--TS.estimate_top=" i (0, 10) | skeleton == "TS"
+TS.elite_size "--TS.elite_size=" i (0, 8) | skeleton == "TS"
+TS.stall "--TS.stall=" i (20, 5000) | skeleton == "TS"  # log-scale
+TS.pen_scale "--TS.pen_scale=" r (0.0001, 1.0) | skeleton == "TS"  # log-scale
+TS.pen_adapt "--TS.pen_adapt=" c ("no", "yes") | skeleton == "TS"
+TS.pen_target "--TS.pen_target=" r (0.05, 0.5) | skeleton == "TS"
+GRASP.ls_strategy "--GRASP.ls_strategy=" c ("first", "best") | skeleton == "GRASP"
+GRASP.ls_time_share "--GRASP.ls_time_share=" r (0.01, 0.3) | skeleton == "GRASP"  # log-scale
+GRASP.ls_sample "--GRASP.ls_sample=" i (4, 256) | skeleton == "GRASP"  # log-scale
+GRASP.ls_scope "--GRASP.ls_scope=" c ("sample", "full") | skeleton == "GRASP"
+GRASP.improve "--GRASP.improve=" c ("descent", "ts", "ils") | skeleton == "GRASP"
+GRASP.improve_iters "--GRASP.improve_iters=" i (10, 20000) | skeleton == "GRASP"  # log-scale
+GRASP.tenure "--GRASP.tenure=" i (3, 30) | skeleton == "GRASP"
+GRASP.candidate_size "--GRASP.candidate_size=" i (5, 100) | skeleton == "GRASP"  # log-scale
+GRASP.estimate_top "--GRASP.estimate_top=" i (0, 10) | skeleton == "GRASP"
+GRASP.strength "--GRASP.strength=" i (1, 6) | skeleton == "GRASP"
+GRASP.T_rel "--GRASP.T_rel=" r (0.0001, 0.05) | skeleton == "GRASP"  # log-scale
