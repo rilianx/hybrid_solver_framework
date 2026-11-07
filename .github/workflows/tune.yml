@@ -80,7 +80,7 @@ jobs:
   tune:
     needs: plan
     runs-on: ubuntu-latest
-    timeout-minutes: 300
+    timeout-minutes: 355  # el máximo de los runners alojados es 360
     strategy:
       fail-fast: false
       matrix:
@@ -109,7 +109,13 @@ jobs:
       - name: Instalar irace (R)
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y -q --no-install-recommends r-cran-irace
+          sudo apt-get install -y -q --no-install-recommends r-cran-irace r-cran-r6 r-base-dev
+          # irace 3.5, la de los tunings hasta el 117: la imagen trae ahora la 4.4, que cambia el escenario (no acepta
+          # `digits`) y el comportamiento de la carrera; fijarla mantiene comparables los resultados
+          if [ "$(Rscript -e 'cat(as.character(packageVersion("irace")))')" != "3.5" ]; then
+            sudo Rscript -e 'install.packages("https://cran.r-project.org/src/contrib/Archive/irace/irace_3.5.tar.gz", repos = NULL, type = "source", lib = "/usr/local/lib/R/site-library")'
+          fi
+          Rscript -e 'cat("irace", as.character(packageVersion("irace")), "en", system.file(package = "irace"), "\n")'
 
       - name: Afinar y evaluar en test
         working-directory: ${{ env.ROOT }}
