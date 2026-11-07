@@ -1,0 +1,17 @@
+  vista MIP de HYB: generated
+
+=== catálogo `generated`: 62 parámetros, 9 opciones generadas por LLM ===
+  irace: 1008 experimentos en 11561s; élite: ILS[constructor=multistart_nondelay_composite_rule, neighborhood=composite, perturbation=critical_block_adjacent_swap]; ILS[constructor=multistart_nondelay_composite_rule, neighborhood=composite, perturbation=critical_block_adjacent_swap]; ILS[constructor=multistart_nondelay_composite_rule, neighborhood=composite, perturbation=critical_block_adjacent_swap]; ILS[constructor=multistart_nondelay_composite_rule, neighborhood=composite, perturbation=critical_block_adjacent_swap]; ILS[constructor=multistart_nondelay_composite_rule, neighborhood=composite, perturbation=critical_block_adjacent_swap]; ILS[constructor=multistart_nondelay_composite_rule, neighborhood=composite, perturbation=critical_block_adjacent_swap]; ILS[constructor=multistart_nondelay_composite_rule, neighborhood=composite, perturbation=critical_block_adjacent_swap]
+  mejor en train: 0.1270  ILS[constructor=multistart_nondelay_composite_rule, neighborhood=composite, perturbation=critical_block_adjacent_swap]
+
+=== TEST `generated` (partida trivial sin búsqueda = 10724.3; gap vs mejor conocido por instancia) ===
+    tuned                                            gap   0.42%         1299.1 ±     92.6   (+87.9% vs partida)   ILS[constructor=multistart_nondelay_composite_rule, neighborhood=composite, perturbation=critical_block_adjacent_swap]
+    default:SA                                       gap   1.32%         1311.1 ±     97.3   (+87.8% vs partida)   SA[constructor=trivial, neighborhood=critical_arc_adjacent_swap_n1]
+    default:TS                                       gap   1.33%         1310.9 ±     94.9   (+87.8% vs partida)   TS[constructor=trivial, neighborhood=critical_arc_adjacent_swap_n1]
+    default:VNS                                      gap  17.37%         1523.6 ±    203.3   (+85.8% vs partida)   VNS[constructor=trivial, neighborhood=critical_arc_adjacent_swap_n1]
+    default:HYB                                      gap  18.24%         1537.8 ±    249.7   (+85.7% vs partida)   HYB[constructor=trivial, neighborhood=critical_arc_adjacent_swap_n1, perturbation=critical_block_adjacent_swap, destruction=group_window]
+    default:ILS                                      gap  33.75%         1737.1 ±    280.0   (+83.8% vs partida)   ILS[constructor=trivial, neighborhood=critical_arc_adjacent_swap_n1, perturbation=critical_block_adjacent_swap]
+  ganancia del afinado vs mejor default: +0.90%; gana en 6/6 instancias
+  afinado vs default:SA: gap +0.90% a favor del afinado, IC95 [+0.60%, +1.24%]
+
+Escenario irace escrito en tuning_out/irace/scenario.txt (correr: irace --scenario tuning_out/irace/scenario.txt)

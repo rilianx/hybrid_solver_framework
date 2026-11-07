@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# irace llama: target-runner <config_id> <instance_id> <seed> <instance> [--param=valor ...]
+set -euo pipefail
+cd "$(dirname "$0")/../.."  # raíz del repo
+export HSF_BUDGET=10.0
+export HSF_PROBLEM=examples.jobshop
+export HSF_GENERATED=generated/v2/jobshop
+export HSF_SKELETONS='SA ILS TS VNS PR HYB'
+export HSF_OBJECTIVE=ratio
+export LD_LIBRARY_PATH=/opt/hostedtoolcache/Python/3.12.16/x64/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+export PYTHONPATH=/home/runner/work/hybrid_solver_framework/hybrid_solver_framework:/opt/hostedtoolcache/Python/3.12.16/x64/lib/python312.zip:/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12:/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/lib-dynload:/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages
+exec /opt/hostedtoolcache/Python/3.12.16/x64/bin/python -W ignore -m scripts.irace_target_runner "$@"
