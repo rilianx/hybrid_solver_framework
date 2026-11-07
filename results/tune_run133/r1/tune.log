@@ -1,0 +1,17 @@
+  vista MIP de HYB: generated
+
+=== catálogo `generated`: 68 parámetros, 9 opciones generadas por LLM ===
+  irace: 1008 experimentos en 15188s; élite: TS[constructor=lagrangian_dual_ratio_greedy, neighborhood=composite]; HYB[constructor=trivial, neighborhood=drop_k_greedy_refill, perturbation=forced_insertion_excess_repair, destruction=random_variables]; TS[constructor=trivial, neighborhood=composite]; TS[constructor=trivial, neighborhood=composite]; TS[constructor=trivial, neighborhood=composite]; TS[constructor=lagrangian_dual_ratio_greedy, neighborhood=composite]; TS[constructor=lagrangian_dual_ratio_greedy, neighborhood=composite]; TS[constructor=lagrangian_dual_ratio_greedy, neighborhood=composite]
+  mejor en train: -1.0281  TS[constructor=lagrangian_dual_ratio_greedy, neighborhood=composite]
+
+=== TEST `generated` (partida trivial sin búsqueda = -65572.3; gap vs mejor conocido por instancia) ===
+    tuned                                            gap   0.00%       -67684.4 ±  31964.9   (+3.2% vs partida)   TS[constructor=lagrangian_dual_ratio_greedy, neighborhood=composite]
+    default:VNS                                      gap   0.12%       -67586.7 ±  31893.5   (+3.1% vs partida)   VNS[constructor=trivial, neighborhood=swap_1_1_ratio_candidates]
+    default:HYB                                      gap   0.22%       -67517.5 ±  31872.7   (+3.0% vs partida)   HYB[constructor=trivial, neighborhood=swap_1_1_ratio_candidates, perturbation=random_drop_noisy_greedy_refill, destruction=group_window]
+    default:TS                                       gap   0.43%       -67366.7 ±  31766.7   (+2.7% vs partida)   TS[constructor=trivial, neighborhood=swap_1_1_ratio_candidates]
+    default:ILS                                      gap   0.62%       -67243.5 ±  31741.3   (+2.5% vs partida)   ILS[constructor=trivial, neighborhood=swap_1_1_ratio_candidates, perturbation=random_drop_noisy_greedy_refill]
+    default:SA                                       gap   0.79%       -67134.1 ±  31741.6   (+2.4% vs partida)   SA[constructor=trivial, neighborhood=swap_1_1_ratio_candidates]
+  ganancia del afinado vs mejor default: +0.14%; gana en 5/6 instancias
+  afinado vs default:VNS: gap +0.12% a favor del afinado, IC95 [+0.04%, +0.19%]
+
+Escenario irace escrito en tuning_out/irace/scenario.txt (correr: irace --scenario tuning_out/irace/scenario.txt)
