@@ -1,0 +1,76 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("SA", "ILS", "TS", "VNS", "HYB")
+constructor "--constructor=" c ("trivial", "random", "randomized_parallel_savings", "multi_start_polar_sweep_2opt", "giant_tour_optimal_split") | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB")
+randomized_parallel_savings.lambda "--randomized_parallel_savings.lambda=" r (0.6, 1.8) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & constructor == "randomized_parallel_savings"
+randomized_parallel_savings.noise "--randomized_parallel_savings.noise=" r (0.0, 0.3) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & constructor == "randomized_parallel_savings"
+randomized_parallel_savings.neighbors "--randomized_parallel_savings.neighbors=" i (10, 120) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & constructor == "randomized_parallel_savings"
+multi_start_polar_sweep_2opt.trials "--multi_start_polar_sweep_2opt.trials=" i (1, 16) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & constructor == "multi_start_polar_sweep_2opt"
+multi_start_polar_sweep_2opt.two_opt_passes "--multi_start_polar_sweep_2opt.two_opt_passes=" i (0, 30) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & constructor == "multi_start_polar_sweep_2opt"
+multi_start_polar_sweep_2opt.direction "--multi_start_polar_sweep_2opt.direction=" c ("both", "ccw") | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & constructor == "multi_start_polar_sweep_2opt"
+giant_tour_optimal_split.rcl "--giant_tour_optimal_split.rcl=" i (1, 5) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & constructor == "giant_tour_optimal_split"
+giant_tour_optimal_split.neighbors "--giant_tour_optimal_split.neighbors=" i (5, 40) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & constructor == "giant_tour_optimal_split"
+giant_tour_optimal_split.trials "--giant_tour_optimal_split.trials=" i (1, 8) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & constructor == "giant_tour_optimal_split"
+neighborhood "--neighborhood=" c ("granular_relocate", "granular_two_opt_star", "granular_cross_exchange", "composite") | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB")
+granular_relocate.neighbors "--granular_relocate.neighbors=" i (4, 40) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & neighborhood == "granular_relocate"
+granular_relocate.cap_filter "--granular_relocate.cap_filter=" i (0, 1) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & neighborhood == "granular_relocate"
+granular_two_opt_star.neighbors "--granular_two_opt_star.neighbors=" i (4, 40) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & neighborhood == "granular_two_opt_star"
+granular_two_opt_star.cap_filter "--granular_two_opt_star.cap_filter=" i (0, 1) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & neighborhood == "granular_two_opt_star"
+granular_cross_exchange.neighbors "--granular_cross_exchange.neighbors=" i (3, 25) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & neighborhood == "granular_cross_exchange"
+granular_cross_exchange.max_seg "--granular_cross_exchange.max_seg=" i (2, 4) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & neighborhood == "granular_cross_exchange"
+granular_cross_exchange.allow_reverse "--granular_cross_exchange.allow_reverse=" i (0, 1) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & neighborhood == "granular_cross_exchange"
+granular_cross_exchange.cap_filter "--granular_cross_exchange.cap_filter=" i (0, 1) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & neighborhood == "granular_cross_exchange"
+perturbation "--perturbation=" c ("random_removal_regret2_reinsert", "sisr_string_removal_blink_insert", "random_feasible_cross_exchange_walk") | skeleton %in% c("ILS", "HYB")
+random_removal_regret2_reinsert.per_strength "--random_removal_regret2_reinsert.per_strength=" r (0.5, 4.0) | skeleton %in% c("ILS", "HYB") & perturbation == "random_removal_regret2_reinsert"
+random_removal_regret2_reinsert.max_frac "--random_removal_regret2_reinsert.max_frac=" r (0.05, 0.5) | skeleton %in% c("ILS", "HYB") & perturbation == "random_removal_regret2_reinsert"
+random_removal_regret2_reinsert.noise "--random_removal_regret2_reinsert.noise=" r (0.0, 0.3) | skeleton %in% c("ILS", "HYB") & perturbation == "random_removal_regret2_reinsert"
+sisr_string_removal_blink_insert.per_strength "--sisr_string_removal_blink_insert.per_strength=" r (1.0, 6.0) | skeleton %in% c("ILS", "HYB") & perturbation == "sisr_string_removal_blink_insert"
+sisr_string_removal_blink_insert.max_frac "--sisr_string_removal_blink_insert.max_frac=" r (0.05, 0.5) | skeleton %in% c("ILS", "HYB") & perturbation == "sisr_string_removal_blink_insert"
+sisr_string_removal_blink_insert.max_string "--sisr_string_removal_blink_insert.max_string=" i (2, 15) | skeleton %in% c("ILS", "HYB") & perturbation == "sisr_string_removal_blink_insert"
+sisr_string_removal_blink_insert.blink "--sisr_string_removal_blink_insert.blink=" r (0.0, 0.2) | skeleton %in% c("ILS", "HYB") & perturbation == "sisr_string_removal_blink_insert"
+sisr_string_removal_blink_insert.knn "--sisr_string_removal_blink_insert.knn=" i (10, 80) | skeleton %in% c("ILS", "HYB") & perturbation == "sisr_string_removal_blink_insert"
+random_feasible_cross_exchange_walk.per_strength "--random_feasible_cross_exchange_walk.per_strength=" r (0.5, 2.0) | skeleton %in% c("ILS", "HYB") & perturbation == "random_feasible_cross_exchange_walk"
+random_feasible_cross_exchange_walk.seg_frac "--random_feasible_cross_exchange_walk.seg_frac=" r (0.25, 0.75) | skeleton %in% c("ILS", "HYB") & perturbation == "random_feasible_cross_exchange_walk"
+random_feasible_cross_exchange_walk.p_intra "--random_feasible_cross_exchange_walk.p_intra=" r (0.0, 0.3) | skeleton %in% c("ILS", "HYB") & perturbation == "random_feasible_cross_exchange_walk"
+random_feasible_cross_exchange_walk.cluster_routes "--random_feasible_cross_exchange_walk.cluster_routes=" i (2, 3) | skeleton %in% c("ILS", "HYB") & perturbation == "random_feasible_cross_exchange_walk"
+random_feasible_cross_exchange_walk.p_tail "--random_feasible_cross_exchange_walk.p_tail=" r (0.3, 0.7) | skeleton %in% c("ILS", "HYB") & perturbation == "random_feasible_cross_exchange_walk"
+destruction "--destruction=" c ("group_window", "random_variables") | skeleton %in% c("HYB")
+SA.T0 "--SA.T0=" r (1.0, 1000.0) | skeleton == "SA"  # log-scale
+SA.cooling "--SA.cooling=" c ("time", "iterations") | skeleton == "SA"
+SA.T_end "--SA.T_end=" r (1e-05, 0.1) | skeleton == "SA"  # log-scale
+SA.alpha "--SA.alpha=" r (0.8, 0.999) | skeleton == "SA"
+SA.iters_per_T "--SA.iters_per_T=" i (1, 50) | skeleton == "SA"
+SA.eval "--SA.eval=" c ("objective", "delta") | skeleton == "SA"
+SA.pen_scale "--SA.pen_scale=" r (0.0001, 1.0) | skeleton == "SA"  # log-scale
+SA.pen_adapt "--SA.pen_adapt=" c ("no", "yes") | skeleton == "SA"
+SA.pen_target "--SA.pen_target=" r (0.05, 0.5) | skeleton == "SA"
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+ILS.ls_sample "--ILS.ls_sample=" i (4, 256) | skeleton == "ILS"  # log-scale
+ILS.ls_scope "--ILS.ls_scope=" c ("sample", "full") | skeleton == "ILS"
+ILS.accept "--ILS.accept=" c ("better", "anneal") | skeleton == "ILS"
+ILS.T_rel "--ILS.T_rel=" r (0.0001, 0.05) | skeleton == "ILS"  # log-scale
+ILS.pen_scale "--ILS.pen_scale=" r (0.0001, 1.0) | skeleton == "ILS"  # log-scale
+ILS.pen_adapt "--ILS.pen_adapt=" c ("no", "yes") | skeleton == "ILS"
+ILS.pen_target "--ILS.pen_target=" r (0.05, 0.5) | skeleton == "ILS"
+TS.tenure "--TS.tenure=" i (3, 30) | skeleton == "TS"
+TS.candidate_size "--TS.candidate_size=" i (5, 100) | skeleton == "TS"  # log-scale
+TS.estimate_top "--TS.estimate_top=" i (0, 10) | skeleton == "TS"
+TS.elite_size "--TS.elite_size=" i (0, 8) | skeleton == "TS"
+TS.stall "--TS.stall=" i (20, 5000) | skeleton == "TS"  # log-scale
+TS.pen_scale "--TS.pen_scale=" r (0.0001, 1.0) | skeleton == "TS"  # log-scale
+TS.pen_adapt "--TS.pen_adapt=" c ("no", "yes") | skeleton == "TS"
+TS.pen_target "--TS.pen_target=" r (0.05, 0.5) | skeleton == "TS"
+VNS.shake_strength "--VNS.shake_strength=" i (1, 4) | skeleton == "VNS"
+VNS.ls_time_share "--VNS.ls_time_share=" r (0.02, 0.3) | skeleton == "VNS"
+VNS.ls_sample "--VNS.ls_sample=" i (4, 256) | skeleton == "VNS"  # log-scale
+VNS.pen_scale "--VNS.pen_scale=" r (0.0001, 1.0) | skeleton == "VNS"  # log-scale
+VNS.pen_adapt "--VNS.pen_adapt=" c ("no", "yes") | skeleton == "VNS"
+VNS.pen_target "--VNS.pen_target=" r (0.05, 0.5) | skeleton == "VNS"
+HYB.ls_share "--HYB.ls_share=" r (0.02, 0.5) | skeleton == "HYB"  # log-scale
+HYB.mip_share "--HYB.mip_share=" r (0.01, 0.3) | skeleton == "HYB"  # log-scale
+HYB.destroy_ratio "--HYB.destroy_ratio=" r (0.05, 0.6) | skeleton == "HYB"
+HYB.strength "--HYB.strength=" i (1, 6) | skeleton == "HYB"
+HYB.ls_sample "--HYB.ls_sample=" i (4, 256) | skeleton == "HYB"  # log-scale
+HYB.T_rel "--HYB.T_rel=" r (0.0001, 0.05) | skeleton == "HYB"  # log-scale
