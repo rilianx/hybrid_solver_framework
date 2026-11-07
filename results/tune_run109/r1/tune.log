@@ -1,0 +1,16 @@
+  vista MIP de HYB: none
+
+=== catálogo `generated`: 55 parámetros, 9 opciones generadas por LLM ===
+  irace: 728 experimentos en 8091s; élite: ILS[constructor=lr_index_greedy_rcl, neighborhood=pairwise_job_interchange, perturbation=iterated_greedy_destruct_reconstruct]; ILS[constructor=lr_index_greedy_rcl, neighborhood=job_insertion_shift, perturbation=iterated_greedy_destruct_reconstruct]; ILS[constructor=lr_index_greedy_rcl, neighborhood=job_insertion_shift, perturbation=iterated_greedy_destruct_reconstruct]; ILS[constructor=lr_index_greedy_rcl, neighborhood=job_insertion_shift, perturbation=iterated_greedy_destruct_reconstruct]; ILS[constructor=lr_index_greedy_rcl, neighborhood=pairwise_job_interchange, perturbation=iterated_greedy_destruct_reconstruct]; ILS[constructor=lr_index_greedy_rcl, neighborhood=job_insertion_shift, perturbation=iterated_greedy_destruct_reconstruct]; ILS[constructor=lr_index_greedy_rcl, neighborhood=pairwise_job_interchange, perturbation=iterated_greedy_destruct_reconstruct]
+  mejor en train: 0.7795  ILS[constructor=lr_index_greedy_rcl, neighborhood=pairwise_job_interchange, perturbation=iterated_greedy_destruct_reconstruct]
+
+=== TEST `generated` (partida trivial sin búsqueda = 708821.5; gap vs mejor conocido por instancia) ===
+    tuned                                            gap   0.26%       572825.4 ± 496197.8   (+19.2% vs partida)   ILS[constructor=lr_index_greedy_rcl, neighborhood=pairwise_job_interchange, perturbation=iterated_greedy_destruct_reconstruct]
+    default:TS                                       gap   0.97%       577555.1 ± 500685.5   (+18.5% vs partida)   TS[constructor=trivial, neighborhood=job_insertion_shift]
+    default:VNS                                      gap   2.74%       589538.4 ± 512302.6   (+16.8% vs partida)   VNS[constructor=trivial, neighborhood=job_insertion_shift]
+    default:ILS                                      gap   3.23%       590923.0 ± 511921.4   (+16.6% vs partida)   ILS[constructor=trivial, neighborhood=job_insertion_shift, perturbation=random_insertion_chain_kick]
+    default:SA                                       gap   3.63%       592180.8 ± 513752.2   (+16.5% vs partida)   SA[constructor=trivial, neighborhood=job_insertion_shift]
+  ganancia del afinado vs mejor default: +0.82%; gana en 6/6 instancias
+  afinado vs default:TS: gap +0.71% a favor del afinado, IC95 [+0.52%, +0.87%]
+
+Escenario irace escrito en tuning_out/irace/scenario.txt (correr: irace --scenario tuning_out/irace/scenario.txt)
