@@ -1,0 +1,142 @@
+name: evaluación en benchmarks (bench_eval)
+
+# Manual: corre scripts.bench_eval según un plan (scripts/bench_plans/*.json), una parte por job en paralelo, y deja
+# las salidas y un resumen en la rama bench/runN (results/bench_runN/).
+on:
+  workflow_dispatch:
+    inputs:
+      plan:
+        description: "Plan (JSON con shards: name, problem, config, generated, args y opcionalmente setup)"
+        default: scripts/bench_plans/v2_barrida_corta.json
+        type: string
+      only:
+        description: "Solo estas partes (nombres separados por espacio; vacío = todas)"
+        default: ""
+        type: string
+      workers:
+        description: "Corridas simultáneas por job (los runners tienen 4 núcleos)"
+        default: "4"
+        type: string
+
+permissions:
+  contents: write  # para commitear los resultados en la rama bench/runN
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      shards: ${{ steps.p.outputs.shards }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: p
+        env:
+          PLAN: ${{ inputs.plan }}
+          ONLY: ${{ inputs.only }}
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          shards = json.load(open(os.environ["PLAN"]))["shards"]
+          only = os.environ["ONLY"].split()
+          shards = [s for s in shards if not only or s["name"] in only]
+          print("shards=" + json.dumps(shards))
+          PY
+
+  bench:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 355  # el máximo de los runners alojados es 360
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.plan.outputs.shards) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Preparar datos
+        if: matrix.shard.setup
+        run: ${{ matrix.shard.setup }}
+
+      - name: Evaluar
+        env:
+          PROBLEM: ${{ matrix.shard.problem }}
+          CONFIG: ${{ matrix.shard.config }}
+          GENERATED: ${{ matrix.shard.generated }}
+          ARGS: ${{ matrix.shard.args }}
+          NAME: ${{ matrix.shard.name }}
+          WORKERS: ${{ inputs.workers }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          set -o pipefail
+          mkdir -p bench_out
+          read -ra A <<< "$ARGS"
+          python -W ignore -m scripts.bench_eval "$PROBLEM" "$CONFIG" --generated "$GENERATED" "${A[@]}" \
+            --workers "$WORKERS" --out "bench_out/$NAME.json" 2>&1 | tee "bench_out/$NAME.log"
+          cat "bench_out/$NAME.log" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Subir resultados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-${{ github.run_number }}-${{ matrix.shard.name }}
+          path: bench_out/
+          if-no-files-found: warn
+          retention-days: 30
+
+  save:
+    needs: bench
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: bench-${{ github.run_number }}-*
+          path: parts
+          merge-multiple: true
+
+      - name: Guardar resultados en la rama bench/run${{ github.run_number }}
+        env:
+          RUN: ${{ github.run_number }}
+          PLAN: ${{ inputs.plan }}
+        run: |
+          DEST="results/bench_run$RUN"
+          mkdir -p "$DEST"
+          cp parts/* "$DEST/" 2>/dev/null || true
+          if [ -z "$(ls -A "$DEST" 2>/dev/null)" ]; then echo "Sin resultados que guardar."; exit 0; fi
+          cp "$PLAN" "$DEST/plan.json"
+          {
+            echo "# Evaluación en benchmarks (corrida $RUN)"
+            echo ""
+            python3 -c "import json; print(json.load(open('$PLAN')).get('_descripcion', ''))"
+            for f in "$DEST"/*.log; do
+              n="$(basename "$f" .log)"
+              echo ""; echo "## $n"; echo ""; echo '```'; cat "$f"; echo '```'
+              [ -f "$DEST/$n.json" ] || echo "(sin salida: la parte no terminó; ver el log)"
+            done
+          } > "$DEST/README.md"
+          cat "$DEST/README.md" >> "$GITHUB_STEP_SUMMARY"
+          BRANCH="bench/run$RUN"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # La rama sale de main y solo trae los resultados (como en tune.yml)
+          TMP="$(mktemp -d)"; cp -r "$DEST" "$TMP/"
+          git fetch --depth 1 origin main
+          git checkout -f -B "$BRANCH" FETCH_HEAD
+          mkdir -p results && rm -rf "$DEST" && cp -r "$TMP/bench_run$RUN" "$DEST"
+          git add -f "$DEST"
+          git commit -m "Resultados de bench_eval (corrida $RUN)" || { echo "Sin cambios."; exit 0; }
+          git push -u origin "$BRANCH"
+          echo "Resultados en la rama \`$BRANCH\`, carpeta \`$DEST\`." >> "$GITHUB_STEP_SUMMARY"

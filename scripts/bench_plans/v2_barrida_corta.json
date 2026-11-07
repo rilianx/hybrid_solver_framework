@@ -1,0 +1,17 @@
+{
+  "_descripcion": "Protocolo v2, barrida corta: la configuración elegida por tipo de instancia (réplica de menor costo en el test generado de su tuning, con GRASP en el espacio) en su familia de benchmarks, con el 10 % del tiempo del protocolo (t = 6 en size/2·t ms; t = 24 en el CVRP, n·t/100 s) y 3 semillas. Sin las Arnold de FrontierCO (3000–30000 clientes).",
+  "shards": [
+    {"name": "flowshop", "problem": "flowshop", "config": "results/tune_run122/r1", "generated": "generated/v2/flowshop", "args": "--t 6 --seeds 3"},
+    {"name": "flowshop_cmax", "problem": "flowshop_cmax", "config": "results/tune_run123/r0", "generated": "generated/v2/flowshop_cmax", "args": "--t 6 --seeds 3"},
+    {"name": "jobshop", "problem": "jobshop", "config": "results/tune_run124/r1", "generated": "generated/v2/jobshop", "args": "--t 6 --seeds 3"},
+    {"name": "clsp", "problem": "clsp", "config": "results/tune_run125/r1", "generated": "generated/v2/clsp", "args": "--t 6 --seeds 3"},
+    {"name": "cvrp", "problem": "cvrp", "config": "results/tune_run139/r0", "generated": "generated/v2/cvrp", "args": "--t 24 --seeds 3"},
+    {"name": "cvrp_frontierco", "problem": "cvrp_frontierco", "config": "results/tune_run139/r0", "generated": "generated/v2/cvrp", "args": "--t 24 --seeds 3 --instances Golden instance"},
+    {"name": "cvrp_reevo", "problem": "cvrp_reevo", "config": "results/tune_run126/r0", "generated": "generated/v2/cvrp", "args": "--t 24 --seeds 3"},
+    {"name": "cvrp_mcts_ahd", "problem": "cvrp_mcts_ahd", "config": "results/tune_run126/r0", "generated": "generated/v2/cvrp", "args": "--t 24 --seeds 3"},
+    {"name": "sscflp", "problem": "sscflp", "config": "results/tune_run140/r1", "generated": "generated/v2/sscflp", "args": "--t 6 --seeds 3"},
+    {"name": "mkp", "problem": "mkp", "config": "results/tune_run129/r0", "generated": "generated/v2/mkp", "args": "--t 6 --seeds 3"},
+    {"name": "mkp_reevo", "problem": "mkp_reevo", "config": "results/tune_run130/r1", "generated": "generated/v2/mkp", "args": "--t 6 --seeds 3",
+     "setup": "python -c 'from examples.mkp.fetch import fetch_reevo; fetch_reevo()'"}
+  ]
+}

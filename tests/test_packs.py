@@ -58,3 +58,32 @@ def test_every_pack_scales_the_budget_and_has_an_evaluation_protocol():
     for name, b in BENCHES.items():
         fn, t, text = b.protocol
         assert t > 0 and text, name
+
+
+def test_bench_plans_point_to_existing_replicas_and_workspaces():
+    import json
+    from pathlib import Path
+
+    from scripts.bench_eval import BENCHES
+
+    for plan in Path("scripts/bench_plans").glob("*.json"):
+        for s in json.loads(plan.read_text())["shards"]:
+            assert s["problem"] in BENCHES, (plan, s["name"])
+            assert (Path(s["config"]) / "generated.json").exists(), (plan, s["name"])
+            assert (Path(s["generated"]) / "catalog.json").exists(), (plan, s["name"])
+
+
+def test_bench_eval_merges_parts_split_by_seed(tmp_path, capsys):
+    import json
+
+    from scripts.bench_eval import main
+
+    ref = {"tai20_5_0": 1000.0}
+    for k, cost in enumerate((1010.0, 1030.0)):
+        rows = [{"config": "c", "instance": "tai20_5_0", "seed": k, "seconds": 1.0, "cost": cost, "feasible": True,
+                 "iterations": 1}]
+        (tmp_path / f"p{k}.json").write_text(json.dumps({"problem": "flowshop_cmax", "time": "1 s", "seeds": [k],
+                                                         "reference": ref, "configs": {"c": "ILS"}, "rows": rows}))
+    main(["flowshop_cmax", "--merge", str(tmp_path / "p0.json"), str(tmp_path / "p1.json"), "--out", str(tmp_path / "m.json")])
+    assert "2.00%" in capsys.readouterr().out  # media de 1 % y 3 %
+    assert len(json.loads((tmp_path / "m.json").read_text())["rows"]) == 2

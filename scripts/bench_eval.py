@@ -160,7 +160,8 @@ def _run(job):
 def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("problem", choices=sorted(BENCHES))
-    ap.add_argument("runs", nargs="*", help="directorios results/tune_runNN (una configuración por réplica)")
+    ap.add_argument("runs", nargs="*", help="directorios results/tune_runNN (una configuración por réplica) o de una réplica "
+                                            "(results/tune_runNN/r1)")
     ap.add_argument("--generated", default=None, help="workspace de los componentes (default generated/<problema>_native)")
     ap.add_argument("--budget", type=float, default=None,
                     help="segundos fijos por corrida (CO-Bench: 10; FrontierCO: 3600); sin esto, el protocolo del problema")
@@ -173,7 +174,13 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--best-known", default=None, help="otra referencia del gap (JSON {instancia: costo})")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--out")
+    ap.add_argument("--merge", nargs="*", default=None,
+                    help="no corre nada: junta las salidas --out de varias partes (instancias o semillas repartidas) y "
+                         "las resume como una sola")
     args = ap.parse_args(argv)
+    if args.merge:
+        _merge(args.problem, [Path(f) for f in args.merge], args.out)
+        return
 
     from core.packs import base_pack
     from scripts.tuning_replicas import load_replicas
@@ -184,7 +191,12 @@ def main(argv: list[str] | None = None) -> None:
     make_assembler(base_pack(b.pack), generated, generated_destructions=True)  # compila una vez antes de repartir
     configs: dict[str, tuple[dict, str]] = {}
     for run in args.runs:
-        for rep, path in load_replicas(Path(run)):
+        reps = [(Path(run).name, Path(run))] if (Path(run) / "generated.json").exists() else load_replicas(Path(run))
+        for rep, path in reps:
+            if rep == Path(run).name:  # una réplica sola: tune_runNN/r1
+                payload = json.loads((path / "generated.json").read_text())
+                configs[f"{path.parent.name}/{rep}"] = (payload["test"]["tuned"]["config"], payload["test"]["tuned"]["summary"])
+                continue
             payload = json.loads((path / "generated.json").read_text())
             configs[f"{Path(run).name}/{rep}"] = (payload["test"]["tuned"]["config"], payload["test"]["tuned"]["summary"])
     for item in args.extra:
@@ -211,19 +223,27 @@ def main(argv: list[str] | None = None) -> None:
     with ProcessPoolExecutor(args.workers) as pool:
         rows = list(pool.map(_run, jobs))
 
+    _report(args.problem, rows, ref, {k: v[1] for k, v in configs.items()}, when, list(seeds), args.out)
+
+
+def _report(problem: str, rows: list[dict], ref: dict, configs: dict[str, str], when: str, seeds: list[int],
+            out: str | None) -> None:
+    """La tabla de gaps por grupo y configuración, las infactibles y las mejores que la referencia."""
+    b = BENCHES[problem]
+    names = sorted({r["instance"] for r in rows})
     # |ref|: en los de maximización (MKP) el costo es el beneficio con signo menos y la referencia es negativa
     gap = lambda r: 100 * (r["cost"] - ref[r["instance"]]) / abs(ref[r["instance"]])  # noqa: E731
     groups: dict[str, list[str]] = {}
     for n in names:
         groups.setdefault(b.group(n), []).append(n)
-    print(f"gap contra la mejor conocida; {when} por corrida; {args.seeds} semilla(s); {len(names)} instancias\n")
+    print(f"gap contra la mejor conocida; {when} por corrida; {len(seeds)} semilla(s); {len(names)} instancias\n")
     print(f"{'grupo':<10}" + "".join(f"{label[-22:]:>24}" for label in configs))
     for g, members in groups.items():
         cells = [mean(gap(r) for r in rows if r["config"] == label and r["instance"] in members) for label in configs]
         print(f"{g:<10}" + "".join(f"{v:>23.2f}%" for v in cells))
     if len(groups) > 1:
         print(f"{'media':<10}" + "".join(f"{mean(gap(r) for r in rows if r['config'] == label):>23.2f}%" for label in configs))
-    for label, (_, summary) in configs.items():
+    for label, summary in configs.items():
         print(f"  {label}: {summary}")
     bad = [(r["config"], r["instance"]) for r in rows if not r["feasible"]]
     if bad:
@@ -231,9 +251,23 @@ def main(argv: list[str] | None = None) -> None:
     new = sorted({(r["instance"], r["cost"], ref[r["instance"]], r["config"]) for r in rows
                   if r["feasible"] and r["cost"] < ref[r["instance"]] - 1e-6})
     print(f"\nmejores que la referencia: {len({n for n, *_ in new})}" + "".join(f"\n  {n}: {c:.0f} < {b_:.0f} ({l})" for n, c, b_, l in new))
-    if args.out:
-        Path(args.out).write_text(json.dumps({"problem": args.problem, "time": when, "seeds": list(seeds), "reference": ref,
-                                              "configs": {k: v[1] for k, v in configs.items()}, "rows": rows}, indent=1))
+    if out:
+        Path(out).write_text(json.dumps({"problem": problem, "time": when, "seeds": seeds, "reference": ref,
+                                         "configs": configs, "rows": rows}, indent=1))
+
+
+def _merge(problem: str, files: list[Path], out: str | None) -> None:
+    parts = [json.loads(f.read_text()) for f in files]
+    if not parts:
+        raise SystemExit("--merge sin archivos")
+    times = {p["time"] for p in parts}
+    if len(times) > 1:
+        raise SystemExit(f"las partes tienen protocolos de tiempo distintos: {sorted(times)}")
+    rows = [r for p in parts for r in p["rows"]]
+    ref = {k: v for p in parts for k, v in p["reference"].items()}
+    configs = {k: v for p in parts for k, v in p["configs"].items()}
+    seeds = sorted({s for p in parts for s in p["seeds"]})
+    _report(problem, rows, ref, configs, times.pop(), seeds, out)
 
 
 if __name__ == "__main__":
