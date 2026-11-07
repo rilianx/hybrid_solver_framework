@@ -18,9 +18,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-NATIVE_SKELETONS_FOR_SLOT = {"constructor": ["SA", "ILS", "TS", "VNS", "PR", "HYB"],
-                             "neighborhood": ["SA", "ILS", "TS", "VNS", "PR", "HYB"], "perturbation": ["ILS", "PR", "HYB"],
-                             "relink": ["PR"], "destruction": ["HYB"], "tiebreak": ["ILS", "TS", "VNS", "PR", "HYB"]}
+NATIVE_SKELETONS_FOR_SLOT = {"constructor": ["SA", "ILS", "TS", "VNS", "PR", "HYB", "GRASP"],
+                             "neighborhood": ["SA", "ILS", "TS", "VNS", "PR", "HYB", "GRASP"], "perturbation": ["ILS", "PR", "HYB"],
+                             "relink": ["PR"], "destruction": ["HYB"], "tiebreak": ["ILS", "TS", "VNS", "PR", "HYB", "GRASP"]}
 
 
 def run_check(request: dict, timeout: float = 900.0) -> dict:

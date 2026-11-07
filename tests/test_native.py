@@ -68,7 +68,7 @@ def _check(A, cfg, inst, budget=0.3, python=False):
     return res
 
 
-@pytest.mark.parametrize("skeleton", ["SA", "ILS", "VNS", "TS", "PR", "HYB"])
+@pytest.mark.parametrize("skeleton", ["SA", "ILS", "VNS", "TS", "PR", "HYB", "GRASP"])
 def test_each_skeleton_runs_entirely_in_cpp_with_the_generated_catalog(assembler, skeleton):
     assert skeleton in assembler.available_skeletons()
     cfg = assembler.default_config(skeleton)
@@ -77,7 +77,7 @@ def test_each_skeleton_runs_entirely_in_cpp_with_the_generated_catalog(assembler
     _check(assembler, cfg, PACK.make_instances(1, 3, PACK.parse_size("8x5"))[0], budget=1.0 if skeleton == "HYB" else 0.3)
 
 
-@pytest.mark.parametrize("variant", ["ILS anneal", "PR ils", "TS estimate", "penalty"])
+@pytest.mark.parametrize("variant", ["ILS anneal", "PR ils", "TS estimate", "penalty", "GRASP full"])
 def test_skeleton_variants_run_in_python_and_in_cpp(assembler, variant):
     inst = PACK.make_instances(1, 3, PACK.parse_size("6x5"))[0]
     for python in (False, True):
@@ -85,6 +85,8 @@ def test_skeleton_variants_run_in_python_and_in_cpp(assembler, variant):
             cfg = dict(assembler.default_config("ILS"), **{"ILS.accept": "anneal", "ILS.T_rel": 0.01})
         elif variant == "PR ils":
             cfg = dict(assembler.default_config("PR"), **{"PR.improve": "ils", "PR.pop_size": 4, "PR.ts_iters": 20, "PR.T_rel": 0.01})
+        elif variant == "GRASP full":  # varios arranques con el constructor GRASP del LLM y primera mejora completa
+            cfg = dict(assembler.default_config("GRASP"), **{"GRASP.ls_scope": "full", "GRASP.ls_strategy": "first"})
         elif variant == "TS estimate":
             cfg = dict(assembler.default_config("TS"), **{"TS.estimate_top": 3, "TS.elite_size": 4, "TS.stall": 20})
         else:  # peso bajo de las violaciones: pasa por infactibles pero devuelve la mejor factible (solo en C++)

@@ -51,7 +51,7 @@ class ProblemPack:
     bench_size: str = ""  # tamaño de las instancias donde se mide la velocidad de los componentes (vacío = default_size)
     # esqueletos que puede usar un constructor (los greedy_<puntaje> se registran con estos)
     constructor_skeletons: list[str] = field(
-        default_factory=lambda: ["SA", "ILS", "TS", "VNS", "PR", "HYB"])
+        default_factory=lambda: ["SA", "ILS", "TS", "VNS", "PR", "HYB", "GRASP"])
 
     @property
     def default_workspace(self) -> str:

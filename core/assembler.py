@@ -23,6 +23,7 @@ from config_space.space import ConfigSpace, build_config_space
 from core.common_components import BetterAcceptance, MIPModelRepair, MaxTimeStop
 from core.component import ComponentRegistry, ComponentSpec
 from core.skeleton import RunResult
+from skeletons.grasp import run_grasp
 from skeletons.ils import RelativeAnnealingAcceptance, build_ils, hill_climb
 from skeletons.hybrid import run_hybrid
 from skeletons.pr import _Given, run_pr
@@ -121,6 +122,16 @@ SKELETONS: dict[str, SkeletonDef] = {
             "strength": {"type": "int", "range": [1, 6], "default": 1},
             "ls_sample": {"type": "int", "range": [4, 256], "log": True, "default": 64},
             "T_rel": {"type": "float", "range": [1e-4, 0.05], "log": True, "default": 0.005},
+        },
+    ),
+    "GRASP": SkeletonDef(
+        # varios arranques (skeletons/grasp.py): constructor (aleatorizado si usa el rng) + búsqueda local, la mejor
+        "GRASP", ("constructor", "neighborhood"), optional_slots=("tiebreak",),
+        params={
+            "ls_strategy": {"type": "cat", "values": ["first", "best"]},
+            "ls_time_share": {"type": "float", "range": [0.01, 0.3], "log": True, "default": 0.05},
+            "ls_sample": {"type": "int", "range": [4, 256], "log": True, "default": 32},
+            "ls_scope": {"type": "cat", "values": ["sample", "full"]},
         },
     ),
     "VNS": SkeletonDef(
@@ -243,6 +254,11 @@ class Assembler:
                        else BetterAcceptance())
                 sk = build_ils(P, constructor, ls, pert, acc, MaxTimeStop(budget), strength=sp("strength"))
                 return sk.run(inst, rng)
+            if skeleton == "GRASP":
+                nbh = self._component(config, "neighborhood", skeleton, P)
+                ls = hill_climb(P, nbh, strategy=sp("ls_strategy"), max_seconds=budget * sp("ls_time_share"),
+                                sample_size=None if sp("ls_scope") == "full" else sp("ls_sample"))
+                return run_grasp(P, constructor, ls, MaxTimeStop(budget), inst, rng)
             if skeleton == "TS":
                 nbh = self._component(config, "neighborhood", skeleton, P)
                 sk = build_ts(P, constructor, nbh, MaxTimeStop(budget), tenure=sp("tenure"), candidate_size=sp("candidate_size"),

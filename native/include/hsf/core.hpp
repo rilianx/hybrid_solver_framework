@@ -716,6 +716,21 @@ Result<M> solve_with(const Catalog<M>& cat, const M& model, const Config& cfg, c
         auto cool = [&](double elapsed) { T = T_rel * std::pow(0.01, std::min(1.0, elapsed / budget)); };
         return trajectory(model, start, budget, gen, accept, cool, pen, ties);
     }
+    if (sk == "GRASP") {
+        // varios arranques (skeletons/grasp.py): cada iteración construye una solución nueva con el constructor (un
+        // constructor aleatorizado da una distinta por iteración) y la lleva a un óptimo local; se queda con la mejor
+        auto nbh = cat.neighborhood(cfg.text("neighborhood"), model, cfg);
+        bool first = cfg.text("GRASP.ls_strategy") == "first";
+        int sample = cfg.text("GRASP.ls_scope", "sample") == "full" ? -1 : (int)cfg.get("GRASP.ls_sample");
+        double ls_s = budget * cfg.get("GRASP.ls_time_share");
+        bool started = false;
+        auto gen = [&](const auto& s, double, double, double, auto& cand, double&) {
+            cand = hill_climb(*nbh, started ? ctor->build(rng) : s, first, sample, ls_s, rng, ties);
+            started = true;
+            return true;
+        };
+        return trajectory(model, start, budget, gen, [](double, double) { return true; }, none, pen);
+    }
     if (sk == "VNS") {
         std::vector<std::unique_ptr<Neighborhood<M>>> ns;
         ns.push_back(cat.neighborhood(cfg.text("neighborhood"), model, cfg));

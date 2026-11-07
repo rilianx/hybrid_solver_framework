@@ -15,7 +15,7 @@ from . import model_parts
 from .instance import CLSPInstance
 from .llm_spec import make_model_spec
 
-SKELETONS = ["SA", "ILS", "TS", "VNS", "PR", "HYB"]
+SKELETONS = ["SA", "ILS", "TS", "VNS", "PR", "HYB", "GRASP"]
 
 
 def make_instances(n: int, seed0: int, size: dict, utilization: float = 0.95, tbo: float = 3.0):

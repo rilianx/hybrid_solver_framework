@@ -17,7 +17,7 @@ from typing import Any, Callable
 from core.assembler import Assembler
 from core.skeleton import RunResult
 
-NATIVE_SKELETONS = ("SA", "ILS", "VNS", "TS", "PR", "HYB")  # HYB: ILS en C++ + sub-MIPs en Python
+NATIVE_SKELETONS = ("SA", "ILS", "VNS", "TS", "PR", "HYB", "GRASP")  # HYB: ILS en C++ + sub-MIPs en Python
 
 
 class NativeRunner:

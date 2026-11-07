@@ -12,7 +12,7 @@ from . import model_parts
 from .instance import SSCFLPInstance
 from .llm_spec import make_model_spec
 
-SKELETONS = ["SA", "ILS", "TS", "VNS", "PR", "HYB"]
+SKELETONS = ["SA", "ILS", "TS", "VNS", "PR", "HYB", "GRASP"]
 
 
 def _feasible(inst: SSCFLPInstance) -> bool:
