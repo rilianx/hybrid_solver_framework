@@ -1,0 +1,74 @@
+# Generado automáticamente por config_space.irace_export.to_irace_parameters
+# name switch type domain [| condition]
+skeleton "--skeleton=" c ("SA", "ILS", "TS", "VNS", "HYB")
+constructor "--constructor=" c ("trivial", "random", "grasp_amortized_fixed_regret_order", "randomized_add_open_then_regret_assign", "facility_star_packing_greedy") | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB")
+grasp_amortized_fixed_regret_order.alpha "--grasp_amortized_fixed_regret_order.alpha=" r (0.0, 2.0) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & constructor == "grasp_amortized_fixed_regret_order"
+grasp_amortized_fixed_regret_order.rcl "--grasp_amortized_fixed_regret_order.rcl=" r (0.0, 0.3) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & constructor == "grasp_amortized_fixed_regret_order"
+grasp_amortized_fixed_regret_order.noise "--grasp_amortized_fixed_regret_order.noise=" r (0.0, 1.0) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & constructor == "grasp_amortized_fixed_regret_order"
+grasp_amortized_fixed_regret_order.passes "--grasp_amortized_fixed_regret_order.passes=" i (0, 4) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & constructor == "grasp_amortized_fixed_regret_order"
+randomized_add_open_then_regret_assign.slack "--randomized_add_open_then_regret_assign.slack=" r (1.0, 1.6) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & constructor == "randomized_add_open_then_regret_assign"
+randomized_add_open_then_regret_assign.topk "--randomized_add_open_then_regret_assign.topk=" i (1, 5) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & constructor == "randomized_add_open_then_regret_assign"
+randomized_add_open_then_regret_assign.noise "--randomized_add_open_then_regret_assign.noise=" r (0.0, 0.8) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & constructor == "randomized_add_open_then_regret_assign"
+randomized_add_open_then_regret_assign.passes "--randomized_add_open_then_regret_assign.passes=" i (0, 4) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & constructor == "randomized_add_open_then_regret_assign"
+facility_star_packing_greedy.rcl_k "--facility_star_packing_greedy.rcl_k=" i (1, 5) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & constructor == "facility_star_packing_greedy"
+facility_star_packing_greedy.ratio_mode "--facility_star_packing_greedy.ratio_mode=" c ("per_customer", "per_demand") | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & constructor == "facility_star_packing_greedy"
+facility_star_packing_greedy.passes "--facility_star_packing_greedy.passes=" i (0, 4) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & constructor == "facility_star_packing_greedy"
+neighborhood "--neighborhood=" c ("shift_customer_near_or_open", "swap_customers_between_near_facilities", "facility_close_open_greedy_redistribution", "composite") | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB")
+shift_customer_near_or_open.k_near "--shift_customer_near_or_open.k_near=" i (3, 100) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & neighborhood == "shift_customer_near_or_open"
+swap_customers_between_near_facilities.k_near "--swap_customers_between_near_facilities.k_near=" i (2, 50) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & neighborhood == "swap_customers_between_near_facilities"
+swap_customers_between_near_facilities.max_partners "--swap_customers_between_near_facilities.max_partners=" i (5, 200) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & neighborhood == "swap_customers_between_near_facilities"
+facility_close_open_greedy_redistribution.pull_frac "--facility_close_open_greedy_redistribution.pull_frac=" r (0.3, 1.0) | skeleton %in% c("SA", "ILS", "TS", "VNS", "HYB") & neighborhood == "facility_close_open_greedy_redistribution"
+perturbation "--perturbation=" c ("random_shift_swap_walk", "cluster_ruin_regret_recreate", "facility_close_greedy_repair") | skeleton %in% c("ILS", "HYB")
+random_shift_swap_walk.moves_per_strength "--random_shift_swap_walk.moves_per_strength=" i (1, 6) | skeleton %in% c("ILS", "HYB") & perturbation == "random_shift_swap_walk"
+random_shift_swap_walk.swap_prob "--random_shift_swap_walk.swap_prob=" r (0.0, 1.0) | skeleton %in% c("ILS", "HYB") & perturbation == "random_shift_swap_walk"
+random_shift_swap_walk.open_bias "--random_shift_swap_walk.open_bias=" r (0.0, 1.0) | skeleton %in% c("ILS", "HYB") & perturbation == "random_shift_swap_walk"
+cluster_ruin_regret_recreate.ruin_per_strength "--cluster_ruin_regret_recreate.ruin_per_strength=" i (2, 20) | skeleton %in% c("ILS", "HYB") & perturbation == "cluster_ruin_regret_recreate"
+cluster_ruin_regret_recreate.reference "--cluster_ruin_regret_recreate.reference=" c ("open_facility", "any_facility") | skeleton %in% c("ILS", "HYB") & perturbation == "cluster_ruin_regret_recreate"
+cluster_ruin_regret_recreate.insertion "--cluster_ruin_regret_recreate.insertion=" c ("regret", "greedy_demand") | skeleton %in% c("ILS", "HYB") & perturbation == "cluster_ruin_regret_recreate"
+cluster_ruin_regret_recreate.noise "--cluster_ruin_regret_recreate.noise=" r (0.0, 0.5) | skeleton %in% c("ILS", "HYB") & perturbation == "cluster_ruin_regret_recreate"
+cluster_ruin_regret_recreate.open_weight "--cluster_ruin_regret_recreate.open_weight=" r (0.5, 1.5) | skeleton %in% c("ILS", "HYB") & perturbation == "cluster_ruin_regret_recreate"
+facility_close_greedy_repair.close_per_strength "--facility_close_greedy_repair.close_per_strength=" r (0.5, 3.0) | skeleton %in% c("ILS", "HYB") & perturbation == "facility_close_greedy_repair"
+facility_close_greedy_repair.selection "--facility_close_greedy_repair.selection=" c ("random", "expensive") | skeleton %in% c("ILS", "HYB") & perturbation == "facility_close_greedy_repair"
+facility_close_greedy_repair.noise "--facility_close_greedy_repair.noise=" r (0.0, 0.5) | skeleton %in% c("ILS", "HYB") & perturbation == "facility_close_greedy_repair"
+facility_close_greedy_repair.open_weight "--facility_close_greedy_repair.open_weight=" r (0.0, 1.5) | skeleton %in% c("ILS", "HYB") & perturbation == "facility_close_greedy_repair"
+facility_close_greedy_repair.steal "--facility_close_greedy_repair.steal=" r (0.0, 1.0) | skeleton %in% c("ILS", "HYB") & perturbation == "facility_close_greedy_repair"
+destruction "--destruction=" c ("group_window", "random_variables") | skeleton %in% c("HYB")
+SA.T0 "--SA.T0=" r (1.0, 1000.0) | skeleton == "SA"  # log-scale
+SA.cooling "--SA.cooling=" c ("time", "iterations") | skeleton == "SA"
+SA.T_end "--SA.T_end=" r (1e-05, 0.1) | skeleton == "SA"  # log-scale
+SA.alpha "--SA.alpha=" r (0.8, 0.999) | skeleton == "SA"
+SA.iters_per_T "--SA.iters_per_T=" i (1, 50) | skeleton == "SA"
+SA.eval "--SA.eval=" c ("objective", "delta") | skeleton == "SA"
+SA.pen_scale "--SA.pen_scale=" r (0.0001, 1.0) | skeleton == "SA"  # log-scale
+SA.pen_adapt "--SA.pen_adapt=" c ("no", "yes") | skeleton == "SA"
+SA.pen_target "--SA.pen_target=" r (0.05, 0.5) | skeleton == "SA"
+ILS.strength "--ILS.strength=" i (1, 6) | skeleton == "ILS"
+ILS.ls_strategy "--ILS.ls_strategy=" c ("first", "best") | skeleton == "ILS"
+ILS.ls_time_share "--ILS.ls_time_share=" r (0.02, 0.3) | skeleton == "ILS"
+ILS.ls_sample "--ILS.ls_sample=" i (4, 256) | skeleton == "ILS"  # log-scale
+ILS.ls_scope "--ILS.ls_scope=" c ("sample", "full") | skeleton == "ILS"
+ILS.accept "--ILS.accept=" c ("better", "anneal") | skeleton == "ILS"
+ILS.T_rel "--ILS.T_rel=" r (0.0001, 0.05) | skeleton == "ILS"  # log-scale
+ILS.pen_scale "--ILS.pen_scale=" r (0.0001, 1.0) | skeleton == "ILS"  # log-scale
+ILS.pen_adapt "--ILS.pen_adapt=" c ("no", "yes") | skeleton == "ILS"
+ILS.pen_target "--ILS.pen_target=" r (0.05, 0.5) | skeleton == "ILS"
+TS.tenure "--TS.tenure=" i (3, 30) | skeleton == "TS"
+TS.candidate_size "--TS.candidate_size=" i (5, 100) | skeleton == "TS"  # log-scale
+TS.estimate_top "--TS.estimate_top=" i (0, 10) | skeleton == "TS"
+TS.elite_size "--TS.elite_size=" i (0, 8) | skeleton == "TS"
+TS.stall "--TS.stall=" i (20, 5000) | skeleton == "TS"  # log-scale
+TS.pen_scale "--TS.pen_scale=" r (0.0001, 1.0) | skeleton == "TS"  # log-scale
+TS.pen_adapt "--TS.pen_adapt=" c ("no", "yes") | skeleton == "TS"
+TS.pen_target "--TS.pen_target=" r (0.05, 0.5) | skeleton == "TS"
+VNS.shake_strength "--VNS.shake_strength=" i (1, 4) | skeleton == "VNS"
+VNS.ls_time_share "--VNS.ls_time_share=" r (0.02, 0.3) | skeleton == "VNS"
+VNS.ls_sample "--VNS.ls_sample=" i (4, 256) | skeleton == "VNS"  # log-scale
+VNS.pen_scale "--VNS.pen_scale=" r (0.0001, 1.0) | skeleton == "VNS"  # log-scale
+VNS.pen_adapt "--VNS.pen_adapt=" c ("no", "yes") | skeleton == "VNS"
+VNS.pen_target "--VNS.pen_target=" r (0.05, 0.5) | skeleton == "VNS"
+HYB.ls_share "--HYB.ls_share=" r (0.02, 0.5) | skeleton == "HYB"  # log-scale
+HYB.mip_share "--HYB.mip_share=" r (0.01, 0.3) | skeleton == "HYB"  # log-scale
+HYB.destroy_ratio "--HYB.destroy_ratio=" r (0.05, 0.6) | skeleton == "HYB"
+HYB.strength "--HYB.strength=" i (1, 6) | skeleton == "HYB"
+HYB.ls_sample "--HYB.ls_sample=" i (4, 256) | skeleton == "HYB"  # log-scale
+HYB.T_rel "--HYB.T_rel=" r (0.0001, 0.05) | skeleton == "HYB"  # log-scale
