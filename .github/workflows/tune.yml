@@ -112,9 +112,13 @@ jobs:
           sudo apt-get install -y -q --no-install-recommends r-cran-irace r-cran-r6 r-base-dev
           # irace 3.5, la de los tunings hasta el 117: la imagen trae ahora la 4.4, que cambia el escenario (no acepta
           # `digits`) y el comportamiento de la carrera; fijarla mantiene comparables los resultados
-          if [ "$(Rscript -e 'cat(as.character(packageVersion("irace")))')" != "3.5" ]; then
-            sudo Rscript -e 'install.packages("https://cran.r-project.org/src/contrib/Archive/irace/irace_3.5.tar.gz", repos = NULL, type = "source", lib = "/usr/local/lib/R/site-library")'
-          fi
+          # (con reintentos: una descarga fallida dejaba la 4.4 sin cortar el job y la réplica moría al empezar)
+          for i in 1 2 3; do
+            [ "$(Rscript -e 'cat(as.character(packageVersion("irace")))')" = "3.5" ] && break
+            sudo Rscript -e 'install.packages("https://cran.r-project.org/src/contrib/Archive/irace/irace_3.5.tar.gz", repos = NULL, type = "source", lib = "/usr/local/lib/R/site-library")' || true
+            sleep 10
+          done
+          test "$(Rscript -e 'cat(as.character(packageVersion("irace")))')" = "3.5" || { echo "no se pudo instalar irace 3.5"; exit 1; }
           Rscript -e 'cat("irace", as.character(packageVersion("irace")), "en", system.file(package = "irace"), "\n")'
 
       - name: Afinar y evaluar en test

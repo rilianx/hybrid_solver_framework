@@ -1,0 +1,16 @@
+  vista MIP de HYB: none
+
+=== catálogo `generated`: 56 parámetros, 9 opciones generadas por LLM ===
+  irace: 1008 experimentos en 11195s; élite: ILS[constructor=grasp_lr_index_append, neighborhood=pfsp_job_insertion_taillard, perturbation=ig_destruct_reconstruct_taillard]; ILS[constructor=grasp_lr_index_append, neighborhood=pfsp_job_insertion_taillard, perturbation=ig_destruct_reconstruct_taillard]; ILS[constructor=grasp_lr_index_append, neighborhood=pfsp_job_insertion_taillard, perturbation=ig_destruct_reconstruct_taillard]; ILS[constructor=grasp_lr_index_append, neighborhood=pfsp_job_insertion_taillard, perturbation=ig_destruct_reconstruct_taillard]; ILS[constructor=grasp_lr_index_append, neighborhood=pfsp_job_insertion_taillard, perturbation=ig_destruct_reconstruct_taillard]; ILS[constructor=grasp_lr_index_append, neighborhood=pfsp_job_insertion_taillard, perturbation=ig_destruct_reconstruct_taillard]; ILS[constructor=grasp_lr_index_append, neighborhood=pfsp_job_insertion_taillard, perturbation=ig_destruct_reconstruct_taillard]
+  mejor en train: 0.8140  ILS[constructor=grasp_lr_index_append, neighborhood=pfsp_job_insertion_taillard, perturbation=ig_destruct_reconstruct_taillard]
+
+=== TEST `generated` (partida trivial sin búsqueda = 8468.7; gap vs mejor conocido por instancia) ===
+    tuned                                            gap   0.08%         6970.4 ±   3495.4   (+17.7% vs partida)   ILS[constructor=grasp_lr_index_append, neighborhood=pfsp_job_insertion_taillard, perturbation=ig_destruct_reconstruct_taillard]
+    default:TS                                       gap   1.25%         7045.3 ±   3501.4   (+16.8% vs partida)   TS[constructor=trivial, neighborhood=pfsp_job_insertion_taillard]
+    default:SA                                       gap   1.73%         7098.1 ±   3567.6   (+16.2% vs partida)   SA[constructor=trivial, neighborhood=pfsp_job_insertion_taillard]
+    default:VNS                                      gap   2.58%         7152.1 ±   3572.5   (+15.5% vs partida)   VNS[constructor=trivial, neighborhood=pfsp_job_insertion_taillard]
+    default:ILS                                      gap   4.12%         7257.1 ±   3616.2   (+14.3% vs partida)   ILS[constructor=trivial, neighborhood=pfsp_job_insertion_taillard, perturbation=random_insert_swap_kick]
+  ganancia del afinado vs mejor default: +1.06%; gana en 6/6 instancias
+  afinado vs default:TS: gap +1.17% a favor del afinado, IC95 [+0.50%, +1.88%]
+
+Escenario irace escrito en tuning_out/irace/scenario.txt (correr: irace --scenario tuning_out/irace/scenario.txt)
